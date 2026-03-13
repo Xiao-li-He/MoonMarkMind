@@ -1,0 +1,443 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MindDown Demo</title>
+    <style>
+      :root {
+        --panel: rgba(255, 251, 245, 0.9);
+        --ink: #1f1d1a;
+        --muted: #6a6256;
+        --line: rgba(56, 47, 34, 0.14);
+        --accent: #0d6c63;
+        --tree: rgba(13, 108, 99, 0.28);
+        --shadow: 0 20px 60px rgba(68, 47, 24, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "IBM Plex Sans", "Noto Sans SC", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(216, 111, 69, 0.18), transparent 32%),
+          radial-gradient(circle at bottom right, rgba(13, 108, 99, 0.18), transparent 28%),
+          linear-gradient(160deg, #fbf7f0 0%, #efe7d8 100%);
+      }
+
+      .shell {
+        width: min(1360px, calc(100% - 32px));
+        margin: 24px auto;
+        padding: 24px;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(16px);
+      }
+
+      .hero {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .eyebrow {
+        font-size: 12px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(32px, 5vw, 56px);
+        line-height: 0.95;
+      }
+
+      .hero p {
+        margin: 0;
+        max-width: 860px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 6px;
+      }
+
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 18px;
+        font: inherit;
+        cursor: pointer;
+        transition: transform 140ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      .primary {
+        color: white;
+        background: linear-gradient(135deg, var(--accent) 0%, #0b8e82 100%);
+      }
+
+      .secondary {
+        color: var(--ink);
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid var(--line);
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(360px, 0.92fr) minmax(520px, 1.18fr);
+        gap: 18px;
+        align-items: stretch;
+      }
+
+      .stack {
+        display: grid;
+        gap: 18px;
+        min-height: 720px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.74);
+        overflow: hidden;
+      }
+
+      .panel-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .panel-head strong {
+        font-size: 15px;
+      }
+
+      .panel-head span {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      textarea,
+      pre {
+        width: 100%;
+        margin: 0;
+        border: 0;
+        resize: none;
+        padding: 18px;
+        background: transparent;
+        color: var(--ink);
+        font: 15px/1.6 "IBM Plex Mono", "Cascadia Code", monospace;
+      }
+
+      textarea {
+        min-height: 320px;
+      }
+
+      pre {
+        min-height: 240px;
+      }
+
+      textarea:focus {
+        outline: none;
+      }
+
+      .mindmap {
+        min-height: 720px;
+        padding: 24px;
+        overflow: auto;
+      }
+
+      .mindmap-stage {
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) auto minmax(260px, 1fr);
+        gap: 28px;
+        align-items: start;
+        min-width: 960px;
+        padding: 12px 4px;
+      }
+
+      .center-wrap {
+        position: sticky;
+        top: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 120px;
+      }
+
+      .branch-column {
+        display: flex;
+        flex-direction: column;
+        gap: 26px;
+        min-height: 520px;
+        padding-top: 26px;
+      }
+
+      .branch-column--left {
+        align-items: flex-end;
+      }
+
+      .branch-column--right {
+        align-items: flex-start;
+      }
+
+      .branch-item {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .branch-item--left {
+        align-items: flex-end;
+      }
+
+      .branch-item--right {
+        align-items: flex-start;
+      }
+
+      .branch-item::before {
+        content: "";
+        position: absolute;
+        top: 34px;
+        width: 26px;
+        height: 2px;
+        background: var(--tree);
+      }
+
+      .branch-item--left::before {
+        right: -26px;
+      }
+
+      .branch-item--right::before {
+        left: -26px;
+      }
+
+      .branch-children {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .branch-children--left {
+        padding-right: 32px;
+      }
+
+      .branch-children--right {
+        padding-left: 32px;
+      }
+
+      .branch-children--left::before,
+      .branch-children--right::before {
+        content: "";
+        position: absolute;
+        top: -8px;
+        bottom: 22px;
+        width: 2px;
+        background: linear-gradient(180deg, var(--tree), rgba(13, 108, 99, 0.08));
+      }
+
+      .branch-children--left::before {
+        right: 0;
+      }
+
+      .branch-children--right::before {
+        left: 0;
+      }
+
+      .node {
+        position: relative;
+        min-width: 180px;
+        max-width: 240px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: white;
+        border: 1px solid rgba(13, 108, 99, 0.12);
+        box-shadow: 0 10px 24px rgba(18, 38, 35, 0.06);
+        text-align: center;
+      }
+
+      .node--center {
+        min-width: 220px;
+        max-width: 280px;
+        border-color: rgba(216, 111, 69, 0.22);
+        background: linear-gradient(135deg, rgba(216, 111, 69, 0.16), rgba(255, 255, 255, 0.98));
+        box-shadow: 0 18px 36px rgba(68, 47, 24, 0.12);
+      }
+
+      .node.is-clickable {
+        cursor: pointer;
+        padding-right: 108px;
+      }
+
+      .node.is-draggable {
+        cursor: grab;
+      }
+
+      .node.is-dragging {
+        opacity: 0.45;
+      }
+
+      .node.is-clickable:hover {
+        border-color: rgba(13, 108, 99, 0.28);
+        box-shadow: 0 16px 30px rgba(18, 38, 35, 0.1);
+      }
+
+      .node.drop-before {
+        box-shadow: inset 0 4px 0 var(--accent), 0 16px 30px rgba(18, 38, 35, 0.1);
+      }
+
+      .node.drop-after {
+        box-shadow: inset 0 -4px 0 var(--accent), 0 16px 30px rgba(18, 38, 35, 0.1);
+      }
+
+      .node-editor {
+        width: 100%;
+        border: 1px solid rgba(13, 108, 99, 0.22);
+        border-radius: 10px;
+        padding: 8px 10px;
+        font: inherit;
+        font-size: 15px;
+        color: var(--ink);
+        background: rgba(13, 108, 99, 0.05);
+      }
+
+      .node-editor:focus {
+        outline: 2px solid rgba(13, 108, 99, 0.18);
+        border-color: rgba(13, 108, 99, 0.28);
+      }
+
+      .node-actions {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        display: flex;
+        gap: 6px;
+      }
+
+      .node-action {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border-radius: 999px;
+        background: rgba(13, 108, 99, 0.1);
+        color: var(--accent);
+        font-size: 18px;
+        line-height: 24px;
+      }
+
+      .node-action:hover {
+        transform: none;
+        background: rgba(13, 108, 99, 0.18);
+      }
+
+      .node-action--danger {
+        color: #b94c38;
+        background: rgba(185, 76, 56, 0.12);
+      }
+
+      .node-action--danger:hover {
+        background: rgba(185, 76, 56, 0.18);
+      }
+
+      .node[data-level="2"] {
+        background: linear-gradient(180deg, rgba(13, 108, 99, 0.08), rgba(255, 255, 255, 0.96));
+      }
+
+      .node small {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+
+      .node strong {
+        display: block;
+        font-size: 15px;
+      }
+
+      @media (max-width: 1100px) {
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .stack {
+          min-height: auto;
+        }
+
+        .mindmap {
+          min-height: 520px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div class="eyebrow">MoonBit Web Demo</div>
+        <h1>MindDown</h1>
+        <p>
+          这是一个最小可运行的 Web 版原型。左侧输入 Markdown 标题结构并查看 MoonBit 生成的 ASCII 结果，
+          右侧使用中心节点向左右发散的脑图布局，支持折叠、拖拽重排，以及直接在节点上增删改标题。
+        </p>
+        <div class="actions">
+          <button class="primary" id="render">Render Mindmap</button>
+          <button class="secondary" id="load-sample">Load Sample</button>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <div class="stack">
+          <article class="panel">
+            <div class="panel-head">
+              <strong>Markdown Input</strong>
+              <span>Use headings like #, ##, ###</span>
+            </div>
+            <textarea id="input"></textarea>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <strong>ASCII Output</strong>
+              <span>Generated by MoonBit</span>
+            </div>
+            <pre id="output"></pre>
+          </article>
+        </div>
+
+        <article class="panel">
+          <div class="panel-head">
+            <strong>Mindmap Preview</strong>
+            <span>Double-click to edit, drag siblings, use + / × to add or delete</span>
+          </div>
+          <div class="mindmap" id="mindmap"></div>
+        </article>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

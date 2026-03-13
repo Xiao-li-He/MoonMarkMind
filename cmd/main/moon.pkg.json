@@ -1,0 +1,9 @@
+{
+  "is-main": true,
+  "import": [
+    {
+      "path": "huangxl/md2mind",
+      "alias": "lib"
+    }
+  ]
+}
