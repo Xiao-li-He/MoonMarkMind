@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "huangxl/md2mind"
+package "Xiao-li-He/MoonMarkMind"
 
 // Values
 fn add_child_heading(String, Int, String) -> String

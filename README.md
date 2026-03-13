@@ -1,47 +1,35 @@
-# MindDown
+﻿# MoonMarkMind
 
-MindDown 是一个以 MoonBit 为核心的 Markdown 脑图演示项目。
+MoonMarkMind 鏄竴涓互 MoonBit 涓烘牳蹇冪殑 Markdown 鑴戝浘婕旂ず椤圭洰銆?
+瀹冪洰鍓嶆敮鎸佹妸鍩轰簬鏍囬灞傜骇鐨?Markdown 鏂囨。杞崲鎴愯剳鍥捐鍥撅紝骞跺湪娴忚鍣ㄤ腑瀹屾垚涓€缁勫熀纭€缂栬緫鎿嶄綔銆傞」鐩殑閲嶇偣涓嶆槸鈥滃仛涓€涓墠绔皬鐜╁叿鈥濓紝鑰屾槸鎶婃枃妗ｆ牳蹇冩搷浣滃敖閲忔斁鍥?MoonBit 瀹炵幇锛岃娴忚鍣ㄥ眰鍙礋璐ｆ覆鏌撳拰浜や簰銆?
+## 椤圭洰鐗规€?
+- Markdown 鏍囬缁撴瀯瑙ｆ瀽
+- MoonBit 鐢熸垚 ASCII 鑴戝浘
+- 涓績鑺傜偣鍚戝乏鍙冲睍寮€鐨勮剳鍥惧竷灞€
+- 鑺傜偣鎶樺彔涓庡睍寮€
+- 鑺傜偣鏍囬鍙屽嚮鐩存帴缂栬緫
+- 鍚岀骇鑺傜偣鎷栨嫿閲嶆帓
+- 鏂板瀛愯妭鐐?- 鍒犻櫎鑺傜偣瀛愭爲
+- 缂栬緫鍚庡悓姝ュ洖鍐?Markdown 涓?ASCII 瑙嗗浘
 
-它目前支持把基于标题层级的 Markdown 文档转换成脑图视图，并在浏览器中完成一组基础编辑操作。项目的重点不是“做一个前端小玩具”，而是把文档核心操作尽量放回 MoonBit 实现，让浏览器层只负责渲染和交互。
+## 鏋舵瀯璇存槑
 
-## 项目特性
-
-- Markdown 标题结构解析
-- MoonBit 生成 ASCII 脑图
-- 中心节点向左右展开的脑图布局
-- 节点折叠与展开
-- 节点标题双击直接编辑
-- 同级节点拖拽重排
-- 新增子节点
-- 删除节点子树
-- 编辑后同步回写 Markdown 与 ASCII 视图
-
-## 架构说明
-
-项目目前分成两层：
-
-- MoonBit 核心层
-  负责解析标题、导出树结构 JSON、重命名节点、重排同级节点、新增节点、删除节点，并把结果重新序列化回 Markdown。
-- Web 交互层
-  负责脑图布局、按钮事件、拖拽事件和编辑输入框，并调用 MoonBit 编译出的 JS API。
-
-主要 MoonBit 文件：
-
+椤圭洰鐩墠鍒嗘垚涓ゅ眰锛?
+- MoonBit 鏍稿績灞?  璐熻矗瑙ｆ瀽鏍囬銆佸鍑烘爲缁撴瀯 JSON銆侀噸鍛藉悕鑺傜偣銆侀噸鎺掑悓绾ц妭鐐广€佹柊澧炶妭鐐广€佸垹闄よ妭鐐癸紝骞舵妸缁撴灉閲嶆柊搴忓垪鍖栧洖 Markdown銆?- Web 浜や簰灞?  璐熻矗鑴戝浘甯冨眬銆佹寜閽簨浠躲€佹嫋鎷戒簨浠跺拰缂栬緫杈撳叆妗嗭紝骞惰皟鐢?MoonBit 缂栬瘧鍑虹殑 JS API銆?
+涓昏 MoonBit 鏂囦欢锛?
 - `heading_parser.mbt`
 - `mindmap_renderer.mbt`
 - `outline_model.mbt`
 - `web_api.mbt`
 
-主要前端文件：
-
+涓昏鍓嶇鏂囦欢锛?
 - `web/index.html`
 - `web/app.js`
 - `build-web.ps1`
 
-## MoonBit 核心 API
+## MoonBit 鏍稿績 API
 
-浏览器当前会调用这些 MoonBit API：
-
+娴忚鍣ㄥ綋鍓嶄細璋冪敤杩欎簺 MoonBit API锛?
 - `outline_json(markdown)`
 - `render_ascii_mindmap(markdown)`
 - `rename_heading(markdown, flat_index, title)`
@@ -49,56 +37,48 @@ MindDown 是一个以 MoonBit 为核心的 Markdown 脑图演示项目。
 - `add_child_heading(markdown, parent_flat_index, title)`
 - `delete_heading(markdown, flat_index)`
 
-其中“重命名、重排、新增、删除、Markdown 回写”都已经由 MoonBit 驱动，不再由前端自己维护文档模型。
-
-## 本地开发
-
-先安装 MoonBit，然后执行：
+鍏朵腑鈥滈噸鍛藉悕銆侀噸鎺掋€佹柊澧炪€佸垹闄ゃ€丮arkdown 鍥炲啓鈥濋兘宸茬粡鐢?MoonBit 椹卞姩锛屼笉鍐嶇敱鍓嶇鑷繁缁存姢鏂囨。妯″瀷銆?
+## 鏈湴寮€鍙?
+鍏堝畨瑁?MoonBit锛岀劧鍚庢墽琛岋細
 
 ```powershell
 moon check
 moon test
 ```
 
-运行命令行 demo：
-
+杩愯鍛戒护琛?demo锛?
 ```powershell
 moon run cmd/main
 ```
 
-构建浏览器 bundle：
-
+鏋勫缓娴忚鍣?bundle锛?
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\build-web.ps1
 ```
 
-本地启动静态服务：
+鏈湴鍚姩闈欐€佹湇鍔★細
 
 ```powershell
 python -m http.server 8080 -d web
 ```
 
-浏览器访问：
+娴忚鍣ㄨ闂細
 
 ```text
 http://localhost:8080
 ```
 
-## 当前交互方式
+## 褰撳墠浜や簰鏂瑰紡
 
-在浏览器 demo 中：
+鍦ㄦ祻瑙堝櫒 demo 涓細
 
-- 双击节点标题可直接修改名称
-- 点击 `+` 可新增子节点
-- 点击 `×` 可删除当前节点及其子树
-- 拖拽节点到同级节点上方或下方可重排顺序
-- 点击节点或折叠按钮可展开/收起子树
+- 鍙屽嚮鑺傜偣鏍囬鍙洿鎺ヤ慨鏀瑰悕绉?- 鐐瑰嚮 `+` 鍙柊澧炲瓙鑺傜偣
+- 鐐瑰嚮 `脳` 鍙垹闄ゅ綋鍓嶈妭鐐瑰強鍏跺瓙鏍?- 鎷栨嫿鑺傜偣鍒板悓绾ц妭鐐逛笂鏂规垨涓嬫柟鍙噸鎺掗『搴?- 鐐瑰嚮鑺傜偣鎴栨姌鍙犳寜閽彲灞曞紑/鏀惰捣瀛愭爲
 
-每次操作后，左侧 Markdown 输入区和 ASCII 输出区都会同步更新。
+姣忔鎿嶄綔鍚庯紝宸︿晶 Markdown 杈撳叆鍖哄拰 ASCII 杈撳嚭鍖洪兘浼氬悓姝ユ洿鏂般€?
+## 鏍￠獙鏂瑰紡
 
-## 校验方式
-
-核心检查命令：
+鏍稿績妫€鏌ュ懡浠わ細
 
 ```powershell
 moon check
@@ -106,14 +86,12 @@ moon test
 moon info
 ```
 
-Web bundle 生成方式：
+Web bundle 鐢熸垚鏂瑰紡锛?
+- 搴曞眰鐢?`moon build --target js --release` 鐢熸垚
+- 鍐嶉€氳繃 `build-web.ps1` 妗ユ帴鎴愭祻瑙堝櫒鍙皟鐢ㄧ殑鎺ュ彛
 
-- 底层由 `moon build --target js --release` 生成
-- 再通过 `build-web.ps1` 桥接成浏览器可调用的接口
+## 褰撳墠闄愬埗
 
-## 当前限制
-
-- 目前只支持基于标题层级的 Markdown 模型
-- 普通段落、列表、引用、代码块等正文内容还不会保真回写
-- 当前只支持同一父节点下的拖拽重排
-- 跨父节点拖拽改变层级还没有实现
+- 鐩墠鍙敮鎸佸熀浜庢爣棰樺眰绾х殑 Markdown 妯″瀷
+- 鏅€氭钀姐€佸垪琛ㄣ€佸紩鐢ㄣ€佷唬鐮佸潡绛夋鏂囧唴瀹硅繕涓嶄細淇濈湡鍥炲啓
+- 褰撳墠鍙敮鎸佸悓涓€鐖惰妭鐐逛笅鐨勬嫋鎷介噸鎺?- 璺ㄧ埗鑺傜偣鎷栨嫿鏀瑰彉灞傜骇杩樻病鏈夊疄鐜?

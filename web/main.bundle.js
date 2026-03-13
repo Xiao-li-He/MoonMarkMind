@@ -307,19 +307,19 @@ const moonbitlang$core$string$regex$internal$regexp$internal$unicode$$ranges_any
 const moonbitlang$core$string$regex$internal$regexp$internal$unicode$$ranges_is_white_space_or_line_terminator = [9, 13, 32, 32, 160, 160, 5760, 5760, 8192, 8202, 8232, 8233, 8239, 8239, 8287, 8287, 12288, 12288, 65279, 65279];
 const moonbitlang$core$string$regex$internal$regexp$internal$unicode$$ranges_is_not_white_space_or_line_terminator = [0, 8, 14, 31, 33, 159, 161, 5759, 5761, 8191, 8203, 8231, 8234, 8238, 8240, 8286, 8288, 12287, 12289, 65278, 65280, 1114111];
 const moonbitlang$core$string$regex$internal$regexp$internal$unicode$$case_folding$46$42$bind$124$96 = "aAAabBBbcCCcdDDdeEEefFFfgGGghHHhiIIijJJjkKKKKklLLlmMMmnNNnoOOopPPpqQQqrRRrsSSſſstTTtuUUuvVVvwWWwxXXxyYYyzZZzμµµΜΜμàÀÀàáÁÁáâÂÂâãÃÃãäÄÄäåÅÅÅÅåæÆÆæçÇÇçèÈÈèéÉÉéêÊÊêëËËëìÌÌìíÍÍíîÎÎîïÏÏïðÐÐðñÑÑñòÒÒòóÓÓóôÔÔôõÕÕõöÖÖöøØØøùÙÙùúÚÚúûÛÛûüÜÜüýÝÝýþÞÞþāĀĀāăĂĂăąĄĄąćĆĆćĉĈĈĉċĊĊċčČČčďĎĎďđĐĐđēĒĒēĕĔĔĕėĖĖėęĘĘęěĚĚěĝĜĜĝğĞĞğġĠĠġģĢĢģĥĤĤĥħĦĦħĩĨĨĩīĪĪīĭĬĬĭįĮĮįĳĲĲĳĵĴĴĵķĶĶķĺĹĹĺļĻĻļľĽĽľŀĿĿŀłŁŁłńŃŃńņŅŅņňŇŇňŋŊŊŋōŌŌōŏŎŎŏőŐŐőœŒŒœŕŔŔŕŗŖŖŗřŘŘřśŚŚśŝŜŜŝşŞŞşšŠŠšţŢŢţťŤŤťŧŦŦŧũŨŨũūŪŪūŭŬŬŭůŮŮůűŰŰűųŲŲųŵŴŴŵŷŶŶŷÿŸŸÿźŹŹźżŻŻżžŽŽžɓƁƁɓƃƂƂƃƅƄƄƅɔƆƆɔƈƇƇƈɖƉƉɖɗƊƊɗƌƋƋƌǝƎƎǝəƏƏəɛƐƐɛƒƑƑƒɠƓƓɠɣƔƔɣɩƖƖɩɨƗƗɨƙƘƘƙɯƜƜɯɲƝƝɲɵƟƟɵơƠƠơƣƢƢƣƥƤƤƥʀƦƦʀƨƧƧƨʃƩƩʃƭƬƬƭʈƮƮʈưƯƯưʊƱƱʊʋƲƲʋƴƳƳƴƶƵƵƶʒƷƷʒƹƸƸƹƽƼƼƽǆǄǄǅǅǆǉǇǇǈǈǉǌǊǊǋǋǌǎǍǍǎǐǏǏǐǒǑǑǒǔǓǓǔǖǕǕǖǘǗǗǘǚǙǙǚǜǛǛǜǟǞǞǟǡǠǠǡǣǢǢǣǥǤǤǥǧǦǦǧǩǨǨǩǫǪǪǫǭǬǬǭǯǮǮǯǳǱǱǲǲǳǵǴǴǵƕǶǶƕƿǷǷƿǹǸǸǹǻǺǺǻǽǼǼǽǿǾǾǿȁȀȀȁȃȂȂȃȅȄȄȅȇȆȆȇȉȈȈȉȋȊȊȋȍȌȌȍȏȎȎȏȑȐȐȑȓȒȒȓȕȔȔȕȗȖȖȗșȘȘșțȚȚțȝȜȜȝȟȞȞȟƞȠȠƞȣȢȢȣȥȤȤȥȧȦȦȧȩȨȨȩȫȪȪȫȭȬȬȭȯȮȮȯȱȰȰȱȳȲȲȳⱥȺȺⱥȼȻȻȼƚȽȽƚⱦȾȾⱦɂɁɁɂƀɃɃƀʉɄɄʉʌɅɅʌɇɆɆɇɉɈɈɉɋɊɊɋɍɌɌɍɏɎɎɏιͅͅΙΙιιιͱͰͰͱͳͲͲͳͷͶͶͷϳͿͿϳάΆΆάέΈΈέήΉΉήίΊΊίόΌΌόύΎΎύώΏΏώαΑΑαβΒΒϐϐβγΓΓγδΔΔδεΕΕϵϵεζΖΖζηΗΗηθΘΘϑϑϴϴθκΚΚϰϰκλΛΛλνΝΝνξΞΞξοΟΟοπΠΠϖϖπρΡΡϱϱρσΣΣςςστΤΤτυΥΥυφΦΦϕϕφχΧΧχψΨΨψωΩΩΩΩωϊΪΪϊϋΫΫϋϗϏϏϗϙϘϘϙϛϚϚϛϝϜϜϝϟϞϞϟϡϠϠϡϣϢϢϣϥϤϤϥϧϦϦϧϩϨϨϩϫϪϪϫϭϬϬϭϯϮϮϯϸϷϷϸϲϹϹϲϻϺϺϻͻϽϽͻͼϾϾͼͽϿϿͽѐЀЀѐёЁЁёђЂЂђѓЃЃѓєЄЄєѕЅЅѕіІІіїЇЇїјЈЈјљЉЉљњЊЊњћЋЋћќЌЌќѝЍЍѝўЎЎўџЏЏџаААабББбвВВᲀᲀвгГГгдДДᲁᲁдеЕЕежЖЖжзЗЗзиИИийЙЙйкККклЛЛлмММмнННноООᲂᲂопППпрРРрсССᲃᲃстТТᲄᲄᲅᲅтуУУуфФФфхХХхцЦЦцчЧЧчшШШшщЩЩщъЪЪᲆᲆъыЫЫыьЬЬьэЭЭэюЮЮюяЯЯяѡѠѠѡѣѢѢᲇᲇѣѥѤѤѥѧѦѦѧѩѨѨѩѫѪѪѫѭѬѬѭѯѮѮѯѱѰѰѱѳѲѲѳѵѴѴѵѷѶѶѷѹѸѸѹѻѺѺѻѽѼѼѽѿѾѾѿҁҀҀҁҋҊҊҋҍҌҌҍҏҎҎҏґҐҐґғҒҒғҕҔҔҕҗҖҖҗҙҘҘҙқҚҚқҝҜҜҝҟҞҞҟҡҠҠҡңҢҢңҥҤҤҥҧҦҦҧҩҨҨҩҫҪҪҫҭҬҬҭүҮҮүұҰҰұҳҲҲҳҵҴҴҵҷҶҶҷҹҸҸҹһҺҺһҽҼҼҽҿҾҾҿӏӀӀӏӂӁӁӂӄӃӃӄӆӅӅӆӈӇӇӈӊӉӉӊӌӋӋӌӎӍӍӎӑӐӐӑӓӒӒӓӕӔӔӕӗӖӖӗәӘӘәӛӚӚӛӝӜӜӝӟӞӞӟӡӠӠӡӣӢӢӣӥӤӤӥӧӦӦӧөӨӨөӫӪӪӫӭӬӬӭӯӮӮӯӱӰӰӱӳӲӲӳӵӴӴӵӷӶӶӷӹӸӸӹӻӺӺӻӽӼӼӽӿӾӾӿԁԀԀԁԃԂԂԃԅԄԄԅԇԆԆԇԉԈԈԉԋԊԊԋԍԌԌԍԏԎԎԏԑԐԐԑԓԒԒԓԕԔԔԕԗԖԖԗԙԘԘԙԛԚԚԛԝԜԜԝԟԞԞԟԡԠԠԡԣԢԢԣԥԤԤԥԧԦԦԧԩԨԨԩԫԪԪԫԭԬԬԭԯԮԮԯաԱԱաբԲԲբգԳԳգդԴԴդեԵԵեզԶԶզէԷԷէըԸԸըթԹԹթժԺԺժիԻԻիլԼԼլխԽԽխծԾԾծկԿԿկհՀՀհձՁՁձղՂՂղճՃՃճմՄՄմյՅՅյնՆՆնշՇՇշոՈՈոչՉՉչպՊՊպջՋՋջռՌՌռսՍՍսվՎՎվտՏՏտրՐՐրցՑՑցւՒՒւփՓՓփքՔՔքօՕՕօֆՖՖֆⴀႠႠⴀⴁႡႡⴁⴂႢႢⴂⴃႣႣⴃⴄႤႤⴄⴅႥႥⴅⴆႦႦⴆⴇႧႧⴇⴈႨႨⴈⴉႩႩⴉⴊႪႪⴊⴋႫႫⴋⴌႬႬⴌⴍႭႭⴍⴎႮႮⴎⴏႯႯⴏⴐႰႰⴐⴑႱႱⴑⴒႲႲⴒⴓႳႳⴓⴔႴႴⴔⴕႵႵⴕⴖႶႶⴖⴗႷႷⴗⴘႸႸⴘⴙႹႹⴙⴚႺႺⴚⴛႻႻⴛⴜႼႼⴜⴝႽႽⴝⴞႾႾⴞⴟႿႿⴟⴠჀჀⴠⴡჁჁⴡⴢჂჂⴢⴣჃჃⴣⴤჄჄⴤⴥჅჅⴥⴧჇჇⴧⴭჍჍⴭᏰᏸᏸᏰᏱᏹᏹᏱᏲᏺᏺᏲᏳᏻᏻᏳᏴᏼᏼᏴᏵᏽᏽᏵꙋᲈᲈꙊꙊꙋᲊᲉᲉᲊაᲐᲐაბᲑᲑბგᲒᲒგდᲓᲓდეᲔᲔევᲕᲕვზᲖᲖზთᲗᲗთიᲘᲘიკᲙᲙკლᲚᲚლმᲛᲛმნᲜᲜნოᲝᲝოპᲞᲞპჟᲟᲟჟრᲠᲠრსᲡᲡსტᲢᲢტუᲣᲣუფᲤᲤფქᲥᲥქღᲦᲦღყᲧᲧყშᲨᲨშჩᲩᲩჩცᲪᲪცძᲫᲫძწᲬᲬწჭᲭᲭჭხᲮᲮხჯᲯᲯჯჰᲰᲰჰჱᲱᲱჱჲᲲᲲჲჳᲳᲳჳჴᲴᲴჴჵᲵᲵჵჶᲶᲶჶჷᲷᲷჷჸᲸᲸჸჹᲹᲹჹჺᲺᲺჺჽᲽᲽჽჾᲾᲾჾჿᲿᲿჿḁḀḀḁḃḂḂḃḅḄḄḅḇḆḆḇḉḈḈḉḋḊḊḋḍḌḌḍḏḎḎḏḑḐḐḑḓḒḒḓḕḔḔḕḗḖḖḗḙḘḘḙḛḚḚḛḝḜḜḝḟḞḞḟḡḠḠḡḣḢḢḣḥḤḤḥḧḦḦḧḩḨḨḩḫḪḪḫḭḬḬḭḯḮḮḯḱḰḰḱḳḲḲḳḵḴḴḵḷḶḶḷḹḸḸḹḻḺḺḻḽḼḼḽḿḾḾḿṁṀṀṁṃṂṂṃṅṄṄṅṇṆṆṇṉṈṈṉṋṊṊṋṍṌṌṍṏṎṎṏṑṐṐṑṓṒṒṓṕṔṔṕṗṖṖṗṙṘṘṙṛṚṚṛṝṜṜṝṟṞṞṟṡṠṠẛẛṡṣṢṢṣṥṤṤṥṧṦṦṧṩṨṨṩṫṪṪṫṭṬṬṭṯṮṮṯṱṰṰṱṳṲṲṳṵṴṴṵṷṶṶṷṹṸṸṹṻṺṺṻṽṼṼṽṿṾṾṿẁẀẀẁẃẂẂẃẅẄẄẅẇẆẆẇẉẈẈẉẋẊẊẋẍẌẌẍẏẎẎẏẑẐẐẑẓẒẒẓẕẔẔẕßẞẞßạẠẠạảẢẢảấẤẤấầẦẦầẩẨẨẩẫẪẪẫậẬẬậắẮẮắằẰẰằẳẲẲẳẵẴẴẵặẶẶặẹẸẸẹẻẺẺẻẽẼẼẽếẾẾếềỀỀềểỂỂểễỄỄễệỆỆệỉỈỈỉịỊỊịọỌỌọỏỎỎỏốỐỐốồỒỒồổỔỔổỗỖỖỗộỘỘộớỚỚớờỜỜờởỞỞởỡỠỠỡợỢỢợụỤỤụủỦỦủứỨỨứừỪỪừửỬỬửữỮỮữựỰỰựỳỲỲỳỵỴỴỵỷỶỶỷỹỸỸỹỻỺỺỻỽỼỼỽỿỾỾỿἀἈἈἀἁἉἉἁἂἊἊἂἃἋἋἃἄἌἌἄἅἍἍἅἆἎἎἆἇἏἏἇἐἘἘἐἑἙἙἑἒἚἚἒἓἛἛἓἔἜἜἔἕἝἝἕἠἨἨἠἡἩἩἡἢἪἪἢἣἫἫἣἤἬἬἤἥἭἭἥἦἮἮἦἧἯἯἧἰἸἸἰἱἹἹἱἲἺἺἲἳἻἻἳἴἼἼἴἵἽἽἵἶἾἾἶἷἿἿἷὀὈὈὀὁὉὉὁὂὊὊὂὃὋὋὃὄὌὌὄὅὍὍὅὑὙὙὑὓὛὛὓὕὝὝὕὗὟὟὗὠὨὨὠὡὩὩὡὢὪὪὢὣὫὫὣὤὬὬὤὥὭὭὥὦὮὮὦὧὯὯὧᾀᾈᾈᾀᾁᾉᾉᾁᾂᾊᾊᾂᾃᾋᾋᾃᾄᾌᾌᾄᾅᾍᾍᾅᾆᾎᾎᾆᾇᾏᾏᾇᾐᾘᾘᾐᾑᾙᾙᾑᾒᾚᾚᾒᾓᾛᾛᾓᾔᾜᾜᾔᾕᾝᾝᾕᾖᾞᾞᾖᾗᾟᾟᾗᾠᾨᾨᾠᾡᾩᾩᾡᾢᾪᾪᾢᾣᾫᾫᾣᾤᾬᾬᾤᾥᾭᾭᾥᾦᾮᾮᾦᾧᾯᾯᾧᾰᾸᾸᾰᾱᾹᾹᾱὰᾺᾺὰάΆΆάᾳᾼᾼᾳὲῈῈὲέΈΈέὴῊῊὴήΉΉήῃῌῌῃΐΐΐΐῐῘῘῐῑῙῙῑὶῚῚὶίΊΊίΰΰΰΰῠῨῨῠῡῩῩῡὺῪῪὺύΎΎύῥῬῬῥὸῸῸὸόΌΌόὼῺῺὼώΏΏώῳῼῼῳⅎℲℲⅎⅰⅠⅠⅰⅱⅡⅡⅱⅲⅢⅢⅲⅳⅣⅣⅳⅴⅤⅤⅴⅵⅥⅥⅵⅶⅦⅦⅶⅷⅧⅧⅷⅸⅨⅨⅸⅹⅩⅩⅹⅺⅪⅪⅺⅻⅫⅫⅻⅼⅬⅬⅼⅽⅭⅭⅽⅾⅮⅮⅾⅿⅯⅯⅿↄↃↃↄⓐⒶⒶⓐⓑⒷⒷⓑⓒⒸⒸⓒⓓⒹⒹⓓⓔⒺⒺⓔⓕⒻⒻⓕⓖⒼⒼⓖⓗⒽⒽⓗⓘⒾⒾⓘⓙⒿⒿⓙⓚⓀⓀⓚⓛⓁⓁⓛⓜⓂⓂⓜⓝⓃⓃⓝⓞⓄⓄⓞⓟⓅⓅⓟⓠⓆⓆⓠⓡⓇⓇⓡⓢⓈⓈⓢⓣⓉⓉⓣⓤⓊⓊⓤⓥⓋⓋⓥⓦⓌⓌⓦⓧⓍⓍⓧⓨⓎⓎⓨⓩⓏⓏⓩⰰⰀⰀⰰⰱⰁⰁⰱⰲⰂⰂⰲⰳⰃⰃⰳⰴⰄⰄⰴⰵⰅⰅⰵⰶⰆⰆⰶⰷⰇⰇⰷⰸⰈⰈⰸⰹⰉⰉⰹⰺⰊⰊⰺⰻⰋⰋⰻⰼⰌⰌⰼⰽⰍⰍⰽⰾⰎⰎⰾⰿⰏⰏⰿⱀⰐⰐⱀⱁⰑⰑⱁⱂⰒⰒⱂⱃⰓⰓⱃⱄⰔⰔⱄⱅⰕⰕⱅⱆⰖⰖⱆⱇⰗⰗⱇⱈⰘⰘⱈⱉⰙⰙⱉⱊⰚⰚⱊⱋⰛⰛⱋⱌⰜⰜⱌⱍⰝⰝⱍⱎⰞⰞⱎⱏⰟⰟⱏⱐⰠⰠⱐⱑⰡⰡⱑⱒⰢⰢⱒⱓⰣⰣⱓⱔⰤⰤⱔⱕⰥⰥⱕⱖⰦⰦⱖⱗⰧⰧⱗⱘⰨⰨⱘⱙⰩⰩⱙⱚⰪⰪⱚⱛⰫⰫⱛⱜⰬⰬⱜⱝⰭⰭⱝⱞⰮⰮⱞⱟⰯⰯⱟⱡⱠⱠⱡɫⱢⱢɫᵽⱣⱣᵽɽⱤⱤɽⱨⱧⱧⱨⱪⱩⱩⱪⱬⱫⱫⱬɑⱭⱭɑɱⱮⱮɱɐⱯⱯɐɒⱰⱰɒⱳⱲⱲⱳⱶⱵⱵⱶȿⱾⱾȿɀⱿⱿɀⲁⲀⲀⲁⲃⲂⲂⲃⲅⲄⲄⲅⲇⲆⲆⲇⲉⲈⲈⲉⲋⲊⲊⲋⲍⲌⲌⲍⲏⲎⲎⲏⲑⲐⲐⲑⲓⲒⲒⲓⲕⲔⲔⲕⲗⲖⲖⲗⲙⲘⲘⲙⲛⲚⲚⲛⲝⲜⲜⲝⲟⲞⲞⲟⲡⲠⲠⲡⲣⲢⲢⲣⲥⲤⲤⲥⲧⲦⲦⲧⲩⲨⲨⲩⲫⲪⲪⲫⲭⲬⲬⲭⲯⲮⲮⲯⲱⲰⲰⲱⲳⲲⲲⲳⲵⲴⲴⲵⲷⲶⲶⲷⲹⲸⲸⲹⲻⲺⲺⲻⲽⲼⲼⲽⲿⲾⲾⲿⳁⳀⳀⳁⳃⳂⳂⳃⳅⳄⳄⳅⳇⳆⳆⳇⳉⳈⳈⳉⳋⳊⳊⳋⳍⳌⳌⳍⳏⳎⳎⳏⳑⳐⳐⳑⳓⳒⳒⳓⳕⳔⳔⳕⳗⳖⳖⳗⳙⳘⳘⳙⳛⳚⳚⳛⳝⳜⳜⳝⳟⳞⳞⳟⳡⳠⳠⳡⳣⳢⳢⳣⳬⳫⳫⳬⳮⳭⳭⳮⳳⳲⳲⳳꙁꙀꙀꙁꙃꙂꙂꙃꙅꙄꙄꙅꙇꙆꙆꙇꙉꙈꙈꙉꙍꙌꙌꙍꙏꙎꙎꙏꙑꙐꙐꙑꙓꙒꙒꙓꙕꙔꙔꙕꙗꙖꙖꙗꙙꙘꙘꙙꙛꙚꙚꙛꙝꙜꙜꙝꙟꙞꙞꙟꙡꙠꙠꙡꙣꙢꙢꙣꙥꙤꙤꙥꙧꙦꙦꙧꙩꙨꙨꙩꙫꙪꙪꙫꙭꙬꙬꙭꚁꚀꚀꚁꚃꚂꚂꚃꚅꚄꚄꚅꚇꚆꚆꚇꚉꚈꚈꚉꚋꚊꚊꚋꚍꚌꚌꚍꚏꚎꚎꚏꚑꚐꚐꚑꚓꚒꚒꚓꚕꚔꚔꚕꚗꚖꚖꚗꚙꚘꚘꚙꚛꚚꚚꚛꜣꜢꜢꜣꜥꜤꜤꜥꜧꜦꜦꜧꜩꜨꜨꜩꜫꜪꜪꜫꜭꜬꜬꜭꜯꜮꜮꜯꜳꜲꜲꜳꜵꜴꜴꜵꜷꜶꜶꜷꜹꜸꜸꜹꜻꜺꜺꜻꜽꜼꜼꜽꜿꜾꜾꜿꝁꝀꝀꝁꝃꝂꝂꝃꝅꝄꝄꝅꝇꝆꝆꝇꝉꝈꝈꝉꝋꝊꝊꝋꝍꝌꝌꝍꝏꝎꝎꝏꝑꝐꝐꝑꝓꝒꝒꝓꝕꝔꝔꝕꝗꝖꝖꝗꝙꝘꝘꝙꝛꝚꝚꝛꝝꝜꝜꝝꝟꝞꝞꝟꝡꝠꝠꝡꝣꝢꝢꝣꝥꝤꝤꝥꝧꝦꝦꝧꝩꝨꝨꝩꝫꝪꝪꝫꝭꝬꝬꝭꝯꝮꝮꝯꝺꝹꝹꝺꝼꝻꝻꝼᵹꝽꝽᵹꝿꝾꝾꝿꞁꞀꞀꞁꞃꞂꞂꞃꞅꞄꞄꞅꞇꞆꞆꞇꞌꞋꞋꞌɥꞍꞍɥꞑꞐꞐꞑꞓꞒꞒꞓꞗꞖꞖꞗꞙꞘꞘꞙꞛꞚꞚꞛꞝꞜꞜꞝꞟꞞꞞꞟꞡꞠꞠꞡꞣꞢꞢꞣꞥꞤꞤꞥꞧꞦꞦꞧꞩꞨꞨꞩɦꞪꞪɦɜꞫꞫɜɡꞬꞬɡɬꞭꞭɬɪꞮꞮɪʞꞰꞰʞʇꞱꞱʇʝꞲꞲʝꭓꞳꞳꭓꞵꞴꞴꞵꞷꞶꞶꞷꞹꞸꞸꞹꞻꞺꞺꞻꞽꞼꞼꞽꞿꞾꞾꞿꟁꟀꟀꟁꟃꟂꟂꟃꞔꟄꟄꞔʂꟅꟅʂᶎꟆꟆᶎꟈꟇꟇꟈꟊꟉꟉꟊɤꟋꟋɤꟍꟌꟌꟍꟑꟐꟐꟑꟗꟖꟖꟗꟙꟘꟘꟙꟛꟚꟚꟛƛꟜꟜƛꟶꟵꟵꟶᎠꭰꭰᎠᎡꭱꭱᎡᎢꭲꭲᎢᎣꭳꭳᎣᎤꭴꭴᎤᎥꭵꭵᎥᎦꭶꭶᎦᎧꭷꭷᎧᎨꭸꭸᎨᎩꭹꭹᎩᎪꭺꭺᎪᎫꭻꭻᎫᎬꭼꭼᎬᎭꭽꭽᎭᎮꭾꭾᎮᎯꭿꭿᎯᎰꮀꮀᎰᎱꮁꮁᎱᎲꮂꮂᎲᎳꮃꮃᎳᎴꮄꮄᎴᎵꮅꮅᎵᎶꮆꮆᎶᎷꮇꮇᎷᎸꮈꮈᎸᎹꮉꮉᎹᎺꮊꮊᎺᎻꮋꮋᎻᎼꮌꮌᎼᎽꮍꮍᎽᎾꮎꮎᎾᎿꮏꮏᎿᏀꮐꮐᏀᏁꮑꮑᏁᏂꮒꮒᏂᏃꮓꮓᏃᏄꮔꮔᏄᏅꮕꮕᏅᏆꮖꮖᏆᏇꮗꮗᏇᏈꮘꮘᏈᏉꮙꮙᏉᏊꮚꮚᏊᏋꮛꮛᏋᏌꮜꮜᏌᏍꮝꮝᏍᏎꮞꮞᏎᏏꮟꮟᏏᏐꮠꮠᏐᏑꮡꮡᏑᏒꮢꮢᏒᏓꮣꮣᏓᏔꮤꮤᏔᏕꮥꮥᏕᏖꮦꮦᏖᏗꮧꮧᏗᏘꮨꮨᏘᏙꮩꮩᏙᏚꮪꮪᏚᏛꮫꮫᏛᏜꮬꮬᏜᏝꮭꮭᏝᏞꮮꮮᏞᏟꮯꮯᏟᏠꮰꮰᏠᏡꮱꮱᏡᏢꮲꮲᏢᏣꮳꮳᏣᏤꮴꮴᏤᏥꮵꮵᏥᏦꮶꮶᏦᏧꮷꮷᏧᏨꮸꮸᏨᏩꮹꮹᏩᏪꮺꮺᏪᏫꮻꮻᏫᏬꮼꮼᏬᏭꮽꮽᏭᏮꮾꮾᏮᏯꮿꮿᏯﬆﬅﬅﬆａＡＡａｂＢＢｂｃＣＣｃｄＤＤｄｅＥＥｅｆＦＦｆｇＧＧｇｈＨＨｈｉＩＩｉｊＪＪｊｋＫＫｋｌＬＬｌｍＭＭｍｎＮＮｎｏＯＯｏｐＰＰｐｑＱＱｑｒＲＲｒｓＳＳｓｔＴＴｔｕＵＵｕｖＶＶｖｗＷＷｗｘＸＸｘｙＹＹｙｚＺＺｚ𐐨𐐀𐐀𐐨𐐩𐐁𐐁𐐩𐐪𐐂𐐂𐐪𐐫𐐃𐐃𐐫𐐬𐐄𐐄𐐬𐐭𐐅𐐅𐐭𐐮𐐆𐐆𐐮𐐯𐐇𐐇𐐯𐐰𐐈𐐈𐐰𐐱𐐉𐐉𐐱𐐲𐐊𐐊𐐲𐐳𐐋𐐋𐐳𐐴𐐌𐐌𐐴𐐵𐐍𐐍𐐵𐐶𐐎𐐎𐐶𐐷𐐏𐐏𐐷𐐸𐐐𐐐𐐸𐐹𐐑𐐑𐐹𐐺𐐒𐐒𐐺𐐻𐐓𐐓𐐻𐐼𐐔𐐔𐐼𐐽𐐕𐐕𐐽𐐾𐐖𐐖𐐾𐐿𐐗𐐗𐐿𐑀𐐘𐐘𐑀𐑁𐐙𐐙𐑁𐑂𐐚𐐚𐑂𐑃𐐛𐐛𐑃𐑄𐐜𐐜𐑄𐑅𐐝𐐝𐑅𐑆𐐞𐐞𐑆𐑇𐐟𐐟𐑇𐑈𐐠𐐠𐑈𐑉𐐡𐐡𐑉𐑊𐐢𐐢𐑊𐑋𐐣𐐣𐑋𐑌𐐤𐐤𐑌𐑍𐐥𐐥𐑍𐑎𐐦𐐦𐑎𐑏𐐧𐐧𐑏𐓘𐒰𐒰𐓘𐓙𐒱𐒱𐓙𐓚𐒲𐒲𐓚𐓛𐒳𐒳𐓛𐓜𐒴𐒴𐓜𐓝𐒵𐒵𐓝𐓞𐒶𐒶𐓞𐓟𐒷𐒷𐓟𐓠𐒸𐒸𐓠𐓡𐒹𐒹𐓡𐓢𐒺𐒺𐓢𐓣𐒻𐒻𐓣𐓤𐒼𐒼𐓤𐓥𐒽𐒽𐓥𐓦𐒾𐒾𐓦𐓧𐒿𐒿𐓧𐓨𐓀𐓀𐓨𐓩𐓁𐓁𐓩𐓪𐓂𐓂𐓪𐓫𐓃𐓃𐓫𐓬𐓄𐓄𐓬𐓭𐓅𐓅𐓭𐓮𐓆𐓆𐓮𐓯𐓇𐓇𐓯𐓰𐓈𐓈𐓰𐓱𐓉𐓉𐓱𐓲𐓊𐓊𐓲𐓳𐓋𐓋𐓳𐓴𐓌𐓌𐓴𐓵𐓍𐓍𐓵𐓶𐓎𐓎𐓶𐓷𐓏𐓏𐓷𐓸𐓐𐓐𐓸𐓹𐓑𐓑𐓹𐓺𐓒𐓒𐓺𐓻𐓓𐓓𐓻𐖗𐕰𐕰𐖗𐖘𐕱𐕱𐖘𐖙𐕲𐕲𐖙𐖚𐕳𐕳𐖚𐖛𐕴𐕴𐖛𐖜𐕵𐕵𐖜𐖝𐕶𐕶𐖝𐖞𐕷𐕷𐖞𐖟𐕸𐕸𐖟𐖠𐕹𐕹𐖠𐖡𐕺𐕺𐖡𐖣𐕼𐕼𐖣𐖤𐕽𐕽𐖤𐖥𐕾𐕾𐖥𐖦𐕿𐕿𐖦𐖧𐖀𐖀𐖧𐖨𐖁𐖁𐖨𐖩𐖂𐖂𐖩𐖪𐖃𐖃𐖪𐖫𐖄𐖄𐖫𐖬𐖅𐖅𐖬𐖭𐖆𐖆𐖭𐖮𐖇𐖇𐖮𐖯𐖈𐖈𐖯𐖰𐖉𐖉𐖰𐖱𐖊𐖊𐖱𐖳𐖌𐖌𐖳𐖴𐖍𐖍𐖴𐖵𐖎𐖎𐖵𐖶𐖏𐖏𐖶𐖷𐖐𐖐𐖷𐖸𐖑𐖑𐖸𐖹𐖒𐖒𐖹𐖻𐖔𐖔𐖻𐖼𐖕𐖕𐖼𐳀𐲀𐲀𐳀𐳁𐲁𐲁𐳁𐳂𐲂𐲂𐳂𐳃𐲃𐲃𐳃𐳄𐲄𐲄𐳄𐳅𐲅𐲅𐳅𐳆𐲆𐲆𐳆𐳇𐲇𐲇𐳇𐳈𐲈𐲈𐳈𐳉𐲉𐲉𐳉𐳊𐲊𐲊𐳊𐳋𐲋𐲋𐳋𐳌𐲌𐲌𐳌𐳍𐲍𐲍𐳍𐳎𐲎𐲎𐳎𐳏𐲏𐲏𐳏𐳐𐲐𐲐𐳐𐳑𐲑𐲑𐳑𐳒𐲒𐲒𐳒𐳓𐲓𐲓𐳓𐳔𐲔𐲔𐳔𐳕𐲕𐲕𐳕𐳖𐲖𐲖𐳖𐳗𐲗𐲗𐳗𐳘𐲘𐲘𐳘𐳙𐲙𐲙𐳙𐳚𐲚𐲚𐳚𐳛𐲛𐲛𐳛𐳜𐲜𐲜𐳜𐳝𐲝𐲝𐳝𐳞𐲞𐲞𐳞𐳟𐲟𐲟𐳟𐳠𐲠𐲠𐳠𐳡𐲡𐲡𐳡𐳢𐲢𐲢𐳢𐳣𐲣𐲣𐳣𐳤𐲤𐲤𐳤𐳥𐲥𐲥𐳥𐳦𐲦𐲦𐳦𐳧𐲧𐲧𐳧𐳨𐲨𐲨𐳨𐳩𐲩𐲩𐳩𐳪𐲪𐲪𐳪𐳫𐲫𐲫𐳫𐳬𐲬𐲬𐳬𐳭𐲭𐲭𐳭𐳮𐲮𐲮𐳮𐳯𐲯𐲯𐳯𐳰𐲰𐲰𐳰𐳱𐲱𐲱𐳱𐳲𐲲𐲲𐳲𐵰𐵐𐵐𐵰𐵱𐵑𐵑𐵱𐵲𐵒𐵒𐵲𐵳𐵓𐵓𐵳𐵴𐵔𐵔𐵴𐵵𐵕𐵕𐵵𐵶𐵖𐵖𐵶𐵷𐵗𐵗𐵷𐵸𐵘𐵘𐵸𐵹𐵙𐵙𐵹𐵺𐵚𐵚𐵺𐵻𐵛𐵛𐵻𐵼𐵜𐵜𐵼𐵽𐵝𐵝𐵽𐵾𐵞𐵞𐵾𐵿𐵟𐵟𐵿𐶀𐵠𐵠𐶀𐶁𐵡𐵡𐶁𐶂𐵢𐵢𐶂𐶃𐵣𐵣𐶃𐶄𐵤𐵤𐶄𐶅𐵥𐵥𐶅𑣀𑢠𑢠𑣀𑣁𑢡𑢡𑣁𑣂𑢢𑢢𑣂𑣃𑢣𑢣𑣃𑣄𑢤𑢤𑣄𑣅𑢥𑢥𑣅𑣆𑢦𑢦𑣆𑣇𑢧𑢧𑣇𑣈𑢨𑢨𑣈𑣉𑢩𑢩𑣉𑣊𑢪𑢪𑣊𑣋𑢫𑢫𑣋𑣌𑢬𑢬𑣌𑣍𑢭𑢭𑣍𑣎𑢮𑢮𑣎𑣏𑢯𑢯𑣏𑣐𑢰𑢰𑣐𑣑𑢱𑢱𑣑𑣒𑢲𑢲𑣒𑣓𑢳𑢳𑣓𑣔𑢴𑢴𑣔𑣕𑢵𑢵𑣕𑣖𑢶𑢶𑣖𑣗𑢷𑢷𑣗𑣘𑢸𑢸𑣘𑣙𑢹𑢹𑣙𑣚𑢺𑢺𑣚𑣛𑢻𑢻𑣛𑣜𑢼𑢼𑣜𑣝𑢽𑢽𑣝𑣞𑢾𑢾𑣞𑣟𑢿𑢿𑣟𖹠𖹀𖹀𖹠𖹡𖹁𖹁𖹡𖹢𖹂𖹂𖹢𖹣𖹃𖹃𖹣𖹤𖹄𖹄𖹤𖹥𖹅𖹅𖹥𖹦𖹆𖹆𖹦𖹧𖹇𖹇𖹧𖹨𖹈𖹈𖹨𖹩𖹉𖹉𖹩𖹪𖹊𖹊𖹪𖹫𖹋𖹋𖹫𖹬𖹌𖹌𖹬𖹭𖹍𖹍𖹭𖹮𖹎𖹎𖹮𖹯𖹏𖹏𖹯𖹰𖹐𖹐𖹰𖹱𖹑𖹑𖹱𖹲𖹒𖹒𖹲𖹳𖹓𖹓𖹳𖹴𖹔𖹔𖹴𖹵𖹕𖹕𖹵𖹶𖹖𖹖𖹶𖹷𖹗𖹗𖹷𖹸𖹘𖹘𖹸𖹹𖹙𖹙𖹹𖹺𖹚𖹚𖹺𖹻𖹛𖹛𖹻𖹼𖹜𖹜𖹼𖹽𖹝𖹝𖹽𖹾𖹞𖹞𖹾𖹿𖹟𖹟𖹿𞤢𞤀𞤀𞤢𞤣𞤁𞤁𞤣𞤤𞤂𞤂𞤤𞤥𞤃𞤃𞤥𞤦𞤄𞤄𞤦𞤧𞤅𞤅𞤧𞤨𞤆𞤆𞤨𞤩𞤇𞤇𞤩𞤪𞤈𞤈𞤪𞤫𞤉𞤉𞤫𞤬𞤊𞤊𞤬𞤭𞤋𞤋𞤭𞤮𞤌𞤌𞤮𞤯𞤍𞤍𞤯𞤰𞤎𞤎𞤰𞤱𞤏𞤏𞤱𞤲𞤐𞤐𞤲𞤳𞤑𞤑𞤳𞤴𞤒𞤒𞤴𞤵𞤓𞤓𞤵𞤶𞤔𞤔𞤶𞤷𞤕𞤕𞤷𞤸𞤖𞤖𞤸𞤹𞤗𞤗𞤹𞤺𞤘𞤘𞤺𞤻𞤙𞤙𞤻𞤼𞤚𞤚𞤼𞤽𞤛𞤛𞤽𞤾𞤜𞤜𞤾𞤿𞤝𞤝𞤿𞥀𞤞𞤞𞥀𞥁𞤟𞤟𞥁𞥂𞤠𞤠𞥂𞥃𞤡𞤡𞥃";
-const huangxl$md2mind$$parse_headings$46$42$bind$124$174 = "\n";
-const huangxl$md2mind$$make_indent$46$42$bind$124$177 = "";
-const huangxl$md2mind$$render_ascii_mindmap$46$42$bind$124$184 = "\n";
-const huangxl$md2mind$$json_string$46$42$bind$124$189 = "\\";
-const huangxl$md2mind$$json_string$46$42$bind$124$190 = "\\\\";
-const huangxl$md2mind$$json_string$46$42$bind$124$187 = "\"";
-const huangxl$md2mind$$json_string$46$42$bind$124$188 = "\\\"";
-const huangxl$md2mind$$json_string$46$42$bind$124$185 = "\n";
-const huangxl$md2mind$$json_string$46$42$bind$124$186 = "\\n";
-const huangxl$md2mind$$children_json$46$42$bind$124$207 = ",";
-const huangxl$md2mind$$render_roots_json$46$42$bind$124$218 = ",";
-const huangxl$md2mind$$repeat_hashes$46$42$bind$124$227 = "";
-const huangxl$md2mind$$render_markdown$46$42$bind$124$234 = "\n";
+const Xiao$45$li$45$He$MoonMarkMind$$parse_headings$46$42$bind$124$174 = "\n";
+const Xiao$45$li$45$He$MoonMarkMind$$make_indent$46$42$bind$124$177 = "";
+const Xiao$45$li$45$He$MoonMarkMind$$render_ascii_mindmap$46$42$bind$124$184 = "\n";
+const Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$189 = "\\";
+const Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$190 = "\\\\";
+const Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$187 = "\"";
+const Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$188 = "\\\"";
+const Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$185 = "\n";
+const Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$186 = "\\n";
+const Xiao$45$li$45$He$MoonMarkMind$$children_json$46$42$bind$124$207 = ",";
+const Xiao$45$li$45$He$MoonMarkMind$$render_roots_json$46$42$bind$124$218 = ",";
+const Xiao$45$li$45$He$MoonMarkMind$$repeat_hashes$46$42$bind$124$227 = "";
+const Xiao$45$li$45$He$MoonMarkMind$$render_markdown$46$42$bind$124$234 = "\n";
 const moonbitlang$core$builtin$$seed = moonbitlang$core$builtin$$random_seed();
 const map = moonbitlang$core$builtin$$Map$new$46$inner$0$(3000);
 const _bind = moonbitlang$core$string$regex$internal$regexp$internal$unicode$$case_folding$46$42$bind$124$96.length;
@@ -5429,7 +5429,7 @@ function moonbitlang$core$string$regex$internal$regexp$internal$unicode$$case_in
   }
   return moonbitlang$core$string$regex$internal$regexp$internal$unicode$$simplify_char_ranges(result);
 }
-function huangxl$md2mind$$parse_heading_line(line) {
+function Xiao$45$li$45$He$MoonMarkMind$$parse_heading_line(line) {
   if ((line.end - line.start | 0) === 0 || moonbitlang$core$string$$StringView$at(line, 0) !== 35) {
     return undefined;
   }
@@ -5476,16 +5476,16 @@ function huangxl$md2mind$$parse_heading_line(line) {
     return { _0: hashes.end - hashes.start | 0, _1: moonbitlang$core$builtin$$Show$to_string$6$(title) };
   }
 }
-function huangxl$md2mind$$parse_headings(markdown) {
+function Xiao$45$li$45$He$MoonMarkMind$$parse_headings(markdown) {
   const headings = [];
-  const lines = moonbitlang$core$builtin$$Iter$to_array$6$(moonbitlang$core$string$$String$split(markdown, { str: huangxl$md2mind$$parse_headings$46$42$bind$124$174, start: 0, end: huangxl$md2mind$$parse_headings$46$42$bind$124$174.length }));
+  const lines = moonbitlang$core$builtin$$Iter$to_array$6$(moonbitlang$core$string$$String$split(markdown, { str: Xiao$45$li$45$He$MoonMarkMind$$parse_headings$46$42$bind$124$174, start: 0, end: Xiao$45$li$45$He$MoonMarkMind$$parse_headings$46$42$bind$124$174.length }));
   const _len = lines.length;
   let _tmp$2 = 0;
   while (true) {
     const _i = _tmp$2;
     if (_i < _len) {
       const line = lines[_i];
-      const _bind$2 = huangxl$md2mind$$parse_heading_line(line);
+      const _bind$2 = Xiao$45$li$45$He$MoonMarkMind$$parse_heading_line(line);
       if (_bind$2 === undefined) {
       } else {
         const _Some = _bind$2;
@@ -5500,7 +5500,7 @@ function huangxl$md2mind$$parse_headings(markdown) {
   }
   return headings;
 }
-function huangxl$md2mind$$make_indent(level) {
+function Xiao$45$li$45$He$MoonMarkMind$$make_indent(level) {
   const spaces = [];
   let _tmp$2 = 0;
   while (true) {
@@ -5513,52 +5513,52 @@ function huangxl$md2mind$$make_indent(level) {
       break;
     }
   }
-  return moonbitlang$core$array$$Array$join$13$(spaces, { str: huangxl$md2mind$$make_indent$46$42$bind$124$177, start: 0, end: huangxl$md2mind$$make_indent$46$42$bind$124$177.length });
+  return moonbitlang$core$array$$Array$join$13$(spaces, { str: Xiao$45$li$45$He$MoonMarkMind$$make_indent$46$42$bind$124$177, start: 0, end: Xiao$45$li$45$He$MoonMarkMind$$make_indent$46$42$bind$124$177.length });
 }
-function huangxl$md2mind$$render_heading(heading) {
+function Xiao$45$li$45$He$MoonMarkMind$$render_heading(heading) {
   const _level = heading._0;
   const _title = heading._1;
-  const indent = huangxl$md2mind$$make_indent(_level - 1 | 0);
+  const indent = Xiao$45$li$45$He$MoonMarkMind$$make_indent(_level - 1 | 0);
   return `${indent}- ${_title}`;
 }
-function huangxl$md2mind$$render_ascii_mindmap(markdown) {
+function Xiao$45$li$45$He$MoonMarkMind$$render_ascii_mindmap(markdown) {
   const rendered = [];
-  const _arr = huangxl$md2mind$$parse_headings(markdown);
+  const _arr = Xiao$45$li$45$He$MoonMarkMind$$parse_headings(markdown);
   const _len = _arr.length;
   let _tmp$2 = 0;
   while (true) {
     const _i = _tmp$2;
     if (_i < _len) {
       const heading = _arr[_i];
-      moonbitlang$core$array$$Array$push$13$(rendered, huangxl$md2mind$$render_heading(heading));
+      moonbitlang$core$array$$Array$push$13$(rendered, Xiao$45$li$45$He$MoonMarkMind$$render_heading(heading));
       _tmp$2 = _i + 1 | 0;
       continue;
     } else {
       break;
     }
   }
-  return moonbitlang$core$array$$Array$join$13$(rendered, { str: huangxl$md2mind$$render_ascii_mindmap$46$42$bind$124$184, start: 0, end: huangxl$md2mind$$render_ascii_mindmap$46$42$bind$124$184.length });
+  return moonbitlang$core$array$$Array$join$13$(rendered, { str: Xiao$45$li$45$He$MoonMarkMind$$render_ascii_mindmap$46$42$bind$124$184, start: 0, end: Xiao$45$li$45$He$MoonMarkMind$$render_ascii_mindmap$46$42$bind$124$184.length });
 }
-function huangxl$md2mind$$demo_output() {
-  return huangxl$md2mind$$render_ascii_mindmap("# MindDown Demo\n## Parser\n### Heading extraction\n### Level mapping\n## Renderer\n### ASCII mindmap\n### Round-trip preview");
+function Xiao$45$li$45$He$MoonMarkMind$$demo_output() {
+  return Xiao$45$li$45$He$MoonMarkMind$$render_ascii_mindmap("# MoonMarkMind Demo\n## Parser\n### Heading extraction\n### Level mapping\n## Renderer\n### ASCII mindmap\n### Round-trip preview");
 }
-function huangxl$md2mind$$json_field(name, value) {
+function Xiao$45$li$45$He$MoonMarkMind$$json_field(name, value) {
   return `\"${name}\":${value}`;
 }
-function huangxl$md2mind$$json_string(source) {
-  const escaped_backslash = moonbitlang$core$string$$String$replace(source, { str: huangxl$md2mind$$json_string$46$42$bind$124$189, start: 0, end: huangxl$md2mind$$json_string$46$42$bind$124$189.length }, { str: huangxl$md2mind$$json_string$46$42$bind$124$190, start: 0, end: huangxl$md2mind$$json_string$46$42$bind$124$190.length });
-  const escaped_quote = moonbitlang$core$string$$String$replace(escaped_backslash, { str: huangxl$md2mind$$json_string$46$42$bind$124$187, start: 0, end: huangxl$md2mind$$json_string$46$42$bind$124$187.length }, { str: huangxl$md2mind$$json_string$46$42$bind$124$188, start: 0, end: huangxl$md2mind$$json_string$46$42$bind$124$188.length });
-  const escaped_newline = moonbitlang$core$string$$String$replace(escaped_quote, { str: huangxl$md2mind$$json_string$46$42$bind$124$185, start: 0, end: huangxl$md2mind$$json_string$46$42$bind$124$185.length }, { str: huangxl$md2mind$$json_string$46$42$bind$124$186, start: 0, end: huangxl$md2mind$$json_string$46$42$bind$124$186.length });
+function Xiao$45$li$45$He$MoonMarkMind$$json_string(source) {
+  const escaped_backslash = moonbitlang$core$string$$String$replace(source, { str: Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$189, start: 0, end: Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$189.length }, { str: Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$190, start: 0, end: Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$190.length });
+  const escaped_quote = moonbitlang$core$string$$String$replace(escaped_backslash, { str: Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$187, start: 0, end: Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$187.length }, { str: Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$188, start: 0, end: Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$188.length });
+  const escaped_newline = moonbitlang$core$string$$String$replace(escaped_quote, { str: Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$185, start: 0, end: Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$185.length }, { str: Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$186, start: 0, end: Xiao$45$li$45$He$MoonMarkMind$$json_string$46$42$bind$124$186.length });
   return `\"${escaped_newline}\"`;
 }
-function huangxl$md2mind$$document_json(title, children_json) {
-  const flat_index_field = huangxl$md2mind$$json_field("flat_index", "-1");
-  const level_field = huangxl$md2mind$$json_field("level", "1");
-  const title_field = huangxl$md2mind$$json_field("title", huangxl$md2mind$$json_string(title));
-  const synthetic_field = huangxl$md2mind$$json_field("synthetic", "true");
+function Xiao$45$li$45$He$MoonMarkMind$$document_json(title, children_json) {
+  const flat_index_field = Xiao$45$li$45$He$MoonMarkMind$$json_field("flat_index", "-1");
+  const level_field = Xiao$45$li$45$He$MoonMarkMind$$json_field("level", "1");
+  const title_field = Xiao$45$li$45$He$MoonMarkMind$$json_field("title", Xiao$45$li$45$He$MoonMarkMind$$json_string(title));
+  const synthetic_field = Xiao$45$li$45$He$MoonMarkMind$$json_field("synthetic", "true");
   return `{${flat_index_field},${level_field},${title_field},${synthetic_field},\"children\":${children_json}}`;
 }
-function huangxl$md2mind$$subtree_end(headings, index) {
+function Xiao$45$li$45$He$MoonMarkMind$$subtree_end(headings, index) {
   const _bind$2 = moonbitlang$core$array$$Array$at$10$(headings, index);
   const _level = _bind$2._0;
   let cursor = index + 1 | 0;
@@ -5572,25 +5572,25 @@ function huangxl$md2mind$$subtree_end(headings, index) {
   }
   return cursor;
 }
-function huangxl$md2mind$$render_node_json(headings, index) {
+function Xiao$45$li$45$He$MoonMarkMind$$render_node_json(headings, index) {
   const _bind$2 = moonbitlang$core$array$$Array$at$10$(headings, index);
   const _level = _bind$2._0;
   const _title = _bind$2._1;
-  const flat_index_field = huangxl$md2mind$$json_field("flat_index", moonbitlang$core$int$$Int$to_string$46$inner(index, 10));
-  const level_field = huangxl$md2mind$$json_field("level", moonbitlang$core$int$$Int$to_string$46$inner(_level, 10));
-  const title_field = huangxl$md2mind$$json_field("title", huangxl$md2mind$$json_string(_title));
-  const synthetic_field = huangxl$md2mind$$json_field("synthetic", "false");
-  const children_field = huangxl$md2mind$$children_json(headings, index);
-  return { _0: `{${flat_index_field},${level_field},${title_field},${synthetic_field},\"children\":${children_field}}`, _1: huangxl$md2mind$$subtree_end(headings, index) };
+  const flat_index_field = Xiao$45$li$45$He$MoonMarkMind$$json_field("flat_index", moonbitlang$core$int$$Int$to_string$46$inner(index, 10));
+  const level_field = Xiao$45$li$45$He$MoonMarkMind$$json_field("level", moonbitlang$core$int$$Int$to_string$46$inner(_level, 10));
+  const title_field = Xiao$45$li$45$He$MoonMarkMind$$json_field("title", Xiao$45$li$45$He$MoonMarkMind$$json_string(_title));
+  const synthetic_field = Xiao$45$li$45$He$MoonMarkMind$$json_field("synthetic", "false");
+  const children_field = Xiao$45$li$45$He$MoonMarkMind$$children_json(headings, index);
+  return { _0: `{${flat_index_field},${level_field},${title_field},${synthetic_field},\"children\":${children_field}}`, _1: Xiao$45$li$45$He$MoonMarkMind$$subtree_end(headings, index) };
 }
-function huangxl$md2mind$$children_json(headings, index) {
+function Xiao$45$li$45$He$MoonMarkMind$$children_json(headings, index) {
   const _bind$2 = moonbitlang$core$array$$Array$at$10$(headings, index);
   const _level = _bind$2._0;
   const children = [];
   let cursor = index + 1 | 0;
   while (true) {
     if (cursor < headings.length && moonbitlang$core$array$$Array$at$10$(headings, cursor)._0 > _level) {
-      const _bind$3 = huangxl$md2mind$$render_node_json(headings, cursor);
+      const _bind$3 = Xiao$45$li$45$He$MoonMarkMind$$render_node_json(headings, cursor);
       const _child_json = _bind$3._0;
       const _next_cursor = _bind$3._1;
       moonbitlang$core$array$$Array$push$13$(children, _child_json);
@@ -5600,15 +5600,15 @@ function huangxl$md2mind$$children_json(headings, index) {
       break;
     }
   }
-  const joined = moonbitlang$core$array$$Array$join$13$(children, { str: huangxl$md2mind$$children_json$46$42$bind$124$207, start: 0, end: huangxl$md2mind$$children_json$46$42$bind$124$207.length });
+  const joined = moonbitlang$core$array$$Array$join$13$(children, { str: Xiao$45$li$45$He$MoonMarkMind$$children_json$46$42$bind$124$207, start: 0, end: Xiao$45$li$45$He$MoonMarkMind$$children_json$46$42$bind$124$207.length });
   return `[${joined}]`;
 }
-function huangxl$md2mind$$render_roots_json(headings) {
+function Xiao$45$li$45$He$MoonMarkMind$$render_roots_json(headings) {
   const nodes = [];
   let index = 0;
   while (true) {
     if (index < headings.length) {
-      const _bind$2 = huangxl$md2mind$$render_node_json(headings, index);
+      const _bind$2 = Xiao$45$li$45$He$MoonMarkMind$$render_node_json(headings, index);
       const _node = _bind$2._0;
       const _next_index = _bind$2._1;
       moonbitlang$core$array$$Array$push$13$(nodes, _node);
@@ -5618,10 +5618,10 @@ function huangxl$md2mind$$render_roots_json(headings) {
       break;
     }
   }
-  const joined = moonbitlang$core$array$$Array$join$13$(nodes, { str: huangxl$md2mind$$render_roots_json$46$42$bind$124$218, start: 0, end: huangxl$md2mind$$render_roots_json$46$42$bind$124$218.length });
+  const joined = moonbitlang$core$array$$Array$join$13$(nodes, { str: Xiao$45$li$45$He$MoonMarkMind$$render_roots_json$46$42$bind$124$218, start: 0, end: Xiao$45$li$45$He$MoonMarkMind$$render_roots_json$46$42$bind$124$218.length });
   return `[${joined}]`;
 }
-function huangxl$md2mind$$top_level_count(headings) {
+function Xiao$45$li$45$He$MoonMarkMind$$top_level_count(headings) {
   let count = 0;
   const _len = headings.length;
   let _tmp$2 = 0;
@@ -5640,19 +5640,19 @@ function huangxl$md2mind$$top_level_count(headings) {
   }
   return count;
 }
-function huangxl$md2mind$$outline_json(markdown) {
-  const headings = huangxl$md2mind$$parse_headings(markdown);
+function Xiao$45$li$45$He$MoonMarkMind$$outline_json(markdown) {
+  const headings = Xiao$45$li$45$He$MoonMarkMind$$parse_headings(markdown);
   if (headings.length === 0) {
-    return huangxl$md2mind$$document_json("Empty Document", "[]");
+    return Xiao$45$li$45$He$MoonMarkMind$$document_json("Empty Document", "[]");
   }
-  if (huangxl$md2mind$$top_level_count(headings) === 1) {
-    const _bind$2 = huangxl$md2mind$$render_node_json(headings, 0);
+  if (Xiao$45$li$45$He$MoonMarkMind$$top_level_count(headings) === 1) {
+    const _bind$2 = Xiao$45$li$45$He$MoonMarkMind$$render_node_json(headings, 0);
     const _root_json = _bind$2._0;
     return _root_json;
   }
-  return huangxl$md2mind$$document_json("Document", huangxl$md2mind$$render_roots_json(headings));
+  return Xiao$45$li$45$He$MoonMarkMind$$document_json("Document", Xiao$45$li$45$He$MoonMarkMind$$render_roots_json(headings));
 }
-function huangxl$md2mind$$repeat_hashes(level) {
+function Xiao$45$li$45$He$MoonMarkMind$$repeat_hashes(level) {
   const hashes = [];
   let _tmp$2 = 0;
   while (true) {
@@ -5665,9 +5665,9 @@ function huangxl$md2mind$$repeat_hashes(level) {
       break;
     }
   }
-  return moonbitlang$core$array$$Array$join$13$(hashes, { str: huangxl$md2mind$$repeat_hashes$46$42$bind$124$227, start: 0, end: huangxl$md2mind$$repeat_hashes$46$42$bind$124$227.length });
+  return moonbitlang$core$array$$Array$join$13$(hashes, { str: Xiao$45$li$45$He$MoonMarkMind$$repeat_hashes$46$42$bind$124$227, start: 0, end: Xiao$45$li$45$He$MoonMarkMind$$repeat_hashes$46$42$bind$124$227.length });
 }
-function huangxl$md2mind$$render_markdown(headings) {
+function Xiao$45$li$45$He$MoonMarkMind$$render_markdown(headings) {
   const lines = [];
   const _len = headings.length;
   let _tmp$2 = 0;
@@ -5677,17 +5677,17 @@ function huangxl$md2mind$$render_markdown(headings) {
       const heading = headings[_i];
       const _level = heading._0;
       const _title = heading._1;
-      moonbitlang$core$array$$Array$push$13$(lines, `${huangxl$md2mind$$repeat_hashes(_level)} ${_title}`);
+      moonbitlang$core$array$$Array$push$13$(lines, `${Xiao$45$li$45$He$MoonMarkMind$$repeat_hashes(_level)} ${_title}`);
       _tmp$2 = _i + 1 | 0;
       continue;
     } else {
       break;
     }
   }
-  return moonbitlang$core$array$$Array$join$13$(lines, { str: huangxl$md2mind$$render_markdown$46$42$bind$124$234, start: 0, end: huangxl$md2mind$$render_markdown$46$42$bind$124$234.length });
+  return moonbitlang$core$array$$Array$join$13$(lines, { str: Xiao$45$li$45$He$MoonMarkMind$$render_markdown$46$42$bind$124$234, start: 0, end: Xiao$45$li$45$He$MoonMarkMind$$render_markdown$46$42$bind$124$234.length });
 }
-function huangxl$md2mind$$rename_heading(markdown, flat_index, title) {
-  const headings = huangxl$md2mind$$parse_headings(markdown);
+function Xiao$45$li$45$He$MoonMarkMind$$rename_heading(markdown, flat_index, title) {
+  const headings = Xiao$45$li$45$He$MoonMarkMind$$parse_headings(markdown);
   if (flat_index < 0 || flat_index >= headings.length) {
     return markdown;
   }
@@ -5715,9 +5715,9 @@ function huangxl$md2mind$$rename_heading(markdown, flat_index, title) {
       break;
     }
   }
-  return huangxl$md2mind$$render_markdown(updated);
+  return Xiao$45$li$45$He$MoonMarkMind$$render_markdown(updated);
 }
-function huangxl$md2mind$$parent_index(headings, index) {
+function Xiao$45$li$45$He$MoonMarkMind$$parent_index(headings, index) {
   const _bind$2 = moonbitlang$core$array$$Array$at$10$(headings, index);
   const _level = _bind$2._0;
   let cursor = index - 1 | 0;
@@ -5734,7 +5734,7 @@ function huangxl$md2mind$$parent_index(headings, index) {
   }
   return -1;
 }
-function huangxl$md2mind$$can_move_heading(headings, from_flat_index, to_flat_index) {
+function Xiao$45$li$45$He$MoonMarkMind$$can_move_heading(headings, from_flat_index, to_flat_index) {
   if (from_flat_index < 0 || to_flat_index < 0) {
     return false;
   }
@@ -5744,9 +5744,9 @@ function huangxl$md2mind$$can_move_heading(headings, from_flat_index, to_flat_in
   if (from_flat_index === to_flat_index) {
     return false;
   }
-  return huangxl$md2mind$$parent_index(headings, from_flat_index) === huangxl$md2mind$$parent_index(headings, to_flat_index);
+  return Xiao$45$li$45$He$MoonMarkMind$$parent_index(headings, from_flat_index) === Xiao$45$li$45$He$MoonMarkMind$$parent_index(headings, to_flat_index);
 }
-function huangxl$md2mind$$concat_headings(left, right) {
+function Xiao$45$li$45$He$MoonMarkMind$$concat_headings(left, right) {
   const merged = [];
   const _len = left.length;
   let _tmp$2 = 0;
@@ -5776,7 +5776,7 @@ function huangxl$md2mind$$concat_headings(left, right) {
   }
   return merged;
 }
-function huangxl$md2mind$$slice_headings(headings, start, end_) {
+function Xiao$45$li$45$He$MoonMarkMind$$slice_headings(headings, start, end_) {
   const sliced = [];
   let _tmp$2 = start;
   while (true) {
@@ -5791,92 +5791,93 @@ function huangxl$md2mind$$slice_headings(headings, start, end_) {
   }
   return sliced;
 }
-function huangxl$md2mind$$move_heading(markdown, from_flat_index, to_flat_index, place_after) {
-  const headings = huangxl$md2mind$$parse_headings(markdown);
-  if (!huangxl$md2mind$$can_move_heading(headings, from_flat_index, to_flat_index)) {
+function Xiao$45$li$45$He$MoonMarkMind$$move_heading(markdown, from_flat_index, to_flat_index, place_after) {
+  const headings = Xiao$45$li$45$He$MoonMarkMind$$parse_headings(markdown);
+  if (!Xiao$45$li$45$He$MoonMarkMind$$can_move_heading(headings, from_flat_index, to_flat_index)) {
     return markdown;
   }
-  const from_end = huangxl$md2mind$$subtree_end(headings, from_flat_index);
-  const to_end = huangxl$md2mind$$subtree_end(headings, to_flat_index);
-  const moved = huangxl$md2mind$$slice_headings(headings, from_flat_index, from_end);
-  const remaining = huangxl$md2mind$$concat_headings(huangxl$md2mind$$slice_headings(headings, 0, from_flat_index), huangxl$md2mind$$slice_headings(headings, from_end, headings.length));
+  const from_end = Xiao$45$li$45$He$MoonMarkMind$$subtree_end(headings, from_flat_index);
+  const to_end = Xiao$45$li$45$He$MoonMarkMind$$subtree_end(headings, to_flat_index);
+  const moved = Xiao$45$li$45$He$MoonMarkMind$$slice_headings(headings, from_flat_index, from_end);
+  const remaining = Xiao$45$li$45$He$MoonMarkMind$$concat_headings(Xiao$45$li$45$He$MoonMarkMind$$slice_headings(headings, 0, from_flat_index), Xiao$45$li$45$He$MoonMarkMind$$slice_headings(headings, from_end, headings.length));
   const raw_insert_at = place_after ? to_end : to_flat_index;
   const insert_at = from_flat_index < raw_insert_at ? raw_insert_at - (from_end - from_flat_index | 0) | 0 : raw_insert_at;
-  const rebuilt = huangxl$md2mind$$concat_headings(huangxl$md2mind$$concat_headings(huangxl$md2mind$$slice_headings(remaining, 0, insert_at), moved), huangxl$md2mind$$slice_headings(remaining, insert_at, remaining.length));
-  return huangxl$md2mind$$render_markdown(rebuilt);
+  const rebuilt = Xiao$45$li$45$He$MoonMarkMind$$concat_headings(Xiao$45$li$45$He$MoonMarkMind$$concat_headings(Xiao$45$li$45$He$MoonMarkMind$$slice_headings(remaining, 0, insert_at), moved), Xiao$45$li$45$He$MoonMarkMind$$slice_headings(remaining, insert_at, remaining.length));
+  return Xiao$45$li$45$He$MoonMarkMind$$render_markdown(rebuilt);
 }
-function huangxl$md2mind$$add_child_heading(markdown, parent_flat_index, title) {
-  const headings = huangxl$md2mind$$parse_headings(markdown);
+function Xiao$45$li$45$He$MoonMarkMind$$add_child_heading(markdown, parent_flat_index, title) {
+  const headings = Xiao$45$li$45$He$MoonMarkMind$$parse_headings(markdown);
   const next_title = title;
   if (next_title.length === 0) {
     return markdown;
   }
   if (parent_flat_index === -1) {
-    const rebuilt = huangxl$md2mind$$concat_headings(headings, [{ _0: 1, _1: next_title }]);
-    return huangxl$md2mind$$render_markdown(rebuilt);
+    const rebuilt = Xiao$45$li$45$He$MoonMarkMind$$concat_headings(headings, [{ _0: 1, _1: next_title }]);
+    return Xiao$45$li$45$He$MoonMarkMind$$render_markdown(rebuilt);
   }
   if (parent_flat_index < 0 || parent_flat_index >= headings.length) {
     return markdown;
   }
   const _bind$2 = moonbitlang$core$array$$Array$at$10$(headings, parent_flat_index);
   const _level = _bind$2._0;
-  const insert_at = huangxl$md2mind$$subtree_end(headings, parent_flat_index);
-  const rebuilt = huangxl$md2mind$$concat_headings(huangxl$md2mind$$concat_headings(huangxl$md2mind$$slice_headings(headings, 0, insert_at), [{ _0: _level + 1 | 0, _1: next_title }]), huangxl$md2mind$$slice_headings(headings, insert_at, headings.length));
-  return huangxl$md2mind$$render_markdown(rebuilt);
+  const insert_at = Xiao$45$li$45$He$MoonMarkMind$$subtree_end(headings, parent_flat_index);
+  const rebuilt = Xiao$45$li$45$He$MoonMarkMind$$concat_headings(Xiao$45$li$45$He$MoonMarkMind$$concat_headings(Xiao$45$li$45$He$MoonMarkMind$$slice_headings(headings, 0, insert_at), [{ _0: _level + 1 | 0, _1: next_title }]), Xiao$45$li$45$He$MoonMarkMind$$slice_headings(headings, insert_at, headings.length));
+  return Xiao$45$li$45$He$MoonMarkMind$$render_markdown(rebuilt);
 }
-function huangxl$md2mind$$delete_heading(markdown, flat_index) {
-  const headings = huangxl$md2mind$$parse_headings(markdown);
+function Xiao$45$li$45$He$MoonMarkMind$$delete_heading(markdown, flat_index) {
+  const headings = Xiao$45$li$45$He$MoonMarkMind$$parse_headings(markdown);
   if (flat_index < 0 || flat_index >= headings.length) {
     return markdown;
   }
-  const end_index = huangxl$md2mind$$subtree_end(headings, flat_index);
-  const rebuilt = huangxl$md2mind$$concat_headings(huangxl$md2mind$$slice_headings(headings, 0, flat_index), huangxl$md2mind$$slice_headings(headings, end_index, headings.length));
-  return huangxl$md2mind$$render_markdown(rebuilt);
+  const end_index = Xiao$45$li$45$He$MoonMarkMind$$subtree_end(headings, flat_index);
+  const rebuilt = Xiao$45$li$45$He$MoonMarkMind$$concat_headings(Xiao$45$li$45$He$MoonMarkMind$$slice_headings(headings, 0, flat_index), Xiao$45$li$45$He$MoonMarkMind$$slice_headings(headings, end_index, headings.length));
+  return Xiao$45$li$45$He$MoonMarkMind$$render_markdown(rebuilt);
 }
-function huangxl$md2mind$cmd$main$$keep_web_api() {
-  const markdown = "# MindDown Demo\n## Parser\n### Heading extraction\n### Level mapping\n## Renderer\n### ASCII mindmap\n### Round-trip preview";
-  huangxl$md2mind$$outline_json(markdown);
-  huangxl$md2mind$$rename_heading(markdown, 0, "MindDown Demo");
-  huangxl$md2mind$$move_heading(markdown, 1, 4, true);
-  huangxl$md2mind$$add_child_heading(markdown, 4, "Export");
-  huangxl$md2mind$$delete_heading(markdown, 1);
+function Xiao$45$li$45$He$MoonMarkMind$cmd$main$$keep_web_api() {
+  const markdown = "# MoonMarkMind Demo\n## Parser\n### Heading extraction\n### Level mapping\n## Renderer\n### ASCII mindmap\n### Round-trip preview";
+  Xiao$45$li$45$He$MoonMarkMind$$outline_json(markdown);
+  Xiao$45$li$45$He$MoonMarkMind$$rename_heading(markdown, 0, "MoonMarkMind Demo");
+  Xiao$45$li$45$He$MoonMarkMind$$move_heading(markdown, 1, 4, true);
+  Xiao$45$li$45$He$MoonMarkMind$$add_child_heading(markdown, 4, "Export");
+  Xiao$45$li$45$He$MoonMarkMind$$delete_heading(markdown, 1);
 }
 (() => {
-  huangxl$md2mind$cmd$main$$keep_web_api();
+  Xiao$45$li$45$He$MoonMarkMind$cmd$main$$keep_web_api();
   moonbitlang$core$builtin$$println$13$("Markdown input:");
-  moonbitlang$core$builtin$$println$13$("# MindDown Demo\n## Parser\n### Heading extraction\n### Level mapping\n## Renderer\n### ASCII mindmap\n### Round-trip preview");
+  moonbitlang$core$builtin$$println$13$("# MoonMarkMind Demo\n## Parser\n### Heading extraction\n### Level mapping\n## Renderer\n### ASCII mindmap\n### Round-trip preview");
   moonbitlang$core$builtin$$println$13$("");
   moonbitlang$core$builtin$$println$13$("ASCII mindmap:");
-  moonbitlang$core$builtin$$println$13$(huangxl$md2mind$$demo_output());
+  moonbitlang$core$builtin$$println$13$(Xiao$45$li$45$He$MoonMarkMind$$demo_output());
 })();
 
-const __md2mind_sample = "# MindDown Demo\n## Parser\n### Heading extraction\n### Level mapping\n## Renderer\n### ASCII mindmap\n### Round-trip preview";
+const __MoonMarkMind_sample = "# MoonMarkMind Demo\n## Parser\n### Heading extraction\n### Level mapping\n## Renderer\n### ASCII mindmap\n### Round-trip preview";
+const __moonmarkmind_prefix = "Xiao$45$li$45$He$MoonMarkMind";
 
-globalThis.md2mind = {
+globalThis.MoonMarkMind = {
   sampleMarkdown() {
-    return __md2mind_sample;
+    return __MoonMarkMind_sample;
   },
   outlineJson(markdown) {
-    return huangxl$md2mind$$outline_json(markdown);
+    return globalThis[`${__moonmarkmind_prefix}$$outline_json`](markdown);
   },
   renameHeading(markdown, flatIndex, title) {
-    return huangxl$md2mind$$rename_heading(markdown, flatIndex, title);
+    return globalThis[`${__moonmarkmind_prefix}$$rename_heading`](markdown, flatIndex, title);
   },
   moveHeading(markdown, fromFlatIndex, toFlatIndex, placeAfter) {
-    return huangxl$md2mind$$move_heading(markdown, fromFlatIndex, toFlatIndex, placeAfter);
+    return globalThis[`${__moonmarkmind_prefix}$$move_heading`](markdown, fromFlatIndex, toFlatIndex, placeAfter);
   },
   addChildHeading(markdown, parentFlatIndex, title) {
-    return huangxl$md2mind$$add_child_heading(markdown, parentFlatIndex, title);
+    return globalThis[`${__moonmarkmind_prefix}$$add_child_heading`](markdown, parentFlatIndex, title);
   },
   deleteHeading(markdown, flatIndex) {
-    return huangxl$md2mind$$delete_heading(markdown, flatIndex);
+    return globalThis[`${__moonmarkmind_prefix}$$delete_heading`](markdown, flatIndex);
   },
   renderAsciiMindmap(markdown) {
-    return huangxl$md2mind$$render_ascii_mindmap(markdown);
+    return globalThis[`${__moonmarkmind_prefix}$$render_ascii_mindmap`](markdown);
   },
   demoOutput() {
-    return huangxl$md2mind$$demo_output();
+    return globalThis[`${__moonmarkmind_prefix}$$demo_output`]();
   },
 };
 
-export const md2mind = globalThis.md2mind;
+export const MoonMarkMind = globalThis.MoonMarkMind;

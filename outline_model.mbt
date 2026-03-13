@@ -91,10 +91,7 @@ pub fn add_child_heading(
     return markdown
   }
   if parent_flat_index == -1 {
-    let rebuilt = concat_headings(
-      headings,
-      [(1, next_title)],
-    )
+    let rebuilt = concat_headings(headings, [(1, next_title)])
     return render_markdown(rebuilt)
   }
   if parent_flat_index < 0 || parent_flat_index >= headings.length() {
@@ -103,10 +100,9 @@ pub fn add_child_heading(
   let (level, _) = headings[parent_flat_index]
   let insert_at = subtree_end(headings, parent_flat_index)
   let rebuilt = concat_headings(
-    concat_headings(
-      slice_headings(headings, 0, insert_at),
-      [(level + 1, next_title)],
-    ),
+    concat_headings(slice_headings(headings, 0, insert_at), [
+      (level + 1, next_title),
+    ]),
     slice_headings(headings, insert_at, headings.length()),
   )
   render_markdown(rebuilt)

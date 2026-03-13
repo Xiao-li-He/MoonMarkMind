@@ -2,8 +2,10 @@
   "is-main": true,
   "import": [
     {
-      "path": "huangxl/md2mind",
+      "path": "Xiao-li-He/MoonMarkMind",
       "alias": "lib"
     }
-  ]
+  ],
+  "wbtest-import": [],
+  "test-import": []
 }

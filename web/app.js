@@ -1,4 +1,4 @@
-﻿import { md2mind } from "./main.bundle.js";
+﻿import { MoonMarkMind } from "./main.bundle.js";
 
 const input = document.querySelector("#input");
 const output = document.querySelector("#output");
@@ -23,8 +23,8 @@ function loadModel(markdown, resetUi = false) {
     editingNodeId = null;
   }
   input.value = markdown;
-  output.textContent = md2mind.renderAsciiMindmap(markdown);
-  currentDocumentRoot = JSON.parse(md2mind.outlineJson(markdown));
+  output.textContent = MoonMarkMind.renderAsciiMindmap(markdown);
+  currentDocumentRoot = JSON.parse(MoonMarkMind.outlineJson(markdown));
   renderFromModel();
 }
 
@@ -33,16 +33,16 @@ function handleAddChild(node) {
   if (!title) {
     return;
   }
-  const nextMarkdown = md2mind.addChildHeading(input.value, node.flat_index, title.trim());
+  const nextMarkdown = MoonMarkMind.addChildHeading(input.value, node.flat_index, title.trim());
   loadModel(nextMarkdown);
 }
 
 function handleDelete(node) {
-  const confirmed = window.confirm(`Delete \"${node.title}\" and its children?`);
+  const confirmed = window.confirm(`Delete "${node.title}" and its children?`);
   if (!confirmed) {
     return;
   }
-  const nextMarkdown = md2mind.deleteHeading(input.value, node.flat_index);
+  const nextMarkdown = MoonMarkMind.deleteHeading(input.value, node.flat_index);
   loadModel(nextMarkdown, true);
 }
 
@@ -53,7 +53,7 @@ function createNodeCard(node, path, isCenter = false) {
   const isEditing = editingNodeId === node.flat_index;
   const editable = !node.synthetic;
 
-  card.className = "node";
+  card.className = isCenter ? "node node--center" : "node";
   card.dataset.level = String(node.level);
   card.dataset.collapsed = String(isCollapsed);
   card.dataset.path = path.join(".");
@@ -120,7 +120,7 @@ function createNodeCard(node, path, isCenter = false) {
       const rect = card.getBoundingClientRect();
       const placeAfter = event.clientY > rect.top + rect.height / 2;
       clearDropIndicators();
-      const nextMarkdown = md2mind.moveHeading(
+      const nextMarkdown = MoonMarkMind.moveHeading(
         input.value,
         dragState.flatIndex,
         node.flat_index,
@@ -144,7 +144,11 @@ function createNodeCard(node, path, isCenter = false) {
     });
     editor.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
-        const nextMarkdown = md2mind.renameHeading(input.value, node.flat_index, editor.value.trim());
+        const nextMarkdown = MoonMarkMind.renameHeading(
+          input.value,
+          node.flat_index,
+          editor.value.trim(),
+        );
         editingNodeId = null;
         loadModel(nextMarkdown);
       } else if (event.key === "Escape") {
@@ -153,7 +157,11 @@ function createNodeCard(node, path, isCenter = false) {
       }
     });
     editor.addEventListener("blur", () => {
-      const nextMarkdown = md2mind.renameHeading(input.value, node.flat_index, editor.value.trim());
+      const nextMarkdown = MoonMarkMind.renameHeading(
+        input.value,
+        node.flat_index,
+        editor.value.trim(),
+      );
       editingNodeId = null;
       loadModel(nextMarkdown);
     });
@@ -193,7 +201,7 @@ function createNodeCard(node, path, isCenter = false) {
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
     deleteButton.className = "node-action node-action--danger";
-    deleteButton.textContent = "×";
+    deleteButton.textContent = "x";
     deleteButton.title = "Delete node";
     deleteButton.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -206,7 +214,7 @@ function createNodeCard(node, path, isCenter = false) {
     const toggle = document.createElement("button");
     toggle.type = "button";
     toggle.className = "node-action";
-    toggle.textContent = isCollapsed ? "+" : "−";
+    toggle.textContent = isCollapsed ? "+" : "-";
     toggle.title = isCollapsed ? "Expand node" : "Collapse node";
     toggle.setAttribute("aria-label", isCollapsed ? "Expand node" : "Collapse node");
     toggle.setAttribute("aria-expanded", String(!isCollapsed));
@@ -239,7 +247,9 @@ function renderBranchNode(entry, direction) {
     children.className = `branch-children branch-children--${direction}`;
 
     for (let index = 0; index < node.children.length; index += 1) {
-      children.append(renderBranchNode({ node: node.children[index], path: [...path, index] }, direction));
+      children.append(
+        renderBranchNode({ node: node.children[index], path: [...path, index] }, direction),
+      );
     }
 
     item.append(children);
@@ -293,10 +303,10 @@ function rebuildFromInput() {
 }
 
 sampleButton.addEventListener("click", () => {
-  loadModel(md2mind.sampleMarkdown(), true);
+  loadModel(MoonMarkMind.sampleMarkdown(), true);
 });
 
 renderButton.addEventListener("click", rebuildFromInput);
 input.addEventListener("input", rebuildFromInput);
 
-loadModel(md2mind.sampleMarkdown(), true);
+loadModel(MoonMarkMind.sampleMarkdown(), true);
