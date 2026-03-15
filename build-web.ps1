@@ -1,6 +1,13 @@
-﻿$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"
 
-$root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$root = $PSScriptRoot
+if ([string]::IsNullOrWhiteSpace($root)) {
+  $root = Split-Path -Parent $PSCommandPath
+}
+if ([string]::IsNullOrWhiteSpace($root)) {
+  $root = (Get-Location).Path
+}
+
 $webDir = Join-Path $root "web"
 $source = Join-Path $root "target/js/release/build/cmd/main/main.js"
 $output = Join-Path $webDir "main.bundle.js"
@@ -18,46 +25,59 @@ if (-not $outlineMatch) {
 }
 
 $symbolPrefix = $outlineMatch.Matches[0].Groups[1].Value
+$outlineSymbol = $symbolPrefix + '$$outline_json'
+$renameSymbol = $symbolPrefix + '$$rename_heading'
+$moveSymbol = $symbolPrefix + '$$move_heading'
+$addChildSymbol = $symbolPrefix + '$$add_child_heading'
+$deleteSymbol = $symbolPrefix + '$$delete_heading'
+$renderSymbol = $symbolPrefix + '$$render_ascii_mindmap'
+$demoSymbol = $symbolPrefix + '$$demo_output'
 
 $bridge = @'
 
 const __MoonMarkMind_sample = "# MoonMarkMind Demo\n## Parser\n### Heading extraction\n### Level mapping\n## Renderer\n### ASCII mindmap\n### Round-trip preview";
-const __moonmarkmind_prefix = "__SYMBOL_PREFIX__";
 
 globalThis.__API_NAME__ = {
   sampleMarkdown() {
     return __MoonMarkMind_sample;
   },
   outlineJson(markdown) {
-    return globalThis[`${__moonmarkmind_prefix}$$outline_json`](markdown);
+    return __OUTLINE_SYMBOL__(markdown);
   },
   renameHeading(markdown, flatIndex, title) {
-    return globalThis[`${__moonmarkmind_prefix}$$rename_heading`](markdown, flatIndex, title);
+    return __RENAME_SYMBOL__(markdown, flatIndex, title);
   },
   moveHeading(markdown, fromFlatIndex, toFlatIndex, placeAfter) {
-    return globalThis[`${__moonmarkmind_prefix}$$move_heading`](markdown, fromFlatIndex, toFlatIndex, placeAfter);
+    return __MOVE_SYMBOL__(markdown, fromFlatIndex, toFlatIndex, placeAfter);
   },
   addChildHeading(markdown, parentFlatIndex, title) {
-    return globalThis[`${__moonmarkmind_prefix}$$add_child_heading`](markdown, parentFlatIndex, title);
+    return __ADD_CHILD_SYMBOL__(markdown, parentFlatIndex, title);
   },
   deleteHeading(markdown, flatIndex) {
-    return globalThis[`${__moonmarkmind_prefix}$$delete_heading`](markdown, flatIndex);
+    return __DELETE_SYMBOL__(markdown, flatIndex);
   },
   renderAsciiMindmap(markdown) {
-    return globalThis[`${__moonmarkmind_prefix}$$render_ascii_mindmap`](markdown);
+    return __RENDER_SYMBOL__(markdown);
   },
   demoOutput() {
-    return globalThis[`${__moonmarkmind_prefix}$$demo_output`]();
+    return __DEMO_SYMBOL__();
   },
 };
 
 export const __API_NAME__ = globalThis.__API_NAME__;
 '@
 
-$bridge = $bridge.Replace("__SYMBOL_PREFIX__", $symbolPrefix).Replace("__API_NAME__", $apiName)
+$bridge = $bridge.
+  Replace("__OUTLINE_SYMBOL__", $outlineSymbol).
+  Replace("__RENAME_SYMBOL__", $renameSymbol).
+  Replace("__MOVE_SYMBOL__", $moveSymbol).
+  Replace("__ADD_CHILD_SYMBOL__", $addChildSymbol).
+  Replace("__DELETE_SYMBOL__", $deleteSymbol).
+  Replace("__RENDER_SYMBOL__", $renderSymbol).
+  Replace("__DEMO_SYMBOL__", $demoSymbol).
+  Replace("__API_NAME__", $apiName)
 
 Copy-Item $source $output -Force
 Add-Content $output $bridge -Encoding utf8
 
 Write-Output "Built web bundle: $output"
-
