@@ -2,6 +2,8 @@
 
 MoonMarkMind 是一个以 MoonBit 为核心的 Markdown 脑图编辑 Demo。它把基于标题层级的 Markdown 解析成树结构，并在浏览器里以左右展开的脑图形式展示，支持直接编辑、折叠、同级拖拽重排、新增子节点和删除节点。
 
+![MoonMarkMind Demo](demo1.png)
+
 项目的重点不是单纯做一个前端可视化页面，而是尽量把核心文档逻辑放回 MoonBit：
 
 - Markdown 标题解析
@@ -67,7 +69,7 @@ http://localhost:8080
 - 拖拽同级节点调整顺序
 - 编辑后同步更新 Markdown 和 ASCII 视图
 
-## 当前边界
+## 当前限制
 
 - 目前只支持基于标题层级的 Markdown
 - 还没有完整保真处理段落、列表、引用、代码块等正文内容
