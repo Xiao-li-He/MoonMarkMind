@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
@@ -72,6 +72,28 @@
         display: flex;
         gap: 12px;
         margin-top: 6px;
+      }
+
+      .view-switch {
+        display: inline-flex;
+        gap: 8px;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.82);
+      }
+
+      .view-switch button {
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid transparent;
+      }
+
+      .view-switch button.is-active {
+        color: white;
+        background: linear-gradient(135deg, var(--accent) 0%, #0b8e82 100%);
       }
 
       button {
@@ -176,6 +198,24 @@
         padding: 12px 4px;
       }
 
+      .mindmap-stage--vertical {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        min-width: 720px;
+        padding: 12px 4px 36px;
+      }
+
+      .mindmap-stage--single-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 18px;
+        min-width: 960px;
+        padding: 12px 4px 36px;
+      }
+
       .center-wrap {
         position: sticky;
         top: 8px;
@@ -183,6 +223,98 @@
         justify-content: center;
         align-items: flex-start;
         padding-top: 120px;
+      }
+
+      .vertical-root {
+        display: flex;
+        justify-content: center;
+      }
+
+      .vertical-tree {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .vertical-tree__children {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        gap: 18px;
+        padding-top: 26px;
+      }
+
+      .vertical-tree__children::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 2px;
+        height: 22px;
+        transform: translateX(-50%);
+        background: var(--tree);
+      }
+
+      .vertical-tree__child {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .vertical-tree__child::before {
+        content: "";
+        position: absolute;
+        top: -26px;
+        left: 50%;
+        width: 2px;
+        height: 26px;
+        transform: translateX(-50%);
+        background: var(--tree);
+      }
+
+      .single-right-tree {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .single-right-tree__node {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 26px;
+      }
+
+      .single-right-tree__node::before {
+        content: "";
+        position: absolute;
+        top: 34px;
+        left: calc(100% - 26px);
+        width: 26px;
+        height: 2px;
+        background: var(--tree);
+        transform: translateX(-100%);
+      }
+
+      .single-right-tree__children {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding-left: 32px;
+      }
+
+      .single-right-tree__children::before {
+        content: "";
+        position: absolute;
+        top: 24px;
+        bottom: 22px;
+        left: 0;
+        width: 2px;
+        background: linear-gradient(180deg, var(--tree), rgba(13, 108, 99, 0.08));
       }
 
       .branch-column {
@@ -401,7 +533,7 @@
         <h1>MoonMarkMind</h1>
         <p>
           这是一个最小可运行的 Web 版原型。左侧输入 Markdown 标题结构并查看 MoonBit 生成的 ASCII 结果，
-          右侧使用中心节点向左右发散的脑图布局，支持折叠、拖拽重排，以及直接在节点上增删改标题。
+          右侧支持双侧脑图、单向横向脑图和上下展开树图三种视图，便于在不同整理和展示场景间切换。
         </p>
         <div class="actions">
           <button class="primary" id="render">Render Mindmap</button>
@@ -431,15 +563,17 @@
         <article class="panel">
           <div class="panel-head">
             <strong>Mindmap Preview</strong>
-            <span>Double-click to edit, drag siblings, use + / × to add or delete</span>
+            <div class="view-switch" aria-label="Mindmap layout switch">
+              <button type="button" class="is-active" data-layout-mode="horizontal" aria-pressed="true">Dual Side</button>
+              <button type="button" data-layout-mode="single-right" aria-pressed="false">Left to Right</button>
+              <button type="button" data-layout-mode="vertical" aria-pressed="false">Top / Down</button>
+            </div>
           </div>
           <div class="mindmap" id="mindmap"></div>
         </article>
       </section>
     </main>
 
-    <script type="module" src="./app.v2.js"></script>
+    <script type="module" src="./app.v3.js"></script>
   </body>
 </html>
-
-

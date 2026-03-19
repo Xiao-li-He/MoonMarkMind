@@ -301,6 +301,25 @@ function renderVerticalTree(node, path, isRoot = false) {
   return tree;
 }
 
+function renderSingleRightTree(node, path, isRoot = false) {
+  const row = document.createElement("div");
+  row.className = "single-right-tree__node";
+  row.append(createNodeCard(node, path, isRoot));
+
+  if (node.children.length > 0 && !collapsedNodes.has(node.flat_index)) {
+    const children = document.createElement("div");
+    children.className = "single-right-tree__children";
+
+    for (let index = 0; index < node.children.length; index += 1) {
+      children.append(renderSingleRightTree(node.children[index], [...path, index]));
+    }
+
+    row.append(children);
+  }
+
+  return row;
+}
+
 function renderHorizontalMindmap(center) {
   const leftEntries = [];
   const rightEntries = [];
@@ -341,15 +360,34 @@ function renderVerticalMindmap(center) {
   return stage;
 }
 
+function renderSingleRightMindmap(center) {
+  const stage = document.createElement("div");
+  stage.className = "mindmap-stage mindmap-stage--single-right";
+
+  const tree = document.createElement("div");
+  tree.className = "single-right-tree";
+  tree.append(renderSingleRightTree(center, [], true));
+
+  stage.append(tree);
+  return stage;
+}
+
 function renderFromModel() {
   if (!currentDocumentRoot) {
     return;
   }
 
   const center = currentDocumentRoot;
-  const stage = layoutMode === "vertical"
-    ? renderVerticalMindmap(center)
-    : renderHorizontalMindmap(center);
+  let stage = null;
+
+  if (layoutMode === "vertical") {
+    stage = renderVerticalMindmap(center);
+  } else if (layoutMode === "single-right") {
+    stage = renderSingleRightMindmap(center);
+  } else {
+    stage = renderHorizontalMindmap(center);
+  }
+
   mindmap.replaceChildren(stage);
 }
 
@@ -369,7 +407,7 @@ input.addEventListener("input", rebuildFromInput);
 
 for (const button of layoutButtons) {
   button.addEventListener("click", () => {
-    layoutMode = button.dataset.layoutMode === "vertical" ? "vertical" : "horizontal";
+    layoutMode = button.dataset.layoutMode ?? "horizontal";
     for (const candidate of layoutButtons) {
       const active = candidate === button;
       candidate.classList.toggle("is-active", active);
