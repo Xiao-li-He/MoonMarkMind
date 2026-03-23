@@ -153,14 +153,14 @@ fn render_secondary_toolbar() -> String {
       icon=icon_undo(),
     ),
     render_aux_icon_button_with_id(
-      id="fit-view",
-      tip="閫傞厤鐢诲竷",
-      icon=icon_fit_view(),
-    ),
-    render_aux_icon_button_with_id(
       id="redo-action",
       tip="重做 · Ctrl+Y",
       icon=icon_redo(),
+    ),
+    render_aux_icon_button_with_id(
+      id="fit-view",
+      tip="适配画布",
+      icon=icon_fit_view(),
     ),
     render_aux_icon_button_with_id(
       id="recenter-view",
