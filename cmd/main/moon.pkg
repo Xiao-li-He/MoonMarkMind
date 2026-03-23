@@ -1,16 +1,17 @@
-{
+import {
+  "Xiao-li-He/MoonMarkMind" @lib,
+}
+
+import {
+} for "test"
+
+import {
+} for "wbtest"
+
+options(
   "is-main": true,
-  "import": [
-    {
-      "path": "Xiao-li-He/MoonMarkMind",
-      "alias": "lib"
-    }
-  ],
-  "wbtest-import": [],
-  "test-import": [],
-  "link": {
+  link: {
     "js": {
-      "format": "esm",
       "exports": [
         "sample_markdown",
         "outline_json",
@@ -20,8 +21,9 @@
         "delete_heading",
         "render_ascii_mindmap",
         "demo_output",
-        "start_web_app"
-      ]
-    }
-  }
-}
+        "start_web_app",
+      ],
+      "format": "esm",
+    },
+  },
+)

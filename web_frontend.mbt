@@ -6,6 +6,8 @@ priv struct AppState {
   mut collapsed : Array[Int]
   mut editing_node : Int
   mut layout_mode : String
+  mut style_mode : String
+  mut detail_level : String
   mut drag_source_index : Int
   mut drag_source_parent : Int
 }
@@ -18,6 +20,8 @@ let app_state : AppState = AppState::{
   collapsed: [],
   editing_node: -2,
   layout_mode: "horizontal",
+  style_mode: "line",
+  detail_level: "medium",
   drag_source_index: -1,
   drag_source_parent: -2,
 }
@@ -29,7 +33,11 @@ pub fn start_web_app() -> Unit {
     return
   }
   app_state.started = true
-  bind_static_ui(on_render_click, on_sample_click, on_layout_change)
+  set_app_html(render_app_shell_html())
+  bind_static_ui(
+    on_new_click, on_sample_click, on_upload_click, on_download_markdown_click, on_layout_change,
+    on_style_change, on_detail_change, on_export_change,
+  )
   bind_input_listener(on_input_change)
   bind_mindmap_ui(
     on_mindmap_click, on_mindmap_dblclick, on_mindmap_keydown, on_mindmap_focusout,
@@ -39,13 +47,28 @@ pub fn start_web_app() -> Unit {
 }
 
 ///|
-fn on_render_click() -> Unit {
-  load_markdown(get_input_value(), true)
+fn on_new_click() -> Unit {
+  load_markdown("", true)
 }
 
 ///|
 fn on_sample_click() -> Unit {
   load_markdown(sample_markdown(), true)
+}
+
+///|
+fn on_upload_click() -> Unit {
+  pick_markdown_file(on_upload_loaded)
+}
+
+///|
+fn on_upload_loaded(markdown : String) -> Unit {
+  load_markdown(markdown, true)
+}
+
+///|
+fn on_download_markdown_click() -> Unit {
+  download_text("moonmarkmind.md", app_state.markdown)
 }
 
 ///|
@@ -57,6 +80,33 @@ fn on_input_change() -> Unit {
 fn on_layout_change(mode : String) -> Unit {
   app_state.layout_mode = normalize_layout_mode(mode)
   render_ui()
+}
+
+///|
+fn on_style_change(mode : String) -> Unit {
+  app_state.style_mode = normalize_style_mode(mode)
+  render_ui()
+}
+
+///|
+fn on_detail_change(level : String) -> Unit {
+  app_state.detail_level = normalize_detail_level(level)
+  render_ui()
+}
+
+///|
+fn on_export_change(kind : String) -> Unit {
+  match kind {
+    "markdown" => download_text("moonmarkmind.md", app_state.markdown)
+    "ascii" =>
+      download_text(
+        "moonmarkmind.txt",
+        render_ascii_mindmap(app_state.markdown),
+      )
+    "html" => download_current_page_html("moonmarkmind.html")
+    _ => ()
+  }
+  set_select_value("export-select", "none")
 }
 
 ///|
@@ -221,14 +271,18 @@ fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
   }
   app_state.markdown = markdown
   app_state.root = build_outline(markdown)
-  set_input_value(markdown)
+  if get_input_value() != markdown {
+    set_input_value(markdown)
+  }
   set_output_text(render_ascii_mindmap(markdown))
   render_ui()
 }
 
 ///|
 fn render_ui() -> Unit {
-  set_layout_button_state(app_state.layout_mode)
+  set_select_value("layout-select", app_state.layout_mode)
+  set_select_value("style-select", app_state.style_mode)
+  set_select_value("detail-select", app_state.detail_level)
   set_mindmap_html(render_mindmap_html())
   if app_state.editing_node >= 0 {
     focus_editor(app_state.editing_node)
@@ -237,18 +291,22 @@ fn render_ui() -> Unit {
 
 ///|
 fn render_mindmap_html() -> String {
+  let stage_class = render_stage_class()
   match app_state.layout_mode {
-    "vertical" => render_vertical_mindmap(app_state.root)
-    "single-right" => render_single_right_mindmap(app_state.root)
-    _ => render_horizontal_mindmap(app_state.root)
+    "vertical" => render_vertical_mindmap(app_state.root, stage_class)
+    "single-right" => render_single_right_mindmap(app_state.root, stage_class)
+    _ => render_horizontal_mindmap(app_state.root, stage_class)
   }
 }
 
 ///|
-fn render_horizontal_mindmap(center : OutlineNode) -> String {
+fn render_horizontal_mindmap(
+  center : OutlineNode,
+  stage_class : String,
+) -> String {
   let left_parts = []
   let right_parts = []
-  if !is_collapsed(center.flat_index) {
+  if should_render_children(center) {
     for index in 0..<center.children.length() {
       let child = center.children[index]
       if index % 2 == 0 {
@@ -261,7 +319,7 @@ fn render_horizontal_mindmap(center : OutlineNode) -> String {
   let left_html = left_parts.join("")
   let center_html = render_node_card(center, -1, true)
   let right_html = right_parts.join("")
-  "<div class=\"mindmap-stage\"><div class=\"branch-column branch-column--left\">\{left_html}</div><div class=\"center-wrap\">\{center_html}</div><div class=\"branch-column branch-column--right\">\{right_html}</div></div>"
+  "<div class=\"\{stage_class}\"><div class=\"branch-column branch-column--left\">\{left_html}</div><div class=\"center-wrap\">\{center_html}</div><div class=\"branch-column branch-column--right\">\{right_html}</div></div>"
 }
 
 ///|
@@ -279,7 +337,7 @@ fn render_branch_node(
 
 ///|
 fn render_branch_children(node : OutlineNode, direction : String) -> String {
-  if node.children.length() == 0 || is_collapsed(node.flat_index) {
+  if !should_render_children(node) {
     return ""
   }
   let child_parts = []
@@ -291,9 +349,12 @@ fn render_branch_children(node : OutlineNode, direction : String) -> String {
 }
 
 ///|
-fn render_vertical_mindmap(center : OutlineNode) -> String {
+fn render_vertical_mindmap(
+  center : OutlineNode,
+  stage_class : String,
+) -> String {
   let tree_html = render_vertical_tree(center, -1, true)
-  "<div class=\"mindmap-stage mindmap-stage--vertical\"><div class=\"vertical-root\">\{tree_html}</div></div>"
+  "<div class=\"\{stage_class} mindmap-stage--vertical\"><div class=\"vertical-root\">\{tree_html}</div></div>"
 }
 
 ///|
@@ -311,7 +372,7 @@ fn render_vertical_tree(
 
 ///|
 fn render_vertical_children(node : OutlineNode) -> String {
-  if node.children.length() == 0 || is_collapsed(node.flat_index) {
+  if !should_render_children(node) {
     return ""
   }
   let child_parts = []
@@ -324,9 +385,12 @@ fn render_vertical_children(node : OutlineNode) -> String {
 }
 
 ///|
-fn render_single_right_mindmap(center : OutlineNode) -> String {
+fn render_single_right_mindmap(
+  center : OutlineNode,
+  stage_class : String,
+) -> String {
   let tree_html = render_single_right_tree(center, -1, true)
-  "<div class=\"mindmap-stage mindmap-stage--single-right\"><div class=\"single-right-tree\">\{tree_html}</div></div>"
+  "<div class=\"\{stage_class} mindmap-stage--single-right\"><div class=\"single-right-tree\">\{tree_html}</div></div>"
 }
 
 ///|
@@ -344,7 +408,7 @@ fn render_single_right_tree(
 
 ///|
 fn render_single_right_children(node : OutlineNode) -> String {
-  if node.children.length() == 0 || is_collapsed(node.flat_index) {
+  if !should_render_children(node) {
     return ""
   }
   let child_parts = []
@@ -369,6 +433,7 @@ fn render_node_card(
   if is_center {
     classes.push("node--center")
   }
+  classes.push(render_node_style_class())
   if has_children {
     classes.push("is-clickable")
   }
@@ -499,6 +564,65 @@ fn normalize_layout_mode(mode : String) -> String {
     "vertical" => "vertical"
     "single-right" => "single-right"
     _ => "horizontal"
+  }
+}
+
+///|
+fn normalize_style_mode(mode : String) -> String {
+  match mode {
+    "fill" => "fill"
+    _ => "line"
+  }
+}
+
+///|
+fn normalize_detail_level(level : String) -> String {
+  match level {
+    "small" => "small"
+    "all" => "all"
+    _ => "medium"
+  }
+}
+
+///|
+fn render_stage_class() -> String {
+  let classes = ["mindmap-stage"]
+  if app_state.style_mode == "fill" {
+    classes.push("mindmap-stage--fill")
+  } else {
+    classes.push("mindmap-stage--line")
+  }
+  classes.join(" ")
+}
+
+///|
+fn render_node_style_class() -> String {
+  if app_state.style_mode == "fill" {
+    "node--fill"
+  } else {
+    "node--line"
+  }
+}
+
+///|
+fn should_render_children(node : OutlineNode) -> Bool {
+  if node.children.length() == 0 || is_collapsed(node.flat_index) {
+    return false
+  }
+  node_depth(node) < max_visible_depth()
+}
+
+///|
+fn node_depth(node : OutlineNode) -> Int {
+  node.level - app_state.root.level + 1
+}
+
+///|
+fn max_visible_depth() -> Int {
+  match app_state.detail_level {
+    "small" => 2
+    "all" => 99
+    _ => 3
   }
 }
 

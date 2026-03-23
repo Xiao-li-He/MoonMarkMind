@@ -3,142 +3,170 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MoonMarkMind Demo</title>
+    <title>MoonMarkMind</title>
     <style>
       :root {
-        --panel: rgba(255, 251, 245, 0.9);
-        --ink: #1f1d1a;
-        --muted: #6a6256;
-        --line: rgba(56, 47, 34, 0.14);
-        --accent: #0d6c63;
-        --tree: rgba(13, 108, 99, 0.28);
-        --shadow: 0 20px 60px rgba(68, 47, 24, 0.12);
+        --paper: #faf0c9;
+        --panel: rgba(255, 251, 242, 0.92);
+        --editor: #e6f3e8;
+        --canvas: #f4efed;
+        --ink: #2b2721;
+        --muted: #7f786f;
+        --line: rgba(43, 39, 33, 0.14);
+        --red: #ef4f43;
+        --green: #2c9f4b;
+        --blue: #2f79de;
+        --orange: #ec9b1e;
+        --gray: #8e98a3;
+        --teal: #1a7a72;
+        --tree: rgba(47, 121, 222, 0.3);
       }
 
       * {
         box-sizing: border-box;
       }
 
+      html,
       body {
         margin: 0;
-        min-height: 100vh;
-        font-family: "IBM Plex Sans", "Noto Sans SC", sans-serif;
+        min-height: 100%;
+      }
+
+      body {
         color: var(--ink);
-        background:
-          radial-gradient(circle at top left, rgba(216, 111, 69, 0.18), transparent 32%),
-          radial-gradient(circle at bottom right, rgba(13, 108, 99, 0.18), transparent 28%),
-          linear-gradient(160deg, #fbf7f0 0%, #efe7d8 100%);
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: linear-gradient(180deg, #fff8e8 0%, #f3e7c1 100%);
       }
 
-      .shell {
-        width: min(1360px, calc(100% - 32px));
-        margin: 24px auto;
-        padding: 24px;
-        border: 1px solid var(--line);
-        border-radius: 28px;
-        background: var(--panel);
-        box-shadow: var(--shadow);
-        backdrop-filter: blur(16px);
-      }
-
-      .hero {
-        display: grid;
-        gap: 10px;
-        margin-bottom: 20px;
-      }
-
-      .eyebrow {
-        font-size: 12px;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        color: var(--accent);
-      }
-
-      h1 {
-        margin: 0;
-        font-size: clamp(32px, 5vw, 56px);
-        line-height: 0.95;
-      }
-
-      .hero p {
-        margin: 0;
-        max-width: 860px;
-        color: var(--muted);
-        font-size: 16px;
-        line-height: 1.6;
-      }
-
-      .actions {
-        display: flex;
-        gap: 12px;
-        margin-top: 6px;
-      }
-
-      .view-switch {
-        display: inline-flex;
-        gap: 8px;
-        padding: 4px;
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.82);
-      }
-
-      .view-switch button {
-        padding: 8px 12px;
-        border-radius: 999px;
-        background: transparent;
-        color: var(--muted);
-        border: 1px solid transparent;
-      }
-
-      .view-switch button.is-active {
-        color: white;
-        background: linear-gradient(135deg, var(--accent) 0%, #0b8e82 100%);
-      }
-
-      button {
-        appearance: none;
-        border: 0;
-        border-radius: 999px;
-        padding: 12px 18px;
+      button,
+      select,
+      textarea {
         font: inherit;
-        cursor: pointer;
-        transition: transform 140ms ease;
       }
 
-      button:hover {
-        transform: translateY(-1px);
+      #app {
+        min-height: 100vh;
+        padding: 14px;
       }
 
-      .primary {
-        color: white;
-        background: linear-gradient(135deg, var(--accent) 0%, #0b8e82 100%);
+      .app-shell {
+        width: min(1280px, 100%);
+        margin: 0 auto;
+        display: grid;
+        gap: 14px;
+        padding: 18px;
+        border: 3px solid rgba(43, 39, 33, 0.16);
+        border-radius: 36px;
+        background: rgba(250, 240, 201, 0.9);
       }
 
-      .secondary {
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px 20px;
+        flex-wrap: wrap;
+      }
+
+      .topbar-group {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px 14px;
+      }
+
+      .topbar-group--controls {
+        justify-content: flex-end;
+      }
+
+      .topbar-title {
+        min-width: 92px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .tool-button {
+        appearance: none;
+        min-width: 72px;
+        height: 44px;
+        padding: 0 16px;
+        border-radius: 16px;
+        border: 3px solid rgba(43, 39, 33, 0.08);
+        background: rgba(255, 255, 255, 0.86);
         color: var(--ink);
-        background: rgba(255, 255, 255, 0.72);
-        border: 1px solid var(--line);
+        cursor: pointer;
+      }
+
+      .tool-button--red {
+        color: var(--red);
+        border-color: rgba(239, 79, 67, 0.36);
+      }
+
+      .tool-button--green {
+        color: var(--green);
+        border-color: rgba(44, 159, 75, 0.36);
+      }
+
+      .tool-button--blue {
+        color: var(--blue);
+        border-color: rgba(47, 121, 222, 0.36);
+      }
+
+      .tool-button--soft {
+        color: var(--muted);
+        border-color: rgba(127, 120, 111, 0.24);
+      }
+
+      .tool-select-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .tool-select-label {
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      .tool-select {
+        min-width: 108px;
+        height: 44px;
+        padding: 0 12px;
+        border-radius: 16px;
+        border: 3px solid rgba(142, 152, 163, 0.3);
+        background: rgba(255, 255, 255, 0.88);
+        color: var(--ink);
+      }
+
+      .tool-select--accent {
+        border-color: rgba(236, 155, 30, 0.42);
+        color: var(--orange);
       }
 
       .workspace {
         display: grid;
-        grid-template-columns: minmax(360px, 0.92fr) minmax(520px, 1.18fr);
+        grid-template-columns: minmax(360px, 0.88fr) minmax(560px, 1.12fr);
         gap: 18px;
-        align-items: stretch;
       }
 
-      .stack {
+      .editor-panel,
+      .mindmap-panel {
         display: grid;
-        gap: 18px;
+        align-content: start;
+        gap: 14px;
         min-height: 720px;
+        padding: 18px;
+        border: 3px solid rgba(43, 39, 33, 0.16);
+        border-radius: 32px;
+        background: var(--panel);
       }
 
-      .panel {
-        border: 1px solid var(--line);
-        border-radius: 24px;
-        background: rgba(255, 255, 255, 0.74);
-        overflow: hidden;
+      .editor-panel {
+        background: rgba(230, 243, 232, 0.72);
+      }
+
+      .mindmap-panel {
+        background: rgba(244, 239, 237, 0.95);
       }
 
       .panel-head {
@@ -146,56 +174,118 @@
         justify-content: space-between;
         align-items: center;
         gap: 12px;
-        padding: 16px 18px;
-        border-bottom: 1px solid var(--line);
       }
 
       .panel-head strong {
-        font-size: 15px;
+        font-size: 28px;
       }
 
       .panel-head span {
-        font-size: 12px;
         color: var(--muted);
+        font-size: 13px;
       }
 
-      textarea,
-      pre {
-        width: 100%;
-        margin: 0;
-        border: 0;
-        resize: none;
-        padding: 18px;
-        background: transparent;
-        color: var(--ink);
-        font: 15px/1.6 "IBM Plex Mono", "Cascadia Code", monospace;
+      .editor-surface,
+      .mindmap-surface {
+        border: 3px solid rgba(43, 39, 33, 0.16);
+        border-radius: 28px;
+        overflow: hidden;
+      }
+
+      .editor-surface {
+        background: rgba(233, 246, 235, 0.94);
+      }
+
+      .mindmap-surface {
+        min-height: 560px;
+        background: rgba(255, 255, 255, 0.55);
       }
 
       textarea {
-        min-height: 320px;
-      }
-
-      pre {
-        min-height: 240px;
+        width: 100%;
+        min-height: 620px;
+        resize: none;
+        border: 0;
+        padding: 22px;
+        background: transparent;
+        color: var(--ink);
+        font: 16px/1.7 "Cascadia Code", "Consolas", monospace;
       }
 
       textarea:focus {
         outline: none;
       }
 
+      .mindmap-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+      }
+
+      .mindmap-tool {
+        min-width: 88px;
+        padding: 8px 10px;
+        border-radius: 14px;
+        text-align: center;
+        color: var(--teal);
+        background: rgba(255, 255, 255, 0.72);
+        font-size: 14px;
+        line-height: 1.35;
+      }
+
+      .mindmap-tool small {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
       .mindmap {
-        min-height: 720px;
-        padding: 24px;
+        min-height: 560px;
+        padding: 20px;
         overflow: auto;
+      }
+
+      .mindmap-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .zoom-strip {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.8);
+      }
+
+      .zoom-chip {
+        width: 34px;
+        height: 34px;
+        border: 0;
+        border-radius: 10px;
+        background: rgba(142, 152, 163, 0.16);
+        color: var(--ink);
+      }
+
+      .zoom-value {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .ascii-output {
+        display: none;
       }
 
       .mindmap-stage {
         display: grid;
-        grid-template-columns: minmax(260px, 1fr) auto minmax(260px, 1fr);
+        grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
         gap: 28px;
         align-items: start;
-        min-width: 960px;
-        padding: 12px 4px;
+        min-width: 860px;
+        padding: 20px 4px;
       }
 
       .mindmap-stage--vertical {
@@ -204,7 +294,6 @@
         align-items: center;
         gap: 24px;
         min-width: 720px;
-        padding: 12px 4px 36px;
       }
 
       .mindmap-stage--single-right {
@@ -212,8 +301,7 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 18px;
-        min-width: 960px;
-        padding: 12px 4px 36px;
+        min-width: 860px;
       }
 
       .center-wrap {
@@ -221,8 +309,7 @@
         top: 8px;
         display: flex;
         justify-content: center;
-        align-items: flex-start;
-        padding-top: 120px;
+        padding-top: 98px;
       }
 
       .vertical-root {
@@ -291,7 +378,7 @@
       .single-right-tree__node::before {
         content: "";
         position: absolute;
-        top: 34px;
+        top: 36px;
         left: calc(100% - 26px);
         width: 26px;
         height: 2px;
@@ -314,14 +401,14 @@
         bottom: 22px;
         left: 0;
         width: 2px;
-        background: linear-gradient(180deg, var(--tree), rgba(13, 108, 99, 0.08));
+        background: linear-gradient(180deg, var(--tree), rgba(47, 121, 222, 0.08));
       }
 
       .branch-column {
         display: flex;
         flex-direction: column;
         gap: 26px;
-        min-height: 520px;
+        min-height: 460px;
         padding-top: 26px;
       }
 
@@ -351,7 +438,7 @@
       .branch-item::before {
         content: "";
         position: absolute;
-        top: 34px;
+        top: 36px;
         width: 26px;
         height: 2px;
         background: var(--tree);
@@ -387,7 +474,7 @@
         top: -8px;
         bottom: 22px;
         width: 2px;
-        background: linear-gradient(180deg, var(--tree), rgba(13, 108, 99, 0.08));
+        background: linear-gradient(180deg, var(--tree), rgba(47, 121, 222, 0.08));
       }
 
       .branch-children--left::before {
@@ -400,27 +487,36 @@
 
       .node {
         position: relative;
-        min-width: 180px;
-        max-width: 240px;
-        padding: 14px 16px;
-        border-radius: 18px;
-        background: white;
-        border: 1px solid rgba(13, 108, 99, 0.12);
-        box-shadow: 0 10px 24px rgba(18, 38, 35, 0.06);
+        min-width: 156px;
+        max-width: 228px;
+        padding: 12px 16px;
+        border-radius: 16px;
         text-align: center;
       }
 
+      .node--line {
+        border: 2px solid rgba(47, 121, 222, 0.28);
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 10px 20px rgba(43, 39, 33, 0.05);
+      }
+
+      .node--fill {
+        border: 2px solid rgba(47, 121, 222, 0.16);
+        background: linear-gradient(180deg, rgba(228, 240, 255, 0.98), rgba(255, 255, 255, 0.96));
+        box-shadow: 0 10px 22px rgba(43, 39, 33, 0.06);
+      }
+
       .node--center {
-        min-width: 220px;
-        max-width: 280px;
-        border-color: rgba(216, 111, 69, 0.22);
-        background: linear-gradient(135deg, rgba(216, 111, 69, 0.16), rgba(255, 255, 255, 0.98));
-        box-shadow: 0 18px 36px rgba(68, 47, 24, 0.12);
+        min-width: 210px;
+        max-width: 260px;
+        border-color: rgba(18, 18, 18, 0.9);
+        background: #111;
+        color: white;
       }
 
       .node.is-clickable {
         cursor: pointer;
-        padding-right: 108px;
+        padding-right: 104px;
       }
 
       .node.is-draggable {
@@ -431,17 +527,12 @@
         opacity: 0.45;
       }
 
-      .node.is-clickable:hover {
-        border-color: rgba(13, 108, 99, 0.28);
-        box-shadow: 0 16px 30px rgba(18, 38, 35, 0.1);
-      }
-
       .node.drop-before {
-        box-shadow: inset 0 4px 0 var(--accent), 0 16px 30px rgba(18, 38, 35, 0.1);
+        box-shadow: inset 0 4px 0 var(--teal), 0 14px 28px rgba(43, 39, 33, 0.08);
       }
 
       .node.drop-after {
-        box-shadow: inset 0 -4px 0 var(--accent), 0 16px 30px rgba(18, 38, 35, 0.1);
+        box-shadow: inset 0 -4px 0 var(--teal), 0 14px 28px rgba(43, 39, 33, 0.08);
       }
 
       .drop-slot {
@@ -449,26 +540,40 @@
         min-height: 12px;
       }
 
+      .node small {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .node--center small {
+        color: rgba(255, 255, 255, 0.64);
+      }
+
+      .node strong {
+        display: block;
+        font-size: 15px;
+      }
+
       .node-editor {
         width: 100%;
-        border: 1px solid rgba(13, 108, 99, 0.22);
+        border: 2px solid rgba(26, 122, 114, 0.22);
         border-radius: 10px;
         padding: 8px 10px;
         font: inherit;
-        font-size: 15px;
-        color: var(--ink);
-        background: rgba(13, 108, 99, 0.05);
+        background: rgba(26, 122, 114, 0.05);
       }
 
       .node-editor:focus {
-        outline: 2px solid rgba(13, 108, 99, 0.18);
-        border-color: rgba(13, 108, 99, 0.28);
+        outline: none;
+        border-color: rgba(26, 122, 114, 0.38);
       }
 
       .node-actions {
         position: absolute;
-        top: 10px;
-        right: 10px;
+        top: 8px;
+        right: 8px;
         display: flex;
         gap: 6px;
       }
@@ -477,109 +582,43 @@
         width: 24px;
         height: 24px;
         padding: 0;
+        border: 0;
         border-radius: 999px;
-        background: rgba(13, 108, 99, 0.1);
-        color: var(--accent);
-        font-size: 18px;
-        line-height: 24px;
-      }
-
-      .node-action:hover {
-        transform: none;
-        background: rgba(13, 108, 99, 0.18);
+        background: rgba(26, 122, 114, 0.12);
+        color: var(--teal);
+        font-size: 16px;
       }
 
       .node-action--danger {
-        color: #b94c38;
-        background: rgba(185, 76, 56, 0.12);
+        color: var(--red);
+        background: rgba(239, 79, 67, 0.14);
       }
 
-      .node-action--danger:hover {
-        background: rgba(185, 76, 56, 0.18);
-      }
-
-      .node[data-level="2"] {
-        background: linear-gradient(180deg, rgba(13, 108, 99, 0.08), rgba(255, 255, 255, 0.96));
-      }
-
-      .node small {
-        display: block;
-        margin-bottom: 4px;
-        color: var(--muted);
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-      }
-
-      .node strong {
-        display: block;
-        font-size: 15px;
-      }
-
-      @media (max-width: 1100px) {
+      @media (max-width: 1160px) {
         .workspace {
           grid-template-columns: 1fr;
         }
 
-        .stack {
+        .editor-panel,
+        .mindmap-panel {
           min-height: auto;
         }
 
+        textarea {
+          min-height: 380px;
+        }
+
+        .mindmap-surface,
         .mindmap {
-          min-height: 520px;
+          min-height: 460px;
         }
       }
     </style>
   </head>
   <body>
-    <main class="shell">
-      <section class="hero">
-        <div class="eyebrow">MoonBit Web Demo</div>
-        <h1>MoonMarkMind</h1>
-        <p>
-          这是一个最小可运行�?Web 版原型。左侧输�?Markdown 标题结构并查�?MoonBit 生成�?ASCII 结果�?          右侧支持双侧脑图、单向横向脑图和上下展开树图三种视图，便于在不同整理和展示场景间切换�?        </p>
-        <div class="actions">
-          <button class="primary" id="render">Render Mindmap</button>
-          <button class="secondary" id="load-sample">Load Sample</button>
-        </div>
-      </section>
-
-      <section class="workspace">
-        <div class="stack">
-          <article class="panel">
-            <div class="panel-head">
-              <strong>Markdown Input</strong>
-              <span>Use headings like #, ##, ###</span>
-            </div>
-            <textarea id="input"></textarea>
-          </article>
-
-          <article class="panel">
-            <div class="panel-head">
-              <strong>ASCII Output</strong>
-              <span>Generated by MoonBit</span>
-            </div>
-            <pre id="output"></pre>
-          </article>
-        </div>
-
-        <article class="panel">
-          <div class="panel-head">
-            <strong>Mindmap Preview</strong>
-            <div class="view-switch" aria-label="Mindmap layout switch">
-              <button type="button" class="is-active" data-layout-mode="horizontal" aria-pressed="true">Dual Side</button>
-              <button type="button" data-layout-mode="single-right" aria-pressed="false">Left to Right</button>
-              <button type="button" data-layout-mode="vertical" aria-pressed="false">Top / Down</button>
-            </div>
-          </div>
-          <div class="mindmap" id="mindmap"></div>
-        </article>
-      </section>
-    </main>
-
+    <div id="app"></div>
     <script type="module">
       import(`./main.bundle.js?v=${Date.now()}`);
     </script>
   </body>
 </html>
-

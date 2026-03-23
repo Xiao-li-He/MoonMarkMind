@@ -2,25 +2,25 @@
 package "Xiao-li-He/MoonMarkMind"
 
 // Values
-fn add_child_heading(String, Int, String) -> String
+pub fn add_child_heading(String, Int, String) -> String
 
-fn delete_heading(String, Int) -> String
+pub fn delete_heading(String, Int) -> String
 
-fn demo_output() -> String
+pub fn demo_output() -> String
 
-fn move_heading(String, Int, Int, Bool) -> String
+pub fn move_heading(String, Int, Int, Bool) -> String
 
-fn outline_json(String) -> String
+pub fn outline_json(String) -> String
 
-fn parse_headings(String) -> Array[(Int, String)]
+pub fn parse_headings(String) -> Array[(Int, String)]
 
-fn rename_heading(String, Int, String) -> String
+pub fn rename_heading(String, Int, String) -> String
 
-fn render_ascii_mindmap(String) -> String
+pub fn render_ascii_mindmap(String) -> String
 
-fn sample_markdown() -> String
+pub fn sample_markdown() -> String
 
-fn start_web_app() -> Unit
+pub fn start_web_app() -> Unit
 
 // Errors
 

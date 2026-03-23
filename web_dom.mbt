@@ -4,22 +4,41 @@ priv type BrowserEvent
 
 ///|
 extern "js" fn bind_static_ui(
-  render_callback : () -> Unit,
+  new_callback : () -> Unit,
   sample_callback : () -> Unit,
+  upload_callback : () -> Unit,
+  download_markdown_callback : () -> Unit,
   layout_callback : (String) -> Unit,
+  style_callback : (String) -> Unit,
+  detail_callback : (String) -> Unit,
+  export_callback : (String) -> Unit,
 ) =
   #|(
-  #|  renderCallback,
+  #|  newCallback,
   #|  sampleCallback,
+  #|  uploadCallback,
+  #|  downloadMarkdownCallback,
   #|  layoutCallback,
+  #|  styleCallback,
+  #|  detailCallback,
+  #|  exportCallback,
   #|) => {
-  #|  document.querySelector("#render")?.addEventListener("click", () => renderCallback())
+  #|  document.querySelector("#new-document")?.addEventListener("click", () => newCallback())
   #|  document.querySelector("#load-sample")?.addEventListener("click", () => sampleCallback())
-  #|  for (const button of document.querySelectorAll("[data-layout-mode]")) {
-  #|    button.addEventListener("click", () => {
-  #|      layoutCallback(button.dataset.layoutMode ?? "horizontal")
-  #|    })
-  #|  }
+  #|  document.querySelector("#upload-markdown")?.addEventListener("click", () => uploadCallback())
+  #|  document.querySelector("#download-markdown")?.addEventListener("click", () => downloadMarkdownCallback())
+  #|  document.querySelector("#layout-select")?.addEventListener("change", (event) => {
+  #|    layoutCallback(event.target?.value ?? "horizontal")
+  #|  })
+  #|  document.querySelector("#style-select")?.addEventListener("change", (event) => {
+  #|    styleCallback(event.target?.value ?? "line")
+  #|  })
+  #|  document.querySelector("#detail-select")?.addEventListener("change", (event) => {
+  #|    detailCallback(event.target?.value ?? "medium")
+  #|  })
+  #|  document.querySelector("#export-select")?.addEventListener("change", (event) => {
+  #|    exportCallback(event.target?.value ?? "none")
+  #|  })
   #|}
 
 ///|
@@ -62,6 +81,13 @@ extern "js" fn bind_input_listener(callback : () -> Unit) =
   #|}
 
 ///|
+extern "js" fn set_app_html(value : String) =
+  #|(value) => {
+  #|  const app = document.querySelector("#app")
+  #|  if (app) app.innerHTML = value
+  #|}
+
+///|
 extern "js" fn get_input_value() -> String =
   #|() => document.querySelector("#input")?.value ?? ""
 
@@ -87,13 +113,10 @@ extern "js" fn set_mindmap_html(value : String) =
   #|}
 
 ///|
-extern "js" fn set_layout_button_state(mode : String) =
-  #|(mode) => {
-  #|  for (const button of document.querySelectorAll("[data-layout-mode]")) {
-  #|    const active = (button.dataset.layoutMode ?? "horizontal") === mode
-  #|    button.classList.toggle("is-active", active)
-  #|    button.setAttribute("aria-pressed", String(active))
-  #|  }
+extern "js" fn set_select_value(id : String, value : String) =
+  #|(id, value) => {
+  #|  const control = document.querySelector(`#${id}`)
+  #|  if (control) control.value = value
   #|}
 
 ///|
@@ -115,6 +138,49 @@ extern "js" fn prompt_text(message : String, default_value : String) -> String =
 ///|
 extern "js" fn confirm_text(message : String) -> Bool =
   #|(message) => window.confirm(message)
+
+///|
+extern "js" fn pick_markdown_file(callback : (String) -> Unit) =
+  #|(callback) => {
+  #|  const input = document.createElement("input")
+  #|  input.type = "file"
+  #|  input.accept = ".md,.markdown,text/markdown,text/plain"
+  #|  input.addEventListener("change", async () => {
+  #|    const file = input.files?.[0]
+  #|    if (!file) return
+  #|    callback(await file.text())
+  #|  })
+  #|  input.click()
+  #|}
+
+///|
+extern "js" fn download_text(filename : String, content : String) =
+  #|(filename, content) => {
+  #|  const blob = new Blob([content], { type: "text/plain;charset=utf-8" })
+  #|  const url = URL.createObjectURL(blob)
+  #|  const link = document.createElement("a")
+  #|  link.href = url
+  #|  link.download = filename
+  #|  document.body.appendChild(link)
+  #|  link.click()
+  #|  link.remove()
+  #|  URL.revokeObjectURL(url)
+  #|}
+
+///|
+extern "js" fn download_current_page_html(filename : String) =
+  #|(filename) => {
+  #|  const html = document.documentElement.outerHTML
+  #|  const blob = new Blob([html], { type: "text/html;charset=utf-8" })
+  #|  const url = URL.createObjectURL(blob)
+  #|  const link = document.createElement("a")
+  #|  link.href = url
+  #|  link.download = filename
+  #|  document.body.appendChild(link)
+  #|  link.click()
+  #|  link.remove()
+  #|  URL.revokeObjectURL(url)
+  #|}
 
 ///|
 extern "js" fn stop_event(event : BrowserEvent) =

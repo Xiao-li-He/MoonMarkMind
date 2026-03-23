@@ -9,7 +9,7 @@ if ([string]::IsNullOrWhiteSpace($root)) {
 }
 
 $webDir = Join-Path $root "web"
-$source = Join-Path $root "target/js/release/build/cmd/main/main.js"
+$source = Join-Path $root "_build/js/release/build/cmd/main/main.js"
 $output = Join-Path $webDir "main.bundle.js"
 $apiName = "MoonMarkMind"
 
@@ -19,21 +19,28 @@ if (!(Test-Path $webDir)) {
   New-Item -ItemType Directory -Path $webDir | Out-Null
 }
 
-$sampleMatch = Select-String -Path $source -Pattern 'function\s+([A-Za-z0-9$_]+)\$\$sample_markdown\(' | Select-Object -First 1
-if (-not $sampleMatch) {
-  throw "Failed to locate MoonBit sample_markdown symbol in $source"
+function Find-LocalExportSymbol {
+  param(
+    [string]$ExportName
+  )
+
+  $pattern = "([A-Za-z0-9`$_]+)\s+as\s+$ExportName\b"
+  $match = Select-String -Path $source -Pattern $pattern | Select-Object -First 1
+  if (-not $match) {
+    throw "Failed to locate MoonBit export symbol '$ExportName' in $source"
+  }
+  return $match.Matches[0].Groups[1].Value
 }
 
-$symbolPrefix = $sampleMatch.Matches[0].Groups[1].Value
-$sampleSymbol = $symbolPrefix + '$$sample_markdown'
-$outlineSymbol = $symbolPrefix + '$$outline_json'
-$renameSymbol = $symbolPrefix + '$$rename_heading'
-$moveSymbol = $symbolPrefix + '$$move_heading'
-$addChildSymbol = $symbolPrefix + '$$add_child_heading'
-$deleteSymbol = $symbolPrefix + '$$delete_heading'
-$renderSymbol = $symbolPrefix + '$$render_ascii_mindmap'
-$demoSymbol = $symbolPrefix + '$$demo_output'
-$startSymbol = $symbolPrefix + '$$start_web_app'
+$sampleSymbol = Find-LocalExportSymbol "sample_markdown"
+$outlineSymbol = Find-LocalExportSymbol "outline_json"
+$renameSymbol = Find-LocalExportSymbol "rename_heading"
+$moveSymbol = Find-LocalExportSymbol "move_heading"
+$addChildSymbol = Find-LocalExportSymbol "add_child_heading"
+$deleteSymbol = Find-LocalExportSymbol "delete_heading"
+$renderSymbol = Find-LocalExportSymbol "render_ascii_mindmap"
+$demoSymbol = Find-LocalExportSymbol "demo_output"
+$startSymbol = Find-LocalExportSymbol "start_web_app"
 
 $bridge = @'
 
