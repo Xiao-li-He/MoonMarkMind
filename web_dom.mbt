@@ -137,7 +137,9 @@ extern "js" fn bind_mindmap_ui(
   #|  if (!mindmap) return
   #|  const zoomIn = document.querySelector("#zoom-in")
   #|  const zoomOut = document.querySelector("#zoom-out")
+  #|  const zoomStrip = document.querySelector(".zoom-strip")
   #|  const zoomValue = document.querySelector("#zoom-value")
+  #|  const zoomEdit = document.querySelector("#zoom-edit")
   #|  const fitView = document.querySelector("#fit-view")
   #|  const recenterView = document.querySelector("#recenter-view")
   #|  const syncView = () => {
@@ -147,12 +149,39 @@ extern "js" fn bind_mindmap_ui(
   #|    mindmap.style.setProperty("--pan-x", `${panX}px`)
   #|    mindmap.style.setProperty("--pan-y", `${panY}px`)
   #|    mindmap.style.setProperty("--zoom", `${zoom}`)
-  #|    if (zoomValue) zoomValue.textContent = `${Math.round(zoom * 100)}%`
+  #|    const percentText = `${Math.round(zoom * 100)}%`
+  #|    if (zoomValue) zoomValue.textContent = percentText
+  #|    if (zoomEdit) zoomEdit.value = `${Math.round(zoom * 100)}`
   #|  }
   #|  const clampZoom = (value) => Math.max(0.4, Math.min(2, value))
   #|  const setZoom = (value) => {
   #|    mindmap.dataset.zoom = `${clampZoom(value)}`
   #|    syncView()
+  #|  }
+  #|  const parseZoomInput = (raw) => {
+  #|    const trimmed = (raw ?? "").trim()
+  #|    if (!trimmed) return null
+  #|    const numeric = Number.parseFloat(trimmed.replace("%", ""))
+  #|    if (!Number.isFinite(numeric)) return null
+  #|    return trimmed.includes("%") || numeric > 10 ? numeric / 100 : numeric
+  #|  }
+  #|  const stopZoomEditing = (commit) => {
+  #|    if (!zoomStrip || !zoomEdit) return
+  #|    if (commit) {
+  #|      const nextZoom = parseZoomInput(zoomEdit.value)
+  #|      if (nextZoom != null) setZoom(nextZoom)
+  #|      else syncView()
+  #|    } else {
+  #|      syncView()
+  #|    }
+  #|    zoomStrip.classList.remove("is-editing")
+  #|  }
+  #|  const startZoomEditing = () => {
+  #|    if (!zoomStrip || !zoomEdit) return
+  #|    zoomStrip.classList.add("is-editing")
+  #|    zoomEdit.value = `${Math.round(Number(mindmap.dataset.zoom ?? "1") * 100)}`
+  #|    zoomEdit.focus()
+  #|    zoomEdit.select()
   #|  }
   #|  const fitToView = () => {
   #|    const stage = mindmap.querySelector(".mindmap-stage")
@@ -169,7 +198,7 @@ extern "js" fn bind_mindmap_ui(
   #|    if (viewportWidth <= 0 || viewportHeight <= 0 || stageWidth <= 0 || stageHeight <= 0) {
   #|      return
   #|    }
-  #|    const nextZoom = clampZoom(Math.min(viewportWidth / stageWidth, viewportHeight / stageHeight))
+  #|    const nextZoom = clampZoom(Math.min(1, viewportWidth / stageWidth, viewportHeight / stageHeight))
   #|    mindmap.dataset.panX = "0"
   #|    mindmap.dataset.panY = "0"
   #|    setZoom(nextZoom)
@@ -234,6 +263,20 @@ extern "js" fn bind_mindmap_ui(
   #|  zoomIn?.addEventListener("click", () => {
   #|    setZoom(Number(mindmap.dataset.zoom ?? "1") + 0.1)
   #|  })
+  #|  zoomValue?.addEventListener("dblclick", (event) => {
+  #|    event.preventDefault()
+  #|    startZoomEditing()
+  #|  })
+  #|  zoomEdit?.addEventListener("keydown", (event) => {
+  #|    if (event.key === "Enter") {
+  #|      event.preventDefault()
+  #|      stopZoomEditing(true)
+  #|    } else if (event.key === "Escape") {
+  #|      event.preventDefault()
+  #|      stopZoomEditing(false)
+  #|    }
+  #|  })
+  #|  zoomEdit?.addEventListener("blur", () => stopZoomEditing(true))
   #|  fitView?.addEventListener("click", () => fitToView())
   #|  recenterView?.addEventListener("click", () => recenterPan())
   #|  mindmap.addEventListener("mousedown", (event) => {
@@ -301,7 +344,9 @@ extern "js" fn set_mindmap_html(value : String) =
   #|  mindmap.style.setProperty("--pan-y", `${Number(mindmap.dataset.panY ?? "0")}px`)
   #|  mindmap.style.setProperty("--zoom", `${Number(mindmap.dataset.zoom ?? "1")}`)
   #|  const zoomValue = document.querySelector("#zoom-value")
+  #|  const zoomEdit = document.querySelector("#zoom-edit")
   #|  if (zoomValue) zoomValue.textContent = `${Math.round(Number(mindmap.dataset.zoom ?? "1") * 100)}%`
+  #|  if (zoomEdit) zoomEdit.value = `${Math.round(Number(mindmap.dataset.zoom ?? "1") * 100)}`
   #|}
 
 ///|

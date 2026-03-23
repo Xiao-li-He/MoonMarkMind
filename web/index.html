@@ -317,7 +317,7 @@
         flex-wrap: wrap;
         align-items: flex-start;
         justify-content: space-between;
-        column-gap: 16px;
+        column-gap: 8px;
         row-gap: 10px;
         padding: 0 2px 4px;
         min-width: 0;
@@ -515,12 +515,30 @@
       }
 
       .zoom-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         width: 32px;
         height: 32px;
         border: 0;
         border-radius: 10px;
         background: rgba(142, 152, 163, 0.16);
-        color: var(--ink);
+        color: var(--teal);
+      }
+
+      .zoom-chip .tool-icon--compact {
+        width: 16px;
+        height: 16px;
+      }
+
+      .zoom-chip .tool-icon--compact svg {
+        stroke-width: 2.1;
+      }
+
+      .zoom-chip:hover,
+      .zoom-chip:focus-visible {
+        background: rgba(142, 152, 163, 0.22);
+        outline: none;
       }
 
       .zoom-value {
@@ -532,6 +550,35 @@
         text-align: center;
         font-variant-numeric: tabular-nums;
         letter-spacing: -0.01em;
+        cursor: text;
+      }
+
+      .zoom-edit {
+        display: none;
+        flex: 1;
+        min-width: 0;
+        height: 100%;
+        border: 0;
+        padding: 0 2px;
+        background: transparent;
+        color: var(--ink);
+        font: inherit;
+        font-size: 13px;
+        line-height: 1;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .zoom-edit:focus {
+        outline: none;
+      }
+
+      .zoom-strip.is-editing .zoom-value {
+        display: none;
+      }
+
+      .zoom-strip.is-editing .zoom-edit {
+        display: block;
       }
 
       .ascii-output {

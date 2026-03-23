@@ -73,9 +73,23 @@ fn render_app_shell_html() -> String {
     #|          </div>
     #|          <div class="mindmap-zoom">
     #|            <div class="zoom-strip">
-    #|              <button type="button" class="zoom-chip" id="zoom-out">-</button>
-    #|              <span class="zoom-value" id="zoom-value">100%</span>
-    #|              <button type="button" class="zoom-chip" id="zoom-in">+</button>
+    #|              <button type="button" class="zoom-chip" id="zoom-out" aria-label="缩小">
+    #|                <span class="tool-icon tool-icon--compact" aria-hidden="true">
+    #|                  <svg viewBox="0 0 24 24" fill="none">
+    #|                    <path d="M6 12h12"></path>
+    #|                  </svg>
+    #|                </span>
+    #|              </button>
+    #|              <span class="zoom-value" id="zoom-value" title="双击编辑缩放比例">100%</span>
+    #|              <input type="text" class="zoom-edit" id="zoom-edit" value="100%" aria-label="编辑缩放比例" />
+    #|              <button type="button" class="zoom-chip" id="zoom-in" aria-label="放大">
+    #|                <span class="tool-icon tool-icon--compact" aria-hidden="true">
+    #|                  <svg viewBox="0 0 24 24" fill="none">
+    #|                    <path d="M12 6v12"></path>
+    #|                    <path d="M6 12h12"></path>
+    #|                  </svg>
+    #|                </span>
+    #|              </button>
     #|            </div>
     #|          </div>
     #|        </div>
