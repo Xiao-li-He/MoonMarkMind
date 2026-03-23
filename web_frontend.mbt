@@ -23,7 +23,7 @@ let app_state : AppState = AppState::{
   layout_mode: "horizontal",
   style_mode: "line",
   detail_level: "medium",
-  left_panel_percent: 41,
+  left_panel_percent: 33,
   drag_source_index: -1,
   drag_source_parent: -2,
 }

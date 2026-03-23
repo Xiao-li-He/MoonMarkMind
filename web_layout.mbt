@@ -49,10 +49,6 @@ fn render_app_shell_html() -> String {
     #|
     #|  <section class="workspace">
     #|    <aside class="editor-panel">
-    #|      <div class="panel-head">
-    #|        <strong>Markdown</strong>
-    #|        <span>编辑真源文本</span>
-    #|      </div>
     #|      <div class="editor-surface">
     #|        <textarea id="input" spellcheck="false" placeholder="# MoonMarkMind&#10;&#10;## Links&#10;- [MoonBit Package](https://mooncakes.io/)&#10;&#10;## Features&#10;### Lists&#10;- item"></textarea>
     #|      </div>
@@ -64,11 +60,6 @@ fn render_app_shell_html() -> String {
     #|    </div>
     #|
     #|    <section class="mindmap-panel">
-    #|      <div class="panel-head">
-    #|        <strong>MindMap</strong>
-    #|        <span>双击编辑，拖拽重排</span>
-    #|      </div>
-    #|
     #|      <div class="mindmap-toolbar">
     #|        <div class="mindmap-tool">新建分支<br /><small>Enter</small></div>
     #|        <div class="mindmap-tool">新建子节点<br /><small>Tab</small></div>

@@ -36,6 +36,7 @@
         color: var(--ink);
         font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
         background: linear-gradient(180deg, #fff8e8 0%, #f3e7c1 100%);
+        overflow: hidden;
       }
 
       button,
@@ -45,19 +46,23 @@
       }
 
       #app {
-        min-height: 100vh;
+        height: 100vh;
         padding: 14px;
+        overflow: hidden;
       }
 
       .app-shell {
-        width: min(1280px, 100%);
+        width: 100%;
         margin: 0 auto;
         display: grid;
+        grid-template-rows: auto 1fr;
         gap: 14px;
         padding: 18px;
+        height: 100%;
         border: 3px solid rgba(43, 39, 33, 0.16);
         border-radius: 36px;
         background: rgba(250, 240, 201, 0.9);
+        overflow: hidden;
       }
 
       .topbar {
@@ -144,31 +149,36 @@
       }
 
       .workspace {
-        --left-pane-percent: 41%;
+        --left-pane-percent: 33%;
         display: grid;
-        grid-template-columns: minmax(320px, var(--left-pane-percent)) 30px minmax(420px, 1fr);
-        gap: 12px;
+        grid-template-columns: minmax(300px, var(--left-pane-percent)) 14px minmax(420px, 1fr);
+        gap: 8px;
         align-items: stretch;
+        min-height: 0;
+        height: 100%;
       }
 
       .editor-panel,
       .mindmap-panel {
         display: grid;
         align-content: start;
-        gap: 14px;
-        min-height: 720px;
-        padding: 18px;
+        gap: 12px;
+        min-height: 0;
+        padding: 18px 20px;
         border: 3px solid rgba(43, 39, 33, 0.16);
         border-radius: 32px;
         background: var(--panel);
+        overflow: hidden;
       }
 
       .editor-panel {
         background: rgba(230, 243, 232, 0.72);
+        grid-template-rows: 1fr;
       }
 
       .mindmap-panel {
         background: rgba(244, 239, 237, 0.95);
+        grid-template-rows: auto 1fr auto;
       }
 
       .workspace-divider {
@@ -180,62 +190,54 @@
       }
 
       .workspace-divider__track {
-        width: 6px;
+        width: 5px;
         height: 100%;
         border-radius: 999px;
-        background: rgba(43, 39, 33, 0.55);
+        background: rgba(43, 39, 33, 0.42);
       }
 
       .workspace-divider__handle {
         position: absolute;
-        width: 34px;
-        height: 108px;
-        border-radius: 2px;
-        background: rgba(128, 128, 128, 0.92);
-        box-shadow: 0 8px 20px rgba(43, 39, 33, 0.12);
-      }
-
-      .panel-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .panel-head strong {
-        font-size: 28px;
-      }
-
-      .panel-head span {
-        color: var(--muted);
-        font-size: 13px;
+        width: 10px;
+        height: 136px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, rgba(120, 115, 105, 0.9), rgba(108, 102, 93, 0.82));
+        box-shadow: 0 6px 14px rgba(43, 39, 33, 0.12);
       }
 
       .editor-surface,
       .mindmap-surface {
-        border: 3px solid rgba(43, 39, 33, 0.16);
-        border-radius: 28px;
+        border: 0;
+        border-radius: 0;
         overflow: hidden;
+        min-height: 0;
+        box-shadow: none;
       }
 
       .editor-surface {
-        background: rgba(233, 246, 235, 0.94);
+        background: transparent;
       }
 
       .mindmap-surface {
-        min-height: 560px;
-        background: rgba(255, 255, 255, 0.55);
+        background: transparent;
+      }
+
+      .editor-panel .editor-surface,
+      .mindmap-panel .mindmap-surface {
+        margin-top: 0;
       }
 
       textarea {
         width: 100%;
-        min-height: 620px;
+        height: 100%;
+        min-height: 0;
         resize: none;
         border: 0;
-        padding: 22px;
+        padding: 16px 12px;
         background: transparent;
         color: var(--ink);
         font: 16px/1.7 "Cascadia Code", "Consolas", monospace;
+        overflow: auto;
       }
 
       textarea:focus {
@@ -266,8 +268,9 @@
       }
 
       .mindmap {
-        min-height: 560px;
-        padding: 20px;
+        height: 100%;
+        min-height: 0;
+        padding: 6px 2px 2px;
         overflow: auto;
       }
 
@@ -620,29 +623,6 @@
         background: rgba(239, 79, 67, 0.14);
       }
 
-      @media (max-width: 1160px) {
-        .workspace {
-          grid-template-columns: 1fr;
-        }
-
-        .workspace-divider {
-          display: none;
-        }
-
-        .editor-panel,
-        .mindmap-panel {
-          min-height: auto;
-        }
-
-        textarea {
-          min-height: 380px;
-        }
-
-        .mindmap-surface,
-        .mindmap {
-          min-height: 460px;
-        }
-      }
     </style>
   </head>
   <body>
