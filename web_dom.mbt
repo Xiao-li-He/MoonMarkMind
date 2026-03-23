@@ -93,11 +93,42 @@ extern "js" fn bind_mindmap_ui(
   #|) => {
   #|  const mindmap = document.querySelector("#mindmap")
   #|  if (!mindmap) return
+  #|  const syncPan = () => {
+  #|    const panX = Number(mindmap.dataset.panX ?? "0")
+  #|    const panY = Number(mindmap.dataset.panY ?? "0")
+  #|    mindmap.style.setProperty("--pan-x", `${panX}px`)
+  #|    mindmap.style.setProperty("--pan-y", `${panY}px`)
+  #|  }
+  #|  const recenterPan = () => {
+  #|    const stage = mindmap.querySelector(".mindmap-stage")
+  #|    if (!stage) {
+  #|      mindmap.dataset.panX = "0"
+  #|      mindmap.dataset.panY = "0"
+  #|      syncPan()
+  #|      return
+  #|    }
+  #|    const viewportWidth = Math.ceil(mindmap.getBoundingClientRect().width)
+  #|    const viewportHeight = Math.ceil(mindmap.getBoundingClientRect().height)
+  #|    const stageWidth = Math.ceil(stage.getBoundingClientRect().width)
+  #|    const stageHeight = Math.ceil(stage.getBoundingClientRect().height)
+  #|    let nextPanX = 0
+  #|    let nextPanY = 0
+  #|    if (stage.classList.contains("mindmap-stage--vertical")) {
+  #|      const topMargin = 48
+  #|      nextPanY = Math.round((stageHeight - viewportHeight) / 2 + topMargin)
+  #|    } else if (stage.classList.contains("mindmap-stage--single-right")) {
+  #|      const leftMargin = 56
+  #|      nextPanX = Math.round((stageWidth - viewportWidth) / 2 + leftMargin)
+  #|    }
+  #|    mindmap.dataset.panX = `${nextPanX}`
+  #|    mindmap.dataset.panY = `${nextPanY}`
+  #|    syncPan()
+  #|  }
   #|  let panning = false
   #|  let startX = 0
   #|  let startY = 0
-  #|  let startLeft = 0
-  #|  let startTop = 0
+  #|  let startPanX = 0
+  #|  let startPanY = 0
   #|  const canPan = (target) => {
   #|    if (!target) return false
   #|    return !target.closest?.("[data-node-index], [data-action], [data-editor-for], button, input")
@@ -108,7 +139,14 @@ extern "js" fn bind_mindmap_ui(
   #|    document.body.style.userSelect = ""
   #|  }
   #|  mindmap.addEventListener("click", clickCallback)
-  #|  mindmap.addEventListener("dblclick", dblclickCallback)
+  #|  mindmap.addEventListener("dblclick", (event) => {
+  #|    if (canPan(event.target)) {
+  #|      event.preventDefault()
+  #|      recenterPan()
+  #|      return
+  #|    }
+  #|    dblclickCallback(event)
+  #|  })
   #|  mindmap.addEventListener("keydown", keydownCallback)
   #|  mindmap.addEventListener("focusout", focusoutCallback)
   #|  mindmap.addEventListener("dragstart", dragstartCallback)
@@ -120,18 +158,20 @@ extern "js" fn bind_mindmap_ui(
   #|    panning = true
   #|    startX = event.clientX
   #|    startY = event.clientY
-  #|    startLeft = mindmap.scrollLeft
-  #|    startTop = mindmap.scrollTop
+  #|    startPanX = Number(mindmap.dataset.panX ?? "0")
+  #|    startPanY = Number(mindmap.dataset.panY ?? "0")
   #|    mindmap.classList.add("is-panning")
   #|    document.body.style.userSelect = "none"
   #|    event.preventDefault()
   #|  })
   #|  window.addEventListener("mousemove", (event) => {
   #|    if (!panning) return
-  #|    mindmap.scrollLeft = startLeft - (event.clientX - startX)
-  #|    mindmap.scrollTop = startTop - (event.clientY - startY)
+  #|    mindmap.dataset.panX = (startPanX + event.clientX - startX).toString()
+  #|    mindmap.dataset.panY = (startPanY + event.clientY - startY).toString()
+  #|    syncPan()
   #|  })
   #|  window.addEventListener("mouseup", stopPan)
+  #|  syncPan()
   #|}
 
 ///|
@@ -169,7 +209,12 @@ extern "js" fn set_output_text(value : String) =
 extern "js" fn set_mindmap_html(value : String) =
   #|(value) => {
   #|  const mindmap = document.querySelector("#mindmap")
-  #|  if (mindmap) mindmap.innerHTML = value
+  #|  if (!mindmap) return
+  #|  if (mindmap.dataset.panX == null) mindmap.dataset.panX = "0"
+  #|  if (mindmap.dataset.panY == null) mindmap.dataset.panY = "0"
+  #|  mindmap.innerHTML = `<div class="mindmap-content">${value}</div>`
+  #|  mindmap.style.setProperty("--pan-x", `${Number(mindmap.dataset.panX ?? "0")}px`)
+  #|  mindmap.style.setProperty("--pan-y", `${Number(mindmap.dataset.panY ?? "0")}px`)
   #|}
 
 ///|
@@ -257,18 +302,22 @@ extern "js" fn download_mindmap_svg(filename : String) =
   #|  const svg = (() => {
   #|    const mindmap = document.querySelector("#mindmap")
   #|    if (!mindmap) return null
-  #|    const width = Math.max(mindmap.scrollWidth, Math.ceil(mindmap.getBoundingClientRect().width), 640)
-  #|    const height = Math.max(mindmap.scrollHeight, Math.ceil(mindmap.getBoundingClientRect().height), 360)
+  #|    const content = mindmap.querySelector(".mindmap-content")
+  #|    const contentRect = content?.getBoundingClientRect()
+  #|    const width = Math.max(Math.ceil(contentRect?.width ?? 0), Math.ceil(mindmap.getBoundingClientRect().width), 640)
+  #|    const height = Math.max(Math.ceil(contentRect?.height ?? 0), Math.ceil(mindmap.getBoundingClientRect().height), 360)
   #|    const styles = [...document.querySelectorAll("style")]
   #|      .map((node) => node.textContent ?? "")
   #|      .join("\n")
-  #|    const body = mindmap.innerHTML
+  #|    const panX = Number(mindmap.dataset.panX ?? "0")
+  #|    const panY = Number(mindmap.dataset.panY ?? "0")
+  #|    const body = content?.innerHTML ?? ""
   #|    return `<?xml version="1.0" encoding="UTF-8"?>
   #|<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   #|  <foreignObject width="100%" height="100%">
   #|    <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;background:#ffffff;">
   #|      <style>${styles}</style>
-  #|      <div class="mindmap" style="width:${width}px;height:${height}px;min-height:${height}px;overflow:hidden;padding:20px;">${body}</div>
+  #|      <div class="mindmap" style="width:${width}px;height:${height}px;min-height:${height}px;overflow:hidden;padding:20px;--pan-x:${panX}px;--pan-y:${panY}px;"><div class="mindmap-content">${body}</div></div>
   #|    </div>
   #|  </foreignObject>
   #|</svg>`
@@ -290,18 +339,22 @@ extern "js" fn download_mindmap_png(filename : String) =
   #|(filename) => {
   #|  const mindmap = document.querySelector("#mindmap")
   #|  if (!mindmap) return
-  #|  const width = Math.max(mindmap.scrollWidth, Math.ceil(mindmap.getBoundingClientRect().width), 640)
-  #|  const height = Math.max(mindmap.scrollHeight, Math.ceil(mindmap.getBoundingClientRect().height), 360)
+  #|  const content = mindmap.querySelector(".mindmap-content")
+  #|  const contentRect = content?.getBoundingClientRect()
+  #|  const width = Math.max(Math.ceil(contentRect?.width ?? 0), Math.ceil(mindmap.getBoundingClientRect().width), 640)
+  #|  const height = Math.max(Math.ceil(contentRect?.height ?? 0), Math.ceil(mindmap.getBoundingClientRect().height), 360)
   #|  const styles = [...document.querySelectorAll("style")]
   #|    .map((node) => node.textContent ?? "")
   #|    .join("\n")
-  #|  const body = mindmap.innerHTML
+  #|  const panX = Number(mindmap.dataset.panX ?? "0")
+  #|  const panY = Number(mindmap.dataset.panY ?? "0")
+  #|  const body = content?.innerHTML ?? ""
   #|  const svg = `<?xml version="1.0" encoding="UTF-8"?>
   #|<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   #|  <foreignObject width="100%" height="100%">
   #|    <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;background:#ffffff;">
   #|      <style>${styles}</style>
-  #|      <div class="mindmap" style="width:${width}px;height:${height}px;min-height:${height}px;overflow:hidden;padding:20px;">${body}</div>
+  #|      <div class="mindmap" style="width:${width}px;height:${height}px;min-height:${height}px;overflow:hidden;padding:20px;--pan-x:${panX}px;--pan-y:${panY}px;"><div class="mindmap-content">${body}</div></div>
   #|    </div>
   #|  </foreignObject>
   #|</svg>`

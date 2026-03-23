@@ -329,17 +329,25 @@
       }
 
       .mindmap {
+        --pan-x: 0px;
+        --pan-y: 0px;
+        position: relative;
         height: 100%;
         min-height: 0;
         padding: 6px 2px 2px;
-        overflow: auto;
+        overflow: hidden;
         cursor: grab;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
       }
 
-      .mindmap::-webkit-scrollbar {
-        display: none;
+      .mindmap-content {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(
+            calc(-50% + var(--pan-x)),
+            calc(-50% + var(--pan-y))
+          );
+        transform-origin: center center;
       }
 
       .mindmap.is-panning {
