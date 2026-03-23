@@ -7,5 +7,21 @@
     }
   ],
   "wbtest-import": [],
-  "test-import": []
+  "test-import": [],
+  "link": {
+    "js": {
+      "format": "esm",
+      "exports": [
+        "sample_markdown",
+        "outline_json",
+        "rename_heading",
+        "move_heading",
+        "add_child_heading",
+        "delete_heading",
+        "render_ascii_mindmap",
+        "demo_output",
+        "start_web_app"
+      ]
+    }
+  }
 }

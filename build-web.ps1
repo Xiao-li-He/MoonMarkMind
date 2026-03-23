@@ -19,12 +19,13 @@ if (!(Test-Path $webDir)) {
   New-Item -ItemType Directory -Path $webDir | Out-Null
 }
 
-$outlineMatch = Select-String -Path $source -Pattern 'function\s+([A-Za-z0-9$_]+)\$\$outline_json\(' | Select-Object -First 1
-if (-not $outlineMatch) {
-  throw "Failed to locate MoonBit outline_json symbol in $source"
+$sampleMatch = Select-String -Path $source -Pattern 'function\s+([A-Za-z0-9$_]+)\$\$sample_markdown\(' | Select-Object -First 1
+if (-not $sampleMatch) {
+  throw "Failed to locate MoonBit sample_markdown symbol in $source"
 }
 
-$symbolPrefix = $outlineMatch.Matches[0].Groups[1].Value
+$symbolPrefix = $sampleMatch.Matches[0].Groups[1].Value
+$sampleSymbol = $symbolPrefix + '$$sample_markdown'
 $outlineSymbol = $symbolPrefix + '$$outline_json'
 $renameSymbol = $symbolPrefix + '$$rename_heading'
 $moveSymbol = $symbolPrefix + '$$move_heading'
@@ -32,14 +33,13 @@ $addChildSymbol = $symbolPrefix + '$$add_child_heading'
 $deleteSymbol = $symbolPrefix + '$$delete_heading'
 $renderSymbol = $symbolPrefix + '$$render_ascii_mindmap'
 $demoSymbol = $symbolPrefix + '$$demo_output'
+$startSymbol = $symbolPrefix + '$$start_web_app'
 
 $bridge = @'
 
-const __MoonMarkMind_sample = "# MoonMarkMind Demo\n## Parser\n### Heading extraction\n### Level mapping\n## Renderer\n### ASCII mindmap\n### Round-trip preview";
-
 globalThis.__API_NAME__ = {
   sampleMarkdown() {
-    return __MoonMarkMind_sample;
+    return __SAMPLE_SYMBOL__();
   },
   outlineJson(markdown) {
     return __OUTLINE_SYMBOL__(markdown);
@@ -62,12 +62,18 @@ globalThis.__API_NAME__ = {
   demoOutput() {
     return __DEMO_SYMBOL__();
   },
+  startWebApp() {
+    return __START_SYMBOL__();
+  },
 };
+
+globalThis.__API_NAME__.startWebApp();
 
 export const __API_NAME__ = globalThis.__API_NAME__;
 '@
 
 $bridge = $bridge.
+  Replace("__SAMPLE_SYMBOL__", $sampleSymbol).
   Replace("__OUTLINE_SYMBOL__", $outlineSymbol).
   Replace("__RENAME_SYMBOL__", $renameSymbol).
   Replace("__MOVE_SYMBOL__", $moveSymbol).
@@ -75,6 +81,7 @@ $bridge = $bridge.
   Replace("__DELETE_SYMBOL__", $deleteSymbol).
   Replace("__RENDER_SYMBOL__", $renderSymbol).
   Replace("__DEMO_SYMBOL__", $demoSymbol).
+  Replace("__START_SYMBOL__", $startSymbol).
   Replace("__API_NAME__", $apiName)
 
 Copy-Item $source $output -Force

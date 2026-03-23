@@ -20,6 +20,8 @@ fn render_ascii_mindmap(String) -> String
 
 fn sample_markdown() -> String
 
+fn start_web_app() -> Unit
+
 // Errors
 
 // Types and methods
