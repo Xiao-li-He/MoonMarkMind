@@ -809,6 +809,44 @@
         background: rgba(239, 79, 67, 0.14);
       }
 
+      @container (max-width: 520px) {
+        .mindmap-stage {
+          grid-template-columns: minmax(156px, 1fr) auto minmax(156px, 1fr);
+          gap: 18px;
+          min-width: 620px;
+          padding: 16px 2px;
+        }
+
+        .center-wrap {
+          padding-top: 88px;
+        }
+
+        .branch-column {
+          min-height: 420px;
+          padding-top: 22px;
+        }
+
+        .branch-item::before {
+          width: 20px;
+        }
+
+        .branch-item--left::before {
+          right: -20px;
+        }
+
+        .branch-item--right::before {
+          left: -20px;
+        }
+
+        .branch-children--left {
+          padding-right: 24px;
+        }
+
+        .branch-children--right {
+          padding-left: 24px;
+        }
+      }
+
     </style>
   </head>
   <body>
