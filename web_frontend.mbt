@@ -4,6 +4,8 @@ priv struct AppState {
   mut markdown : String
   mut root : OutlineNode
   mut collapsed : Array[Int]
+  mut undo_stack : Array[String]
+  mut redo_stack : Array[String]
   mut selected_node : Int
   mut editing_node : Int
   mut layout_mode : String
@@ -21,6 +23,8 @@ let app_state : AppState = AppState::{
   markdown: "",
   root: empty_outline(),
   collapsed: [],
+  undo_stack: [],
+  redo_stack: [],
   selected_node: -2,
   editing_node: -2,
   layout_mode: "horizontal",
@@ -55,11 +59,13 @@ pub fn start_web_app() -> Unit {
 
 ///|
 fn on_new_click() -> Unit {
+  reset_history()
   load_markdown("", true)
 }
 
 ///|
 fn on_sample_click() -> Unit {
+  reset_history()
   load_markdown(sample_markdown(), true)
 }
 
@@ -70,6 +76,7 @@ fn on_upload_click() -> Unit {
 
 ///|
 fn on_upload_loaded(markdown : String) -> Unit {
+  reset_history()
   load_markdown(markdown, true)
 }
 
@@ -80,7 +87,7 @@ fn on_download_markdown_click() -> Unit {
 
 ///|
 fn on_input_change() -> Unit {
-  load_markdown(get_input_value(), true)
+  apply_markdown_change(get_input_value(), true)
 }
 
 ///|
@@ -144,21 +151,18 @@ fn on_mindmap_click(event : BrowserEvent) -> Unit {
       sync_detail_customized()
       render_ui()
     }
-    "toggle-card" => {
-      toggle_collapsed(node_index)
-      sync_detail_customized()
-      render_ui()
-    }
     _ => if action == "" { render_ui() }
   }
 }
 
 ///|
 fn on_toolbar_action(action : String) -> Unit {
-  if app_state.selected_node < 0 {
+  if !can_toolbar_action(action) {
     return
   }
   match action {
+    "undo" => handle_undo()
+    "redo" => handle_redo()
     "new-branch" => handle_add_sibling(app_state.selected_node, true)
     "new-child" => handle_add_child(app_state.selected_node)
     "delete-node" => handle_delete(app_state.selected_node)
@@ -276,7 +280,7 @@ fn handle_add_child(node_index : Int) -> Unit {
     return
   }
   let next_markdown = add_child_heading(app_state.markdown, node_index, title)
-  load_markdown(next_markdown, false)
+  apply_markdown_change(next_markdown, false)
   expand_node(node_index)
   sync_detail_customized()
   render_ui()
@@ -297,7 +301,7 @@ fn handle_add_sibling(node_index : Int, place_after : Bool) -> Unit {
   if !place_after {
     app_state.selected_node = node_index + 1
   }
-  load_markdown(next_markdown, false)
+  apply_markdown_change(next_markdown, false)
 }
 
 ///|
@@ -313,7 +317,7 @@ fn handle_delete(node_index : Int) -> Unit {
       }
       let next_markdown = delete_heading(app_state.markdown, node_index)
       app_state.selected_node = -2
-      load_markdown(next_markdown, false)
+      apply_markdown_change(next_markdown, false)
     }
     None => ()
   }
@@ -324,7 +328,7 @@ fn save_editor(node_index : Int, title : String) -> Unit {
   let next_markdown = rename_heading(app_state.markdown, node_index, title)
   app_state.selected_node = node_index
   app_state.editing_node = -2
-  load_markdown(next_markdown, false)
+  apply_markdown_change(next_markdown, false)
 }
 
 ///|
@@ -346,7 +350,96 @@ fn handle_move_selected(move_down : Bool) -> Unit {
     app_state.selected_node,
     move_down,
   )
+  apply_markdown_change(next_markdown, false)
+}
+
+///|
+fn handle_undo() -> Unit {
+  if app_state.undo_stack.length() == 0 {
+    return
+  }
+  let last_index = app_state.undo_stack.length() - 1
+  let previous = app_state.undo_stack[last_index]
+  app_state.undo_stack = slice_strings(app_state.undo_stack, 0, last_index)
+  app_state.redo_stack.push(app_state.markdown)
+  load_markdown(previous, false)
+}
+
+///|
+fn handle_redo() -> Unit {
+  if app_state.redo_stack.length() == 0 {
+    return
+  }
+  let last_index = app_state.redo_stack.length() - 1
+  let next_markdown = app_state.redo_stack[last_index]
+  app_state.redo_stack = slice_strings(app_state.redo_stack, 0, last_index)
+  app_state.undo_stack.push(app_state.markdown)
   load_markdown(next_markdown, false)
+}
+
+///|
+fn apply_markdown_change(markdown : String, reset_ui : Bool) -> Unit {
+  if markdown == app_state.markdown {
+    if reset_ui {
+      load_markdown(markdown, true)
+    }
+    return
+  }
+  if app_state.markdown.length() > 0 || markdown.length() > 0 {
+    app_state.undo_stack.push(app_state.markdown)
+  }
+  app_state.redo_stack = []
+  load_markdown(markdown, reset_ui)
+}
+
+///|
+fn reset_history() -> Unit {
+  app_state.undo_stack = []
+  app_state.redo_stack = []
+}
+
+///|
+fn selected_node_exists() -> Bool {
+  if app_state.selected_node < 0 {
+    return false
+  }
+  match find_node(app_state.root, app_state.selected_node) {
+    Some(_) => true
+    None => false
+  }
+}
+
+///|
+fn selected_has_children() -> Bool {
+  if app_state.selected_node < 0 {
+    return false
+  }
+  match find_node(app_state.root, app_state.selected_node) {
+    Some(node) => node.children.length() > 0
+    None => false
+  }
+}
+
+///|
+fn can_add_sibling_selected() -> Bool {
+  if app_state.selected_node < 0 {
+    return false
+  }
+  app_state.root.synthetic ||
+  app_state.selected_node != app_state.root.flat_index
+}
+
+///|
+fn can_move_selected(move_down : Bool) -> Bool {
+  if app_state.selected_node < 0 {
+    return false
+  }
+  move_heading_among_siblings(
+    app_state.markdown,
+    app_state.selected_node,
+    move_down,
+  ) !=
+  app_state.markdown
 }
 
 ///|
@@ -382,11 +475,42 @@ fn render_ui() -> Unit {
   }
   set_select_value("detail-select", detail_select_value)
   set_select_muted("detail-select", app_state.detail_customized)
-  set_toolbar_selection_enabled(app_state.selected_node >= 0)
+  let has_selection = app_state.selected_node >= 0
+  set_toolbar_selection_enabled(has_selection)
+  if has_selection {
+    set_toolbar_action_enabled("new-branch", can_toolbar_action("new-branch"))
+    set_toolbar_action_enabled("new-child", can_toolbar_action("new-child"))
+    set_toolbar_action_enabled("delete-node", can_toolbar_action("delete-node"))
+    set_toolbar_action_enabled("edit-node", can_toolbar_action("edit-node"))
+    set_toolbar_action_enabled("move-up", can_toolbar_action("move-up"))
+    set_toolbar_action_enabled("move-down", can_toolbar_action("move-down"))
+    set_toolbar_action_enabled("toggle-node", can_toolbar_action("toggle-node"))
+    set_toolbar_action_enabled("insert-node", can_toolbar_action("insert-node"))
+  }
+  set_aux_action_enabled("undo-action", app_state.undo_stack.length() > 0)
+  set_aux_action_enabled("redo-action", app_state.redo_stack.length() > 0)
   set_workspace_split(app_state.left_panel_percent)
   set_mindmap_html(render_mindmap_html())
   if app_state.editing_node >= 0 {
     focus_editor(app_state.editing_node)
+  }
+}
+
+///|
+fn can_toolbar_action(action : String) -> Bool {
+  if app_state.selected_node < 0 {
+    return false
+  }
+  match action {
+    "new-branch" => can_add_sibling_selected()
+    "new-child" => selected_node_exists()
+    "delete-node" => selected_node_exists()
+    "edit-node" => selected_node_exists()
+    "move-up" => can_move_selected(false)
+    "move-down" => can_move_selected(true)
+    "toggle-node" => selected_has_children()
+    "insert-node" => can_add_sibling_selected()
+    _ => false
   }
 }
 
@@ -546,9 +670,6 @@ fn render_node_card(
     classes.push("is-selected")
   }
   classes.push(render_node_style_class())
-  if has_children {
-    classes.push("is-clickable")
-  }
   if is_draggable {
     classes.push("is-draggable")
   }
@@ -556,12 +677,7 @@ fn render_node_card(
   let title_html = render_node_title(node, editable, is_editing)
   let action_html = render_node_actions(node, has_children, editable, is_center)
   let drag_attrs = render_drag_attrs(node, parent_index, is_draggable)
-  let toggle_attr = if has_children {
-    " data-action=\"toggle-card\""
-  } else {
-    ""
-  }
-  "<div class=\"\{class_name}\" data-level=\"\{node.level}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{drag_attrs}\{toggle_attr}><small>Level \{node.level}</small>\{title_html}\{action_html}</div>"
+  "<div class=\"\{class_name}\" data-level=\"\{node.level}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{drag_attrs}><small>Level \{node.level}</small>\{title_html}\{action_html}</div>"
 }
 
 ///|
@@ -823,6 +939,19 @@ fn same_collapse_state(left : Array[Int], right : Array[Int]) -> Bool {
     }
   }
   true
+}
+
+///|
+fn slice_strings(
+  values : Array[String],
+  start : Int,
+  end_ : Int,
+) -> Array[String] {
+  let sliced = []
+  for index in start..<end_ {
+    sliced.push(values[index])
+  }
+  sliced
 }
 
 ///|

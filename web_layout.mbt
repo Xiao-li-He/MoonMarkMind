@@ -133,7 +133,7 @@ fn render_primary_toolbar() -> String {
     ),
     render_toolbar_icon_button(
       action="toggle-node",
-      tip="收起 / 展开 · 点击",
+      tip="收起或展开 · Space",
       icon=icon_fold(),
     ),
     render_toolbar_icon_button(
@@ -147,11 +147,19 @@ fn render_primary_toolbar() -> String {
 ///|
 fn render_secondary_toolbar() -> String {
   [
-    render_aux_icon_button(tip="撤回 · 预留", icon=icon_undo()),
-    render_aux_icon_button(tip="重做 · 预留", icon=icon_redo()),
+    render_aux_icon_button_with_id(
+      id="undo-action",
+      tip="撤回 · Ctrl+Z",
+      icon=icon_undo(),
+    ),
+    render_aux_icon_button_with_id(
+      id="redo-action",
+      tip="重做 · Ctrl+Y",
+      icon=icon_redo(),
+    ),
     render_aux_icon_button_with_id(
       id="recenter-view",
-      tip="回中视图 · 双击空白",
+      tip="回中视图 · 双击画布空白处",
       icon=icon_play(),
     ),
     render_aux_icon_button(tip="帮助", icon=icon_help()),

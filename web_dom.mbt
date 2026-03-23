@@ -41,9 +41,17 @@ extern "js" fn bind_static_ui(
   #|  document.querySelector("#export-select")?.addEventListener("change", (event) => {
   #|    exportCallback(event.target?.value ?? "")
   #|  })
+  #|  document.querySelector("#undo-action")?.addEventListener("click", (event) => {
+  #|    if (event.currentTarget?.dataset?.disabled === "true") return
+  #|    toolbarCallback("undo")
+  #|  })
+  #|  document.querySelector("#redo-action")?.addEventListener("click", (event) => {
+  #|    if (event.currentTarget?.dataset?.disabled === "true") return
+  #|    toolbarCallback("redo")
+  #|  })
   #|  for (const button of document.querySelectorAll("[data-toolbar-action]")) {
   #|    button.addEventListener("click", () => {
-  #|      if (button.disabled) return
+  #|      if (button.dataset.disabled === "true") return
   #|      toolbarCallback(button.dataset.toolbarAction ?? "")
   #|    })
   #|  }
@@ -57,6 +65,8 @@ extern "js" fn bind_static_ui(
   #|    else if (event.key === " " || event.code === "Space") action = "toggle-node"
   #|    else if (event.ctrlKey && event.key === "ArrowUp") action = "move-up"
   #|    else if (event.ctrlKey && event.key === "ArrowDown") action = "move-down"
+  #|    else if (event.ctrlKey && !event.shiftKey && (event.key === "z" || event.key === "Z")) action = "undo"
+  #|    else if (event.ctrlKey && (event.key === "y" || event.key === "Y")) action = "redo"
   #|    if (!action) return
   #|    event.preventDefault()
   #|    toolbarCallback(action)
@@ -290,9 +300,30 @@ extern "js" fn set_select_muted(id : String, muted : Bool) =
 extern "js" fn set_toolbar_selection_enabled(enabled : Bool) =
   #|(enabled) => {
   #|  for (const button of document.querySelectorAll("[data-toolbar-action]")) {
-  #|    button.disabled = !enabled
+  #|    button.dataset.disabled = (!enabled).toString()
+  #|    button.setAttribute("aria-disabled", (!enabled).toString())
   #|    button.classList.toggle("mindmap-tool--disabled", !enabled)
   #|  }
+  #|}
+
+///|
+extern "js" fn set_toolbar_action_enabled(action : String, enabled : Bool) =
+  #|(action, enabled) => {
+  #|  const button = document.querySelector(`[data-toolbar-action="${action}"]`)
+  #|  if (!button) return
+  #|  button.dataset.disabled = (!enabled).toString()
+  #|  button.setAttribute("aria-disabled", (!enabled).toString())
+  #|  button.classList.toggle("mindmap-tool--disabled", !enabled)
+  #|}
+
+///|
+extern "js" fn set_aux_action_enabled(id : String, enabled : Bool) =
+  #|(id, enabled) => {
+  #|  const button = document.querySelector(`#${id}`)
+  #|  if (!button) return
+  #|  button.dataset.disabled = (!enabled).toString()
+  #|  button.setAttribute("aria-disabled", (!enabled).toString())
+  #|  button.classList.toggle("mindmap-aux-button--disabled", !enabled)
   #|}
 
 ///|
