@@ -177,8 +177,12 @@
       }
 
       .mindmap-panel {
+        align-content: stretch;
+        position: relative;
         background: rgba(244, 239, 237, 0.95);
-        grid-template-rows: auto 1fr auto;
+        grid-template-rows: auto minmax(0, 1fr);
+        gap: 6px;
+        padding: 12px 10px 10px;
       }
 
       .workspace-divider {
@@ -220,6 +224,7 @@
 
       .mindmap-surface {
         background: transparent;
+        height: 100%;
       }
 
       .editor-panel .editor-surface,
@@ -246,25 +251,81 @@
 
       .mindmap-toolbar {
         display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 0 2px 4px;
+      }
+
+      .mindmap-toolbar__actions {
+        display: flex;
         flex-wrap: wrap;
-        justify-content: center;
-        gap: 12px;
+        gap: 10px;
+        flex: 1;
       }
 
       .mindmap-tool {
-        min-width: 88px;
-        padding: 8px 10px;
-        border-radius: 14px;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 82px;
+        height: 44px;
+        padding: 0 16px;
+        appearance: none;
+        border: 0;
+        border-radius: 16px;
         text-align: center;
         color: var(--teal);
         background: rgba(255, 255, 255, 0.72);
         font-size: 14px;
-        line-height: 1.35;
+        line-height: 1;
+        white-space: nowrap;
+        cursor: default;
       }
 
-      .mindmap-tool small {
-        color: var(--muted);
+      .mindmap-tool::after {
+        content: attr(data-tip);
+        position: absolute;
+        left: 50%;
+        top: calc(100% + 8px);
+        transform: translateX(-50%) translateY(-6px);
+        padding: 5px 8px;
+        border-radius: 10px;
+        background: rgba(43, 39, 33, 0.88);
+        color: white;
         font-size: 12px;
+        line-height: 1;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 120ms ease, transform 120ms ease;
+      }
+
+      .mindmap-tool:hover::after,
+      .mindmap-tool:focus-visible::after {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      .mindmap-tool:hover,
+      .mindmap-tool:focus-visible {
+        background: rgba(255, 255, 255, 0.92);
+        outline: none;
+      }
+
+      .mindmap-canvas-shell {
+        display: flex;
+        min-height: 0;
+        height: 100%;
+      }
+
+      .mindmap-surface {
+        flex: 1;
+        min-height: 0;
+        border: 2px dashed rgba(43, 39, 33, 0.24);
+        border-radius: 26px;
       }
 
       .mindmap {
@@ -272,27 +333,39 @@
         min-height: 0;
         padding: 6px 2px 2px;
         overflow: auto;
+        cursor: grab;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
       }
 
-      .mindmap-footer {
+      .mindmap::-webkit-scrollbar {
+        display: none;
+      }
+
+      .mindmap.is-panning {
+        cursor: grabbing;
+      }
+
+      .mindmap-zoom {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
+        justify-content: flex-end;
+        flex: 0 0 auto;
+        padding: 0;
       }
 
       .zoom-strip {
         display: inline-flex;
         align-items: center;
-        gap: 10px;
-        padding: 8px 12px;
+        gap: 8px;
+        padding: 7px 10px;
         border-radius: 16px;
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.82);
+        box-shadow: 0 8px 18px rgba(43, 39, 33, 0.08);
       }
 
       .zoom-chip {
-        width: 34px;
-        height: 34px;
+        width: 32px;
+        height: 32px;
         border: 0;
         border-radius: 10px;
         background: rgba(142, 152, 163, 0.16);

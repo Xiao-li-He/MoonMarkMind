@@ -61,23 +61,26 @@ fn render_app_shell_html() -> String {
     #|
     #|    <section class="mindmap-panel">
     #|      <div class="mindmap-toolbar">
-    #|        <div class="mindmap-tool">新建分支<br /><small>Enter</small></div>
-    #|        <div class="mindmap-tool">新建子节点<br /><small>Tab</small></div>
-    #|        <div class="mindmap-tool">删除<br /><small>Delete</small></div>
-    #|        <div class="mindmap-tool">编辑<br /><small>双击</small></div>
-    #|        <div class="mindmap-tool">上移 / 下移<br /><small>拖拽</small></div>
-    #|        <div class="mindmap-tool">收起 / 展开<br /><small>点击</small></div>
+    #|        <div class="mindmap-toolbar__actions">
+    #|          <button type="button" class="mindmap-tool" data-tip="Enter">新建分支</button>
+    #|          <button type="button" class="mindmap-tool" data-tip="Tab">新建子节点</button>
+    #|          <button type="button" class="mindmap-tool" data-tip="Delete">删除</button>
+    #|          <button type="button" class="mindmap-tool" data-tip="双击">编辑</button>
+    #|          <button type="button" class="mindmap-tool" data-tip="拖拽">上移 / 下移</button>
+    #|          <button type="button" class="mindmap-tool" data-tip="点击">收起 / 展开</button>
+    #|        </div>
+    #|        <div class="mindmap-zoom">
+    #|          <div class="zoom-strip">
+    #|            <button type="button" class="zoom-chip" disabled>-</button>
+    #|            <span class="zoom-value">100%</span>
+    #|            <button type="button" class="zoom-chip" disabled>+</button>
+    #|          </div>
+    #|        </div>
     #|      </div>
     #|
-    #|      <div class="mindmap-surface">
-    #|        <div class="mindmap" id="mindmap"></div>
-    #|      </div>
-    #|
-    #|      <div class="mindmap-footer">
-    #|        <div class="zoom-strip">
-    #|          <button type="button" class="zoom-chip" disabled>-</button>
-    #|          <span class="zoom-value">100%</span>
-    #|          <button type="button" class="zoom-chip" disabled>+</button>
+    #|      <div class="mindmap-canvas-shell">
+    #|        <div class="mindmap-surface">
+    #|          <div class="mindmap" id="mindmap"></div>
     #|        </div>
     #|        <pre id="output" class="ascii-output"></pre>
     #|      </div>

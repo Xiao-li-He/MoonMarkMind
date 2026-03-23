@@ -93,6 +93,20 @@ extern "js" fn bind_mindmap_ui(
   #|) => {
   #|  const mindmap = document.querySelector("#mindmap")
   #|  if (!mindmap) return
+  #|  let panning = false
+  #|  let startX = 0
+  #|  let startY = 0
+  #|  let startLeft = 0
+  #|  let startTop = 0
+  #|  const canPan = (target) => {
+  #|    if (!target) return false
+  #|    return !target.closest?.("[data-node-index], [data-action], [data-editor-for], button, input")
+  #|  }
+  #|  const stopPan = () => {
+  #|    panning = false
+  #|    mindmap.classList.remove("is-panning")
+  #|    document.body.style.userSelect = ""
+  #|  }
   #|  mindmap.addEventListener("click", clickCallback)
   #|  mindmap.addEventListener("dblclick", dblclickCallback)
   #|  mindmap.addEventListener("keydown", keydownCallback)
@@ -101,6 +115,23 @@ extern "js" fn bind_mindmap_ui(
   #|  mindmap.addEventListener("dragend", dragendCallback)
   #|  mindmap.addEventListener("dragover", dragoverCallback)
   #|  mindmap.addEventListener("drop", dropCallback)
+  #|  mindmap.addEventListener("mousedown", (event) => {
+  #|    if (!canPan(event.target)) return
+  #|    panning = true
+  #|    startX = event.clientX
+  #|    startY = event.clientY
+  #|    startLeft = mindmap.scrollLeft
+  #|    startTop = mindmap.scrollTop
+  #|    mindmap.classList.add("is-panning")
+  #|    document.body.style.userSelect = "none"
+  #|    event.preventDefault()
+  #|  })
+  #|  window.addEventListener("mousemove", (event) => {
+  #|    if (!panning) return
+  #|    mindmap.scrollLeft = startLeft - (event.clientX - startX)
+  #|    mindmap.scrollTop = startTop - (event.clientY - startY)
+  #|  })
+  #|  window.addEventListener("mouseup", stopPan)
   #|}
 
 ///|
