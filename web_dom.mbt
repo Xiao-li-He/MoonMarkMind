@@ -255,6 +255,14 @@ extern "js" fn set_select_value(id : String, value : String) =
   #|}
 
 ///|
+extern "js" fn set_select_muted(id : String, muted : Bool) =
+  #|(id, muted) => {
+  #|  const control = document.querySelector(`#${id}`)
+  #|  if (!control) return
+  #|  control.classList.toggle("tool-select--muted", muted)
+  #|}
+
+///|
 extern "js" fn focus_editor(node_index : Int) =
   #|(nodeIndex) => {
   #|  queueMicrotask(() => {

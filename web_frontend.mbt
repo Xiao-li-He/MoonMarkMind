@@ -8,6 +8,7 @@ priv struct AppState {
   mut layout_mode : String
   mut style_mode : String
   mut detail_level : String
+  mut detail_customized : Bool
   mut left_panel_percent : Int
   mut drag_source_index : Int
   mut drag_source_parent : Int
@@ -22,7 +23,8 @@ let app_state : AppState = AppState::{
   editing_node: -2,
   layout_mode: "horizontal",
   style_mode: "line",
-  detail_level: "medium",
+  detail_level: "all",
+  detail_customized: false,
   left_panel_percent: 33,
   drag_source_index: -1,
   drag_source_parent: -2,
@@ -94,6 +96,8 @@ fn on_style_change(mode : String) -> Unit {
 ///|
 fn on_detail_change(level : String) -> Unit {
   app_state.detail_level = normalize_detail_level(level)
+  apply_detail_preset()
+  sync_detail_customized()
   render_ui()
 }
 
@@ -130,10 +134,12 @@ fn on_mindmap_click(event : BrowserEvent) -> Unit {
     "toggle" => {
       stop_event(event)
       toggle_collapsed(node_index)
+      sync_detail_customized()
       render_ui()
     }
     "toggle-card" => {
       toggle_collapsed(node_index)
+      sync_detail_customized()
       render_ui()
     }
     _ => ()
@@ -241,6 +247,9 @@ fn handle_add_child(node_index : Int) -> Unit {
   }
   let next_markdown = add_child_heading(app_state.markdown, node_index, title)
   load_markdown(next_markdown, false)
+  expand_node(node_index)
+  sync_detail_customized()
+  render_ui()
 }
 
 ///|
@@ -255,7 +264,7 @@ fn handle_delete(node_index : Int) -> Unit {
         return
       }
       let next_markdown = delete_heading(app_state.markdown, node_index)
-      load_markdown(next_markdown, true)
+      load_markdown(next_markdown, false)
     }
     None => ()
   }
@@ -271,15 +280,20 @@ fn save_editor(node_index : Int, title : String) -> Unit {
 ///|
 fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
   if reset_ui {
-    app_state.collapsed = []
     app_state.editing_node = -2
   }
   app_state.markdown = markdown
   app_state.root = build_outline(markdown)
+  if reset_ui {
+    apply_detail_preset()
+  } else {
+    sanitize_collapsed_state()
+  }
   if get_input_value() != markdown {
     set_input_value(markdown)
   }
   set_output_text(render_ascii_mindmap(markdown))
+  sync_detail_customized()
   render_ui()
 }
 
@@ -287,12 +301,26 @@ fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
 fn render_ui() -> Unit {
   set_select_value("layout-select", app_state.layout_mode)
   set_select_value("style-select", app_state.style_mode)
-  set_select_value("detail-select", app_state.detail_level)
+  let detail_select_value = if app_state.detail_customized {
+    "custom-\{app_state.detail_level}"
+  } else {
+    app_state.detail_level
+  }
+  set_select_value("detail-select", detail_select_value)
+  set_select_muted("detail-select", app_state.detail_customized)
   set_workspace_split(app_state.left_panel_percent)
   set_mindmap_html(render_mindmap_html())
   if app_state.editing_node >= 0 {
     focus_editor(app_state.editing_node)
   }
+}
+
+///|
+fn sync_detail_customized() -> Unit {
+  app_state.detail_customized = !same_collapse_state(
+    app_state.collapsed,
+    preset_collapsed_for_level(app_state.root, app_state.detail_level),
+  )
 }
 
 ///|
@@ -539,6 +567,14 @@ fn toggle_collapsed(node_index : Int) -> Unit {
 }
 
 ///|
+fn expand_node(node_index : Int) -> Unit {
+  if node_index < 0 {
+    return
+  }
+  app_state.collapsed = remove_int(app_state.collapsed, node_index)
+}
+
+///|
 fn is_collapsed(node_index : Int) -> Bool {
   contains_int(app_state.collapsed, node_index)
 }
@@ -585,6 +621,9 @@ fn normalize_style_mode(mode : String) -> String {
 fn normalize_detail_level(level : String) -> String {
   match level {
     "small" => "small"
+    "custom-small" => "small"
+    "custom-all" => "all"
+    "custom-medium" => "medium"
     "all" => "all"
     _ => "medium"
   }
@@ -612,10 +651,7 @@ fn render_node_style_class() -> String {
 
 ///|
 fn should_render_children(node : OutlineNode) -> Bool {
-  if node.children.length() == 0 || is_collapsed(node.flat_index) {
-    return false
-  }
-  node_depth(node) < max_visible_depth()
+  node.children.length() > 0 && !is_collapsed(node.flat_index)
 }
 
 ///|
@@ -624,12 +660,80 @@ fn node_depth(node : OutlineNode) -> Int {
 }
 
 ///|
-fn max_visible_depth() -> Int {
-  match app_state.detail_level {
-    "small" => 2
-    "all" => 99
+fn apply_detail_preset() -> Unit {
+  app_state.collapsed = preset_collapsed_for_level(
+    app_state.root,
+    app_state.detail_level,
+  )
+}
+
+///|
+fn preset_collapsed_for_level(
+  root : OutlineNode,
+  detail_level : String,
+) -> Array[Int] {
+  let threshold = match detail_level {
+    "small" => 1
+    "all" => 1000
     _ => 3
   }
+  let collapsed = []
+  collect_preset_collapsed(root, threshold, collapsed)
+  collapsed
+}
+
+///|
+fn collect_preset_collapsed(
+  node : OutlineNode,
+  threshold : Int,
+  collapsed : Array[Int],
+) -> Unit {
+  let should_collapse = !node.synthetic &&
+    node.children.length() > 0 &&
+    node_depth(node) >= threshold
+  if should_collapse {
+    collapsed.push(node.flat_index)
+  }
+  for child in node.children {
+    collect_preset_collapsed(child, threshold, collapsed)
+  }
+}
+
+///|
+fn sanitize_collapsed_state() -> Unit {
+  let next = []
+  for node_index in app_state.collapsed {
+    if is_collapsible_node(app_state.root, node_index) {
+      next.push(node_index)
+    }
+  }
+  app_state.collapsed = next
+}
+
+///|
+fn is_collapsible_node(node : OutlineNode, target : Int) -> Bool {
+  if node.flat_index == target {
+    return !node.synthetic && node.children.length() > 0
+  }
+  for child in node.children {
+    if is_collapsible_node(child, target) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn same_collapse_state(left : Array[Int], right : Array[Int]) -> Bool {
+  if left.length() != right.length() {
+    return false
+  }
+  for value in left {
+    if !contains_int(right, value) {
+      return false
+    }
+  }
+  true
 }
 
 ///|

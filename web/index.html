@@ -143,9 +143,29 @@
         color: var(--ink);
       }
 
+      .tool-select option {
+        color: var(--ink);
+        background: rgba(255, 255, 255, 0.98);
+      }
+
+      .tool-select option:checked {
+        color: var(--ink);
+        background: rgba(43, 39, 33, 0.14);
+      }
+
       .tool-select--accent {
         border-color: rgba(236, 155, 30, 0.42);
         color: var(--orange);
+      }
+
+      .tool-select--muted {
+        border-color: rgba(142, 152, 163, 0.42);
+        color: var(--gray);
+      }
+
+      .tool-select--muted option:checked {
+        color: var(--gray);
+        background: rgba(142, 152, 163, 0.16);
       }
 
       .workspace {

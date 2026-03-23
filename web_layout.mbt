@@ -31,8 +31,11 @@ fn render_app_shell_html() -> String {
     #|        <span class="tool-select-label">层级</span>
     #|        <select id="detail-select" class="tool-select">
     #|          <option value="small">最小</option>
+    #|          <option value="custom-small" hidden>最小</option>
     #|          <option value="medium">中等</option>
+    #|          <option value="custom-medium" hidden>中等</option>
     #|          <option value="all">全部</option>
+    #|          <option value="custom-all" hidden>全部</option>
     #|        </select>
     #|      </label>
     #|      <label class="tool-select-wrap">
