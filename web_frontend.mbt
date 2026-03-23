@@ -97,16 +97,12 @@ fn on_detail_change(level : String) -> Unit {
 ///|
 fn on_export_change(kind : String) -> Unit {
   match kind {
-    "markdown" => download_text("moonmarkmind.md", app_state.markdown)
-    "ascii" =>
-      download_text(
-        "moonmarkmind.txt",
-        render_ascii_mindmap(app_state.markdown),
-      )
+    "png" => download_mindmap_png("moonmarkmind.png")
+    "svg" => download_mindmap_svg("moonmarkmind.svg")
     "html" => download_current_page_html("moonmarkmind.html")
     _ => ()
   }
-  set_select_value("export-select", "none")
+  set_select_value("export-select", "")
 }
 
 ///|

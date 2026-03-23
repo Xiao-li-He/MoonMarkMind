@@ -38,10 +38,10 @@ fn render_app_shell_html() -> String {
     #|      <label class="tool-select-wrap">
     #|        <span class="tool-select-label">导出</span>
     #|        <select id="export-select" class="tool-select tool-select--accent">
-    #|          <option value="none">选择</option>
-    #|          <option value="markdown">Markdown</option>
-    #|          <option value="ascii">ASCII</option>
-    #|          <option value="html">HTML</option>
+    #|          <option value="" hidden selected>选择</option>
+    #|          <option value="png">.PNG</option>
+    #|          <option value="svg">.SVG</option>
+    #|          <option value="html">.HTML</option>
     #|        </select>
     #|      </label>
     #|    </div>

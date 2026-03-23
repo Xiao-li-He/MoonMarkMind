@@ -37,7 +37,7 @@ extern "js" fn bind_static_ui(
   #|    detailCallback(event.target?.value ?? "medium")
   #|  })
   #|  document.querySelector("#export-select")?.addEventListener("change", (event) => {
-  #|    exportCallback(event.target?.value ?? "none")
+  #|    exportCallback(event.target?.value ?? "")
   #|  })
   #|}
 
@@ -180,6 +180,92 @@ extern "js" fn download_current_page_html(filename : String) =
   #|  link.click()
   #|  link.remove()
   #|  URL.revokeObjectURL(url)
+  #|}
+
+///|
+extern "js" fn download_mindmap_svg(filename : String) =
+  #|(filename) => {
+  #|  const svg = (() => {
+  #|    const mindmap = document.querySelector("#mindmap")
+  #|    if (!mindmap) return null
+  #|    const width = Math.max(mindmap.scrollWidth, Math.ceil(mindmap.getBoundingClientRect().width), 640)
+  #|    const height = Math.max(mindmap.scrollHeight, Math.ceil(mindmap.getBoundingClientRect().height), 360)
+  #|    const styles = [...document.querySelectorAll("style")]
+  #|      .map((node) => node.textContent ?? "")
+  #|      .join("\n")
+  #|    const body = mindmap.innerHTML
+  #|    return `<?xml version="1.0" encoding="UTF-8"?>
+  #|<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  #|  <foreignObject width="100%" height="100%">
+  #|    <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;background:#ffffff;">
+  #|      <style>${styles}</style>
+  #|      <div class="mindmap" style="width:${width}px;height:${height}px;min-height:${height}px;overflow:hidden;padding:20px;">${body}</div>
+  #|    </div>
+  #|  </foreignObject>
+  #|</svg>`
+  #|  })()
+  #|  if (!svg) return
+  #|  const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" })
+  #|  const url = URL.createObjectURL(blob)
+  #|  const link = document.createElement("a")
+  #|  link.href = url
+  #|  link.download = filename
+  #|  document.body.appendChild(link)
+  #|  link.click()
+  #|  link.remove()
+  #|  URL.revokeObjectURL(url)
+  #|}
+
+///|
+extern "js" fn download_mindmap_png(filename : String) =
+  #|(filename) => {
+  #|  const mindmap = document.querySelector("#mindmap")
+  #|  if (!mindmap) return
+  #|  const width = Math.max(mindmap.scrollWidth, Math.ceil(mindmap.getBoundingClientRect().width), 640)
+  #|  const height = Math.max(mindmap.scrollHeight, Math.ceil(mindmap.getBoundingClientRect().height), 360)
+  #|  const styles = [...document.querySelectorAll("style")]
+  #|    .map((node) => node.textContent ?? "")
+  #|    .join("\n")
+  #|  const body = mindmap.innerHTML
+  #|  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+  #|<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  #|  <foreignObject width="100%" height="100%">
+  #|    <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;background:#ffffff;">
+  #|      <style>${styles}</style>
+  #|      <div class="mindmap" style="width:${width}px;height:${height}px;min-height:${height}px;overflow:hidden;padding:20px;">${body}</div>
+  #|    </div>
+  #|  </foreignObject>
+  #|</svg>`
+  #|  const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" })
+  #|  const url = URL.createObjectURL(blob)
+  #|  const image = new Image()
+  #|  image.onload = () => {
+  #|    const canvas = document.createElement("canvas")
+  #|    canvas.width = width
+  #|    canvas.height = height
+  #|    const ctx = canvas.getContext("2d")
+  #|    if (!ctx) {
+  #|      URL.revokeObjectURL(url)
+  #|      return
+  #|    }
+  #|    ctx.fillStyle = "#ffffff"
+  #|    ctx.fillRect(0, 0, width, height)
+  #|    ctx.drawImage(image, 0, 0)
+  #|    canvas.toBlob((pngBlob) => {
+  #|      URL.revokeObjectURL(url)
+  #|      if (!pngBlob) return
+  #|      const pngUrl = URL.createObjectURL(pngBlob)
+  #|      const link = document.createElement("a")
+  #|      link.href = pngUrl
+  #|      link.download = filename
+  #|      document.body.appendChild(link)
+  #|      link.click()
+  #|      link.remove()
+  #|      URL.revokeObjectURL(pngUrl)
+  #|    }, "image/png")
+  #|  }
+  #|  image.onerror = () => URL.revokeObjectURL(url)
+  #|  image.src = url
   #|}
 
 ///|
