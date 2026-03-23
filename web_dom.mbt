@@ -138,6 +138,7 @@ extern "js" fn bind_mindmap_ui(
   #|  const zoomIn = document.querySelector("#zoom-in")
   #|  const zoomOut = document.querySelector("#zoom-out")
   #|  const zoomValue = document.querySelector("#zoom-value")
+  #|  const fitView = document.querySelector("#fit-view")
   #|  const recenterView = document.querySelector("#recenter-view")
   #|  const syncView = () => {
   #|    const panX = Number(mindmap.dataset.panX ?? "0")
@@ -152,6 +153,26 @@ extern "js" fn bind_mindmap_ui(
   #|  const setZoom = (value) => {
   #|    mindmap.dataset.zoom = `${clampZoom(value)}`
   #|    syncView()
+  #|  }
+  #|  const fitToView = () => {
+  #|    const stage = mindmap.querySelector(".mindmap-stage")
+  #|    if (!stage) {
+  #|      mindmap.dataset.panX = "0"
+  #|      mindmap.dataset.panY = "0"
+  #|      setZoom(1)
+  #|      return
+  #|    }
+  #|    const viewportWidth = Math.max(0, mindmap.clientWidth - 24)
+  #|    const viewportHeight = Math.max(0, mindmap.clientHeight - 24)
+  #|    const stageWidth = stage.offsetWidth
+  #|    const stageHeight = stage.offsetHeight
+  #|    if (viewportWidth <= 0 || viewportHeight <= 0 || stageWidth <= 0 || stageHeight <= 0) {
+  #|      return
+  #|    }
+  #|    const nextZoom = clampZoom(Math.min(viewportWidth / stageWidth, viewportHeight / stageHeight))
+  #|    mindmap.dataset.panX = "0"
+  #|    mindmap.dataset.panY = "0"
+  #|    setZoom(nextZoom)
   #|  }
   #|  const recenterPan = () => {
   #|    const stage = mindmap.querySelector(".mindmap-stage")
@@ -213,6 +234,7 @@ extern "js" fn bind_mindmap_ui(
   #|  zoomIn?.addEventListener("click", () => {
   #|    setZoom(Number(mindmap.dataset.zoom ?? "1") + 0.1)
   #|  })
+  #|  fitView?.addEventListener("click", () => fitToView())
   #|  recenterView?.addEventListener("click", () => recenterPan())
   #|  mindmap.addEventListener("mousedown", (event) => {
   #|    if (!canPan(event.target)) return

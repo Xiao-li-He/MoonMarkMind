@@ -36,7 +36,7 @@
         color: var(--ink);
         font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
         background: linear-gradient(180deg, #fff8e8 0%, #f3e7c1 100%);
-        overflow: hidden;
+        overflow: auto;
       }
 
       button,
@@ -47,8 +47,10 @@
 
       #app {
         height: 100vh;
+        min-width: 820px;
+        min-height: 540px;
         padding: 14px;
-        overflow: hidden;
+        overflow: visible;
       }
 
       .app-shell {
@@ -166,6 +168,43 @@
       .tool-select--muted option:checked {
         color: var(--gray);
         background: rgba(142, 152, 163, 0.16);
+      }
+
+      @media (max-width: 820px) {
+        .topbar {
+          gap: 8px 12px;
+        }
+
+        .topbar-group {
+          gap: 8px 10px;
+        }
+
+        .topbar-title {
+          min-width: 78px;
+          font-size: 16px;
+        }
+
+        .tool-button {
+          min-width: 62px;
+          height: 40px;
+          padding: 0 12px;
+          border-radius: 14px;
+        }
+
+        .tool-select-wrap {
+          gap: 6px;
+        }
+
+        .tool-select-label {
+          font-size: 13px;
+        }
+
+        .tool-select {
+          min-width: 96px;
+          height: 40px;
+          padding: 0 10px;
+          border-radius: 14px;
+        }
       }
 
       .workspace {

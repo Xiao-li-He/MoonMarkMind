@@ -153,6 +153,11 @@ fn render_secondary_toolbar() -> String {
       icon=icon_undo(),
     ),
     render_aux_icon_button_with_id(
+      id="fit-view",
+      tip="閫傞厤鐢诲竷",
+      icon=icon_fit_view(),
+    ),
+    render_aux_icon_button_with_id(
       id="redo-action",
       tip="重做 · Ctrl+Y",
       icon=icon_redo(),
@@ -339,6 +344,21 @@ fn icon_play() -> String {
       #|  <path d="M3.8 12h2.4"></path>
       #|  <path d="M17.8 12h2.4"></path>
       #|  <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"></circle>
+      #|</svg>
+    ),
+  )
+}
+
+///|
+fn icon_fit_view() -> String {
+  icon_shell(
+    (
+      #|<svg viewBox="0 0 24 24" fill="none">
+      #|  <path d="M8 5.5H5.5V8"></path>
+      #|  <path d="M16 5.5h2.5V8"></path>
+      #|  <path d="M8 18.5H5.5V16"></path>
+      #|  <path d="M16 18.5h2.5V16"></path>
+      #|  <rect x="8.3" y="8.3" width="7.4" height="7.4" rx="1.4"></rect>
       #|</svg>
     ),
   )
