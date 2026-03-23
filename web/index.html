@@ -170,7 +170,8 @@
 
       .workspace {
         --left-pane-percent: 33%;
-        --mindmap-toolbar-min-width: 396px;
+        --mindmap-toolbar-actions-width: 390px;
+        --mindmap-toolbar-min-width: var(--mindmap-toolbar-actions-width);
         display: grid;
         grid-template-columns: minmax(300px, var(--left-pane-percent)) 14px minmax(var(--mindmap-toolbar-min-width), 1fr);
         gap: 8px;
@@ -806,6 +807,100 @@
       .node-action--danger {
         color: var(--red);
         background: rgba(239, 79, 67, 0.14);
+      }
+
+      @container (max-width: 520px) {
+        .mindmap-toolbar {
+          row-gap: 8px;
+        }
+
+        .mindmap-stage {
+          grid-template-columns: minmax(96px, 1fr) minmax(144px, 168px) minmax(96px, 1fr);
+          gap: 12px;
+          min-width: 0;
+          padding: 12px 0;
+        }
+
+        .mindmap-stage--vertical,
+        .mindmap-stage--single-right {
+          min-width: 0;
+        }
+
+        .center-wrap {
+          padding-top: 72px;
+        }
+
+        .branch-column {
+          gap: 18px;
+          min-height: 360px;
+          padding-top: 18px;
+        }
+
+        .branch-item,
+        .branch-children,
+        .single-right-tree,
+        .single-right-tree__children,
+        .vertical-tree,
+        .vertical-tree__children,
+        .vertical-tree__child {
+          gap: 12px;
+        }
+
+        .branch-item::before,
+        .single-right-tree__node::before {
+          top: 32px;
+          width: 18px;
+        }
+
+        .branch-item--left::before {
+          right: -18px;
+        }
+
+        .branch-item--right::before {
+          left: -18px;
+        }
+
+        .branch-children--left {
+          padding-right: 22px;
+        }
+
+        .branch-children--right,
+        .single-right-tree__children {
+          padding-left: 22px;
+        }
+
+        .node {
+          min-width: 96px;
+          max-width: 156px;
+          padding: 10px 12px;
+          border-radius: 14px;
+        }
+
+        .node--center {
+          min-width: 144px;
+          max-width: 184px;
+        }
+
+        .node small {
+          margin-bottom: 3px;
+          font-size: 10px;
+        }
+
+        .node strong {
+          font-size: 13px;
+        }
+
+        .node-actions {
+          top: 6px;
+          right: 6px;
+          gap: 4px;
+        }
+
+        .node-action {
+          width: 22px;
+          height: 22px;
+          font-size: 14px;
+        }
       }
 
     </style>

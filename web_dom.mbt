@@ -80,12 +80,22 @@ extern "js" fn bind_splitter_ui(callback : (Int) -> Unit) =
   #|  const workspace = document.querySelector(".workspace")
   #|  if (!divider || !workspace) return
   #|  let dragging = false
+  #|  const parseCssPixels = (name, fallback) => {
+  #|    const raw = getComputedStyle(workspace).getPropertyValue(name).trim()
+  #|    const value = Number.parseFloat(raw.replace("px", ""))
+  #|    return Number.isFinite(value) ? value : fallback
+  #|  }
   #|  const onMove = (event) => {
   #|    if (!dragging) return
   #|    const rect = workspace.getBoundingClientRect()
   #|    if (rect.width <= 0) return
-  #|    const raw = ((event.clientX - rect.left) / rect.width) * 100
-  #|    callback(Math.round(raw))
+  #|    const minLeft = 300
+  #|    const dividerWidth = 14
+  #|    const minRight = parseCssPixels("--mindmap-toolbar-min-width", 390)
+  #|    const maxLeft = Math.max(minLeft, rect.width - minRight - dividerWidth)
+  #|    const clampedLeft = Math.max(minLeft, Math.min(event.clientX - rect.left, maxLeft))
+  #|    const percent = (clampedLeft / rect.width) * 100
+  #|    callback(Math.round(percent))
   #|  }
   #|  const stop = () => {
   #|    dragging = false

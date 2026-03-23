@@ -956,10 +956,10 @@ fn slice_strings(
 
 ///|
 fn normalize_split_percent(percent : Int) -> Int {
-  if percent < 28 {
-    28
-  } else if percent > 58 {
-    58
+  if percent < 18 {
+    18
+  } else if percent > 82 {
+    82
   } else {
     percent
   }
