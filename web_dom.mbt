@@ -178,7 +178,6 @@ extern "js" fn bind_mindmap_ui(
   #|    mindmap.dataset.panY = `${nextPanY}`
   #|    syncView()
   #|  }
-  #|  mindmap.__recenterPan = recenterPan
   #|  let panning = false
   #|  let startX = 0
   #|  let startY = 0
@@ -281,12 +280,6 @@ extern "js" fn set_mindmap_html(value : String) =
   #|  mindmap.style.setProperty("--zoom", `${Number(mindmap.dataset.zoom ?? "1")}`)
   #|  const zoomValue = document.querySelector("#zoom-value")
   #|  if (zoomValue) zoomValue.textContent = `${Math.round(Number(mindmap.dataset.zoom ?? "1") * 100)}%`
-  #|  const panel = document.querySelector(".mindmap-panel")
-  #|  const workspace = document.querySelector(".workspace")
-  #|  const minRight = Number.parseFloat(getComputedStyle(workspace ?? document.documentElement).getPropertyValue("--mindmap-toolbar-min-width")) || 390
-  #|  if (panel && panel.getBoundingClientRect().width <= minRight + 16) {
-  #|    requestAnimationFrame(() => mindmap.__recenterPan?.())
-  #|  }
   #|}
 
 ///|
@@ -295,12 +288,6 @@ extern "js" fn set_workspace_split(percent : Int) =
   #|  const workspace = document.querySelector(".workspace")
   #|  if (workspace) {
   #|    workspace.style.setProperty("--left-pane-percent", `${percent}%`)
-  #|    const panel = document.querySelector(".mindmap-panel")
-  #|    const mindmap = document.querySelector("#mindmap")
-  #|    const minRight = Number.parseFloat(getComputedStyle(workspace).getPropertyValue("--mindmap-toolbar-min-width")) || 390
-  #|    if (panel && mindmap && panel.getBoundingClientRect().width <= minRight + 16) {
-  #|      requestAnimationFrame(() => mindmap.__recenterPan?.())
-  #|    }
   #|  }
   #|}
 
