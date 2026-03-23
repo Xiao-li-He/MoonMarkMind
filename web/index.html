@@ -170,8 +170,9 @@
 
       .workspace {
         --left-pane-percent: 33%;
+        --mindmap-toolbar-min-width: 414px;
         display: grid;
-        grid-template-columns: minmax(300px, var(--left-pane-percent)) 14px minmax(420px, 1fr);
+        grid-template-columns: minmax(300px, var(--left-pane-percent)) 14px minmax(var(--mindmap-toolbar-min-width), 1fr);
         gap: 8px;
         align-items: stretch;
         min-height: 0;
@@ -285,10 +286,10 @@
 
       .mindmap-toolbar__actions {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         gap: 10px;
-        flex: 1 1 360px;
-        min-width: 0;
+        flex: 0 0 auto;
+        min-width: max-content;
       }
 
       .mindmap-toolbar__side {
@@ -456,20 +457,16 @@
         padding: 0;
       }
 
-      @container (max-width: 1120px) {
-        .mindmap-toolbar__actions {
-          flex-basis: 100%;
-        }
-
+      @container (max-width: 920px) {
         .mindmap-toolbar__side {
           flex: 1 1 100%;
           width: 100%;
+          justify-content: flex-end;
         }
       }
 
-      @container (max-width: 860px) {
+      @container (max-width: 760px) {
         .mindmap-toolbar__side {
-          justify-content: space-between;
           flex-wrap: wrap;
           row-gap: 10px;
         }
