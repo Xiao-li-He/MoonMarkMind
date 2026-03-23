@@ -8,6 +8,7 @@ priv struct AppState {
   mut layout_mode : String
   mut style_mode : String
   mut detail_level : String
+  mut left_panel_percent : Int
   mut drag_source_index : Int
   mut drag_source_parent : Int
 }
@@ -22,6 +23,7 @@ let app_state : AppState = AppState::{
   layout_mode: "horizontal",
   style_mode: "line",
   detail_level: "medium",
+  left_panel_percent: 41,
   drag_source_index: -1,
   drag_source_parent: -2,
 }
@@ -38,6 +40,7 @@ pub fn start_web_app() -> Unit {
     on_new_click, on_sample_click, on_upload_click, on_download_markdown_click, on_layout_change,
     on_style_change, on_detail_change, on_export_change,
   )
+  bind_splitter_ui(on_splitter_change)
   bind_input_listener(on_input_change)
   bind_mindmap_ui(
     on_mindmap_click, on_mindmap_dblclick, on_mindmap_keydown, on_mindmap_focusout,
@@ -103,6 +106,12 @@ fn on_export_change(kind : String) -> Unit {
     _ => ()
   }
   set_select_value("export-select", "")
+}
+
+///|
+fn on_splitter_change(percent : Int) -> Unit {
+  app_state.left_panel_percent = normalize_split_percent(percent)
+  set_workspace_split(app_state.left_panel_percent)
 }
 
 ///|
@@ -279,6 +288,7 @@ fn render_ui() -> Unit {
   set_select_value("layout-select", app_state.layout_mode)
   set_select_value("style-select", app_state.style_mode)
   set_select_value("detail-select", app_state.detail_level)
+  set_workspace_split(app_state.left_panel_percent)
   set_mindmap_html(render_mindmap_html())
   if app_state.editing_node >= 0 {
     focus_editor(app_state.editing_node)
@@ -619,6 +629,17 @@ fn max_visible_depth() -> Int {
     "small" => 2
     "all" => 99
     _ => 3
+  }
+}
+
+///|
+fn normalize_split_percent(percent : Int) -> Int {
+  if percent < 28 {
+    28
+  } else if percent > 58 {
+    58
+  } else {
+    percent
   }
 }
 

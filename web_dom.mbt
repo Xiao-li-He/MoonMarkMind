@@ -42,6 +42,35 @@ extern "js" fn bind_static_ui(
   #|}
 
 ///|
+extern "js" fn bind_splitter_ui(callback : (Int) -> Unit) =
+  #|(callback) => {
+  #|  const divider = document.querySelector("#workspace-divider")
+  #|  const workspace = document.querySelector(".workspace")
+  #|  if (!divider || !workspace) return
+  #|  let dragging = false
+  #|  const onMove = (event) => {
+  #|    if (!dragging) return
+  #|    const rect = workspace.getBoundingClientRect()
+  #|    if (rect.width <= 0) return
+  #|    const raw = ((event.clientX - rect.left) / rect.width) * 100
+  #|    callback(Math.round(raw))
+  #|  }
+  #|  const stop = () => {
+  #|    dragging = false
+  #|    document.body.style.cursor = ""
+  #|    document.body.style.userSelect = ""
+  #|  }
+  #|  divider.addEventListener("mousedown", (event) => {
+  #|    dragging = true
+  #|    document.body.style.cursor = "col-resize"
+  #|    document.body.style.userSelect = "none"
+  #|    event.preventDefault()
+  #|  })
+  #|  window.addEventListener("mousemove", onMove)
+  #|  window.addEventListener("mouseup", stop)
+  #|}
+
+///|
 extern "js" fn bind_mindmap_ui(
   click_callback : (BrowserEvent) -> Unit,
   dblclick_callback : (BrowserEvent) -> Unit,
@@ -110,6 +139,15 @@ extern "js" fn set_mindmap_html(value : String) =
   #|(value) => {
   #|  const mindmap = document.querySelector("#mindmap")
   #|  if (mindmap) mindmap.innerHTML = value
+  #|}
+
+///|
+extern "js" fn set_workspace_split(percent : Int) =
+  #|(percent) => {
+  #|  const workspace = document.querySelector(".workspace")
+  #|  if (workspace) {
+  #|    workspace.style.setProperty("--left-pane-percent", `${percent}%`)
+  #|  }
   #|}
 
 ///|

@@ -144,9 +144,11 @@
       }
 
       .workspace {
+        --left-pane-percent: 41%;
         display: grid;
-        grid-template-columns: minmax(360px, 0.88fr) minmax(560px, 1.12fr);
-        gap: 18px;
+        grid-template-columns: minmax(320px, var(--left-pane-percent)) 30px minmax(420px, 1fr);
+        gap: 12px;
+        align-items: stretch;
       }
 
       .editor-panel,
@@ -167,6 +169,30 @@
 
       .mindmap-panel {
         background: rgba(244, 239, 237, 0.95);
+      }
+
+      .workspace-divider {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: col-resize;
+      }
+
+      .workspace-divider__track {
+        width: 6px;
+        height: 100%;
+        border-radius: 999px;
+        background: rgba(43, 39, 33, 0.55);
+      }
+
+      .workspace-divider__handle {
+        position: absolute;
+        width: 34px;
+        height: 108px;
+        border-radius: 2px;
+        background: rgba(128, 128, 128, 0.92);
+        box-shadow: 0 8px 20px rgba(43, 39, 33, 0.12);
       }
 
       .panel-head {
@@ -597,6 +623,10 @@
       @media (max-width: 1160px) {
         .workspace {
           grid-template-columns: 1fr;
+        }
+
+        .workspace-divider {
+          display: none;
         }
 
         .editor-panel,

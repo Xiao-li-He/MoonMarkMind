@@ -58,6 +58,11 @@ fn render_app_shell_html() -> String {
     #|      </div>
     #|    </aside>
     #|
+    #|    <div class="workspace-divider" id="workspace-divider" role="separator" aria-orientation="vertical" aria-label="调整左右面板宽度">
+    #|      <div class="workspace-divider__track"></div>
+    #|      <div class="workspace-divider__handle"></div>
+    #|    </div>
+    #|
     #|    <section class="mindmap-panel">
     #|      <div class="panel-head">
     #|        <strong>MindMap</strong>
