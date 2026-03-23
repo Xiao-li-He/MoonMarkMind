@@ -93,18 +93,29 @@ extern "js" fn bind_mindmap_ui(
   #|) => {
   #|  const mindmap = document.querySelector("#mindmap")
   #|  if (!mindmap) return
-  #|  const syncPan = () => {
+  #|  const zoomIn = document.querySelector("#zoom-in")
+  #|  const zoomOut = document.querySelector("#zoom-out")
+  #|  const zoomValue = document.querySelector("#zoom-value")
+  #|  const syncView = () => {
   #|    const panX = Number(mindmap.dataset.panX ?? "0")
   #|    const panY = Number(mindmap.dataset.panY ?? "0")
+  #|    const zoom = Number(mindmap.dataset.zoom ?? "1")
   #|    mindmap.style.setProperty("--pan-x", `${panX}px`)
   #|    mindmap.style.setProperty("--pan-y", `${panY}px`)
+  #|    mindmap.style.setProperty("--zoom", `${zoom}`)
+  #|    if (zoomValue) zoomValue.textContent = `${Math.round(zoom * 100)}%`
+  #|  }
+  #|  const clampZoom = (value) => Math.max(0.4, Math.min(2, value))
+  #|  const setZoom = (value) => {
+  #|    mindmap.dataset.zoom = `${clampZoom(value)}`
+  #|    syncView()
   #|  }
   #|  const recenterPan = () => {
   #|    const stage = mindmap.querySelector(".mindmap-stage")
   #|    if (!stage) {
   #|      mindmap.dataset.panX = "0"
   #|      mindmap.dataset.panY = "0"
-  #|      syncPan()
+  #|      syncView()
   #|      return
   #|    }
   #|    const viewportWidth = Math.ceil(mindmap.getBoundingClientRect().width)
@@ -122,7 +133,7 @@ extern "js" fn bind_mindmap_ui(
   #|    }
   #|    mindmap.dataset.panX = `${nextPanX}`
   #|    mindmap.dataset.panY = `${nextPanY}`
-  #|    syncPan()
+  #|    syncView()
   #|  }
   #|  let panning = false
   #|  let startX = 0
@@ -153,6 +164,12 @@ extern "js" fn bind_mindmap_ui(
   #|  mindmap.addEventListener("dragend", dragendCallback)
   #|  mindmap.addEventListener("dragover", dragoverCallback)
   #|  mindmap.addEventListener("drop", dropCallback)
+  #|  zoomOut?.addEventListener("click", () => {
+  #|    setZoom(Number(mindmap.dataset.zoom ?? "1") - 0.1)
+  #|  })
+  #|  zoomIn?.addEventListener("click", () => {
+  #|    setZoom(Number(mindmap.dataset.zoom ?? "1") + 0.1)
+  #|  })
   #|  mindmap.addEventListener("mousedown", (event) => {
   #|    if (!canPan(event.target)) return
   #|    panning = true
@@ -168,10 +185,10 @@ extern "js" fn bind_mindmap_ui(
   #|    if (!panning) return
   #|    mindmap.dataset.panX = (startPanX + event.clientX - startX).toString()
   #|    mindmap.dataset.panY = (startPanY + event.clientY - startY).toString()
-  #|    syncPan()
+  #|    syncView()
   #|  })
   #|  window.addEventListener("mouseup", stopPan)
-  #|  syncPan()
+  #|  syncView()
   #|}
 
 ///|
@@ -212,9 +229,13 @@ extern "js" fn set_mindmap_html(value : String) =
   #|  if (!mindmap) return
   #|  if (mindmap.dataset.panX == null) mindmap.dataset.panX = "0"
   #|  if (mindmap.dataset.panY == null) mindmap.dataset.panY = "0"
+  #|  if (mindmap.dataset.zoom == null) mindmap.dataset.zoom = "1"
   #|  mindmap.innerHTML = `<div class="mindmap-content">${value}</div>`
   #|  mindmap.style.setProperty("--pan-x", `${Number(mindmap.dataset.panX ?? "0")}px`)
   #|  mindmap.style.setProperty("--pan-y", `${Number(mindmap.dataset.panY ?? "0")}px`)
+  #|  mindmap.style.setProperty("--zoom", `${Number(mindmap.dataset.zoom ?? "1")}`)
+  #|  const zoomValue = document.querySelector("#zoom-value")
+  #|  if (zoomValue) zoomValue.textContent = `${Math.round(Number(mindmap.dataset.zoom ?? "1") * 100)}%`
   #|}
 
 ///|
@@ -311,13 +332,14 @@ extern "js" fn download_mindmap_svg(filename : String) =
   #|      .join("\n")
   #|    const panX = Number(mindmap.dataset.panX ?? "0")
   #|    const panY = Number(mindmap.dataset.panY ?? "0")
+  #|    const zoom = Number(mindmap.dataset.zoom ?? "1")
   #|    const body = content?.innerHTML ?? ""
   #|    return `<?xml version="1.0" encoding="UTF-8"?>
   #|<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   #|  <foreignObject width="100%" height="100%">
   #|    <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;background:#ffffff;">
   #|      <style>${styles}</style>
-  #|      <div class="mindmap" style="width:${width}px;height:${height}px;min-height:${height}px;overflow:hidden;padding:20px;--pan-x:${panX}px;--pan-y:${panY}px;"><div class="mindmap-content">${body}</div></div>
+  #|      <div class="mindmap" style="width:${width}px;height:${height}px;min-height:${height}px;overflow:hidden;padding:20px;--pan-x:${panX}px;--pan-y:${panY}px;--zoom:${zoom};"><div class="mindmap-content">${body}</div></div>
   #|    </div>
   #|  </foreignObject>
   #|</svg>`
@@ -348,13 +370,14 @@ extern "js" fn download_mindmap_png(filename : String) =
   #|    .join("\n")
   #|  const panX = Number(mindmap.dataset.panX ?? "0")
   #|  const panY = Number(mindmap.dataset.panY ?? "0")
+  #|  const zoom = Number(mindmap.dataset.zoom ?? "1")
   #|  const body = content?.innerHTML ?? ""
   #|  const svg = `<?xml version="1.0" encoding="UTF-8"?>
   #|<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   #|  <foreignObject width="100%" height="100%">
   #|    <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;background:#ffffff;">
   #|      <style>${styles}</style>
-  #|      <div class="mindmap" style="width:${width}px;height:${height}px;min-height:${height}px;overflow:hidden;padding:20px;--pan-x:${panX}px;--pan-y:${panY}px;"><div class="mindmap-content">${body}</div></div>
+  #|      <div class="mindmap" style="width:${width}px;height:${height}px;min-height:${height}px;overflow:hidden;padding:20px;--pan-x:${panX}px;--pan-y:${panY}px;--zoom:${zoom};"><div class="mindmap-content">${body}</div></div>
   #|    </div>
   #|  </foreignObject>
   #|</svg>`

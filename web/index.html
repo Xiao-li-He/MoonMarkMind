@@ -331,6 +331,7 @@
       .mindmap {
         --pan-x: 0px;
         --pan-y: 0px;
+        --zoom: 1;
         position: relative;
         height: 100%;
         min-height: 0;
@@ -346,7 +347,8 @@
         transform: translate(
             calc(-50% + var(--pan-x)),
             calc(-50% + var(--pan-y))
-          );
+          )
+          scale(var(--zoom));
         transform-origin: center center;
       }
 

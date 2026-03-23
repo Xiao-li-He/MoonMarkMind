@@ -71,9 +71,9 @@ fn render_app_shell_html() -> String {
     #|        </div>
     #|        <div class="mindmap-zoom">
     #|          <div class="zoom-strip">
-    #|            <button type="button" class="zoom-chip" disabled>-</button>
-    #|            <span class="zoom-value">100%</span>
-    #|            <button type="button" class="zoom-chip" disabled>+</button>
+    #|            <button type="button" class="zoom-chip" id="zoom-out">-</button>
+    #|            <span class="zoom-value" id="zoom-value">100%</span>
+    #|            <button type="button" class="zoom-chip" id="zoom-in">+</button>
     #|          </div>
     #|        </div>
     #|      </div>
