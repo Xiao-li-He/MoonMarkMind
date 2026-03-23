@@ -5,7 +5,7 @@ fn render_app_shell_html() -> String {
     #|  <header class="topbar">
     #|    <div class="topbar-group">
     #|      <span class="brand-title">MoonMarkMind</span>
-    #|      <span class="section-title">MD文本</span>
+    #|      <span class="section-title">.md文档</span>
     #|      <button type="button" class="tool-button tool-button--red" id="new-document">新建</button>
     #|      <button type="button" class="tool-button tool-button--green" id="upload-markdown">上传</button>
     #|      <button type="button" class="tool-button tool-button--blue" id="download-markdown">下载</button>
