@@ -4,6 +4,7 @@ priv struct AppState {
   mut markdown : String
   mut root : OutlineNode
   mut collapsed : Array[Int]
+  mut selected_node : Int
   mut editing_node : Int
   mut layout_mode : String
   mut style_mode : String
@@ -20,6 +21,7 @@ let app_state : AppState = AppState::{
   markdown: "",
   root: empty_outline(),
   collapsed: [],
+  selected_node: -2,
   editing_node: -2,
   layout_mode: "horizontal",
   style_mode: "line",
@@ -40,7 +42,7 @@ pub fn start_web_app() -> Unit {
   set_app_html(render_app_shell_html())
   bind_static_ui(
     on_new_click, on_sample_click, on_upload_click, on_download_markdown_click, on_layout_change,
-    on_style_change, on_detail_change, on_export_change,
+    on_style_change, on_detail_change, on_export_change, on_toolbar_action,
   )
   bind_splitter_ui(on_splitter_change)
   bind_input_listener(on_input_change)
@@ -122,6 +124,11 @@ fn on_splitter_change(percent : Int) -> Unit {
 fn on_mindmap_click(event : BrowserEvent) -> Unit {
   let action = event_action(event)
   let node_index = event_node_index(event)
+  if node_index >= 0 && app_state.selected_node != node_index {
+    app_state.selected_node = node_index
+  } else if node_index < 0 && action == "" && app_state.selected_node != -2 {
+    app_state.selected_node = -2
+  }
   match action {
     "add" => {
       stop_event(event)
@@ -142,6 +149,28 @@ fn on_mindmap_click(event : BrowserEvent) -> Unit {
       sync_detail_customized()
       render_ui()
     }
+    _ => if action == "" { render_ui() }
+  }
+}
+
+///|
+fn on_toolbar_action(action : String) -> Unit {
+  if app_state.selected_node < 0 {
+    return
+  }
+  match action {
+    "new-branch" => handle_add_sibling(app_state.selected_node, true)
+    "new-child" => handle_add_child(app_state.selected_node)
+    "delete-node" => handle_delete(app_state.selected_node)
+    "edit-node" => start_edit_selected()
+    "move-up" => handle_move_selected(false)
+    "move-down" => handle_move_selected(true)
+    "toggle-node" => {
+      toggle_collapsed(app_state.selected_node)
+      sync_detail_customized()
+      render_ui()
+    }
+    "insert-node" => handle_add_sibling(app_state.selected_node, false)
     _ => ()
   }
 }
@@ -156,6 +185,7 @@ fn on_mindmap_dblclick(event : BrowserEvent) -> Unit {
   if node_index < 0 {
     return
   }
+  app_state.selected_node = node_index
   app_state.editing_node = node_index
   render_ui()
 }
@@ -253,6 +283,24 @@ fn handle_add_child(node_index : Int) -> Unit {
 }
 
 ///|
+fn handle_add_sibling(node_index : Int, place_after : Bool) -> Unit {
+  let title = prompt_text("New node title", "New node")
+  if title.length() == 0 {
+    return
+  }
+  let next_markdown = add_sibling_heading(
+    app_state.markdown,
+    node_index,
+    title,
+    place_after,
+  )
+  if !place_after {
+    app_state.selected_node = node_index + 1
+  }
+  load_markdown(next_markdown, false)
+}
+
+///|
 fn handle_delete(node_index : Int) -> Unit {
   if node_index < 0 {
     return
@@ -264,6 +312,7 @@ fn handle_delete(node_index : Int) -> Unit {
         return
       }
       let next_markdown = delete_heading(app_state.markdown, node_index)
+      app_state.selected_node = -2
       load_markdown(next_markdown, false)
     }
     None => ()
@@ -273,7 +322,30 @@ fn handle_delete(node_index : Int) -> Unit {
 ///|
 fn save_editor(node_index : Int, title : String) -> Unit {
   let next_markdown = rename_heading(app_state.markdown, node_index, title)
+  app_state.selected_node = node_index
   app_state.editing_node = -2
+  load_markdown(next_markdown, false)
+}
+
+///|
+fn start_edit_selected() -> Unit {
+  if app_state.selected_node < 0 {
+    return
+  }
+  app_state.editing_node = app_state.selected_node
+  render_ui()
+}
+
+///|
+fn handle_move_selected(move_down : Bool) -> Unit {
+  if app_state.selected_node < 0 {
+    return
+  }
+  let next_markdown = move_heading_among_siblings(
+    app_state.markdown,
+    app_state.selected_node,
+    move_down,
+  )
   load_markdown(next_markdown, false)
 }
 
@@ -281,6 +353,7 @@ fn save_editor(node_index : Int, title : String) -> Unit {
 fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
   if reset_ui {
     app_state.editing_node = -2
+    app_state.selected_node = -2
   }
   app_state.markdown = markdown
   app_state.root = build_outline(markdown)
@@ -288,6 +361,7 @@ fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
     apply_detail_preset()
   } else {
     sanitize_collapsed_state()
+    sanitize_selected_state()
   }
   if get_input_value() != markdown {
     set_input_value(markdown)
@@ -308,6 +382,7 @@ fn render_ui() -> Unit {
   }
   set_select_value("detail-select", detail_select_value)
   set_select_muted("detail-select", app_state.detail_customized)
+  set_toolbar_selection_enabled(app_state.selected_node >= 0)
   set_workspace_split(app_state.left_panel_percent)
   set_mindmap_html(render_mindmap_html())
   if app_state.editing_node >= 0 {
@@ -466,6 +541,9 @@ fn render_node_card(
   let classes = ["node"]
   if is_center {
     classes.push("node--center")
+  }
+  if app_state.selected_node == node.flat_index {
+    classes.push("is-selected")
   }
   classes.push(render_node_style_class())
   if has_children {
@@ -708,6 +786,17 @@ fn sanitize_collapsed_state() -> Unit {
     }
   }
   app_state.collapsed = next
+}
+
+///|
+fn sanitize_selected_state() -> Unit {
+  if app_state.selected_node < 0 {
+    return
+  }
+  match find_node(app_state.root, app_state.selected_node) {
+    Some(_) => ()
+    None => app_state.selected_node = -2
+  }
 }
 
 ///|

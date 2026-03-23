@@ -203,6 +203,7 @@
         grid-template-rows: auto minmax(0, 1fr);
         gap: 6px;
         padding: 12px 10px 10px;
+        overflow: visible;
       }
 
       .workspace-divider {
@@ -275,6 +276,8 @@
         justify-content: space-between;
         gap: 16px;
         padding: 0 2px 4px;
+        position: relative;
+        z-index: 3;
       }
 
       .mindmap-toolbar__actions {
@@ -284,27 +287,56 @@
         flex: 1;
       }
 
-      .mindmap-tool {
+      .mindmap-toolbar__side {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 0 0 auto;
+      }
+
+      .mindmap-side-tools {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .mindmap-tool,
+      .mindmap-aux-button {
         position: relative;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-width: 82px;
-        height: 44px;
-        padding: 0 16px;
+        width: 40px;
+        height: 40px;
+        padding: 0;
         appearance: none;
         border: 0;
-        border-radius: 16px;
+        border-radius: 14px;
         text-align: center;
         color: var(--teal);
-        background: rgba(255, 255, 255, 0.72);
+        background: rgba(255, 255, 255, 0.82);
+        box-shadow: 0 8px 18px rgba(43, 39, 33, 0.08);
         font-size: 14px;
         line-height: 1;
         white-space: nowrap;
         cursor: default;
       }
 
-      .mindmap-tool::after {
+      .mindmap-tool {
+        cursor: pointer;
+      }
+
+      .mindmap-tool--disabled,
+      .mindmap-tool:disabled {
+        color: var(--gray);
+        background: rgba(255, 255, 255, 0.56);
+        box-shadow: none;
+        cursor: not-allowed;
+        opacity: 0.72;
+      }
+
+      .mindmap-tool::after,
+      .mindmap-aux-button::after {
         content: attr(data-tip);
         position: absolute;
         left: 50%;
@@ -320,19 +352,49 @@
         white-space: nowrap;
         opacity: 0;
         pointer-events: none;
+        z-index: 5;
         transition: opacity 120ms ease, transform 120ms ease;
       }
 
       .mindmap-tool:hover::after,
-      .mindmap-tool:focus-visible::after {
+      .mindmap-tool:focus-visible::after,
+      .mindmap-aux-button:hover::after,
+      .mindmap-aux-button:focus-visible::after {
         opacity: 1;
         transform: translateX(-50%) translateY(0);
       }
 
+      .mindmap-tool:disabled::after,
+      .mindmap-tool--disabled::after {
+        opacity: 0;
+      }
+
       .mindmap-tool:hover,
-      .mindmap-tool:focus-visible {
+      .mindmap-tool:focus-visible,
+      .mindmap-aux-button:hover,
+      .mindmap-aux-button:focus-visible {
         background: rgba(255, 255, 255, 0.92);
         outline: none;
+      }
+
+      .mindmap-aux-button#recenter-view {
+        cursor: pointer;
+      }
+
+      .tool-icon {
+        display: inline-flex;
+        width: 22px;
+        height: 22px;
+        color: currentColor;
+      }
+
+      .tool-icon svg {
+        width: 100%;
+        height: 100%;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
       }
 
       .mindmap-canvas-shell {
@@ -387,8 +449,10 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 7px 10px;
-        border-radius: 16px;
+        width: 156px;
+        height: 40px;
+        padding: 0 10px;
+        border-radius: 14px;
         background: rgba(255, 255, 255, 0.82);
         box-shadow: 0 8px 18px rgba(43, 39, 33, 0.08);
       }
@@ -403,8 +467,13 @@
       }
 
       .zoom-value {
+        flex: 1;
+        min-width: 0;
         color: var(--muted);
         font-size: 13px;
+        line-height: 1;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
       }
 
       .ascii-output {
@@ -657,6 +726,11 @@
 
       .node.is-dragging {
         opacity: 0.45;
+      }
+
+      .node.is-selected {
+        border-color: rgba(26, 122, 114, 0.55);
+        box-shadow: 0 0 0 4px rgba(26, 122, 114, 0.12), 0 12px 24px rgba(43, 39, 33, 0.08);
       }
 
       .node.drop-before {

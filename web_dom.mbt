@@ -12,6 +12,7 @@ extern "js" fn bind_static_ui(
   style_callback : (String) -> Unit,
   detail_callback : (String) -> Unit,
   export_callback : (String) -> Unit,
+  toolbar_callback : (String) -> Unit,
 ) =
   #|(
   #|  newCallback,
@@ -22,6 +23,7 @@ extern "js" fn bind_static_ui(
   #|  styleCallback,
   #|  detailCallback,
   #|  exportCallback,
+  #|  toolbarCallback,
   #|) => {
   #|  document.querySelector("#new-document")?.addEventListener("click", () => newCallback())
   #|  document.querySelector("#load-sample")?.addEventListener("click", () => sampleCallback())
@@ -38,6 +40,26 @@ extern "js" fn bind_static_ui(
   #|  })
   #|  document.querySelector("#export-select")?.addEventListener("change", (event) => {
   #|    exportCallback(event.target?.value ?? "")
+  #|  })
+  #|  for (const button of document.querySelectorAll("[data-toolbar-action]")) {
+  #|    button.addEventListener("click", () => {
+  #|      if (button.disabled) return
+  #|      toolbarCallback(button.dataset.toolbarAction ?? "")
+  #|    })
+  #|  }
+  #|  window.addEventListener("keydown", (event) => {
+  #|    const target = event.target
+  #|    if (target?.closest?.("input, textarea, select")) return
+  #|    let action = ""
+  #|    if (event.key === "Enter") action = "new-branch"
+  #|    else if (event.key === "Tab") action = "new-child"
+  #|    else if (event.key === "Delete" || event.key === "Backspace") action = "delete-node"
+  #|    else if (event.key === " " || event.code === "Space") action = "toggle-node"
+  #|    else if (event.ctrlKey && event.key === "ArrowUp") action = "move-up"
+  #|    else if (event.ctrlKey && event.key === "ArrowDown") action = "move-down"
+  #|    if (!action) return
+  #|    event.preventDefault()
+  #|    toolbarCallback(action)
   #|  })
   #|}
 
@@ -96,6 +118,7 @@ extern "js" fn bind_mindmap_ui(
   #|  const zoomIn = document.querySelector("#zoom-in")
   #|  const zoomOut = document.querySelector("#zoom-out")
   #|  const zoomValue = document.querySelector("#zoom-value")
+  #|  const recenterView = document.querySelector("#recenter-view")
   #|  const syncView = () => {
   #|    const panX = Number(mindmap.dataset.panX ?? "0")
   #|    const panY = Number(mindmap.dataset.panY ?? "0")
@@ -170,6 +193,7 @@ extern "js" fn bind_mindmap_ui(
   #|  zoomIn?.addEventListener("click", () => {
   #|    setZoom(Number(mindmap.dataset.zoom ?? "1") + 0.1)
   #|  })
+  #|  recenterView?.addEventListener("click", () => recenterPan())
   #|  mindmap.addEventListener("mousedown", (event) => {
   #|    if (!canPan(event.target)) return
   #|    panning = true
@@ -260,6 +284,15 @@ extern "js" fn set_select_muted(id : String, muted : Bool) =
   #|  const control = document.querySelector(`#${id}`)
   #|  if (!control) return
   #|  control.classList.toggle("tool-select--muted", muted)
+  #|}
+
+///|
+extern "js" fn set_toolbar_selection_enabled(enabled : Bool) =
+  #|(enabled) => {
+  #|  for (const button of document.querySelectorAll("[data-toolbar-action]")) {
+  #|    button.disabled = !enabled
+  #|    button.classList.toggle("mindmap-tool--disabled", !enabled)
+  #|  }
   #|}
 
 ///|

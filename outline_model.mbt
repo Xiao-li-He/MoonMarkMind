@@ -109,6 +109,36 @@ pub fn add_child_heading(
 }
 
 ///|
+pub fn add_sibling_heading(
+  markdown : String,
+  flat_index : Int,
+  title : String,
+  place_after : Bool,
+) -> String {
+  let headings = parse_headings(markdown)
+  let next_title = title.to_string()
+  if next_title.length() == 0 {
+    return markdown
+  }
+  if flat_index < 0 || flat_index >= headings.length() {
+    return markdown
+  }
+  let (level, _) = headings[flat_index]
+  let insert_at = if place_after {
+    subtree_end(headings, flat_index)
+  } else {
+    flat_index
+  }
+  let rebuilt = concat_headings(
+    concat_headings(slice_headings(headings, 0, insert_at), [
+      (level, next_title),
+    ]),
+    slice_headings(headings, insert_at, headings.length()),
+  )
+  render_markdown(rebuilt)
+}
+
+///|
 pub fn delete_heading(markdown : String, flat_index : Int) -> String {
   let headings = parse_headings(markdown)
   if flat_index < 0 || flat_index >= headings.length() {
@@ -120,6 +150,40 @@ pub fn delete_heading(markdown : String, flat_index : Int) -> String {
     slice_headings(headings, end_index, headings.length()),
   )
   render_markdown(rebuilt)
+}
+
+///|
+pub fn move_heading_among_siblings(
+  markdown : String,
+  flat_index : Int,
+  move_down : Bool,
+) -> String {
+  let headings = parse_headings(markdown)
+  if flat_index < 0 || flat_index >= headings.length() {
+    return markdown
+  }
+  let siblings = sibling_indices(headings, flat_index)
+  let mut current = -1
+  for index in 0..<siblings.length() {
+    if siblings[index] == flat_index {
+      current = index
+    }
+  }
+  if current < 0 {
+    return markdown
+  }
+  let target_index = if move_down {
+    if current + 1 >= siblings.length() {
+      return markdown
+    }
+    siblings[current + 1]
+  } else {
+    if current == 0 {
+      return markdown
+    }
+    siblings[current - 1]
+  }
+  move_heading(markdown, flat_index, target_index, move_down)
 }
 
 ///|
@@ -202,6 +266,25 @@ fn can_move_heading(
   }
   parent_index(headings, from_flat_index) ==
   parent_index(headings, to_flat_index)
+}
+
+///|
+fn sibling_indices(
+  headings : Array[(Int, String)],
+  flat_index : Int,
+) -> Array[Int] {
+  let (level, _) = headings[flat_index]
+  let parent = parent_index(headings, flat_index)
+  let siblings = []
+  for index in 0..<headings.length() {
+    if index == flat_index {
+      siblings.push(index)
+    } else if headings[index].0 == level &&
+      parent_index(headings, index) == parent {
+      siblings.push(index)
+    }
+  }
+  siblings
 }
 
 ///|

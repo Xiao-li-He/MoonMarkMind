@@ -4,11 +4,15 @@ package "Xiao-li-He/MoonMarkMind"
 // Values
 pub fn add_child_heading(String, Int, String) -> String
 
+pub fn add_sibling_heading(String, Int, String, Bool) -> String
+
 pub fn delete_heading(String, Int) -> String
 
 pub fn demo_output() -> String
 
 pub fn move_heading(String, Int, Int, Bool) -> String
+
+pub fn move_heading_among_siblings(String, Int, Bool) -> String
 
 pub fn outline_json(String) -> String
 
