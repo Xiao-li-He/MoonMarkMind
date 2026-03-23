@@ -375,7 +375,23 @@ extern "js" fn bind_mindmap_ui(
 ///|
 extern "js" fn bind_input_listener(callback : () -> Unit) =
   #|(callback) => {
-  #|  document.querySelector("#input")?.addEventListener("input", () => callback())
+  #|  const input = document.querySelector("#input")
+  #|  const gutter = document.querySelector("#input-gutter")
+  #|  const syncLineNumbers = () => {
+  #|    if (!input || !gutter) return
+  #|    const totalLines = Math.max(1, (input.value.match(/\n/g)?.length ?? 0) + 1)
+  #|    gutter.textContent = Array.from({ length: totalLines }, (_, index) => `${index + 1}`).join("\n")
+  #|    gutter.scrollTop = input.scrollTop
+  #|  }
+  #|  window.__moonmarkmindSyncLineNumbers = syncLineNumbers
+  #|  input?.addEventListener("input", () => {
+  #|    syncLineNumbers()
+  #|    callback()
+  #|  })
+  #|  input?.addEventListener("scroll", () => {
+  #|    if (gutter) gutter.scrollTop = input.scrollTop
+  #|  })
+  #|  syncLineNumbers()
   #|}
 
 ///|
@@ -394,6 +410,7 @@ extern "js" fn set_input_value(value : String) =
   #|(value) => {
   #|  const input = document.querySelector("#input")
   #|  if (input) input.value = value
+  #|  window.__moonmarkmindSyncLineNumbers?.()
   #|}
 
 ///|

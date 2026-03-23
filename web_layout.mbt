@@ -54,7 +54,19 @@ fn render_app_shell_html() -> String {
     #|  <section class="workspace">
     #|    <aside class="editor-panel">
     #|      <div class="editor-surface">
-    #|        <textarea id="input" spellcheck="false" placeholder="# MoonMarkMind&#10;&#10;## Links&#10;- [MoonBit Package](https://mooncakes.io/)&#10;&#10;## Features&#10;### Lists&#10;- item"></textarea>
+    #|        <div class="editor-chrome">
+    #|          <div class="editor-chrome__lights" aria-hidden="true">
+    #|            <span class="editor-chrome__light editor-chrome__light--red"></span>
+    #|            <span class="editor-chrome__light editor-chrome__light--yellow"></span>
+    #|            <span class="editor-chrome__light editor-chrome__light--green"></span>
+    #|          </div>
+    #|          <span class="editor-chrome__title">Markdown</span>
+    #|          <span class="editor-chrome__badge">notes.md</span>
+    #|        </div>
+    #|        <div class="editor-body">
+    #|          <pre class="editor-gutter" id="input-gutter" aria-hidden="true">1</pre>
+    #|          <textarea id="input" spellcheck="false" placeholder="# MoonMarkMind&#10;&#10;## Links&#10;- [MoonBit Package](https://mooncakes.io/)&#10;&#10;## Features&#10;### Lists&#10;- item"></textarea>
+    #|        </div>
     #|      </div>
     #|    </aside>
     #|
