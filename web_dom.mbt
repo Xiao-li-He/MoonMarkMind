@@ -25,10 +25,78 @@ extern "js" fn bind_static_ui(
   #|  exportCallback,
   #|  toolbarCallback,
   #|) => {
+  #|  const syncCustomSelect = (select) => {
+  #|    if (!select) return
+  #|    const custom = select.parentElement?.querySelector?.(".tool-select-custom")
+  #|    if (!custom) return
+  #|    const trigger = custom.querySelector(".tool-select-trigger")
+  #|    const selectedOption = [...select.options].find((option) => option.value === select.value) ?? select.options[0]
+  #|    if (trigger) trigger.textContent = selectedOption?.textContent ?? ""
+  #|    trigger?.classList.toggle("tool-select--muted", select.classList.contains("tool-select--muted"))
+  #|    for (const optionButton of custom.querySelectorAll(".tool-select-option")) {
+  #|      optionButton.classList.toggle("is-selected", optionButton.dataset.value === select.value)
+  #|    }
+  #|  }
+  #|  const closeCustomSelects = (except) => {
+  #|    for (const custom of document.querySelectorAll(".tool-select-custom")) {
+  #|      if (custom === except) continue
+  #|      custom.classList.remove("is-open")
+  #|      custom.querySelector(".tool-select-trigger")?.setAttribute("aria-expanded", "false")
+  #|    }
+  #|  }
+  #|  const initCustomSelect = (id) => {
+  #|    const select = document.querySelector(`#${id}`)
+  #|    if (!select || select.dataset.customSelectReady === "true") return
+  #|    select.dataset.customSelectReady = "true"
+  #|    select.classList.add("tool-select--native")
+  #|    const custom = document.createElement("div")
+  #|    custom.className = "tool-select-custom"
+  #|    const trigger = document.createElement("button")
+  #|    trigger.type = "button"
+  #|    trigger.className = "tool-select-trigger"
+  #|    trigger.setAttribute("aria-haspopup", "listbox")
+  #|    trigger.setAttribute("aria-expanded", "false")
+  #|    const menu = document.createElement("div")
+  #|    menu.className = "tool-select-menu"
+  #|    menu.setAttribute("role", "listbox")
+  #|    for (const option of select.options) {
+  #|      if (option.hidden) continue
+  #|      const optionButton = document.createElement("button")
+  #|      optionButton.type = "button"
+  #|      optionButton.className = "tool-select-option"
+  #|      optionButton.dataset.value = option.value
+  #|      optionButton.textContent = option.textContent ?? ""
+  #|      optionButton.addEventListener("click", () => {
+  #|        select.value = option.value
+  #|        syncCustomSelect(select)
+  #|        custom.classList.remove("is-open")
+  #|        trigger.setAttribute("aria-expanded", "false")
+  #|        select.dispatchEvent(new Event("change", { bubbles: true }))
+  #|      })
+  #|      menu.appendChild(optionButton)
+  #|    }
+  #|    trigger.addEventListener("click", (event) => {
+  #|      event.preventDefault()
+  #|      const nextOpen = !custom.classList.contains("is-open")
+  #|      closeCustomSelects(nextOpen ? custom : null)
+  #|      custom.classList.toggle("is-open", nextOpen)
+  #|      trigger.setAttribute("aria-expanded", nextOpen ? "true" : "false")
+  #|    })
+  #|    custom.appendChild(trigger)
+  #|    custom.appendChild(menu)
+  #|    select.insertAdjacentElement("afterend", custom)
+  #|    select.addEventListener("change", () => syncCustomSelect(select))
+  #|    syncCustomSelect(select)
+  #|  }
+  #|  window.__moonmarkmindSyncCustomSelect = syncCustomSelect
   #|  document.querySelector("#new-document")?.addEventListener("click", () => newCallback())
   #|  document.querySelector("#load-sample")?.addEventListener("click", () => sampleCallback())
   #|  document.querySelector("#upload-markdown")?.addEventListener("click", () => uploadCallback())
   #|  document.querySelector("#download-markdown")?.addEventListener("click", () => downloadMarkdownCallback())
+  #|  initCustomSelect("layout-select")
+  #|  initCustomSelect("style-select")
+  #|  initCustomSelect("detail-select")
+  #|  initCustomSelect("export-select")
   #|  document.querySelector("#layout-select")?.addEventListener("change", (event) => {
   #|    layoutCallback(event.target?.value ?? "horizontal")
   #|  })
@@ -40,6 +108,10 @@ extern "js" fn bind_static_ui(
   #|  })
   #|  document.querySelector("#export-select")?.addEventListener("change", (event) => {
   #|    exportCallback(event.target?.value ?? "")
+  #|  })
+  #|  document.addEventListener("click", (event) => {
+  #|    if (event.target?.closest?.(".tool-select-custom")) return
+  #|    closeCustomSelects(null)
   #|  })
   #|  document.querySelector("#undo-action")?.addEventListener("click", (event) => {
   #|    if (event.currentTarget?.dataset?.disabled === "true") return
@@ -362,7 +434,9 @@ extern "js" fn set_workspace_split(percent : Int) =
 extern "js" fn set_select_value(id : String, value : String) =
   #|(id, value) => {
   #|  const control = document.querySelector(`#${id}`)
-  #|  if (control) control.value = value
+  #|  if (!control) return
+  #|  control.value = value
+  #|  window.__moonmarkmindSyncCustomSelect?.(control)
   #|}
 
 ///|
@@ -371,6 +445,7 @@ extern "js" fn set_select_muted(id : String, muted : Bool) =
   #|  const control = document.querySelector(`#${id}`)
   #|  if (!control) return
   #|  control.classList.toggle("tool-select--muted", muted)
+  #|  window.__moonmarkmindSyncCustomSelect?.(control)
   #|}
 
 ///|

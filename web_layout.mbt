@@ -4,14 +4,15 @@ fn render_app_shell_html() -> String {
     #|<main class="app-shell">
     #|  <header class="topbar">
     #|    <div class="topbar-group">
-    #|      <span class="topbar-title">Markdown</span>
+    #|      <span class="brand-title">MoonMarkMind</span>
+    #|      <span class="section-title">MD文本</span>
     #|      <button type="button" class="tool-button tool-button--red" id="new-document">新建</button>
     #|      <button type="button" class="tool-button tool-button--green" id="upload-markdown">上传</button>
     #|      <button type="button" class="tool-button tool-button--blue" id="download-markdown">下载</button>
     #|      <button type="button" class="tool-button tool-button--soft" id="load-sample">示例</button>
     #|    </div>
     #|    <div class="topbar-group topbar-group--controls">
-    #|      <span class="topbar-title">MindMap</span>
+    #|      <span class="section-title">脑图</span>
     #|      <label class="tool-select-wrap">
     #|        <span class="tool-select-label">类型</span>
     #|        <select id="layout-select" class="tool-select">
