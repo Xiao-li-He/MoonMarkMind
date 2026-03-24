@@ -53,3 +53,21 @@ test "delete heading subtree" {
     content="# MoonMarkMind Demo\n## Renderer\n### ASCII mindmap\n### Round-trip preview",
   )
 }
+
+///|
+test "render structural headings and lists" {
+  let markdown = "# Root\n- A\n  - B\n## C\n1. D\n   1. E"
+  inspect(
+    render_ascii_mindmap(markdown),
+    content="- Root\n  - A\n    - B\n  - C\n    - D\n      - E",
+  )
+}
+
+///|
+test "export structural outline json" {
+  let markdown = "# Root\n- A\n  - B\n## C\n1. D\n   1. E"
+  inspect(
+    outline_json(markdown),
+    content="{\"flat_index\":0,\"level\":1,\"title\":\"Root\",\"synthetic\":false,\"children\":[{\"flat_index\":1,\"level\":2,\"title\":\"A\",\"synthetic\":false,\"children\":[{\"flat_index\":2,\"level\":3,\"title\":\"B\",\"synthetic\":false,\"children\":[]}]},{\"flat_index\":3,\"level\":2,\"title\":\"C\",\"synthetic\":false,\"children\":[{\"flat_index\":4,\"level\":3,\"title\":\"D\",\"synthetic\":false,\"children\":[{\"flat_index\":5,\"level\":4,\"title\":\"E\",\"synthetic\":false,\"children\":[]}]}]}]}",
+  )
+}

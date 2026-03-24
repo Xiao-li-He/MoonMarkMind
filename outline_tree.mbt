@@ -3,31 +3,33 @@ priv struct OutlineNode {
   flat_index : Int
   level : Int
   title : String
+  kind : MarkdownNodeKind
   synthetic : Bool
   children : Array[OutlineNode]
 }
 
 ///|
 fn build_outline(markdown : String) -> OutlineNode {
-  let headings = parse_headings(markdown)
-  build_outline_from_headings(headings)
+  let nodes = parse_markdown_nodes(markdown)
+  build_outline_from_nodes(nodes)
 }
 
 ///|
-fn build_outline_from_headings(headings : Array[(Int, String)]) -> OutlineNode {
-  if headings.length() == 0 {
+fn build_outline_from_nodes(nodes : Array[MarkdownNode]) -> OutlineNode {
+  if nodes.length() == 0 {
     return empty_outline()
   }
-  if top_level_count(headings) == 1 {
-    let (root, _) = build_node(headings, 0)
+  if top_level_count(nodes) == 1 {
+    let (root, _) = build_node(nodes, 0)
     return root
   }
   OutlineNode::{
     flat_index: -1,
     level: 1,
     title: "Document",
+    kind: MarkdownNodeKind::Heading,
     synthetic: true,
-    children: build_root_nodes(headings),
+    children: build_root_nodes(nodes),
   }
 }
 
@@ -37,48 +39,74 @@ fn empty_outline() -> OutlineNode {
     flat_index: -1,
     level: 1,
     title: "Empty Document",
+    kind: MarkdownNodeKind::Heading,
     synthetic: true,
     children: [],
   }
 }
 
 ///|
-fn build_root_nodes(headings : Array[(Int, String)]) -> Array[OutlineNode] {
-  let nodes = []
+fn build_root_nodes(nodes : Array[MarkdownNode]) -> Array[OutlineNode] {
+  let next = []
   let mut index = 0
-  while index < headings.length() {
-    let (node, next_index) = build_node(headings, index)
-    nodes.push(node)
+  while index < nodes.length() {
+    let (node, next_index) = build_node(nodes, index)
+    next.push(node)
     index = next_index
   }
-  nodes
+  next
 }
 
 ///|
-fn build_node(
-  headings : Array[(Int, String)],
-  index : Int,
-) -> (OutlineNode, Int) {
-  let (level, title) = headings[index]
-  let children = build_children(headings, index)
+fn build_node(nodes : Array[MarkdownNode], index : Int) -> (OutlineNode, Int) {
+  let node = nodes[index]
+  let children = build_children(nodes, index)
   (
-    OutlineNode::{ flat_index: index, level, title, synthetic: false, children },
-    subtree_end(headings, index),
+    OutlineNode::{
+      flat_index: index,
+      level: node.level,
+      title: node.title,
+      kind: node.kind,
+      synthetic: false,
+      children,
+    },
+    subtree_end(nodes, index),
   )
 }
 
 ///|
 fn build_children(
-  headings : Array[(Int, String)],
+  nodes : Array[MarkdownNode],
   index : Int,
 ) -> Array[OutlineNode] {
-  let (level, _) = headings[index]
+  let (level, _) = (nodes[index].level, nodes[index].title)
   let children = []
   let mut cursor = index + 1
-  while cursor < headings.length() && headings[cursor].0 > level {
-    let (child, next_cursor) = build_node(headings, cursor)
+  while cursor < nodes.length() && nodes[cursor].level > level {
+    let (child, next_cursor) = build_node(nodes, cursor)
     children.push(child)
     cursor = next_cursor
   }
   children
+}
+
+///|
+fn top_level_count(nodes : Array[MarkdownNode]) -> Int {
+  let mut count = 0
+  for node in nodes {
+    if node.level == 1 {
+      count += 1
+    }
+  }
+  count
+}
+
+///|
+fn subtree_end(nodes : Array[MarkdownNode], index : Int) -> Int {
+  let level = nodes[index].level
+  let mut cursor = index + 1
+  while cursor < nodes.length() && nodes[cursor].level > level {
+    cursor += 1
+  }
+  cursor
 }

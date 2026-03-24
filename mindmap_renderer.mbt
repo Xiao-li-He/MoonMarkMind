@@ -1,17 +1,16 @@
 ///|
 pub fn render_ascii_mindmap(markdown : String) -> String {
   let rendered = []
-  for heading in parse_headings(markdown) {
-    rendered.push(render_heading(heading))
+  for node in parse_markdown_nodes(markdown) {
+    rendered.push(render_markdown_node(node))
   }
   rendered.join("\n")
 }
 
 ///|
-fn render_heading(heading : (Int, String)) -> String {
-  let (level, title) = heading
-  let indent = make_indent(level - 1)
-  "\{indent}- \{title}"
+fn render_markdown_node(node : MarkdownNode) -> String {
+  let indent = make_indent(node.level - 1)
+  "\{indent}- \{node.title}"
 }
 
 ///|

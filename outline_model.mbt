@@ -1,25 +1,16 @@
 ///|
 pub fn outline_json(markdown : String) -> String {
-  let headings = parse_headings(markdown)
-  if headings.length() == 0 {
+  let root = build_outline(markdown)
+  if root.children.length() == 0 && root.synthetic {
     return document_json("Empty Document", children_json="[]")
   }
-  if top_level_count(headings) == 1 {
-    let (root_json, _) = render_node_json(headings, 0)
-    return root_json
+  if root.synthetic {
+    return document_json(
+      root.title,
+      children_json=render_outline_children_json(root.children),
+    )
   }
-  document_json("Document", children_json=render_roots_json(headings))
-}
-
-///|
-fn top_level_count(headings : Array[(Int, String)]) -> Int {
-  let mut count = 0
-  for heading in headings {
-    if heading.0 == 1 {
-      count += 1
-    }
-  }
-  count
+  render_node_json_from_outline(root)
 }
 
 ///|
@@ -28,8 +19,8 @@ pub fn rename_heading(
   flat_index : Int,
   title : String,
 ) -> String {
-  let headings = parse_headings(markdown)
-  if flat_index < 0 || flat_index >= headings.length() {
+  let nodes = parse_markdown_nodes(markdown)
+  if flat_index < 0 || flat_index >= nodes.length() {
     return markdown
   }
   let next_title = title.to_string()
@@ -37,15 +28,19 @@ pub fn rename_heading(
     return markdown
   }
   let updated = []
-  for i in 0..<headings.length() {
-    let (level, old_title) = headings[i]
+  for i in 0..<nodes.length() {
+    let node = nodes[i]
     if i == flat_index {
-      updated.push((level, next_title))
+      updated.push(MarkdownNode::{
+        kind: node.kind,
+        level: node.level,
+        title: next_title,
+      })
     } else {
-      updated.push((level, old_title))
+      updated.push(node)
     }
   }
-  render_markdown(updated)
+  render_markdown_nodes(updated)
 }
 
 ///|
@@ -55,16 +50,16 @@ pub fn move_heading(
   to_flat_index : Int,
   place_after : Bool,
 ) -> String {
-  let headings = parse_headings(markdown)
-  if !can_move_heading(headings, from_flat_index, to_flat_index) {
+  let nodes = parse_markdown_nodes(markdown)
+  if !can_move_heading(nodes, from_flat_index, to_flat_index) {
     return markdown
   }
-  let from_end = subtree_end(headings, from_flat_index)
-  let to_end = subtree_end(headings, to_flat_index)
-  let moved = slice_headings(headings, from_flat_index, from_end)
-  let remaining = concat_headings(
-    slice_headings(headings, 0, from_flat_index),
-    slice_headings(headings, from_end, headings.length()),
+  let from_end = subtree_end(nodes, from_flat_index)
+  let to_end = subtree_end(nodes, to_flat_index)
+  let moved = slice_nodes(nodes, from_flat_index, from_end)
+  let remaining = concat_nodes(
+    slice_nodes(nodes, 0, from_flat_index),
+    slice_nodes(nodes, from_end, nodes.length()),
   )
   let raw_insert_at = if place_after { to_end } else { to_flat_index }
   let insert_at = if from_flat_index < raw_insert_at {
@@ -72,11 +67,11 @@ pub fn move_heading(
   } else {
     raw_insert_at
   }
-  let rebuilt = concat_headings(
-    concat_headings(slice_headings(remaining, 0, insert_at), moved),
-    slice_headings(remaining, insert_at, remaining.length()),
+  let rebuilt = concat_nodes(
+    concat_nodes(slice_nodes(remaining, 0, insert_at), moved),
+    slice_nodes(remaining, insert_at, remaining.length()),
   )
-  render_markdown(rebuilt)
+  render_markdown_nodes(rebuilt)
 }
 
 ///|
@@ -85,27 +80,43 @@ pub fn add_child_heading(
   parent_flat_index : Int,
   title : String,
 ) -> String {
-  let headings = parse_headings(markdown)
+  let nodes = parse_markdown_nodes(markdown)
   let next_title = title.to_string()
   if next_title.length() == 0 {
     return markdown
   }
   if parent_flat_index == -1 {
-    let rebuilt = concat_headings(headings, [(1, next_title)])
-    return render_markdown(rebuilt)
+    let rebuilt = concat_nodes(nodes, [
+      MarkdownNode::{
+        kind: MarkdownNodeKind::Heading,
+        level: 1,
+        title: next_title,
+      },
+    ])
+    return render_markdown_nodes(rebuilt)
   }
-  if parent_flat_index < 0 || parent_flat_index >= headings.length() {
+  if parent_flat_index < 0 || parent_flat_index >= nodes.length() {
     return markdown
   }
-  let (level, _) = headings[parent_flat_index]
-  let insert_at = subtree_end(headings, parent_flat_index)
-  let rebuilt = concat_headings(
-    concat_headings(slice_headings(headings, 0, insert_at), [
-      (level + 1, next_title),
+  let parent = nodes[parent_flat_index]
+  let child_level = parent.level + 1
+  let child_kind = match parent.kind {
+    MarkdownNodeKind::Heading =>
+      if child_level <= 6 {
+        MarkdownNodeKind::Heading
+      } else {
+        MarkdownNodeKind::ListItem
+      }
+    MarkdownNodeKind::ListItem => MarkdownNodeKind::ListItem
+  }
+  let insert_at = subtree_end(nodes, parent_flat_index)
+  let rebuilt = concat_nodes(
+    concat_nodes(slice_nodes(nodes, 0, insert_at), [
+      MarkdownNode::{ kind: child_kind, level: child_level, title: next_title },
     ]),
-    slice_headings(headings, insert_at, headings.length()),
+    slice_nodes(nodes, insert_at, nodes.length()),
   )
-  render_markdown(rebuilt)
+  render_markdown_nodes(rebuilt)
 }
 
 ///|
@@ -115,41 +126,41 @@ pub fn add_sibling_heading(
   title : String,
   place_after : Bool,
 ) -> String {
-  let headings = parse_headings(markdown)
+  let nodes = parse_markdown_nodes(markdown)
   let next_title = title.to_string()
   if next_title.length() == 0 {
     return markdown
   }
-  if flat_index < 0 || flat_index >= headings.length() {
+  if flat_index < 0 || flat_index >= nodes.length() {
     return markdown
   }
-  let (level, _) = headings[flat_index]
+  let node = nodes[flat_index]
   let insert_at = if place_after {
-    subtree_end(headings, flat_index)
+    subtree_end(nodes, flat_index)
   } else {
     flat_index
   }
-  let rebuilt = concat_headings(
-    concat_headings(slice_headings(headings, 0, insert_at), [
-      (level, next_title),
+  let rebuilt = concat_nodes(
+    concat_nodes(slice_nodes(nodes, 0, insert_at), [
+      MarkdownNode::{ kind: node.kind, level: node.level, title: next_title },
     ]),
-    slice_headings(headings, insert_at, headings.length()),
+    slice_nodes(nodes, insert_at, nodes.length()),
   )
-  render_markdown(rebuilt)
+  render_markdown_nodes(rebuilt)
 }
 
 ///|
 pub fn delete_heading(markdown : String, flat_index : Int) -> String {
-  let headings = parse_headings(markdown)
-  if flat_index < 0 || flat_index >= headings.length() {
+  let nodes = parse_markdown_nodes(markdown)
+  if flat_index < 0 || flat_index >= nodes.length() {
     return markdown
   }
-  let end_index = subtree_end(headings, flat_index)
-  let rebuilt = concat_headings(
-    slice_headings(headings, 0, flat_index),
-    slice_headings(headings, end_index, headings.length()),
+  let end_index = subtree_end(nodes, flat_index)
+  let rebuilt = concat_nodes(
+    slice_nodes(nodes, 0, flat_index),
+    slice_nodes(nodes, end_index, nodes.length()),
   )
-  render_markdown(rebuilt)
+  render_markdown_nodes(rebuilt)
 }
 
 ///|
@@ -158,11 +169,11 @@ pub fn move_heading_among_siblings(
   flat_index : Int,
   move_down : Bool,
 ) -> String {
-  let headings = parse_headings(markdown)
-  if flat_index < 0 || flat_index >= headings.length() {
+  let nodes = parse_markdown_nodes(markdown)
+  if flat_index < 0 || flat_index >= nodes.length() {
     return markdown
   }
-  let siblings = sibling_indices(headings, flat_index)
+  let siblings = sibling_indices(nodes, flat_index)
   let mut current = -1
   for index in 0..<siblings.length() {
     if siblings[index] == flat_index {
@@ -187,6 +198,79 @@ pub fn move_heading_among_siblings(
 }
 
 ///|
+fn render_outline_markdown(root : OutlineNode) -> String {
+  if root.synthetic {
+    return render_outline_children_markdown(root.children, 0)
+  }
+  render_outline_node_markdown(root, 0)
+}
+
+///|
+fn render_outline_children_markdown(
+  children : Array[OutlineNode],
+  list_indent : Int,
+) -> String {
+  let rendered = []
+  for child in children {
+    rendered.push(render_outline_node_markdown(child, list_indent))
+  }
+  rendered.join("\n")
+}
+
+///|
+fn render_outline_node_markdown(
+  node : OutlineNode,
+  list_indent : Int,
+) -> String {
+  let current = match node.kind {
+    MarkdownNodeKind::Heading => "\{repeat_hashes(node.level)} \{node.title}"
+    MarkdownNodeKind::ListItem =>
+      "\{repeat_spaces(list_indent * 2)}- \{node.title}"
+  }
+  let child_indent = match node.kind {
+    MarkdownNodeKind::Heading => 0
+    MarkdownNodeKind::ListItem => list_indent + 1
+  }
+  let children = render_outline_children_markdown(node.children, child_indent)
+  if children.length() == 0 {
+    current
+  } else {
+    "\{current}\n\{children}"
+  }
+}
+
+///|
+fn render_markdown_nodes(nodes : Array[MarkdownNode]) -> String {
+  render_outline_markdown(build_outline_from_nodes(nodes))
+}
+
+///|
+fn render_node_json_from_outline(node : OutlineNode) -> String {
+  let flat_index_field = json_field(
+    "flat_index",
+    value=node.flat_index.to_string(),
+  )
+  let level_field = json_field("level", value=node.level.to_string())
+  let title_field = json_field("title", value=json_string(node.title))
+  let synthetic_field = json_field(
+    "synthetic",
+    value=node.synthetic.to_string(),
+  )
+  let children_field = render_outline_children_json(node.children)
+  "{\{flat_index_field},\{level_field},\{title_field},\{synthetic_field},\"children\":\{children_field}}"
+}
+
+///|
+fn render_outline_children_json(children : Array[OutlineNode]) -> String {
+  let rendered = []
+  for child in children {
+    rendered.push(render_node_json_from_outline(child))
+  }
+  let joined = rendered.join(",")
+  "[\{joined}]"
+}
+
+///|
 fn document_json(title : String, children_json~ : String) -> String {
   let flat_index_field = json_field("flat_index", value="-1")
   let level_field = json_field("level", value="1")
@@ -196,91 +280,33 @@ fn document_json(title : String, children_json~ : String) -> String {
 }
 
 ///|
-fn render_roots_json(headings : Array[(Int, String)]) -> String {
-  let nodes = []
-  let mut index = 0
-  while index < headings.length() {
-    let (node, next_index) = render_node_json(headings, index)
-    nodes.push(node)
-    index = next_index
-  }
-  let joined = nodes.join(",")
-  "[\{joined}]"
-}
-
-///|
-fn render_node_json(
-  headings : Array[(Int, String)],
-  index : Int,
-) -> (String, Int) {
-  let (level, title) = headings[index]
-  let flat_index_field = json_field("flat_index", value=index.to_string())
-  let level_field = json_field("level", value=level.to_string())
-  let title_field = json_field("title", value=json_string(title))
-  let synthetic_field = json_field("synthetic", value="false")
-  let children_field = children_json(headings, index)
-  (
-    "{\{flat_index_field},\{level_field},\{title_field},\{synthetic_field},\"children\":\{children_field}}",
-    subtree_end(headings, index),
-  )
-}
-
-///|
-fn children_json(headings : Array[(Int, String)], index : Int) -> String {
-  let (level, _) = headings[index]
-  let children = []
-  let mut cursor = index + 1
-  while cursor < headings.length() && headings[cursor].0 > level {
-    let (child_json, next_cursor) = render_node_json(headings, cursor)
-    children.push(child_json)
-    cursor = next_cursor
-  }
-  let joined = children.join(",")
-  "[\{joined}]"
-}
-
-///|
-fn subtree_end(headings : Array[(Int, String)], index : Int) -> Int {
-  let (level, _) = headings[index]
-  let mut cursor = index + 1
-  while cursor < headings.length() && headings[cursor].0 > level {
-    cursor += 1
-  }
-  cursor
-}
-
-///|
 fn can_move_heading(
-  headings : Array[(Int, String)],
+  nodes : Array[MarkdownNode],
   from_flat_index : Int,
   to_flat_index : Int,
 ) -> Bool {
   if from_flat_index < 0 || to_flat_index < 0 {
     return false
   }
-  if from_flat_index >= headings.length() || to_flat_index >= headings.length() {
+  if from_flat_index >= nodes.length() || to_flat_index >= nodes.length() {
     return false
   }
   if from_flat_index == to_flat_index {
     return false
   }
-  parent_index(headings, from_flat_index) ==
-  parent_index(headings, to_flat_index)
+  parent_index(nodes, from_flat_index) == parent_index(nodes, to_flat_index)
 }
 
 ///|
-fn sibling_indices(
-  headings : Array[(Int, String)],
-  flat_index : Int,
-) -> Array[Int] {
-  let (level, _) = headings[flat_index]
-  let parent = parent_index(headings, flat_index)
+fn sibling_indices(nodes : Array[MarkdownNode], flat_index : Int) -> Array[Int] {
+  let node = nodes[flat_index]
+  let parent = parent_index(nodes, flat_index)
   let siblings = []
-  for index in 0..<headings.length() {
+  for index in 0..<nodes.length() {
     if index == flat_index {
       siblings.push(index)
-    } else if headings[index].0 == level &&
-      parent_index(headings, index) == parent {
+    } else if nodes[index].level == node.level &&
+      parent_index(nodes, index) == parent {
       siblings.push(index)
     }
   }
@@ -288,11 +314,11 @@ fn sibling_indices(
 }
 
 ///|
-fn parent_index(headings : Array[(Int, String)], index : Int) -> Int {
-  let (level, _) = headings[index]
+fn parent_index(nodes : Array[MarkdownNode], index : Int) -> Int {
+  let level = nodes[index].level
   let mut cursor = index - 1
   while cursor >= 0 {
-    if headings[cursor].0 < level {
+    if nodes[cursor].level < level {
       return cursor
     }
     cursor -= 1
@@ -301,23 +327,23 @@ fn parent_index(headings : Array[(Int, String)], index : Int) -> Int {
 }
 
 ///|
-fn slice_headings(
-  headings : Array[(Int, String)],
+fn slice_nodes(
+  nodes : Array[MarkdownNode],
   start : Int,
   end_ : Int,
-) -> Array[(Int, String)] {
+) -> Array[MarkdownNode] {
   let sliced = []
   for i in start..<end_ {
-    sliced.push(headings[i])
+    sliced.push(nodes[i])
   }
   sliced
 }
 
 ///|
-fn concat_headings(
-  left : Array[(Int, String)],
-  right : Array[(Int, String)],
-) -> Array[(Int, String)] {
+fn concat_nodes(
+  left : Array[MarkdownNode],
+  right : Array[MarkdownNode],
+) -> Array[MarkdownNode] {
   let merged = []
   for item in left {
     merged.push(item)
@@ -329,22 +355,21 @@ fn concat_headings(
 }
 
 ///|
-fn render_markdown(headings : Array[(Int, String)]) -> String {
-  let lines = []
-  for heading in headings {
-    let (level, title) = heading
-    lines.push("\{repeat_hashes(level)} \{title}")
-  }
-  lines.join("\n")
-}
-
-///|
 fn repeat_hashes(level : Int) -> String {
   let hashes = []
   for _ in 0..<level {
     hashes.push("#")
   }
   hashes.join("")
+}
+
+///|
+fn repeat_spaces(count : Int) -> String {
+  let spaces = []
+  for _ in 0..<count {
+    spaces.push(" ")
+  }
+  spaces.join("")
 }
 
 ///|

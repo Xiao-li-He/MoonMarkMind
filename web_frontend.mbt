@@ -808,17 +808,27 @@ fn markdown_line_for_flat_index(markdown : String, flat_index : Int) -> Int {
   if flat_index < 0 {
     return -1
   }
+  let nodes = parse_markdown_nodes(markdown)
   let lines = markdown.split("\n").to_array()
-  let mut heading_index = 0
+  let mut node_index = 0
   for line_index in 0..<lines.length() {
     match parse_heading_line(lines[line_index]) {
       Some(_) => {
-        if heading_index == flat_index {
+        if node_index < nodes.length() && node_index == flat_index {
           return line_index
         }
-        heading_index += 1
+        node_index += 1
       }
-      None => ()
+      None =>
+        match parse_list_line(lines[line_index]) {
+          Some(_) => {
+            if node_index < nodes.length() && node_index == flat_index {
+              return line_index
+            }
+            node_index += 1
+          }
+          None => ()
+        }
     }
   }
   -1
