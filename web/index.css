@@ -640,6 +640,8 @@
       .editor-chrome__badge {
         display: inline-flex;
         align-items: center;
+        min-width: 0;
+        max-width: 160px;
         height: 28px;
         padding: 0 10px;
         border: 1px solid rgba(212, 223, 235, 0.94);
@@ -649,6 +651,9 @@
         font-size: 12px;
         font-variant-numeric: tabular-nums;
         margin-left: auto;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .editor-body {

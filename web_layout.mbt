@@ -112,7 +112,7 @@ fn export_options() -> String {
 
 ///|
 fn render_editor_panel() -> String {
-  let editor_chrome = render_editor_chrome()
+  let editor_chrome = render_editor_chrome(filename=current_document_name())
   (
     $|<aside class="editor-panel">
     $|  <div class="editor-surface">
@@ -137,7 +137,7 @@ fn render_editor_panel() -> String {
 }
 
 ///|
-fn render_editor_chrome() -> String {
+fn render_editor_chrome(filename~ : String) -> String {
   (
     $|<div class="editor-chrome">
     $|  <div class="editor-chrome__lights" aria-hidden="true">
@@ -154,7 +154,7 @@ fn render_editor_chrome() -> String {
     $|      <span class="editor-chrome-action__icon">\{icon_upload()}</span>
     $|    </button>
     $|  </div>
-    $|  <span class="editor-chrome__badge">notes.md</span>
+    $|  <span class="editor-chrome__badge" title="\{filename}">\{filename}</span>
     $|</div>
   )
 }

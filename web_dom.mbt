@@ -1036,7 +1036,7 @@ extern "js" fn focus_editor(node_index : Int) =
   #|}
 
 ///|
-extern "js" fn pick_markdown_file(callback : (String) -> Unit) =
+extern "js" fn pick_markdown_file(callback : (String, String) -> Unit) =
   #|(callback) => {
   #|  const input = document.createElement("input")
   #|  input.type = "file"
@@ -1044,7 +1044,7 @@ extern "js" fn pick_markdown_file(callback : (String) -> Unit) =
   #|  input.addEventListener("change", async () => {
   #|    const file = input.files?.[0]
   #|    if (!file) return
-  #|    callback(await file.text())
+  #|    callback(file.name || "notes.md", await file.text())
   #|  })
   #|  input.click()
   #|}
@@ -1255,4 +1255,13 @@ extern "js" fn highlight_drop_target(node_index : Int, place_after : Bool) =
   #|  const card = document.querySelector(`[data-node-index="${nodeIndex}"]`)
   #|  if (!card) return
   #|  card.classList.add(placeAfter ? "drop-after" : "drop-before")
+  #|}
+
+///|
+extern "js" fn set_editor_document_name(value : String) =
+  #|(value) => {
+  #|  const badge = document.querySelector(".editor-chrome__badge")
+  #|  if (!badge) return
+  #|  badge.textContent = value
+  #|  badge.title = value
   #|}

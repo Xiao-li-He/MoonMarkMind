@@ -2,6 +2,7 @@
 priv struct AppState {
   mut started : Bool
   mut markdown : String
+  mut document_name : String
   mut root : OutlineNode
   mut collapsed : Array[Int]
   mut hidden_nodes : Array[Int]
@@ -26,6 +27,7 @@ priv struct AppState {
 let app_state : AppState = AppState::{
   started: false,
   markdown: "",
+  document_name: "notes.md",
   root: empty_outline(),
   collapsed: [],
   hidden_nodes: [],
@@ -70,12 +72,14 @@ pub fn start_web_app() -> Unit {
 ///|
 fn on_new_click() -> Unit {
   reset_history()
+  app_state.document_name = "notes.md"
   load_markdown("", true)
 }
 
 ///|
 fn on_sample_click() -> Unit {
   reset_history()
+  app_state.document_name = "notes.md"
   load_markdown(rules_test_markdown(), true)
 }
 
@@ -85,14 +89,15 @@ fn on_upload_click() -> Unit {
 }
 
 ///|
-fn on_upload_loaded(markdown : String) -> Unit {
+fn on_upload_loaded(filename : String, markdown : String) -> Unit {
   reset_history()
+  app_state.document_name = normalize_document_name(filename)
   load_markdown(markdown, true)
 }
 
 ///|
 fn on_download_markdown_click() -> Unit {
-  download_text("moonmarkmind.md", app_state.markdown)
+  download_text(app_state.document_name, app_state.markdown)
 }
 
 ///|
@@ -581,9 +586,24 @@ fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
 }
 
 ///|
+fn normalize_document_name(filename : String) -> String {
+  let trimmed = filename.trim()
+  if trimmed.length() == 0 {
+    return "notes.md"
+  }
+  trimmed.to_string()
+}
+
+///|
+fn current_document_name() -> String {
+  app_state.document_name
+}
+
+///|
 fn render_ui() -> Unit {
   set_select_value("layout-select", app_state.layout_mode)
   set_select_value("style-select", app_state.style_mode)
+  set_editor_document_name(app_state.document_name)
   let detail_select_value = if app_state.detail_customized {
     "custom-\{app_state.detail_level}"
   } else {
