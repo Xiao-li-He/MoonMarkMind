@@ -259,10 +259,176 @@ extern "js" fn bind_mindmap_ui(
   #|    if (zoomValue) zoomValue.textContent = percentText
   #|    if (zoomEdit) zoomEdit.value = `${Math.round(zoom * 100)}`
   #|  }
+  #|  const renderConnectors = () => {
+  #|    const content = mindmap.querySelector(".mindmap-content")
+  #|    const stage = content?.querySelector(".mindmap-stage")
+  #|    if (!content || !stage) return
+  #|    stage.classList.remove("mindmap-stage--svg-connectors")
+  #|    content.querySelector(".mindmap-connector-layer")?.remove()
+  #|    content.querySelector(".mindmap-connector-controls")?.remove()
+  #|    content.querySelectorAll(".mindmap-node-anchor").forEach((element) => element.remove())
+  #|    if (
+  #|      stage.classList.contains("mindmap-stage--vertical") ||
+  #|      stage.classList.contains("mindmap-stage--single-right")
+  #|    ) {
+  #|      return
+  #|    }
+  #|    const nodes = [...content.querySelectorAll(".node[data-node-index]")]
+  #|    if (nodes.length <= 1) return
+  #|    const zoom = Number(mindmap.dataset.zoom ?? "1") || 1
+  #|    const contentRect = content.getBoundingClientRect()
+  #|    const stageRect = stage.getBoundingClientRect()
+  #|    const width = Math.max(1, Math.round(stageRect.width / zoom))
+  #|    const height = Math.max(1, Math.round(stageRect.height / zoom))
+  #|    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+  #|    svg.setAttribute("class", "mindmap-connector-layer")
+  #|    svg.setAttribute("width", `${width}`)
+  #|    svg.setAttribute("height", `${height}`)
+  #|    svg.setAttribute("viewBox", `0 0 ${width} ${height}`)
+  #|    svg.style.left = `${Math.round((stageRect.left - contentRect.left) / zoom)}px`
+  #|    svg.style.top = `${Math.round((stageRect.top - contentRect.top) / zoom)}px`
+  #|    const nodeMap = new Map(nodes.map((node) => [node.dataset.nodeIndex, node]))
+  #|    const stageOffsetX = (stageRect.left - contentRect.left) / zoom
+  #|    const stageOffsetY = (stageRect.top - contentRect.top) / zoom
+  #|    const localRect = (element) => {
+  #|      const rect = element.getBoundingClientRect()
+  #|      return {
+  #|        left: (rect.left - contentRect.left) / zoom - stageOffsetX,
+  #|        right: (rect.right - contentRect.left) / zoom - stageOffsetX,
+  #|        top: (rect.top - contentRect.top) / zoom - stageOffsetY,
+  #|        bottom: (rect.bottom - contentRect.top) / zoom - stageOffsetY,
+  #|        width: rect.width / zoom,
+  #|        height: rect.height / zoom,
+  #|      }
+  #|    }
+  #|    const appendCircle = (x, y, radius) => {
+  #|      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle")
+  #|      circle.setAttribute("cx", `${x}`)
+  #|      circle.setAttribute("cy", `${y}`)
+  #|      circle.setAttribute("r", `${radius}`)
+  #|      circle.setAttribute("fill", "rgba(255,255,255,0.98)")
+  #|      circle.setAttribute("stroke", "#6f9ccd")
+  #|      circle.setAttribute("stroke-width", "1.8")
+  #|      svg.appendChild(circle)
+  #|    }
+  #|    const appendPath = (d, strokeWidth) => {
+  #|      const path = document.createElementNS("http://www.w3.org/2000/svg", "path")
+  #|      path.setAttribute("d", d)
+  #|      path.setAttribute("fill", "none")
+  #|      path.setAttribute("stroke", "#7ea7d3")
+  #|      path.setAttribute("stroke-width", `${strokeWidth}`)
+  #|      path.setAttribute("stroke-linecap", "round")
+  #|      path.setAttribute("stroke-linejoin", "round")
+  #|      svg.appendChild(path)
+  #|    }
+  #|    const appendAnchor = (node, side) => {
+  #|      if (node.dataset.hiddenNode === "true") return
+  #|      const hasChildren = node.dataset.hasChildren === "true"
+  #|      const anchor = document.createElement(hasChildren ? "button" : "span")
+  #|      if (hasChildren) anchor.type = "button"
+  #|      anchor.className = "mindmap-node-anchor"
+  #|      if (hasChildren) anchor.dataset.action = "toggle-hide"
+  #|      anchor.dataset.nodeIndex = node.dataset.nodeIndex ?? ""
+  #|      anchor.dataset.collapsed = node.dataset.collapsed ?? "false"
+  #|      anchor.dataset.side = side
+  #|      const hiddenCount = Number(node.dataset.hiddenCount ?? "0")
+  #|      const collapsed = node.dataset.collapsed === "true"
+  #|      anchor.textContent = hasChildren && collapsed && hiddenCount > 0 ? `${hiddenCount}` : ""
+  #|      const title = collapsed ? `Expand node (${hiddenCount} hidden)` : "Collapse node"
+  #|      if (hasChildren) {
+  #|        anchor.title = title
+  #|        anchor.setAttribute("aria-label", title)
+  #|        anchor.setAttribute("aria-expanded", collapsed ? "false" : "true")
+  #|      } else {
+  #|        anchor.setAttribute("aria-hidden", "true")
+  #|      }
+  #|      node.appendChild(anchor)
+  #|    }
+  #|    const edgeGroups = new Map()
+  #|    for (const node of nodes) {
+  #|      const parentIndex = node.dataset.parentIndex ?? ""
+  #|      if (!parentIndex || parentIndex === "-1") continue
+  #|      const parent = nodeMap.get(parentIndex)
+  #|      if (!parent) continue
+  #|      const parentRect = localRect(parent)
+  #|      const childRect = localRect(node)
+  #|      const parentCenterX = parentRect.left + parentRect.width / 2
+  #|      const childCenterX = childRect.left + childRect.width / 2
+  #|      const childOnLeft = childCenterX < parentCenterX
+  #|      const key = `${parentIndex}:${childOnLeft ? "L" : "R"}`
+  #|      const group = edgeGroups.get(key) ?? []
+  #|      group.push({ node, parentRect, childRect, childOnLeft })
+  #|      edgeGroups.set(key, group)
+  #|    }
+  #|    for (const edges of edgeGroups.values()) {
+  #|      if (!edges.length) continue
+  #|      edges.sort(
+  #|        (a, b) =>
+  #|          a.childRect.top + a.childRect.height / 2 - (b.childRect.top + b.childRect.height / 2),
+  #|      )
+  #|      const sample = edges[0]
+  #|      const { parentRect, childOnLeft } = sample
+  #|      const dir = childOnLeft ? -1 : 1
+  #|      const startX = childOnLeft ? parentRect.left : parentRect.right
+  #|      const startY = parentRect.top + parentRect.height / 2
+  #|      const endpoints = edges.map((edge) => ({
+  #|        edge,
+  #|        endX: childOnLeft ? edge.childRect.right : edge.childRect.left,
+  #|        endY: edge.childRect.top + edge.childRect.height / 2,
+  #|      }))
+  #|      const groupStrokeWidth = edges.some((edge) => edge.node.dataset.depth === "1") ? 3.2 : 2.5
+  #|      appendCircle(startX, startY, 3.2)
+  #|      if (endpoints.length === 1) {
+  #|        const target = endpoints[0]
+  #|        const span = Math.max(20, Math.abs(target.endX - startX))
+  #|        const lead = Math.min(26, Math.max(12, span * 0.24))
+  #|        const settle = Math.min(28, Math.max(16, span * 0.3))
+  #|        appendPath(
+  #|          `M ${startX} ${startY} C ${startX + dir * lead} ${startY}, ${target.endX - dir * settle} ${target.endY}, ${target.endX} ${target.endY}`,
+  #|          groupStrokeWidth,
+  #|        )
+  #|        appendAnchor(target.edge.node, childOnLeft ? "right" : "left")
+  #|        continue
+  #|      }
+  #|      const nearestSpan = Math.max(
+  #|        20,
+  #|        Math.min(...endpoints.map((target) => Math.abs(target.endX - startX))),
+  #|      )
+  #|      const branchX = startX + dir * Math.min(30, Math.max(16, nearestSpan * 0.22))
+  #|      const branchLead = Math.min(18, Math.max(8, Math.abs(branchX - startX) * 0.7))
+  #|      appendPath(
+  #|        `M ${startX} ${startY} C ${startX + dir * branchLead} ${startY}, ${branchX - dir * 6} ${startY}, ${branchX} ${startY}`,
+  #|        groupStrokeWidth,
+  #|      )
+  #|      for (const target of endpoints) {
+  #|        const span = Math.max(18, Math.abs(target.endX - branchX))
+  #|        const pull = Math.min(18, Math.max(10, span * 0.2))
+  #|        const settle = Math.min(24, Math.max(12, span * 0.34))
+  #|        const easeY = startY + (target.endY - startY) * 0.18
+  #|        appendPath(
+  #|          `M ${branchX} ${startY} C ${branchX + dir * pull} ${easeY}, ${target.endX - dir * settle} ${target.endY}, ${target.endX} ${target.endY}`,
+  #|          target.edge.node.dataset.depth === "1" ? 3.2 : 2.4,
+  #|        )
+  #|        appendAnchor(target.edge.node, childOnLeft ? "right" : "left")
+  #|      }
+  #|    }
+  #|    content.insertAdjacentElement("afterbegin", svg)
+  #|    stage.classList.add("mindmap-stage--svg-connectors")
+  #|  }
+  #|  let connectorFrame = 0
+  #|  const scheduleConnectorRender = () => {
+  #|    if (connectorFrame) cancelAnimationFrame(connectorFrame)
+  #|    connectorFrame = requestAnimationFrame(() => {
+  #|      connectorFrame = 0
+  #|      renderConnectors()
+  #|    })
+  #|  }
+  #|  window.__moonmarkmindRenderConnectors = scheduleConnectorRender
   #|  const clampZoom = (value) => Math.max(0.4, Math.min(2, value))
   #|  const setZoom = (value) => {
   #|    mindmap.dataset.zoom = `${clampZoom(value)}`
   #|    syncView()
+  #|    scheduleConnectorRender()
   #|  }
   #|  const parseZoomInput = (raw) => {
   #|    const trimmed = (raw ?? "").trim()
@@ -403,7 +569,9 @@ extern "js" fn bind_mindmap_ui(
   #|    syncView()
   #|  })
   #|  window.addEventListener("mouseup", stopPan)
+  #|  window.addEventListener("resize", scheduleConnectorRender)
   #|  syncView()
+  #|  scheduleConnectorRender()
   #|}
 
 ///|
@@ -677,6 +845,7 @@ extern "js" fn set_mindmap_html(value : String) =
   #|  const zoomEdit = document.querySelector("#zoom-edit")
   #|  if (zoomValue) zoomValue.textContent = `${Math.round(Number(mindmap.dataset.zoom ?? "1") * 100)}%`
   #|  if (zoomEdit) zoomEdit.value = `${Math.round(Number(mindmap.dataset.zoom ?? "1") * 100)}`
+  #|  window.__moonmarkmindRenderConnectors?.()
   #|}
 
 ///|

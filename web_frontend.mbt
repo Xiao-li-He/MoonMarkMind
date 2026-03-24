@@ -4,6 +4,7 @@ priv struct AppState {
   mut markdown : String
   mut root : OutlineNode
   mut collapsed : Array[Int]
+  mut hidden_nodes : Array[Int]
   mut undo_stack : Array[String]
   mut redo_stack : Array[String]
   mut selected_node : Int
@@ -26,6 +27,7 @@ let app_state : AppState = AppState::{
   markdown: "",
   root: empty_outline(),
   collapsed: [],
+  hidden_nodes: [],
   undo_stack: [],
   redo_stack: [],
   selected_node: -2,
@@ -173,6 +175,11 @@ fn on_mindmap_click(event : BrowserEvent) -> Unit {
       sync_detail_customized()
       render_ui()
     }
+    "toggle-hide" => {
+      stop_event(event)
+      toggle_hidden_node(node_index)
+      render_ui()
+    }
     _ => if action == "" { render_ui() }
   }
 }
@@ -203,14 +210,18 @@ fn on_toolbar_action(action : String) -> Unit {
 
 ///|
 fn on_mindmap_dblclick(event : BrowserEvent) -> Unit {
-  if event_action(event) != "edit-title" {
+  if event_editor_index(event) >= 0 {
     return
   }
-  stop_event(event)
   let node_index = event_node_index(event)
   if node_index < 0 {
     return
   }
+  match find_node(app_state.root, node_index) {
+    Some(node) => if node.synthetic { return }
+    None => return
+  }
+  stop_event(event)
   select_single_node(node_index, true)
   app_state.editing_node = node_index
   render_ui()
@@ -469,6 +480,7 @@ fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
   if reset_ui {
     app_state.editing_node = -2
     clear_selected_nodes()
+    app_state.hidden_nodes = []
   }
   app_state.markdown = markdown
   app_state.root = build_outline(markdown)
@@ -476,6 +488,7 @@ fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
     apply_detail_preset()
   } else {
     sanitize_collapsed_state()
+    sanitize_hidden_state()
     sanitize_selected_state()
   }
   if get_input_value() != markdown {
@@ -778,15 +791,20 @@ fn render_horizontal_mindmap(
   if should_render_children(center) {
     for index in 0..<center.children.length() {
       let child = center.children[index]
+      let tone_index = fill_tone_index(index)
       if index % 2 == 0 {
-        right_parts.push(render_branch_node(child, center.flat_index, "right"))
+        right_parts.push(
+          render_branch_node(child, center.flat_index, "right", tone_index),
+        )
       } else {
-        left_parts.push(render_branch_node(child, center.flat_index, "left"))
+        left_parts.push(
+          render_branch_node(child, center.flat_index, "left", tone_index),
+        )
       }
     }
   }
   let left_html = left_parts.join("")
-  let center_html = render_node_card(center, -1, true)
+  let center_html = render_node_card(center, -1, true, -1)
   let right_html = right_parts.join("")
   "<div class=\"\{stage_class}\"><div class=\"branch-column branch-column--left\">\{left_html}</div><div class=\"center-wrap\">\{center_html}</div><div class=\"branch-column branch-column--right\">\{right_html}</div></div>"
 }
@@ -796,25 +814,55 @@ fn render_branch_node(
   node : OutlineNode,
   parent_index : Int,
   direction : String,
+  tone_index : Int,
 ) -> String {
   let before_slot = render_drop_slot(node.flat_index, parent_index, "before")
-  let card = render_node_card(node, parent_index, false)
+  let card = render_node_card(node, parent_index, false, tone_index)
   let after_slot = render_drop_slot(node.flat_index, parent_index, "after")
-  let children_html = render_branch_children(node, direction)
-  "<div class=\"branch-item branch-item--\{direction}\">\{before_slot}\{card}\{after_slot}\{children_html}</div>"
+  let children_html = render_branch_children(node, direction, tone_index)
+  let branch_attrs = render_node_visual_attrs(node, tone_index)
+  let row_html = if direction == "left" {
+    "<div class=\"branch-item__row\">\{children_html}<div class=\"branch-item__head\">\{card}</div></div>"
+  } else {
+    "<div class=\"branch-item__row\"><div class=\"branch-item__head\">\{card}</div>\{children_html}</div>"
+  }
+  "<div class=\"branch-item branch-item--\{direction}\"\{branch_attrs}>\{before_slot}\{row_html}\{after_slot}</div>"
 }
 
 ///|
-fn render_branch_children(node : OutlineNode, direction : String) -> String {
+fn render_branch_children(
+  node : OutlineNode,
+  direction : String,
+  tone_index : Int,
+) -> String {
   if !should_render_children(node) {
     return ""
   }
   let child_parts = []
   for child in node.children {
-    child_parts.push(render_branch_node(child, node.flat_index, direction))
+    if is_hidden_node(child.flat_index) {
+      child_parts.push(render_hidden_branch_node(child, direction, tone_index))
+    } else {
+      child_parts.push(
+        render_branch_node(child, node.flat_index, direction, tone_index),
+      )
+    }
   }
   let body = child_parts.join("")
-  "<div class=\"branch-children branch-children--\{direction}\">\{body}</div>"
+  let branch_attrs = render_node_visual_attrs(node, tone_index)
+  "<div class=\"branch-children branch-children--\{direction}\"\{branch_attrs}>\{body}</div>"
+}
+
+///|
+fn render_hidden_branch_node(
+  node : OutlineNode,
+  direction : String,
+  tone_index : Int,
+) -> String {
+  let marker = render_hidden_marker(node, tone_index)
+  let attrs = render_node_visual_attrs(node, tone_index)
+  let row_html = "<div class=\"branch-item__row\"><div class=\"branch-item__head\">\{marker}</div></div>"
+  "<div class=\"branch-item branch-item--\{direction} branch-item--hidden\"\{attrs}>\{row_html}</div>"
 }
 
 ///|
@@ -822,7 +870,7 @@ fn render_vertical_mindmap(
   center : OutlineNode,
   stage_class : String,
 ) -> String {
-  let tree_html = render_vertical_tree(center, -1, true)
+  let tree_html = render_vertical_tree(center, -1, true, -1)
   "<div class=\"\{stage_class} mindmap-stage--vertical\"><div class=\"vertical-root\">\{tree_html}</div></div>"
 }
 
@@ -831,26 +879,43 @@ fn render_vertical_tree(
   node : OutlineNode,
   parent_index : Int,
   is_root : Bool,
+  tone_index : Int,
 ) -> String {
   let before_slot = render_drop_slot(node.flat_index, parent_index, "before")
-  let card = render_node_card(node, parent_index, is_root)
+  let card = render_node_card(node, parent_index, is_root, tone_index)
   let after_slot = render_drop_slot(node.flat_index, parent_index, "after")
-  let children_html = render_vertical_children(node)
+  let children_html = render_vertical_children(node, tone_index)
   "<div class=\"vertical-tree\">\{before_slot}\{card}\{after_slot}\{children_html}</div>"
 }
 
 ///|
-fn render_vertical_children(node : OutlineNode) -> String {
+fn render_vertical_children(node : OutlineNode, tone_index : Int) -> String {
   if !should_render_children(node) {
     return ""
   }
   let child_parts = []
-  for child in node.children {
-    let child_html = render_vertical_tree(child, node.flat_index, false)
-    child_parts.push("<div class=\"vertical-tree__child\">\{child_html}</div>")
+  let child_tone = if relative_node_depth(node) == 0 { -1 } else { tone_index }
+  let wrapper_attrs = render_node_visual_attrs(node, child_tone)
+  for index in 0..<node.children.length() {
+    let child = node.children[index]
+    let next_tone = if relative_node_depth(node) == 0 {
+      fill_tone_index(index)
+    } else {
+      tone_index
+    }
+    let child_html = render_vertical_tree(
+      child,
+      node.flat_index,
+      false,
+      next_tone,
+    )
+    let child_attrs = render_node_visual_attrs(child, next_tone)
+    child_parts.push(
+      "<div class=\"vertical-tree__child\"\{child_attrs}>\{child_html}</div>",
+    )
   }
   let body = child_parts.join("")
-  "<div class=\"vertical-tree__children\">\{body}</div>"
+  "<div class=\"vertical-tree__children\"\{wrapper_attrs}>\{body}</div>"
 }
 
 ///|
@@ -858,7 +923,7 @@ fn render_single_right_mindmap(
   center : OutlineNode,
   stage_class : String,
 ) -> String {
-  let tree_html = render_single_right_tree(center, -1, true)
+  let tree_html = render_single_right_tree(center, -1, true, -1)
   "<div class=\"\{stage_class} mindmap-stage--single-right\"><div class=\"single-right-tree\">\{tree_html}</div></div>"
 }
 
@@ -867,25 +932,41 @@ fn render_single_right_tree(
   node : OutlineNode,
   parent_index : Int,
   is_root : Bool,
+  tone_index : Int,
 ) -> String {
   let before_slot = render_drop_slot(node.flat_index, parent_index, "before")
-  let card = render_node_card(node, parent_index, is_root)
+  let card = render_node_card(node, parent_index, is_root, tone_index)
   let after_slot = render_drop_slot(node.flat_index, parent_index, "after")
-  let children_html = render_single_right_children(node)
-  "<div class=\"single-right-tree__node\">\{before_slot}\{card}\{after_slot}\{children_html}</div>"
+  let children_html = render_single_right_children(node, tone_index)
+  let node_attrs = render_node_visual_attrs(node, tone_index)
+  "<div class=\"single-right-tree__node\"\{node_attrs}>\{before_slot}<div class=\"single-right-tree__head\">\{card}</div>\{after_slot}\{children_html}</div>"
 }
 
 ///|
-fn render_single_right_children(node : OutlineNode) -> String {
+fn render_single_right_children(node : OutlineNode, tone_index : Int) -> String {
   if !should_render_children(node) {
     return ""
   }
   let child_parts = []
-  for child in node.children {
-    child_parts.push(render_single_right_tree(child, node.flat_index, false))
+  let wrapper_tone = if relative_node_depth(node) == 0 {
+    -1
+  } else {
+    tone_index
+  }
+  let wrapper_attrs = render_node_visual_attrs(node, wrapper_tone)
+  for index in 0..<node.children.length() {
+    let child = node.children[index]
+    let next_tone = if relative_node_depth(node) == 0 {
+      fill_tone_index(index)
+    } else {
+      tone_index
+    }
+    child_parts.push(
+      render_single_right_tree(child, node.flat_index, false, next_tone),
+    )
   }
   let body = child_parts.join("")
-  "<div class=\"single-right-tree__children\">\{body}</div>"
+  "<div class=\"single-right-tree__children\"\{wrapper_attrs}>\{body}</div>"
 }
 
 ///|
@@ -893,6 +974,7 @@ fn render_node_card(
   node : OutlineNode,
   parent_index : Int,
   is_center : Bool,
+  tone_index : Int,
 ) -> String {
   let has_children = node.children.length() > 0
   let editable = !node.synthetic
@@ -910,10 +992,27 @@ fn render_node_card(
     classes.push("is-draggable")
   }
   let class_name = classes.join(" ")
-  let title_html = render_node_title(node, editable, is_editing)
+  let title_html = render_node_title(node, is_editing)
   let action_html = render_node_actions(node, has_children, editable, is_center)
   let drag_attrs = render_drag_attrs(node, parent_index, is_draggable)
-  "<div class=\"\{class_name}\" data-level=\"\{node.level}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{drag_attrs}><small>Level \{node.level}</small>\{title_html}\{action_html}</div>"
+  let visual_attrs = render_node_visual_attrs(node, tone_index)
+  "<div class=\"\{class_name}\" data-level=\"\{node.level}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{visual_attrs}\{drag_attrs}><small>Level \{node.level}</small>\{title_html}\{action_html}</div>"
+}
+
+///|
+fn render_node_visual_attrs(node : OutlineNode, tone_index : Int) -> String {
+  let has_children = node.children.length() > 0
+  let collapsed = is_collapsed(node.flat_index)
+  let hidden_count = count_subtree_nodes(node)
+  let hidden_node = is_hidden_node(node.flat_index)
+  " data-depth=\"\{relative_node_depth(node)}\" data-tone=\"\{tone_index}\" data-has-children=\"\{has_children}\" data-collapsed=\"\{collapsed}\" data-hidden-count=\"\{hidden_count}\" data-hidden-node=\"\{hidden_node}\""
+}
+
+///|
+fn render_hidden_marker(node : OutlineNode, tone_index : Int) -> String {
+  let attrs = render_node_visual_attrs(node, tone_index)
+  let count = count_subtree_nodes(node)
+  "<button type=\"button\" class=\"node collapsed-node\" data-action=\"toggle-hide\" data-node-index=\"\{node.flat_index}\"\{attrs}>\{count}</button>"
 }
 
 ///|
@@ -929,18 +1028,13 @@ fn render_drag_attrs(
 }
 
 ///|
-fn render_node_title(
-  node : OutlineNode,
-  editable : Bool,
-  is_editing : Bool,
-) -> String {
+fn render_node_title(node : OutlineNode, is_editing : Bool) -> String {
   if is_editing {
     let value = escape_html_attribute(node.title)
     return "<input class=\"node-editor\" data-editor-for=\"\{node.flat_index}\" type=\"text\" value=\"\{value}\" />"
   }
-  let action_attr = if editable { " data-action=\"edit-title\"" } else { "" }
   let title = escape_html(node.title)
-  "<strong\{action_attr}>\{title}</strong>"
+  "<strong>\{title}</strong>"
 }
 
 ///|
@@ -950,26 +1044,35 @@ fn render_node_actions(
   editable : Bool,
   is_center : Bool,
 ) -> String {
-  let items = []
-  items.push(
-    "<button type=\"button\" class=\"node-action\" data-action=\"add\" title=\"Add child node\">+</button>",
-  )
-  if editable && !is_center {
-    items.push(
-      "<button type=\"button\" class=\"node-action node-action--danger\" data-action=\"delete\" title=\"Delete node\">x</button>",
-    )
+  let _ = editable
+  if !has_children || is_center {
+    return ""
   }
-  if has_children {
-    let collapsed = is_collapsed(node.flat_index)
-    let label = if collapsed { "+" } else { "-" }
-    let title = if collapsed { "Expand node" } else { "Collapse node" }
-    let expanded = (!collapsed).to_string()
-    items.push(
-      "<button type=\"button\" class=\"node-action\" data-action=\"toggle\" title=\"\{title}\" aria-label=\"\{title}\" aria-expanded=\"\{expanded}\">\{label}</button>",
-    )
+  let collapsed = is_collapsed(node.flat_index)
+  let hidden_count = count_hidden_descendants(node)
+  let label = if collapsed { hidden_count.to_string() } else { "" }
+  let title = if collapsed {
+    "Expand node (\{hidden_count} hidden)"
+  } else {
+    "Collapse node"
   }
-  let body = items.join("")
-  "<div class=\"node-actions\">\{body}</div>"
+  let expanded = (!collapsed).to_string()
+  let state_class = if collapsed { " node-action--collapsed" } else { "" }
+  "<div class=\"node-actions\"><button type=\"button\" class=\"node-action node-action--toggle\{state_class}\" data-action=\"toggle\" title=\"\{title}\" aria-label=\"\{title}\" aria-expanded=\"\{expanded}\">\{label}</button></div>"
+}
+
+///|
+fn count_hidden_descendants(node : OutlineNode) -> Int {
+  let mut count = 0
+  for child in node.children {
+    count += 1 + count_hidden_descendants(child)
+  }
+  count
+}
+
+///|
+fn count_subtree_nodes(node : OutlineNode) -> Int {
+  1 + count_hidden_descendants(node)
 }
 
 ///|
@@ -997,6 +1100,18 @@ fn toggle_collapsed(node_index : Int) -> Unit {
 }
 
 ///|
+fn toggle_hidden_node(node_index : Int) -> Unit {
+  if node_index < 0 {
+    return
+  }
+  if is_hidden_node(node_index) {
+    app_state.hidden_nodes = remove_int(app_state.hidden_nodes, node_index)
+  } else {
+    app_state.hidden_nodes.push(node_index)
+  }
+}
+
+///|
 fn expand_node(node_index : Int) -> Unit {
   if node_index < 0 {
     return
@@ -1007,6 +1122,11 @@ fn expand_node(node_index : Int) -> Unit {
 ///|
 fn is_collapsed(node_index : Int) -> Bool {
   contains_int(app_state.collapsed, node_index)
+}
+
+///|
+fn is_hidden_node(node_index : Int) -> Bool {
+  contains_int(app_state.hidden_nodes, node_index)
 }
 
 ///|
@@ -1090,6 +1210,16 @@ fn node_depth(node : OutlineNode) -> Int {
 }
 
 ///|
+fn relative_node_depth(node : OutlineNode) -> Int {
+  node.level - app_state.root.level
+}
+
+///|
+fn fill_tone_index(index : Int) -> Int {
+  index % 5
+}
+
+///|
 fn apply_detail_preset() -> Unit {
   app_state.collapsed = preset_collapsed_for_level(
     app_state.root,
@@ -1138,6 +1268,18 @@ fn sanitize_collapsed_state() -> Unit {
     }
   }
   app_state.collapsed = next
+}
+
+///|
+fn sanitize_hidden_state() -> Unit {
+  let next = []
+  for node_index in app_state.hidden_nodes {
+    match find_node(app_state.root, node_index) {
+      Some(node) => if !node.synthetic { next.push(node_index) }
+      None => ()
+    }
+  }
+  app_state.hidden_nodes = next
 }
 
 ///|

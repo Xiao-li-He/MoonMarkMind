@@ -1,0 +1,69 @@
+<svg width="1200" height="760" viewBox="0 0 1200 760" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="80" y1="40" x2="1120" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5FBFF"/>
+      <stop offset="0.6" stop-color="#EEF6FD"/>
+      <stop offset="1" stop-color="#E8F1FA"/>
+    </linearGradient>
+    <linearGradient id="centerBlue" x1="140" y1="266" x2="430" y2="386" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#243B4F"/>
+      <stop offset="1" stop-color="#182633"/>
+    </linearGradient>
+    <linearGradient id="rose" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFB9B1"/><stop offset="1" stop-color="#FF857B"/></linearGradient>
+    <linearGradient id="orange" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFDAB0"/><stop offset="1" stop-color="#FFB468"/></linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#BCEED0"/><stop offset="1" stop-color="#86D7B3"/></linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#89DFFF"/><stop offset="1" stop-color="#46B9F5"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#8AA8C4" flood-opacity="0.18"/>
+    </filter>
+    <style>
+      .title { font: 700 28px "Segoe UI", "PingFang SC", sans-serif; fill: #27405C; }
+      .label { font: 700 18px "Segoe UI", "PingFang SC", sans-serif; fill: #28415D; }
+      .detail { font: 600 15px "Segoe UI", "PingFang SC", sans-serif; fill: #6E86A1; }
+      .center { font: 700 34px "Segoe UI", "PingFang SC", sans-serif; fill: #F7FBFF; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="760" rx="34" fill="url(#bg)"/>
+  <text x="64" y="84" class="title">逻辑图 · 填充</text>
+
+  <path d="M430 326H520" stroke="#55C3FB" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="520" cy="326" r="10" fill="white" stroke="#55C3FB" stroke-width="4"/>
+  <path d="M520 326C562 326 552 160 590 160H600" stroke="#FF8B83" stroke-width="5" stroke-linecap="round"/>
+  <path d="M520 326C558 326 556 280 590 280H600" stroke="#FFB56C" stroke-width="5" stroke-linecap="round"/>
+  <path d="M520 326C558 326 556 400 590 400H600" stroke="#74D9C4" stroke-width="5" stroke-linecap="round"/>
+  <path d="M520 326C560 326 560 520 590 520H600" stroke="#55C3FB" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="590" cy="160" r="8" fill="white" stroke="#FF8B83" stroke-width="4"/>
+  <circle cx="590" cy="280" r="8" fill="white" stroke="#FFB56C" stroke-width="4"/>
+  <circle cx="590" cy="400" r="8" fill="white" stroke="#74D9C4" stroke-width="4"/>
+  <circle cx="590" cy="520" r="8" fill="white" stroke="#55C3FB" stroke-width="4"/>
+  <path d="M786 160H872" stroke="#FF8B83" stroke-width="4" stroke-linecap="round"/>
+  <path d="M786 280H872" stroke="#FFB56C" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="872" cy="160" r="8" fill="white" stroke="#FF8B83" stroke-width="4"/>
+  <circle cx="872" cy="280" r="8" fill="white" stroke="#FFB56C" stroke-width="4"/>
+  <path d="M872 160H948" stroke="#FF8B83" stroke-width="4" stroke-linecap="round"/>
+  <path d="M872 280H948" stroke="#FFB56C" stroke-width="4" stroke-linecap="round"/>
+
+  <g filter="url(#shadow)">
+    <rect x="140" y="266" width="290" height="120" rx="24" fill="url(#centerBlue)" stroke="#63C9FF" stroke-width="4"/>
+    <text x="285" y="338" text-anchor="middle" class="center">中心主题</text>
+
+    <rect x="600" y="116" width="186" height="88" rx="18" fill="url(#rose)" stroke="#55C3FB" stroke-width="3"/>
+    <text x="693" y="168" text-anchor="middle" class="label">分支主题 1</text>
+
+    <rect x="600" y="236" width="186" height="88" rx="18" fill="url(#orange)" stroke="#55C3FB" stroke-width="3"/>
+    <text x="693" y="288" text-anchor="middle" class="label">分支主题 2</text>
+
+    <rect x="600" y="356" width="186" height="88" rx="18" fill="url(#green)" stroke="#55C3FB" stroke-width="3"/>
+    <text x="693" y="408" text-anchor="middle" class="label">分支主题 3</text>
+
+    <rect x="600" y="476" width="186" height="88" rx="18" fill="url(#blue)" stroke="#55C3FB" stroke-width="3"/>
+    <text x="693" y="528" text-anchor="middle" class="label">分支主题 4</text>
+
+    <rect x="948" y="134" width="140" height="52" rx="14" fill="white" stroke="#90D2FF" stroke-width="3"/>
+    <text x="1018" y="166" text-anchor="middle" class="detail">细分主题 A</text>
+
+    <rect x="948" y="254" width="140" height="52" rx="14" fill="white" stroke="#90D2FF" stroke-width="3"/>
+    <text x="1018" y="286" text-anchor="middle" class="detail">细分主题 B</text>
+  </g>
+</svg>

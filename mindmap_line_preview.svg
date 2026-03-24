@@ -1,0 +1,67 @@
+<svg width="1200" height="760" viewBox="0 0 1200 760" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="80" y1="40" x2="1120" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F9FCFF"/>
+      <stop offset="0.64" stop-color="#EEF5FC"/>
+      <stop offset="1" stop-color="#E8F0F8"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#8AA8C4" flood-opacity="0.07"/>
+    </filter>
+    <style>
+      .title { font: 700 28px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #27405C; }
+      .center { font: 500 40px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #475866; }
+      .branch { font: 400 24px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #4B5661; }
+      .detail { font: 400 17px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #8796A7; }
+      .edit { stroke: rgba(108, 134, 159, 0.34); stroke-width: 2; stroke-linecap: round; }
+      .guide { stroke: rgba(255,255,255,0.72); stroke-width: 10; stroke-linecap: round; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="760" rx="34" fill="url(#bg)"/>
+  <text x="64" y="84" class="title">思维图 · 线条</text>
+
+  <g filter="url(#soft)">
+    <text x="600" y="352" text-anchor="middle" class="center">中心主题</text>
+
+    <path d="M556 334C468 334 462 128 332 128" stroke="#55C3FB" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="332" cy="128" r="12" fill="white" stroke="#55C3FB" stroke-width="4"/>
+    <text x="130" y="120" class="branch">分支主题 4</text>
+    <line x1="130" y1="140" x2="286" y2="140" class="guide"/>
+    <line x1="130" y1="140" x2="286" y2="140" class="edit"/>
+
+    <path d="M558 334C478 334 468 250 334 250" stroke="#34A853" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="334" cy="250" r="12" fill="white" stroke="#34A853" stroke-width="4"/>
+    <text x="130" y="242" class="branch">分支主题 3</text>
+    <line x1="130" y1="262" x2="288" y2="262" class="guide"/>
+    <line x1="130" y1="262" x2="288" y2="262" class="edit"/>
+
+    <path d="M560 334C474 334 470 548 336 548" stroke="#9AA7FF" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="336" cy="548" r="12" fill="white" stroke="#9AA7FF" stroke-width="4"/>
+    <text x="130" y="540" class="branch">分支主题 5</text>
+    <line x1="130" y1="560" x2="290" y2="560" class="guide"/>
+    <line x1="130" y1="560" x2="290" y2="560" class="edit"/>
+
+    <path d="M644 334C738 334 746 168 872 168" stroke="#E53935" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="872" cy="168" r="12" fill="white" stroke="#E53935" stroke-width="4"/>
+    <text x="896" y="160" class="branch">分支主题 2</text>
+    <line x1="896" y1="180" x2="1054" y2="180" class="guide"/>
+    <line x1="896" y1="180" x2="1054" y2="180" class="edit"/>
+    <path d="M1054 168H1084" stroke="#E53935" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="1084" cy="168" r="9" fill="white" stroke="#E53935" stroke-width="3"/>
+    <text x="1102" y="162" class="detail">细分</text>
+    <line x1="1102" y1="178" x2="1170" y2="178" class="guide"/>
+    <line x1="1102" y1="178" x2="1170" y2="178" class="edit"/>
+
+    <path d="M644 334C748 334 754 374 872 374" stroke="#FB8C00" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="872" cy="374" r="12" fill="white" stroke="#FB8C00" stroke-width="4"/>
+    <text x="896" y="366" class="branch">分支主题 5</text>
+    <line x1="896" y1="386" x2="1054" y2="386" class="guide"/>
+    <line x1="896" y1="386" x2="1054" y2="386" class="edit"/>
+    <path d="M1054 374H1084" stroke="#FB8C00" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="1084" cy="374" r="9" fill="white" stroke="#FB8C00" stroke-width="3"/>
+    <text x="1102" y="368" class="detail">细分</text>
+    <line x1="1102" y1="384" x2="1170" y2="384" class="guide"/>
+    <line x1="1102" y1="384" x2="1170" y2="384" class="edit"/>
+  </g>
+</svg>
