@@ -475,6 +475,15 @@ extern "js" fn bind_mindmap_ui(
   #|    syncView()
   #|    scheduleConnectorRender()
   #|  }
+  #|  const applyWheelZoom = (event) => {
+  #|    const delta = event.deltaY ?? 0
+  #|    if (!Number.isFinite(delta) || delta === 0) return
+  #|    event.preventDefault()
+  #|    const currentZoom = Number(mindmap.dataset.zoom ?? "1") || 1
+  #|    const speed = event.ctrlKey ? 0.0032 : 0.0018
+  #|    const nextZoom = clampZoom(currentZoom * Math.exp(-delta * speed))
+  #|    setZoom(nextZoom)
+  #|  }
   #|  const parseZoomInput = (raw) => {
   #|    const trimmed = (raw ?? "").trim()
   #|    if (!trimmed) return null
@@ -570,6 +579,7 @@ extern "js" fn bind_mindmap_ui(
   #|  })
   #|  mindmap.addEventListener("keydown", keydownCallback)
   #|  mindmap.addEventListener("focusout", focusoutCallback)
+  #|  mindmap.addEventListener("wheel", applyWheelZoom, { passive: false })
   #|  mindmap.addEventListener("dragstart", dragstartCallback)
   #|  mindmap.addEventListener("dragend", dragendCallback)
   #|  mindmap.addEventListener("dragover", dragoverCallback)
