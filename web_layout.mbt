@@ -1,138 +1,218 @@
 ///|
 fn render_app_shell_html() -> String {
-  let prefix =
-    #|<main class="app-shell">
-    #|  <header class="topbar">
-    #|    <div class="topbar-group">
-    #|      <span class="brand-title">MoonMarkMind</span>
-    #|      <span class="section-title">.md文档</span>
-    #|      <button type="button" class="tool-button tool-button--red" id="new-document">新建</button>
-    #|      <button type="button" class="tool-button tool-button--green" id="upload-markdown">上传</button>
-    #|      <button type="button" class="tool-button tool-button--blue" id="download-markdown">下载</button>
-    #|      <button type="button" class="tool-button tool-button--soft" id="load-sample">示例</button>
-    #|    </div>
-    #|    <div class="topbar-group topbar-group--controls">
-    #|      <span class="section-title">脑图</span>
-    #|      <label class="tool-select-wrap">
-    #|        <span class="tool-select-label">类型</span>
-    #|        <select id="layout-select" class="tool-select">
-    #|          <option value="horizontal">思维图</option>
-    #|          <option value="single-right">逻辑图</option>
-    #|          <option value="vertical">树状图</option>
-    #|        </select>
-    #|      </label>
-    #|      <label class="tool-select-wrap">
-    #|        <span class="tool-select-label">样式</span>
-    #|        <select id="style-select" class="tool-select">
-    #|          <option value="line">线条</option>
-    #|          <option value="fill">填充</option>
-    #|        </select>
-    #|      </label>
-    #|      <label class="tool-select-wrap">
-    #|        <span class="tool-select-label">层级</span>
-    #|        <select id="detail-select" class="tool-select">
-    #|          <option value="small">最小</option>
-    #|          <option value="custom-small" hidden>最小</option>
-    #|          <option value="medium">中等</option>
-    #|          <option value="custom-medium" hidden>中等</option>
-    #|          <option value="all">全部</option>
-    #|          <option value="custom-all" hidden>全部</option>
-    #|        </select>
-    #|      </label>
-    #|      <label class="tool-select-wrap">
-    #|        <span class="tool-select-label">导出</span>
-    #|        <select id="export-select" class="tool-select tool-select--accent">
-    #|          <option value="" hidden selected>选择</option>
-    #|          <option value="png">.PNG</option>
-    #|          <option value="svg">.SVG</option>
-    #|          <option value="html">.HTML</option>
-    #|        </select>
-    #|      </label>
-    #|    </div>
-    #|  </header>
-    #|
-    #|  <section class="workspace">
-    #|    <aside class="editor-panel">
-    #|      <div class="editor-surface">
-    #|        <div class="editor-chrome">
-    #|          <div class="editor-chrome__lights" aria-hidden="true">
-    #|            <span class="editor-chrome__light editor-chrome__light--red"></span>
-    #|            <span class="editor-chrome__light editor-chrome__light--yellow"></span>
-    #|            <span class="editor-chrome__light editor-chrome__light--green"></span>
-    #|          </div>
-    #|          <span class="editor-chrome__title">Markdown</span>
-    #|          <span class="editor-chrome__badge">notes.md</span>
-    #|        </div>
-    #|        <div class="editor-body">
-    #|          <div class="editor-gutter-wrap">
-    #|            <div class="editor-gutter-lines editor-gutter-lines--linked" id="input-linked-gutter-lines" aria-hidden="true"></div>
-    #|            <div class="editor-gutter-line editor-gutter-line--hover" id="input-hover-gutter-line" aria-hidden="true"></div>
-    #|            <div class="editor-gutter-line editor-gutter-line--active" id="input-active-gutter-line" aria-hidden="true"></div>
-    #|            <pre class="editor-gutter" id="input-gutter" aria-hidden="true">1</pre>
-    #|          </div>
-    #|          <div class="editor-input-wrap">
-    #|            <div class="editor-linked-lines" id="input-linked-lines" aria-hidden="true"></div>
-    #|            <div class="editor-hover-line" id="input-hover-line" aria-hidden="true"></div>
-    #|            <div class="editor-active-line" id="input-active-line" aria-hidden="true"></div>
-    #|            <textarea id="input" spellcheck="false" placeholder="# MoonMarkMind&#10;&#10;## Links&#10;- [MoonBit Package](https://mooncakes.io/)&#10;&#10;## Features&#10;### Lists&#10;- item"></textarea>
-    #|          </div>
-    #|        </div>
-    #|      </div>
-    #|    </aside>
-    #|
-    #|    <div class="workspace-divider" id="workspace-divider" role="separator" aria-orientation="vertical" aria-label="调整左右面板宽度">
-    #|      <div class="workspace-divider__track"></div>
-    #|      <div class="workspace-divider__handle"></div>
-    #|    </div>
-    #|
-    #|    <section class="mindmap-panel">
-    #|      <div class="mindmap-toolbar">
-    #|        <div class="mindmap-toolbar__actions">
-  let middle =
-    #|        </div>
-    #|        <div class="mindmap-toolbar__side">
-    #|          <div class="mindmap-side-tools">
-  let suffix =
-    #|          </div>
-    #|          <div class="mindmap-zoom">
-    #|            <div class="zoom-strip">
-    #|              <button type="button" class="zoom-chip" id="zoom-out" aria-label="缩小">
-    #|                <span class="tool-icon tool-icon--compact" aria-hidden="true">
-    #|                  <svg viewBox="0 0 24 24" fill="none">
-    #|                    <path d="M6 12h12"></path>
-    #|                  </svg>
-    #|                </span>
-    #|              </button>
-    #|              <span class="zoom-value" id="zoom-value" title="双击编辑缩放比例">100%</span>
-    #|              <input type="text" class="zoom-edit" id="zoom-edit" value="100%" aria-label="编辑缩放比例" />
-    #|              <button type="button" class="zoom-chip" id="zoom-in" aria-label="放大">
-    #|                <span class="tool-icon tool-icon--compact" aria-hidden="true">
-    #|                  <svg viewBox="0 0 24 24" fill="none">
-    #|                    <path d="M12 6v12"></path>
-    #|                    <path d="M6 12h12"></path>
-    #|                  </svg>
-    #|                </span>
-    #|              </button>
-    #|            </div>
-    #|          </div>
-    #|        </div>
-    #|      </div>
-    #|
-    #|      <div class="mindmap-canvas-shell">
-    #|        <div class="mindmap-surface">
-    #|          <div class="mindmap" id="mindmap"></div>
-    #|        </div>
-    #|        <pre id="output" class="ascii-output"></pre>
-    #|      </div>
-    #|    </section>
-    #|  </section>
-    #|</main>
-  let shell = prefix +
-    render_primary_toolbar() +
-    middle +
-    render_secondary_toolbar() +
-    suffix
-  shell
+  let topbar = render_topbar()
+  let editor_panel = render_editor_panel()
+  let divider = render_workspace_divider()
+  let mindmap_panel = render_mindmap_panel()
+  (
+    $|<main class="app-shell">
+    $|  \{topbar}
+    $|  <section class="workspace">
+    $|    \{editor_panel}
+    $|    \{divider}
+    $|    \{mindmap_panel}
+    $|  </section>
+    $|</main>
+  )
+}
+
+///|
+fn render_topbar() -> String {
+  let layout_select = render_select_control(
+    id="layout-select",
+    label="类型",
+    class_name="tool-select",
+    options=layout_options(),
+  )
+  let style_select = render_select_control(
+    id="style-select",
+    label="样式",
+    class_name="tool-select",
+    options=style_options(),
+  )
+  let detail_select = render_select_control(
+    id="detail-select",
+    label="层级",
+    class_name="tool-select",
+    options=detail_options(),
+  )
+  let export_select = render_select_control(
+    id="export-select",
+    label="导出",
+    class_name="tool-select tool-select--accent",
+    options=export_options(),
+  )
+  (
+    $|<header class="topbar">
+    $|  <div class="topbar-group">
+    $|    <span class="brand-title">MoonMarkMind</span>
+    $|    <span class="section-title">.md文档</span>
+    $|    <button type="button" class="tool-button tool-button--red" id="new-document">新建</button>
+    $|    <button type="button" class="tool-button tool-button--green" id="upload-markdown">上传</button>
+    $|    <button type="button" class="tool-button tool-button--blue" id="download-markdown">下载</button>
+    $|    <button type="button" class="tool-button tool-button--soft" id="load-sample">示例</button>
+    $|  </div>
+    $|  <div class="topbar-group topbar-group--controls">
+    $|    <span class="section-title">脑图</span>
+    $|    \{layout_select}
+    $|    \{style_select}
+    $|    \{detail_select}
+    $|    \{export_select}
+    $|  </div>
+    $|</header>
+  )
+}
+
+///|
+fn render_select_control(
+  id~ : String,
+  label~ : String,
+  class_name~ : String,
+  options~ : String,
+) -> String {
+  (
+    $|<label class="tool-select-wrap">
+    $|  <span class="tool-select-label">\{label}</span>
+    $|  <select id="\{id}" class="\{class_name}">
+    $|    \{options}
+    $|  </select>
+    $|</label>
+  )
+}
+
+///|
+fn layout_options() -> String {
+  [
+    "<option value=\"horizontal\">思维图</option>", "<option value=\"single-right\">逻辑图</option>",
+    "<option value=\"vertical\">树状图</option>",
+  ].join("")
+}
+
+///|
+fn style_options() -> String {
+  [
+    "<option value=\"line\">线条</option>", "<option value=\"fill\">填充</option>",
+  ].join("")
+}
+
+///|
+fn detail_options() -> String {
+  [
+    "<option value=\"small\">最少</option>", "<option value=\"custom-small\" hidden>最少</option>",
+    "<option value=\"medium\">中等</option>", "<option value=\"custom-medium\" hidden>中等</option>",
+    "<option value=\"all\">全部</option>", "<option value=\"custom-all\" hidden>全部</option>",
+  ].join("")
+}
+
+///|
+fn export_options() -> String {
+  [
+    "<option value=\"\" hidden selected>选择</option>", "<option value=\"png\">.PNG</option>",
+    "<option value=\"svg\">.SVG</option>", "<option value=\"html\">.HTML</option>",
+  ].join("")
+}
+
+///|
+fn render_editor_panel() -> String {
+  let editor_chrome = render_editor_chrome()
+  (
+    $|<aside class="editor-panel">
+    $|  <div class="editor-surface">
+    $|    \{editor_chrome}
+    $|    <div class="editor-body">
+    $|      <div class="editor-gutter-wrap">
+    $|        <div class="editor-gutter-lines editor-gutter-lines--linked" id="input-linked-gutter-lines" aria-hidden="true"></div>
+    $|        <div class="editor-gutter-line editor-gutter-line--hover" id="input-hover-gutter-line" aria-hidden="true"></div>
+    $|        <div class="editor-gutter-line editor-gutter-line--active" id="input-active-gutter-line" aria-hidden="true"></div>
+    $|        <pre class="editor-gutter" id="input-gutter" aria-hidden="true">1</pre>
+    $|      </div>
+    $|      <div class="editor-input-wrap">
+    $|        <div class="editor-linked-lines" id="input-linked-lines" aria-hidden="true"></div>
+    $|        <div class="editor-hover-line" id="input-hover-line" aria-hidden="true"></div>
+    $|        <div class="editor-active-line" id="input-active-line" aria-hidden="true"></div>
+    $|        <textarea id="input" spellcheck="false" placeholder="# MoonMarkMind&#10;&#10;## Links&#10;- [MoonBit Package](https://mooncakes.io/)&#10;&#10;## Features&#10;### Lists&#10;- item"></textarea>
+    $|      </div>
+    $|    </div>
+    $|  </div>
+    $|</aside>
+  )
+}
+
+///|
+fn render_editor_chrome() -> String {
+  (
+    #|<div class="editor-chrome">
+    #|  <div class="editor-chrome__lights" aria-hidden="true">
+    #|    <span class="editor-chrome__light editor-chrome__light--red"></span>
+    #|    <span class="editor-chrome__light editor-chrome__light--yellow"></span>
+    #|    <span class="editor-chrome__light editor-chrome__light--green"></span>
+    #|  </div>
+    #|  <span class="editor-chrome__title">Markdown</span>
+    #|  <span class="editor-chrome__badge">notes.md</span>
+    #|</div>
+  )
+}
+
+///|
+fn render_workspace_divider() -> String {
+  (
+    #|<div class="workspace-divider" id="workspace-divider" role="separator" aria-orientation="vertical" aria-label="调整左右面板宽度">
+    #|  <div class="workspace-divider__track"></div>
+    #|  <div class="workspace-divider__handle"></div>
+    #|</div>
+  )
+}
+
+///|
+fn render_mindmap_panel() -> String {
+  let primary_toolbar = render_primary_toolbar()
+  let secondary_toolbar = render_secondary_toolbar()
+  let zoom_controls = render_zoom_controls()
+  (
+    $|<section class="mindmap-panel">
+    $|  <div class="mindmap-toolbar">
+    $|    <div class="mindmap-toolbar__actions">\{primary_toolbar}</div>
+    $|    <div class="mindmap-toolbar__side">
+    $|      <div class="mindmap-side-tools">\{secondary_toolbar}</div>
+    $|      \{zoom_controls}
+    $|    </div>
+    $|  </div>
+    $|
+    $|  <div class="mindmap-canvas-shell">
+    $|    <div class="mindmap-surface">
+    $|      <div class="mindmap" id="mindmap"></div>
+    $|    </div>
+    $|    <pre id="output" class="ascii-output"></pre>
+    $|  </div>
+    $|</section>
+  )
+}
+
+///|
+fn render_zoom_controls() -> String {
+  (
+    #|<div class="mindmap-zoom">
+    #|  <div class="zoom-strip">
+    #|    <button type="button" class="zoom-chip" id="zoom-out" aria-label="缩小">
+    #|      <span class="tool-icon tool-icon--compact" aria-hidden="true">
+    #|        <svg viewBox="0 0 24 24" fill="none">
+    #|          <path d="M6 12h12"></path>
+    #|        </svg>
+    #|      </span>
+    #|    </button>
+    #|    <span class="zoom-value" id="zoom-value" title="双击编辑缩放比例">100%</span>
+    #|    <input type="text" class="zoom-edit" id="zoom-edit" value="100%" aria-label="编辑缩放比例" />
+    #|    <button type="button" class="zoom-chip" id="zoom-in" aria-label="放大">
+    #|      <span class="tool-icon tool-icon--compact" aria-hidden="true">
+    #|        <svg viewBox="0 0 24 24" fill="none">
+    #|          <path d="M12 6v12"></path>
+    #|          <path d="M6 12h12"></path>
+    #|        </svg>
+    #|      </span>
+    #|    </button>
+    #|  </div>
+    #|</div>
+  )
 }
 
 ///|
@@ -140,42 +220,42 @@ fn render_primary_toolbar() -> String {
   [
     render_toolbar_icon_button(
       action="new-branch",
-      tip="新建分支 · Enter",
+      tip="新建分支 / Enter",
       icon=icon_branch(),
     ),
     render_toolbar_icon_button(
       action="new-child",
-      tip="新建子节点 · Tab",
+      tip="新建子节点 / Tab",
       icon=icon_child(),
     ),
     render_toolbar_icon_button(
       action="delete-node",
-      tip="删除当前节点 · Delete",
+      tip="删除当前节点 / Delete",
       icon=icon_trash(),
     ),
     render_toolbar_icon_button(
       action="edit-node",
-      tip="编辑节点 · 双击",
+      tip="编辑节点 / 双击",
       icon=icon_edit(),
     ),
     render_toolbar_icon_button(
       action="move-up",
-      tip="上移 · Ctrl+Up",
+      tip="上移 / Ctrl+Up",
       icon=icon_arrow_up(),
     ),
     render_toolbar_icon_button(
       action="move-down",
-      tip="下移 · Ctrl+Down",
+      tip="下移 / Ctrl+Down",
       icon=icon_arrow_down(),
     ),
     render_toolbar_icon_button(
       action="toggle-node",
-      tip="收起或展开 · Space",
+      tip="收起或展开 / Space",
       icon=icon_fold(),
     ),
     render_toolbar_icon_button(
       action="insert-node",
-      tip="插入……",
+      tip="插入…",
       icon=icon_insert(),
     ),
   ].join("")
@@ -186,12 +266,12 @@ fn render_secondary_toolbar() -> String {
   [
     render_aux_icon_button_with_id(
       id="undo-action",
-      tip="撤回 · Ctrl+Z",
+      tip="撤回 / Ctrl+Z",
       icon=icon_undo(),
     ),
     render_aux_icon_button_with_id(
       id="redo-action",
-      tip="重做 · Ctrl+Y",
+      tip="重做 / Ctrl+Y",
       icon=icon_redo(),
     ),
     render_aux_icon_button_with_id(
@@ -201,7 +281,7 @@ fn render_secondary_toolbar() -> String {
     ),
     render_aux_icon_button_with_id(
       id="recenter-view",
-      tip="回中视图 · 双击画布空白处",
+      tip="回中视图 / 双击画布空白处",
       icon=icon_play(),
     ),
     render_aux_icon_button(tip="帮助", icon=icon_help()),

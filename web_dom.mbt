@@ -25,40 +25,6 @@ extern "js" fn bind_static_ui(
   #|  exportCallback,
   #|  toolbarCallback,
   #|) => {
-  #|  const promoteEditorChromeActions = () => {
-  #|    const editorChrome = document.querySelector(".editor-chrome")
-  #|    const title = editorChrome?.querySelector(".editor-chrome__title")
-  #|    const badge = editorChrome?.querySelector(".editor-chrome__badge")
-  #|    if (!editorChrome || !title || !badge) return
-  #|    let actions = editorChrome.querySelector(".editor-chrome__actions")
-  #|    if (!actions) {
-  #|      actions = document.createElement("div")
-  #|      actions.className = "editor-chrome__actions"
-  #|      title.insertAdjacentElement("afterend", actions)
-  #|    }
-  #|    const configs = [
-  #|      {
-  #|        id: "new-document",
-  #|        tip: "新建",
-  #|        icon: `<span class="editor-chrome-action__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 6v12"></path><path d="M6 12h12"></path></svg></span>`,
-  #|      },
-  #|      {
-  #|        id: "upload-markdown",
-  #|        tip: "上传",
-  #|        icon: `<span class="editor-chrome-action__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 16V7"></path><path d="M8.5 10.5 12 7l3.5 3.5"></path><path d="M6 17.5h12"></path></svg></span>`,
-  #|      },
-  #|    ]
-  #|    for (const config of configs) {
-  #|      const button = document.querySelector(`#${config.id}`)
-  #|      if (!button) continue
-  #|      button.className = "editor-chrome-action"
-  #|      button.dataset.tip = config.tip
-  #|      button.setAttribute("aria-label", config.tip)
-  #|      button.innerHTML = config.icon
-  #|      actions.appendChild(button)
-  #|    }
-  #|  }
-  #|  promoteEditorChromeActions()
   #|  const syncCustomSelect = (select) => {
   #|    if (!select) return
   #|    const custom = select.parentElement?.querySelector?.(".tool-select-custom")
