@@ -501,6 +501,8 @@
       .editor-surface {
         display: grid;
         grid-template-rows: auto minmax(0, 1fr);
+        min-height: 0;
+        height: 100%;
         border: 0;
         border-radius: 0;
         background: transparent;
@@ -655,7 +657,6 @@
         display: grid;
         grid-template-columns: 44px minmax(0, 1fr);
         min-height: 0;
-        height: 100%;
       }
 
       .editor-gutter-wrap {
@@ -671,7 +672,7 @@
         position: relative;
         min-width: 0;
         min-height: 0;
-        height: 100%;
+        overflow: hidden;
       }
 
       .editor-gutter-lines,
@@ -1366,11 +1367,11 @@
         position: relative;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 8px;
       }
 
       .mindmap-stage--radial .branch-item {
-        gap: 18px;
+        gap: 10px;
       }
 
       .mindmap-stage--radial .branch-item--root {
@@ -1428,18 +1429,18 @@
         position: relative;
         display: flex;
         flex-direction: column;
-        gap: 18px;
+        gap: 6px;
         min-height: 72px;
       }
 
       .branch-children--left {
-        padding-top: 14px;
-        padding-right: 38px;
+        padding-top: 8px;
+        padding-right: 26px;
       }
 
       .branch-children--right {
-        padding-top: 14px;
-        padding-left: 38px;
+        padding-top: 8px;
+        padding-left: 26px;
       }
 
       .branch-children--left::before,

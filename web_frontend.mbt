@@ -946,7 +946,7 @@ fn root_branch_total_span(center : OutlineNode, start : Int, stop : Int) -> Int 
 
 ///|
 fn root_branch_span(node : OutlineNode) -> Int {
-  count_subtree_nodes(node) * 2 + 2
+  count_subtree_nodes(node) * 2 + node.children.length() * 6 + 10
 }
 
 ///|
