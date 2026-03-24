@@ -64,8 +64,14 @@ fn render_app_shell_html() -> String {
     #|          <span class="editor-chrome__badge">notes.md</span>
     #|        </div>
     #|        <div class="editor-body">
-    #|          <pre class="editor-gutter" id="input-gutter" aria-hidden="true">1</pre>
+    #|          <div class="editor-gutter-wrap">
+    #|            <div class="editor-gutter-lines editor-gutter-lines--linked" id="input-linked-gutter-lines" aria-hidden="true"></div>
+    #|            <div class="editor-gutter-line editor-gutter-line--hover" id="input-hover-gutter-line" aria-hidden="true"></div>
+    #|            <div class="editor-gutter-line editor-gutter-line--active" id="input-active-gutter-line" aria-hidden="true"></div>
+    #|            <pre class="editor-gutter" id="input-gutter" aria-hidden="true">1</pre>
+    #|          </div>
     #|          <div class="editor-input-wrap">
+    #|            <div class="editor-linked-lines" id="input-linked-lines" aria-hidden="true"></div>
     #|            <div class="editor-hover-line" id="input-hover-line" aria-hidden="true"></div>
     #|            <div class="editor-active-line" id="input-active-line" aria-hidden="true"></div>
     #|            <textarea id="input" spellcheck="false" placeholder="# MoonMarkMind&#10;&#10;## Links&#10;- [MoonBit Package](https://mooncakes.io/)&#10;&#10;## Features&#10;### Lists&#10;- item"></textarea>

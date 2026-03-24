@@ -7,12 +7,15 @@ priv struct AppState {
   mut undo_stack : Array[String]
   mut redo_stack : Array[String]
   mut selected_node : Int
+  mut selected_nodes : Array[Int]
+  mut selection_anchor_node : Int
   mut editing_node : Int
   mut layout_mode : String
   mut style_mode : String
   mut detail_level : String
   mut detail_customized : Bool
   mut left_panel_percent : Int
+  mut reveal_selected_line : Bool
   mut drag_source_index : Int
   mut drag_source_parent : Int
 }
@@ -26,12 +29,15 @@ let app_state : AppState = AppState::{
   undo_stack: [],
   redo_stack: [],
   selected_node: -2,
+  selected_nodes: [],
+  selection_anchor_node: -2,
   editing_node: -2,
   layout_mode: "horizontal",
   style_mode: "line",
   detail_level: "all",
   detail_customized: false,
   left_panel_percent: 33,
+  reveal_selected_line: false,
   drag_source_index: -1,
   drag_source_parent: -2,
 }
@@ -49,7 +55,7 @@ pub fn start_web_app() -> Unit {
     on_style_change, on_detail_change, on_export_change, on_toolbar_action,
   )
   bind_splitter_ui(on_splitter_change)
-  bind_input_listener(on_input_change)
+  bind_input_listener(on_input_change, on_input_selected_headings_change)
   bind_mindmap_ui(
     on_mindmap_click, on_mindmap_dblclick, on_mindmap_keydown, on_mindmap_focusout,
     on_mindmap_dragstart, on_mindmap_dragend, on_mindmap_dragover, on_mindmap_drop,
@@ -88,6 +94,16 @@ fn on_download_markdown_click() -> Unit {
 ///|
 fn on_input_change() -> Unit {
   apply_markdown_change(get_input_value(), true)
+}
+
+///|
+fn on_input_selected_headings_change(serialized : String) -> Unit {
+  let next_selected_nodes = parse_selection_indices(serialized)
+  if same_int_set(app_state.selected_nodes, next_selected_nodes) {
+    return
+  }
+  apply_selected_nodes(next_selected_nodes, false)
+  render_ui()
 }
 
 ///|
@@ -131,10 +147,16 @@ fn on_splitter_change(percent : Int) -> Unit {
 fn on_mindmap_click(event : BrowserEvent) -> Unit {
   let action = event_action(event)
   let node_index = event_node_index(event)
-  if node_index >= 0 && app_state.selected_node != node_index {
-    app_state.selected_node = node_index
-  } else if node_index < 0 && action == "" && app_state.selected_node != -2 {
-    app_state.selected_node = -2
+  if node_index >= 0 {
+    if event_shift_key(event) {
+      select_node_range(node_index, true)
+    } else if event_multi_select_key(event) {
+      toggle_node_selection(node_index, true)
+    } else if !is_single_selected_node(node_index) {
+      select_single_node(node_index, true)
+    }
+  } else if action == "" && has_selected_nodes() {
+    clear_selected_nodes()
   }
   match action {
     "add" => {
@@ -189,7 +211,7 @@ fn on_mindmap_dblclick(event : BrowserEvent) -> Unit {
   if node_index < 0 {
     return
   }
-  app_state.selected_node = node_index
+  select_single_node(node_index, true)
   app_state.editing_node = node_index
   render_ui()
 }
@@ -299,7 +321,7 @@ fn handle_add_sibling(node_index : Int, place_after : Bool) -> Unit {
     place_after,
   )
   if !place_after {
-    app_state.selected_node = node_index + 1
+    select_single_node(node_index + 1, false)
   }
   apply_markdown_change(next_markdown, false)
 }
@@ -316,7 +338,7 @@ fn handle_delete(node_index : Int) -> Unit {
         return
       }
       let next_markdown = delete_heading(app_state.markdown, node_index)
-      app_state.selected_node = -2
+      clear_selected_nodes()
       apply_markdown_change(next_markdown, false)
     }
     None => ()
@@ -326,7 +348,7 @@ fn handle_delete(node_index : Int) -> Unit {
 ///|
 fn save_editor(node_index : Int, title : String) -> Unit {
   let next_markdown = rename_heading(app_state.markdown, node_index, title)
-  app_state.selected_node = node_index
+  select_single_node(node_index, false)
   app_state.editing_node = -2
   apply_markdown_change(next_markdown, false)
 }
@@ -446,7 +468,7 @@ fn can_move_selected(move_down : Bool) -> Bool {
 fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
   if reset_ui {
     app_state.editing_node = -2
-    app_state.selected_node = -2
+    clear_selected_nodes()
   }
   app_state.markdown = markdown
   app_state.root = build_outline(markdown)
@@ -475,7 +497,7 @@ fn render_ui() -> Unit {
   }
   set_select_value("detail-select", detail_select_value)
   set_select_muted("detail-select", app_state.detail_customized)
-  let has_selection = app_state.selected_node >= 0
+  let has_selection = has_selected_nodes()
   set_toolbar_selection_enabled(has_selection)
   if has_selection {
     set_toolbar_action_enabled("new-branch", can_toolbar_action("new-branch"))
@@ -489,11 +511,225 @@ fn render_ui() -> Unit {
   }
   set_aux_action_enabled("undo-action", app_state.undo_stack.length() > 0)
   set_aux_action_enabled("redo-action", app_state.redo_stack.length() > 0)
+  let linked_lines = selected_markdown_lines()
+  set_input_linked_lines(ints_to_csv(linked_lines))
+  let primary_linked_line = selected_markdown_line()
+  if app_state.reveal_selected_line && primary_linked_line >= 0 {
+    reveal_input_line(primary_linked_line)
+  }
+  app_state.reveal_selected_line = false
   set_workspace_split(app_state.left_panel_percent)
   set_mindmap_html(render_mindmap_html())
   if app_state.editing_node >= 0 {
     focus_editor(app_state.editing_node)
   }
+}
+
+///|
+fn has_selected_nodes() -> Bool {
+  app_state.selected_nodes.length() > 0
+}
+
+///|
+fn is_selected_node(node_index : Int) -> Bool {
+  contains_int(app_state.selected_nodes, node_index)
+}
+
+///|
+fn is_single_selected_node(node_index : Int) -> Bool {
+  app_state.selected_nodes.length() == 1 &&
+  app_state.selected_node == node_index
+}
+
+///|
+fn clear_selected_nodes() -> Unit {
+  app_state.selected_node = -2
+  app_state.selected_nodes = []
+  app_state.selection_anchor_node = -2
+  app_state.reveal_selected_line = false
+}
+
+///|
+fn select_single_node(node_index : Int, reveal_line : Bool) -> Unit {
+  apply_selected_nodes([node_index], reveal_line)
+  app_state.selection_anchor_node = node_index
+}
+
+///|
+fn toggle_node_selection(node_index : Int, reveal_line : Bool) -> Unit {
+  if contains_int(app_state.selected_nodes, node_index) {
+    let next = remove_int(app_state.selected_nodes, node_index)
+    if next.length() == 0 {
+      clear_selected_nodes()
+      return
+    }
+    apply_selected_nodes(next, reveal_line)
+    app_state.selection_anchor_node = node_index
+  } else {
+    let next = append_unique_int(app_state.selected_nodes, node_index)
+    apply_selected_nodes(next, reveal_line)
+    app_state.selection_anchor_node = node_index
+  }
+}
+
+///|
+fn select_node_range(node_index : Int, reveal_line : Bool) -> Unit {
+  let anchor = if app_state.selection_anchor_node >= 0 {
+    app_state.selection_anchor_node
+  } else if app_state.selected_node >= 0 {
+    app_state.selected_node
+  } else {
+    node_index
+  }
+  apply_selected_nodes(int_range(anchor, node_index), reveal_line)
+}
+
+///|
+fn apply_selected_nodes(nodes : Array[Int], reveal_line : Bool) -> Unit {
+  let next = unique_nonnegative_ints(nodes)
+  if next.length() == 0 {
+    clear_selected_nodes()
+    return
+  }
+  app_state.selected_nodes = next
+  app_state.selected_node = next[next.length() - 1]
+  app_state.reveal_selected_line = reveal_line
+}
+
+///|
+fn selected_markdown_line() -> Int {
+  markdown_line_for_flat_index(app_state.markdown, app_state.selected_node)
+}
+
+///|
+fn selected_markdown_lines() -> Array[Int] {
+  let lines = []
+  for node_index in app_state.selected_nodes {
+    let line = markdown_line_for_flat_index(app_state.markdown, node_index)
+    if line >= 0 && !contains_int(lines, line) {
+      lines.push(line)
+    }
+  }
+  lines
+}
+
+///|
+fn ints_to_csv(values : Array[Int]) -> String {
+  let items = []
+  for value in values {
+    items.push(value.to_string())
+  }
+  items.join(",")
+}
+
+///|
+fn parse_selection_indices(serialized : String) -> Array[Int] {
+  if serialized.length() == 0 {
+    return []
+  }
+  let values = []
+  for item in serialized.split(",") {
+    let parsed = parse_nonnegative_int(item)
+    if parsed >= 0 && !contains_int(values, parsed) {
+      values.push(parsed)
+    }
+  }
+  values
+}
+
+///|
+fn parse_nonnegative_int(text : StringView) -> Int {
+  if text.length() == 0 {
+    return -1
+  }
+  let mut value = 0
+  for i in 0..<text.length() {
+    let ch = text[i]
+    if ch < '0' || ch > '9' {
+      return -1
+    }
+    value = value * 10 + (ch.to_int() - '0'.to_int())
+  }
+  value
+}
+
+///|
+fn unique_nonnegative_ints(values : Array[Int]) -> Array[Int] {
+  let next = []
+  for value in values {
+    if value >= 0 && !contains_int(next, value) {
+      next.push(value)
+    }
+  }
+  next
+}
+
+///|
+fn append_unique_int(values : Array[Int], target : Int) -> Array[Int] {
+  if contains_int(values, target) {
+    return values
+  }
+  let next = copy_ints(values)
+  next.push(target)
+  next
+}
+
+///|
+fn copy_ints(values : Array[Int]) -> Array[Int] {
+  let next = []
+  for value in values {
+    next.push(value)
+  }
+  next
+}
+
+///|
+fn int_range(start : Int, stop : Int) -> Array[Int] {
+  let next = []
+  if start <= stop {
+    for value in start..<=stop {
+      next.push(value)
+    }
+  } else {
+    for value in stop..<=start {
+      next.push(value)
+    }
+  }
+  next
+}
+
+///|
+fn same_int_set(left : Array[Int], right : Array[Int]) -> Bool {
+  if left.length() != right.length() {
+    return false
+  }
+  for value in left {
+    if !contains_int(right, value) {
+      return false
+    }
+  }
+  true
+}
+
+///|
+fn markdown_line_for_flat_index(markdown : String, flat_index : Int) -> Int {
+  if flat_index < 0 {
+    return -1
+  }
+  let lines = markdown.split("\n").to_array()
+  let mut heading_index = 0
+  for line_index in 0..<lines.length() {
+    match parse_heading_line(lines[line_index]) {
+      Some(_) => {
+        if heading_index == flat_index {
+          return line_index
+        }
+        heading_index += 1
+      }
+      None => ()
+    }
+  }
+  -1
 }
 
 ///|
@@ -666,7 +902,7 @@ fn render_node_card(
   if is_center {
     classes.push("node--center")
   }
-  if app_state.selected_node == node.flat_index {
+  if is_selected_node(node.flat_index) {
     classes.push("is-selected")
   }
   classes.push(render_node_style_class())
@@ -906,12 +1142,29 @@ fn sanitize_collapsed_state() -> Unit {
 
 ///|
 fn sanitize_selected_state() -> Unit {
-  if app_state.selected_node < 0 {
+  if app_state.selected_nodes.length() == 0 {
+    app_state.selected_node = -2
+    app_state.selection_anchor_node = -2
     return
   }
-  match find_node(app_state.root, app_state.selected_node) {
-    Some(_) => ()
-    None => app_state.selected_node = -2
+  let next = []
+  for node_index in app_state.selected_nodes {
+    match find_node(app_state.root, node_index) {
+      Some(_) => next.push(node_index)
+      None => ()
+    }
+  }
+  app_state.selected_nodes = next
+  if next.length() == 0 {
+    app_state.selected_node = -2
+    app_state.selection_anchor_node = -2
+  } else {
+    if !contains_int(next, app_state.selected_node) {
+      app_state.selected_node = next[next.length() - 1]
+    }
+    if !contains_int(next, app_state.selection_anchor_node) {
+      app_state.selection_anchor_node = app_state.selected_node
+    }
   }
 }
 
