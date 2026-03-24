@@ -64,7 +64,7 @@ pub fn start_web_app() -> Unit {
     on_mindmap_click, on_mindmap_dblclick, on_mindmap_keydown, on_mindmap_focusout,
     on_mindmap_dragstart, on_mindmap_dragend, on_mindmap_dragover, on_mindmap_drop,
   )
-  load_markdown(sample_markdown(), true)
+  load_markdown(rules_test_markdown(), true)
 }
 
 ///|
@@ -76,7 +76,7 @@ fn on_new_click() -> Unit {
 ///|
 fn on_sample_click() -> Unit {
   reset_history()
-  load_markdown(sample_markdown(), true)
+  load_markdown(rules_test_markdown(), true)
 }
 
 ///|
