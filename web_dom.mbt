@@ -287,6 +287,12 @@ extern "js" fn bind_mindmap_ui(
   #|    svg.setAttribute("viewBox", `0 0 ${width} ${height}`)
   #|    svg.style.left = `${Math.round((stageRect.left - contentRect.left) / zoom)}px`
   #|    svg.style.top = `${Math.round((stageRect.top - contentRect.top) / zoom)}px`
+  #|    const controls = document.createElement("div")
+  #|    controls.className = "mindmap-connector-controls"
+  #|    controls.style.left = svg.style.left
+  #|    controls.style.top = svg.style.top
+  #|    controls.style.width = `${width}px`
+  #|    controls.style.height = `${height}px`
   #|    const nodeMap = new Map(nodes.map((node) => [node.dataset.nodeIndex, node]))
   #|    const stageOffsetX = (stageRect.left - contentRect.left) / zoom
   #|    const stageOffsetY = (stageRect.top - contentRect.top) / zoom
@@ -321,30 +327,30 @@ extern "js" fn bind_mindmap_ui(
   #|      path.setAttribute("stroke-linejoin", "round")
   #|      svg.appendChild(path)
   #|    }
-  #|    const appendAnchor = (node, side) => {
-  #|      if (node.dataset.hiddenNode === "true") return
-  #|      const hasChildren = node.dataset.hasChildren === "true"
-  #|      const anchor = document.createElement(hasChildren ? "button" : "span")
-  #|      if (hasChildren) anchor.type = "button"
-  #|      anchor.className = "mindmap-node-anchor"
-  #|      if (hasChildren) anchor.dataset.action = "toggle-hide"
-  #|      anchor.dataset.nodeIndex = node.dataset.nodeIndex ?? ""
-  #|      anchor.dataset.collapsed = node.dataset.collapsed ?? "false"
-  #|      anchor.dataset.side = side
-  #|      const hiddenCount = Number(node.dataset.hiddenCount ?? "0")
+  #|    const appendJoint = (x, y, node, count) => {
+  #|      if (!node || node.dataset.hiddenNode === "true") return
+  #|      if (node.dataset.hasChildren !== "true") return
+  #|      const joint = document.createElement("button")
+  #|      joint.type = "button"
+  #|      joint.className = "mindmap-connector-joint"
+  #|      joint.dataset.action = "toggle"
+  #|      joint.dataset.nodeIndex = node.dataset.nodeIndex ?? ""
   #|      const collapsed = node.dataset.collapsed === "true"
-  #|      anchor.textContent = hasChildren && collapsed && hiddenCount > 0 ? `${hiddenCount}` : ""
-  #|      const title = collapsed ? `Expand node (${hiddenCount} hidden)` : "Collapse node"
-  #|      if (hasChildren) {
-  #|        anchor.title = title
-  #|        anchor.setAttribute("aria-label", title)
-  #|        anchor.setAttribute("aria-expanded", collapsed ? "false" : "true")
-  #|      } else {
-  #|        anchor.setAttribute("aria-hidden", "true")
-  #|      }
-  #|      node.appendChild(anchor)
+  #|      const subtreeCount = Number(count ?? node.dataset.hiddenCount ?? "0")
+  #|      const hiddenCount = Math.max(0, subtreeCount - 1)
+  #|      joint.dataset.collapsed = collapsed ? "true" : "false"
+  #|      joint.setAttribute(
+  #|        "aria-label",
+  #|        collapsed ? `Expand node (${hiddenCount} hidden)` : "Collapse node",
+  #|      )
+  #|      joint.setAttribute("aria-expanded", collapsed ? "false" : "true")
+  #|      joint.textContent = collapsed && hiddenCount > 0 ? `${hiddenCount}` : ""
+  #|      joint.style.left = `${x}px`
+  #|      joint.style.top = `${y}px`
+  #|      controls.appendChild(joint)
   #|    }
   #|    const edgeGroups = new Map()
+  #|    const rootEdges = { L: [], R: [] }
   #|    for (const node of nodes) {
   #|      const parentIndex = node.dataset.parentIndex ?? ""
   #|      if (!parentIndex || parentIndex === "-1") continue
@@ -355,10 +361,50 @@ extern "js" fn bind_mindmap_ui(
   #|      const parentCenterX = parentRect.left + parentRect.width / 2
   #|      const childCenterX = childRect.left + childRect.width / 2
   #|      const childOnLeft = childCenterX < parentCenterX
+  #|      if (node.dataset.hasChildren === "true" && node.dataset.hiddenNode !== "true") {
+  #|        const jointX = childOnLeft ? childRect.left - 3 : childRect.right + 3
+  #|        const jointY = childRect.top + childRect.height / 2
+  #|        appendJoint(jointX, jointY, node, Number(node.dataset.hiddenCount ?? "0"))
+  #|      }
+  #|      if (parent.dataset.depth === "0") {
+  #|        const side = childOnLeft ? "L" : "R"
+  #|        rootEdges[side].push({ node, parentRect, childRect, childOnLeft, parentIndex })
+  #|        continue
+  #|      }
   #|      const key = `${parentIndex}:${childOnLeft ? "L" : "R"}`
   #|      const group = edgeGroups.get(key) ?? []
-  #|      group.push({ node, parentRect, childRect, childOnLeft })
+  #|      group.push({ node, parentRect, childRect, childOnLeft, parentIndex })
   #|      edgeGroups.set(key, group)
+  #|    }
+  #|    for (const side of ["L", "R"]) {
+  #|      const rootSide = rootEdges[side]
+  #|      if (!rootSide.length) continue
+  #|      rootSide.sort(
+  #|        (a, b) =>
+  #|          a.childRect.top + a.childRect.height / 2 - (b.childRect.top + b.childRect.height / 2),
+  #|      )
+  #|      const count = rootSide.length
+  #|      for (const [index, edge] of rootSide.entries()) {
+  #|        const { node, parentRect, childRect, childOnLeft } = edge
+  #|        const dir = childOnLeft ? -1 : 1
+  #|        const startX = childOnLeft ? parentRect.left : parentRect.right
+  #|        const startY =
+  #|          count === 1
+  #|            ? parentRect.top + parentRect.height / 2
+  #|            : parentRect.top + parentRect.height * ((index + 1) / (count + 1))
+  #|        const endX = childOnLeft ? childRect.right : childRect.left
+  #|        const endY = childRect.top + childRect.height / 2
+  #|        const span = Math.max(32, Math.abs(endX - startX))
+  #|        const lead = Math.min(74, Math.max(24, span * 0.34))
+  #|        const settle = Math.min(66, Math.max(20, span * 0.28))
+  #|        const bend = Math.min(44, Math.max(16, span * 0.16))
+  #|        const curveStartY = startY - bend
+  #|        const curveEndY = endY + bend
+  #|        appendPath(
+  #|          `M ${startX} ${startY} C ${startX + dir * lead} ${curveStartY}, ${endX - dir * settle} ${curveEndY}, ${endX} ${endY}`,
+  #|          node.dataset.depth === "1" ? 3.4 : 2.7,
+  #|        )
+  #|      }
   #|    }
   #|    for (const edges of edgeGroups.values()) {
   #|      if (!edges.length) continue
@@ -367,7 +413,8 @@ extern "js" fn bind_mindmap_ui(
   #|          a.childRect.top + a.childRect.height / 2 - (b.childRect.top + b.childRect.height / 2),
   #|      )
   #|      const sample = edges[0]
-  #|      const { parentRect, childOnLeft } = sample
+  #|      const { parentRect, childOnLeft, parentIndex } = sample
+  #|      const parentNode = nodeMap.get(parentIndex)
   #|      const dir = childOnLeft ? -1 : 1
   #|      const startX = childOnLeft ? parentRect.left : parentRect.right
   #|      const startY = parentRect.top + parentRect.height / 2
@@ -377,7 +424,6 @@ extern "js" fn bind_mindmap_ui(
   #|        endY: edge.childRect.top + edge.childRect.height / 2,
   #|      }))
   #|      const groupStrokeWidth = edges.some((edge) => edge.node.dataset.depth === "1") ? 3.2 : 2.5
-  #|      appendCircle(startX, startY, 3.2)
   #|      if (endpoints.length === 1) {
   #|        const target = endpoints[0]
   #|        const span = Math.max(20, Math.abs(target.endX - startX))
@@ -387,7 +433,6 @@ extern "js" fn bind_mindmap_ui(
   #|          `M ${startX} ${startY} C ${startX + dir * lead} ${startY}, ${target.endX - dir * settle} ${target.endY}, ${target.endX} ${target.endY}`,
   #|          groupStrokeWidth,
   #|        )
-  #|        appendAnchor(target.edge.node, childOnLeft ? "right" : "left")
   #|        continue
   #|      }
   #|      const nearestSpan = Math.max(
@@ -409,9 +454,9 @@ extern "js" fn bind_mindmap_ui(
   #|          `M ${branchX} ${startY} C ${branchX + dir * pull} ${easeY}, ${target.endX - dir * settle} ${target.endY}, ${target.endX} ${target.endY}`,
   #|          target.edge.node.dataset.depth === "1" ? 3.2 : 2.4,
   #|        )
-  #|        appendAnchor(target.edge.node, childOnLeft ? "right" : "left")
   #|      }
   #|    }
+  #|    content.insertAdjacentElement("afterbegin", controls)
   #|    content.insertAdjacentElement("afterbegin", svg)
   #|    stage.classList.add("mindmap-stage--svg-connectors")
   #|  }
@@ -916,14 +961,6 @@ extern "js" fn focus_editor(node_index : Int) =
   #|    }
   #|  })
   #|}
-
-///|
-extern "js" fn prompt_text(message : String, default_value : String) -> String =
-  #|(message, defaultValue) => window.prompt(message, defaultValue) ?? ""
-
-///|
-extern "js" fn confirm_text(message : String) -> Bool =
-  #|(message) => window.confirm(message)
 
 ///|
 extern "js" fn pick_markdown_file(callback : (String) -> Unit) =

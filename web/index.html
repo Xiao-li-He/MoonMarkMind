@@ -1014,18 +1014,20 @@
         z-index: 2;
       }
 
-      .mindmap-node-anchor {
+      .mindmap-connector-joint {
         position: absolute;
-        width: 14px;
-        height: 14px;
+        width: 16px;
+        height: 16px;
         margin: 0;
         padding: 0;
         border-radius: 999px;
-        border: 2px solid #6f9ccd;
+        border: 2px solid #73a6d8;
         background: rgba(255, 255, 255, 0.98);
-        color: #5f8fbe;
-        box-shadow: none;
-        font-size: 9px;
+        color: #4f84bb;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.96),
+          0 0 0 1px rgba(255, 255, 255, 0.72);
+        font-size: 10px;
         font-weight: 700;
         line-height: 1;
         display: inline-flex;
@@ -1034,23 +1036,23 @@
         pointer-events: auto;
         transform: translate(-50%, -50%);
         z-index: 3;
+        cursor: pointer;
       }
 
-      .mindmap-node-anchor[data-side="left"] {
-        left: 0;
-        top: 50%;
-      }
-
-      .mindmap-node-anchor[data-side="right"] {
-        left: 100%;
-        top: 50%;
-      }
-
-      .mindmap-node-anchor[data-collapsed="true"] {
+      .mindmap-connector-joint[data-collapsed="true"] {
         min-width: 22px;
         width: auto;
         height: 16px;
         padding: 0 5px;
+      }
+
+      .mindmap-connector-joint:hover,
+      .mindmap-connector-joint:focus-visible {
+        outline: none;
+        border-color: #5f99d0;
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.98),
+          0 0 0 3px rgba(123, 178, 233, 0.24);
       }
 
       .mindmap-stage--svg-connectors .branch-item__head::before,
@@ -1198,6 +1200,15 @@
         padding: 20px 4px;
       }
 
+      .mindmap-stage--radial {
+        grid-template-columns: minmax(280px, 1fr) auto minmax(280px, 1fr);
+        gap: 44px;
+        align-items: center;
+        min-width: 980px;
+        min-height: 940px;
+        padding: 44px 24px 40px;
+      }
+
       .mindmap-stage--vertical {
         display: flex;
         flex-direction: column;
@@ -1220,6 +1231,13 @@
         display: flex;
         justify-content: center;
         padding-top: 98px;
+      }
+
+      .mindmap-stage--radial .center-wrap {
+        position: relative;
+        top: auto;
+        align-self: center;
+        padding-top: 0;
       }
 
       .vertical-root {
@@ -1317,6 +1335,25 @@
         padding-top: 26px;
       }
 
+      .mindmap-stage--radial .branch-column {
+        gap: 0;
+        min-height: 860px;
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+
+      .mindmap-stage--radial .branch-column--root {
+        position: relative;
+      }
+
+      .mindmap-stage--radial .branch-column--left.branch-column--root {
+        align-items: flex-end;
+      }
+
+      .mindmap-stage--radial .branch-column--right.branch-column--root {
+        align-items: flex-start;
+      }
+
       .branch-column--left {
         align-items: flex-end;
       }
@@ -1330,6 +1367,24 @@
         display: flex;
         flex-direction: column;
         gap: 12px;
+      }
+
+      .mindmap-stage--radial .branch-item {
+        gap: 18px;
+      }
+
+      .mindmap-stage--radial .branch-item--root {
+        position: absolute;
+        top: calc(((var(--root-index) + 1) * 100%) / (var(--root-count) + 1));
+        transform: translateY(-50%);
+      }
+
+      .mindmap-stage--radial .branch-column--left.branch-column--root .branch-item--root {
+        right: 0;
+      }
+
+      .mindmap-stage--radial .branch-column--right.branch-column--root .branch-item--root {
+        left: 0;
       }
 
       .branch-item--left {
@@ -1346,10 +1401,19 @@
         flex-direction: column;
       }
 
+      .mindmap-stage--radial .branch-item__head {
+        align-items: center;
+      }
+
       .branch-item__row {
         display: flex;
         align-items: flex-start;
         gap: 34px;
+      }
+
+      .mindmap-stage--radial .branch-item__row {
+        align-items: center;
+        gap: 26px;
       }
 
       .branch-item--left .branch-item__row {
@@ -1394,6 +1458,40 @@
 
       .branch-children--right::before {
         left: 0;
+      }
+
+      .mindmap-stage--radial .branch-item__head::before,
+      .mindmap-stage--radial .branch-item__head::after,
+      .mindmap-stage--radial .single-right-tree__head::before,
+      .mindmap-stage--radial .single-right-tree__head::after,
+      .mindmap-stage--radial .branch-children::before,
+      .mindmap-stage--radial .branch-children::after,
+      .mindmap-stage--radial .single-right-tree__children::before,
+      .mindmap-stage--radial .single-right-tree__children::after,
+      .mindmap-stage--radial .vertical-tree__children::before,
+      .mindmap-stage--radial .vertical-tree__child::before,
+      .mindmap-stage--radial.mindmap-stage--fill .branch-item__head::before,
+      .mindmap-stage--radial.mindmap-stage--fill .branch-item__head::after,
+      .mindmap-stage--radial.mindmap-stage--fill .single-right-tree__head::before,
+      .mindmap-stage--radial.mindmap-stage--fill .single-right-tree__head::after,
+      .mindmap-stage--radial.mindmap-stage--fill .branch-children::before,
+      .mindmap-stage--radial.mindmap-stage--fill .branch-children::after,
+      .mindmap-stage--radial.mindmap-stage--fill .single-right-tree__children::before,
+      .mindmap-stage--radial.mindmap-stage--fill .single-right-tree__children::after,
+      .mindmap-stage--radial.mindmap-stage--fill .vertical-tree__children::before,
+      .mindmap-stage--radial.mindmap-stage--fill .vertical-tree__child::before,
+      .mindmap-stage--radial.mindmap-stage--line .branch-item__head::before,
+      .mindmap-stage--radial.mindmap-stage--line .branch-item__head::after,
+      .mindmap-stage--radial.mindmap-stage--line .single-right-tree__head::before,
+      .mindmap-stage--radial.mindmap-stage--line .single-right-tree__head::after,
+      .mindmap-stage--radial.mindmap-stage--line .branch-children::before,
+      .mindmap-stage--radial.mindmap-stage--line .branch-children::after,
+      .mindmap-stage--radial.mindmap-stage--line .single-right-tree__children::before,
+      .mindmap-stage--radial.mindmap-stage--line .single-right-tree__children::after,
+      .mindmap-stage--radial.mindmap-stage--line .vertical-tree__children::before,
+      .mindmap-stage--radial.mindmap-stage--line .vertical-tree__child::before {
+        content: none;
+        display: none;
       }
 
       .mindmap-stage--line {
@@ -1687,6 +1785,13 @@
         text-align: center;
       }
 
+      .mindmap-stage--radial .node {
+        min-width: 140px;
+        max-width: 190px;
+        padding: 12px 20px;
+        border-radius: 999px;
+      }
+
       .node--line {
         border: 1px solid rgba(224, 233, 242, 0.96);
         background:
@@ -1778,6 +1883,61 @@
         display: none;
       }
 
+      .mindmap-stage--radial .node small,
+      .mindmap-stage--radial.mindmap-stage--fill .node small,
+      .mindmap-stage--radial.mindmap-stage--line .node small {
+        display: none;
+      }
+
+      .mindmap-stage--radial .node strong,
+      .mindmap-stage--radial.mindmap-stage--fill .node strong,
+      .mindmap-stage--radial.mindmap-stage--line .node strong {
+        font-size: 16px;
+        line-height: 1.25;
+      }
+
+      .mindmap-stage--radial .node--center,
+      .mindmap-stage--radial.mindmap-stage--fill .node--center,
+      .mindmap-stage--radial.mindmap-stage--line .node--center {
+        min-width: 198px;
+        max-width: 260px;
+        padding: 22px 30px;
+        border-radius: 20px;
+      }
+
+      .mindmap-stage--radial .node--center strong,
+      .mindmap-stage--radial.mindmap-stage--fill .node--center strong,
+      .mindmap-stage--radial.mindmap-stage--line .node--center strong {
+        font-size: 21px;
+      }
+
+      .mindmap-stage--radial .node--fill,
+      .mindmap-stage--radial.mindmap-stage--fill .node--fill {
+        min-width: 140px;
+        max-width: 188px;
+        padding: 12px 18px;
+      }
+
+      .mindmap-stage--radial .node--line,
+      .mindmap-stage--radial.mindmap-stage--line .node--line {
+        min-width: 140px;
+        max-width: 188px;
+        padding: 12px 18px;
+        border-radius: 999px;
+        border-color: rgba(218, 229, 241, 0.94);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(245, 249, 253, 0.9));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.9),
+          0 10px 24px rgba(120, 139, 164, 0.08);
+      }
+
+      .mindmap-stage--radial .node--center,
+      .mindmap-stage--radial.mindmap-stage--fill .node--center,
+      .mindmap-stage--radial.mindmap-stage--line .node--center {
+        background: linear-gradient(180deg, rgba(84, 113, 145, 0.96), rgba(67, 93, 122, 0.94));
+        color: #fff;
+      }
+
       .mindmap-stage--fill .node--fill:not(.node--center):not([data-depth="1"]) strong {
         font-size: 15px;
         font-weight: 600;
@@ -1792,15 +1952,48 @@
       }
 
       .node.is-selected {
-        border-color: rgba(101, 142, 191, 0.44);
-        box-shadow: 0 0 0 4px rgba(101, 142, 191, 0.1), 0 12px 24px rgba(120, 139, 164, 0.1);
+        border-color: rgba(44, 112, 206, 0.95);
+        box-shadow:
+          inset 0 0 0 1px rgba(255, 255, 255, 0.8),
+          0 0 0 2px rgba(44, 112, 206, 0.42);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 252, 255, 0.94));
+        transform: none;
+      }
+
+      .node.is-selected::after {
+        content: "";
+        position: absolute;
+        inset: -5px;
+        border: 2px solid rgba(133, 191, 255, 0.68);
+        border-radius: inherit;
+        pointer-events: none;
       }
 
       .mindmap-stage--fill .node.is-selected {
-        border-color: #29b7ff;
+        border-color: #2c70ce;
         box-shadow:
-          0 0 0 4px rgba(85, 195, 251, 0.18),
-          0 16px 28px rgba(136, 169, 199, 0.18);
+          inset 0 0 0 1px rgba(255, 255, 255, 0.82),
+          0 0 0 2px rgba(44, 112, 206, 0.42);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 252, 255, 0.94));
+        transform: none;
+      }
+
+      .mindmap-stage--fill .node.is-selected::after {
+        border-color: rgba(133, 191, 255, 0.74);
+      }
+
+      .mindmap-stage--radial .node.is-selected,
+      .mindmap-stage--radial.mindmap-stage--fill .node.is-selected,
+      .mindmap-stage--radial.mindmap-stage--line .node.is-selected {
+        border-width: 2px;
+      }
+
+      .mindmap-stage--radial .node.is-selected strong,
+      .mindmap-stage--radial.mindmap-stage--fill .node.is-selected strong,
+      .mindmap-stage--radial.mindmap-stage--line .node.is-selected strong {
+        text-shadow: none;
       }
 
       .node.drop-before {
@@ -1843,7 +2036,8 @@
 
       .node-editor:focus {
         outline: none;
-        border-color: rgba(26, 122, 114, 0.38);
+        border-color: rgba(44, 112, 206, 0.78);
+        box-shadow: 0 0 0 2px rgba(44, 112, 206, 0.18);
       }
 
       .node-actions {

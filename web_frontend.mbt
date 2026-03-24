@@ -16,6 +16,7 @@ priv struct AppState {
   mut detail_level : String
   mut detail_customized : Bool
   mut left_panel_percent : Int
+  mut root_split_count : Int
   mut reveal_selected_line : Bool
   mut drag_source_index : Int
   mut drag_source_parent : Int
@@ -39,6 +40,7 @@ let app_state : AppState = AppState::{
   detail_level: "all",
   detail_customized: false,
   left_panel_percent: 33,
+  root_split_count: 0,
   reveal_selected_line: false,
   drag_source_index: -1,
   drag_source_parent: -2,
@@ -229,18 +231,30 @@ fn on_mindmap_dblclick(event : BrowserEvent) -> Unit {
 
 ///|
 fn on_mindmap_keydown(event : BrowserEvent) -> Unit {
-  let node_index = event_editor_index(event)
+  let editor_index = event_editor_index(event)
+  if editor_index >= 0 {
+    match event_key(event) {
+      "Enter" => {
+        prevent_event_default(event)
+        save_editor(editor_index, event_editor_value(event))
+      }
+      "Escape" => {
+        app_state.editing_node = -2
+        render_ui()
+      }
+      _ => ()
+    }
+    return
+  }
+  let node_index = event_node_index(event)
   if node_index < 0 {
     return
   }
   match event_key(event) {
     "Enter" => {
       prevent_event_default(event)
-      save_editor(node_index, event_editor_value(event))
-    }
-    "Escape" => {
-      app_state.editing_node = -2
-      render_ui()
+      stop_event(event)
+      handle_add_sibling(node_index, true)
     }
     _ => ()
   }
@@ -308,33 +322,36 @@ fn on_mindmap_drop(event : BrowserEvent) -> Unit {
 
 ///|
 fn handle_add_child(node_index : Int) -> Unit {
-  let title = prompt_text("New node title", "New node")
-  if title.length() == 0 {
-    return
-  }
+  let title = "New node"
+  let target_index = target_index_after_add_child(node_index)
   let next_markdown = add_child_heading(app_state.markdown, node_index, title)
   apply_markdown_change(next_markdown, false)
   expand_node(node_index)
+  if target_index >= 0 {
+    select_single_node(target_index, false)
+    app_state.editing_node = target_index
+  }
   sync_detail_customized()
   render_ui()
 }
 
 ///|
 fn handle_add_sibling(node_index : Int, place_after : Bool) -> Unit {
-  let title = prompt_text("New node title", "New node")
-  if title.length() == 0 {
-    return
-  }
+  let title = "New node"
+  let target_index = target_index_after_add_sibling(node_index, place_after)
+  bump_root_split_after_insert(node_index)
   let next_markdown = add_sibling_heading(
     app_state.markdown,
     node_index,
     title,
     place_after,
   )
-  if !place_after {
-    select_single_node(node_index + 1, false)
-  }
   apply_markdown_change(next_markdown, false)
+  if target_index >= 0 {
+    select_single_node(target_index, false)
+    app_state.editing_node = target_index
+  }
+  render_ui()
 }
 
 ///|
@@ -342,18 +359,74 @@ fn handle_delete(node_index : Int) -> Unit {
   if node_index < 0 {
     return
   }
-  match find_node(app_state.root, node_index) {
-    Some(node) => {
-      let message = "Delete \"\{node.title}\" and its children?"
-      if !confirm_text(message) {
-        return
-      }
-      let next_markdown = delete_heading(app_state.markdown, node_index)
-      clear_selected_nodes()
-      apply_markdown_change(next_markdown, false)
-    }
-    None => ()
+  shrink_root_split_after_delete(node_index)
+  let next_markdown = delete_heading(app_state.markdown, node_index)
+  clear_selected_nodes()
+  app_state.editing_node = -2
+  apply_markdown_change(next_markdown, false)
+}
+
+///|
+fn target_index_after_add_child(parent_index : Int) -> Int {
+  if parent_index < 0 {
+    return count_subtree_nodes(app_state.root) - 1
   }
+  match find_node(app_state.root, parent_index) {
+    Some(node) => parent_index + count_subtree_nodes(node)
+    None => -1
+  }
+}
+
+///|
+fn target_index_after_add_sibling(node_index : Int, place_after : Bool) -> Int {
+  if node_index < 0 {
+    return -1
+  }
+  if !place_after {
+    return node_index
+  }
+  match find_node(app_state.root, node_index) {
+    Some(node) => node_index + count_subtree_nodes(node)
+    None => -1
+  }
+}
+
+///|
+fn bump_root_split_after_insert(node_index : Int) -> Unit {
+  let root_child_position = root_child_index(node_index)
+  if root_child_position < 0 {
+    return
+  }
+  if root_child_position < app_state.root_split_count {
+    app_state.root_split_count += 1
+  }
+}
+
+///|
+fn shrink_root_split_after_delete(node_index : Int) -> Unit {
+  let root_child_position = root_child_index(node_index)
+  if root_child_position < 0 {
+    return
+  }
+  if root_child_position < app_state.root_split_count && app_state.root_split_count > 0 {
+    app_state.root_split_count -= 1
+  }
+}
+
+///|
+fn root_child_index(node_index : Int) -> Int {
+  let child_count = app_state.root.children.length()
+  for index in 0..<child_count {
+    if app_state.root.children[index].flat_index == node_index {
+      return index
+    }
+  }
+  -1
+}
+
+///|
+fn default_root_split_count(root : OutlineNode) -> Int {
+  (root.children.length() + 1) / 2
 }
 
 ///|
@@ -486,10 +559,15 @@ fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
   app_state.root = build_outline(markdown)
   if reset_ui {
     apply_detail_preset()
+    app_state.root_split_count = default_root_split_count(app_state.root)
   } else {
     sanitize_collapsed_state()
     sanitize_hidden_state()
     sanitize_selected_state()
+    if app_state.root_split_count <= 0 ||
+      app_state.root_split_count > app_state.root.children.length() {
+      app_state.root_split_count = default_root_split_count(app_state.root)
+    }
   }
   if get_input_value() != markdown {
     set_input_value(markdown)
@@ -789,16 +867,33 @@ fn render_horizontal_mindmap(
   let left_parts = []
   let right_parts = []
   if should_render_children(center) {
+    let left_count = root_branch_left_count(center)
+    let right_count = center.children.length() - left_count
     for index in 0..<center.children.length() {
       let child = center.children[index]
       let tone_index = fill_tone_index(index)
-      if index % 2 == 0 {
-        right_parts.push(
-          render_branch_node(child, center.flat_index, "right", tone_index),
+      if index < left_count {
+        left_parts.push(
+          render_root_branch_node(
+            child,
+            center.flat_index,
+            "left",
+            tone_index,
+            index,
+            left_count,
+          ),
         )
       } else {
-        left_parts.push(
-          render_branch_node(child, center.flat_index, "left", tone_index),
+        let right_index = index - left_count
+        right_parts.push(
+          render_root_branch_node(
+            child,
+            center.flat_index,
+            "right",
+            tone_index,
+            right_index,
+            right_count,
+          ),
         )
       }
     }
@@ -806,7 +901,55 @@ fn render_horizontal_mindmap(
   let left_html = left_parts.join("")
   let center_html = render_node_card(center, -1, true, -1)
   let right_html = right_parts.join("")
-  "<div class=\"\{stage_class}\"><div class=\"branch-column branch-column--left\">\{left_html}</div><div class=\"center-wrap\">\{center_html}</div><div class=\"branch-column branch-column--right\">\{right_html}</div></div>"
+  "<div class=\"\{stage_class} mindmap-stage--radial\"><div class=\"branch-column branch-column--left branch-column--root\">\{left_html}</div><div class=\"center-wrap\">\{center_html}</div><div class=\"branch-column branch-column--right branch-column--root\">\{right_html}</div></div>"
+}
+
+///|
+fn root_branch_left_count(center : OutlineNode) -> Int {
+  let child_count = center.children.length()
+  if child_count == 0 {
+    return 0
+  }
+  let split_count = clamp_int(app_state.root_split_count, 0, child_count)
+  if split_count == 0 {
+    return default_root_split_count(center)
+  }
+  split_count
+}
+
+///|
+fn clamp_int(value : Int, min_value : Int, max_value : Int) -> Int {
+  if value < min_value {
+    return min_value
+  }
+  if value > max_value {
+    return max_value
+  }
+  value
+}
+
+///|
+fn render_root_branch_node(
+  node : OutlineNode,
+  parent_index : Int,
+  direction : String,
+  tone_index : Int,
+  root_index : Int,
+  root_count : Int,
+) -> String {
+  let before_slot = render_drop_slot(node.flat_index, parent_index, "before")
+  let card = render_node_card(node, parent_index, false, tone_index)
+  let after_slot = render_drop_slot(node.flat_index, parent_index, "after")
+  let children_html = render_branch_children(node, direction, tone_index)
+  let branch_attrs = render_node_visual_attrs(node, tone_index)
+  let safe_root_count = if root_count > 0 { root_count } else { 1 }
+  let root_style = " style=\"--root-index:\{root_index};--root-count:\{safe_root_count}\""
+  let row_html = if direction == "left" {
+    "<div class=\"branch-item__row\">\{children_html}<div class=\"branch-item__head\">\{card}</div></div>"
+  } else {
+    "<div class=\"branch-item__row\"><div class=\"branch-item__head\">\{card}</div>\{children_html}</div>"
+  }
+  "<div class=\"branch-item branch-item--\{direction} branch-item--root\"\{branch_attrs}\{root_style}>\{before_slot}\{row_html}\{after_slot}</div>"
 }
 
 ///|
@@ -1002,10 +1145,11 @@ fn render_node_card(
 ///|
 fn render_node_visual_attrs(node : OutlineNode, tone_index : Int) -> String {
   let has_children = node.children.length() > 0
+  let child_count = node.children.length()
   let collapsed = is_collapsed(node.flat_index)
   let hidden_count = count_subtree_nodes(node)
   let hidden_node = is_hidden_node(node.flat_index)
-  " data-depth=\"\{relative_node_depth(node)}\" data-tone=\"\{tone_index}\" data-has-children=\"\{has_children}\" data-collapsed=\"\{collapsed}\" data-hidden-count=\"\{hidden_count}\" data-hidden-node=\"\{hidden_node}\""
+  " data-depth=\"\{relative_node_depth(node)}\" data-tone=\"\{tone_index}\" data-has-children=\"\{has_children}\" data-child-count=\"\{child_count}\" data-collapsed=\"\{collapsed}\" data-hidden-count=\"\{hidden_count}\" data-hidden-node=\"\{hidden_node}\""
 }
 
 ///|
