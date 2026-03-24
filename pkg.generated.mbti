@@ -8,8 +8,6 @@ pub fn add_sibling_heading(String, Int, String, Bool) -> String
 
 pub fn delete_heading(String, Int) -> String
 
-pub fn demo_output() -> String
-
 pub fn move_heading(String, Int, Int, Bool) -> String
 
 pub fn move_heading_among_siblings(String, Int, Bool) -> String
@@ -19,8 +17,6 @@ pub fn outline_json(String) -> String
 pub fn parse_headings(String) -> Array[(Int, String)]
 
 pub fn rename_heading(String, Int, String) -> String
-
-pub fn render_ascii_mindmap(String) -> String
 
 pub fn sample_markdown() -> String
 

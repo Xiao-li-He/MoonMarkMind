@@ -42,16 +42,6 @@ pub fn delete_heading(markdown : String, flat_index : Int) -> String {
 }
 
 ///|
-pub fn render_ascii_mindmap(markdown : String) -> String {
-  @lib.render_ascii_mindmap(markdown)
-}
-
-///|
-pub fn demo_output() -> String {
-  @lib.demo_output()
-}
-
-///|
 pub fn start_web_app() -> Unit {
   @lib.start_web_app()
 }
@@ -61,6 +51,6 @@ fn main {
   println("Markdown input:")
   println(sample_markdown())
   println("")
-  println("ASCII mindmap:")
-  println(demo_output())
+  println("Outline JSON:")
+  println(outline_json(sample_markdown()))
 }

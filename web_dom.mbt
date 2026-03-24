@@ -845,13 +845,6 @@ extern "js" fn reveal_input_line(line_index : Int) =
   #|}
 
 ///|
-extern "js" fn set_output_text(value : String) =
-  #|(value) => {
-  #|  const output = document.querySelector("#output")
-  #|  if (output) output.textContent = value
-  #|}
-
-///|
 extern "js" fn set_mindmap_html(value : String) =
   #|(value) => {
   #|  const mindmap = document.querySelector("#mindmap")

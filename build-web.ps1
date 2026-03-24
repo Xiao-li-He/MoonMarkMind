@@ -38,8 +38,6 @@ $renameSymbol = Find-LocalExportSymbol "rename_heading"
 $moveSymbol = Find-LocalExportSymbol "move_heading"
 $addChildSymbol = Find-LocalExportSymbol "add_child_heading"
 $deleteSymbol = Find-LocalExportSymbol "delete_heading"
-$renderSymbol = Find-LocalExportSymbol "render_ascii_mindmap"
-$demoSymbol = Find-LocalExportSymbol "demo_output"
 $startSymbol = Find-LocalExportSymbol "start_web_app"
 
 $bridge = @'
@@ -63,12 +61,6 @@ globalThis.__API_NAME__ = {
   deleteHeading(markdown, flatIndex) {
     return __DELETE_SYMBOL__(markdown, flatIndex);
   },
-  renderAsciiMindmap(markdown) {
-    return __RENDER_SYMBOL__(markdown);
-  },
-  demoOutput() {
-    return __DEMO_SYMBOL__();
-  },
   startWebApp() {
     return __START_SYMBOL__();
   },
@@ -86,8 +78,6 @@ $bridge = $bridge.
   Replace("__MOVE_SYMBOL__", $moveSymbol).
   Replace("__ADD_CHILD_SYMBOL__", $addChildSymbol).
   Replace("__DELETE_SYMBOL__", $deleteSymbol).
-  Replace("__RENDER_SYMBOL__", $renderSymbol).
-  Replace("__DEMO_SYMBOL__", $demoSymbol).
   Replace("__START_SYMBOL__", $startSymbol).
   Replace("__API_NAME__", $apiName)
 

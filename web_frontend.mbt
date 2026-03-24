@@ -573,7 +573,6 @@ fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
   if get_input_value() != markdown {
     set_input_value(markdown)
   }
-  set_output_text(render_ascii_mindmap(markdown))
   sync_detail_customized()
   render_ui()
 }

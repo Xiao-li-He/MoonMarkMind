@@ -1181,10 +1181,6 @@
         display: block;
       }
 
-      .ascii-output {
-        display: none;
-      }
-
       .mindmap-stage {
         display: grid;
         grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);

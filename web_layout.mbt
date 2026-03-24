@@ -177,12 +177,10 @@ fn render_mindmap_panel() -> String {
     $|      \{zoom_controls}
     $|    </div>
     $|  </div>
-    $|
     $|  <div class="mindmap-canvas-shell">
     $|    <div class="mindmap-surface">
     $|      <div class="mindmap" id="mindmap"></div>
     $|    </div>
-    $|    <pre id="output" class="ascii-output"></pre>
     $|  </div>
     $|</section>
   )

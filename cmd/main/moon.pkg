@@ -19,8 +19,6 @@ options(
         "move_heading",
         "add_child_heading",
         "delete_heading",
-        "render_ascii_mindmap",
-        "demo_output",
         "start_web_app",
       ],
       "format": "esm",
