@@ -658,6 +658,44 @@
         height: 100%;
       }
 
+      .editor-input-wrap {
+        position: relative;
+        min-width: 0;
+        min-height: 0;
+        height: 100%;
+      }
+
+      .editor-hover-line,
+      .editor-active-line {
+        position: absolute;
+        left: 10px;
+        right: 12px;
+        top: 0;
+        height: 28px;
+        border-radius: 9px;
+        background: linear-gradient(180deg, rgba(134, 186, 244, 0.34), rgba(134, 186, 244, 0.18));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.56),
+          inset 3px 0 0 rgba(72, 137, 210, 0.58),
+          0 0 0 1px rgba(126, 173, 225, 0.32);
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(0);
+        transition: opacity 120ms ease;
+        z-index: 0;
+      }
+
+      .editor-hover-line {
+        background: linear-gradient(180deg, rgba(146, 196, 248, 0.18), rgba(146, 196, 248, 0.08));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.44),
+          0 0 0 1px rgba(146, 196, 248, 0.16);
+      }
+
+      .editor-active-line {
+        z-index: 1;
+      }
+
       .editor-gutter {
         margin: 0;
         padding: 18px 8px 22px 10px;
@@ -674,6 +712,8 @@
       }
 
       textarea {
+        position: relative;
+        z-index: 2;
         width: 100%;
         height: 100%;
         min-height: 0;
@@ -681,17 +721,18 @@
         border: 0;
         padding: 18px 18px 22px 16px;
         background:
-          linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0)),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
           repeating-linear-gradient(
             180deg,
             transparent 0,
-            transparent 24px,
-            rgba(204, 218, 234, 0.72) 24px,
-            rgba(204, 218, 234, 0.72) 25px,
-            transparent 25px,
+            transparent 27px,
+            rgba(198, 213, 228, 0.86) 27px,
+            rgba(198, 213, 228, 0.86) 28px,
             transparent 28px
           );
-        background-position: 0 0, 0 18px;
+        background-position: 0 0, 0 0;
+        background-origin: border-box, content-box;
+        background-attachment: local, local;
         background-repeat: no-repeat, repeat;
         color: var(--ink);
         font: 16px/28px "Cascadia Code", "Consolas", monospace;

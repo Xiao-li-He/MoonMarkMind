@@ -65,7 +65,11 @@ fn render_app_shell_html() -> String {
     #|        </div>
     #|        <div class="editor-body">
     #|          <pre class="editor-gutter" id="input-gutter" aria-hidden="true">1</pre>
-    #|          <textarea id="input" spellcheck="false" placeholder="# MoonMarkMind&#10;&#10;## Links&#10;- [MoonBit Package](https://mooncakes.io/)&#10;&#10;## Features&#10;### Lists&#10;- item"></textarea>
+    #|          <div class="editor-input-wrap">
+    #|            <div class="editor-hover-line" id="input-hover-line" aria-hidden="true"></div>
+    #|            <div class="editor-active-line" id="input-active-line" aria-hidden="true"></div>
+    #|            <textarea id="input" spellcheck="false" placeholder="# MoonMarkMind&#10;&#10;## Links&#10;- [MoonBit Package](https://mooncakes.io/)&#10;&#10;## Features&#10;### Lists&#10;- item"></textarea>
+    #|          </div>
     #|        </div>
     #|      </div>
     #|    </aside>

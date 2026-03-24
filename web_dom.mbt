@@ -411,21 +411,86 @@ extern "js" fn bind_input_listener(callback : () -> Unit) =
   #|(callback) => {
   #|  const input = document.querySelector("#input")
   #|  const gutter = document.querySelector("#input-gutter")
+  #|  const hoverLine = document.querySelector("#input-hover-line")
+  #|  const activeLine = document.querySelector("#input-active-line")
+  #|  const measureEditor = () => {
+  #|    if (!input) return { lineHeight: 28, paddingTop: 18 }
+  #|    const style = getComputedStyle(input)
+  #|    const fontSize = Number.parseFloat(style.fontSize || "16")
+  #|    const lineHeight = Number.parseFloat(style.lineHeight || "") || fontSize * 1.75
+  #|    const paddingTop = Number.parseFloat(style.paddingTop || "0")
+  #|    return { lineHeight, paddingTop }
+  #|  }
   #|  const syncLineNumbers = () => {
   #|    if (!input || !gutter) return
   #|    const totalLines = Math.max(1, (input.value.match(/\n/g)?.length ?? 0) + 1)
   #|    gutter.textContent = Array.from({ length: totalLines }, (_, index) => `${index + 1}`).join("\n")
   #|    gutter.scrollTop = input.scrollTop
   #|  }
-  #|  window.__moonmarkmindSyncLineNumbers = syncLineNumbers
-  #|  input?.addEventListener("input", () => {
+  #|  const syncActiveLine = () => {
+  #|    if (!input || !activeLine) return
+  #|    const { lineHeight, paddingTop } = measureEditor()
+  #|    const selectionStart = input.selectionStart ?? 0
+  #|    const currentLine = input.value.slice(0, selectionStart).split("\n").length - 1
+  #|    const top = paddingTop + currentLine * lineHeight - input.scrollTop
+  #|    activeLine.style.height = `${Math.round(lineHeight)}px`
+  #|    activeLine.style.transform = `translateY(${Math.round(top)}px)`
+  #|    activeLine.style.opacity = document.activeElement === input ? "1" : "0"
+  #|  }
+  #|  let hoverLineIndex = -1
+  #|  const syncHoverLine = () => {
+  #|    if (!input || !hoverLine) return
+  #|    if (hoverLineIndex < 0) {
+  #|      hoverLine.style.opacity = "0"
+  #|      return
+  #|    }
+  #|    const { lineHeight, paddingTop } = measureEditor()
+  #|    const top = paddingTop + hoverLineIndex * lineHeight - input.scrollTop
+  #|    hoverLine.style.height = `${Math.round(lineHeight)}px`
+  #|    hoverLine.style.transform = `translateY(${Math.round(top)}px)`
+  #|    hoverLine.style.opacity = "1"
+  #|  }
+  #|  let activeLineFrame = 0
+  #|  const scheduleSyncActiveLine = () => {
+  #|    if (activeLineFrame) cancelAnimationFrame(activeLineFrame)
+  #|    activeLineFrame = requestAnimationFrame(() => {
+  #|      activeLineFrame = 0
+  #|      syncActiveLine()
+  #|    })
+  #|  }
+  #|  const syncEditorChrome = () => {
   #|    syncLineNumbers()
+  #|    syncHoverLine()
+  #|    syncActiveLine()
+  #|  }
+  #|  window.__moonmarkmindSyncLineNumbers = syncLineNumbers
+  #|  window.__moonmarkmindSyncEditorChrome = syncEditorChrome
+  #|  input?.addEventListener("input", () => {
+  #|    syncEditorChrome()
   #|    callback()
   #|  })
   #|  input?.addEventListener("scroll", () => {
   #|    if (gutter) gutter.scrollTop = input.scrollTop
+  #|    syncHoverLine()
+  #|    syncActiveLine()
   #|  })
-  #|  syncLineNumbers()
+  #|  input?.addEventListener("mousemove", (event) => {
+  #|    const { lineHeight, paddingTop } = measureEditor()
+  #|    const totalLines = Math.max(1, (input.value.match(/\n/g)?.length ?? 0) + 1)
+  #|    const rawLine = Math.floor((event.offsetY + input.scrollTop - paddingTop) / lineHeight)
+  #|    hoverLineIndex = Math.max(0, Math.min(totalLines - 1, rawLine))
+  #|    syncHoverLine()
+  #|  })
+  #|  input?.addEventListener("mouseleave", () => {
+  #|    hoverLineIndex = -1
+  #|    syncHoverLine()
+  #|  })
+  #|  input?.addEventListener("click", scheduleSyncActiveLine)
+  #|  input?.addEventListener("keyup", syncActiveLine)
+  #|  input?.addEventListener("select", scheduleSyncActiveLine)
+  #|  input?.addEventListener("focus", scheduleSyncActiveLine)
+  #|  input?.addEventListener("blur", syncActiveLine)
+  #|  syncEditorChrome()
   #|}
 
 ///|
@@ -444,7 +509,7 @@ extern "js" fn set_input_value(value : String) =
   #|(value) => {
   #|  const input = document.querySelector("#input")
   #|  if (input) input.value = value
-  #|  window.__moonmarkmindSyncLineNumbers?.()
+  #|  window.__moonmarkmindSyncEditorChrome?.()
   #|}
 
 ///|
