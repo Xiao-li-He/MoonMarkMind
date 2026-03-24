@@ -408,7 +408,8 @@ fn shrink_root_split_after_delete(node_index : Int) -> Unit {
   if root_child_position < 0 {
     return
   }
-  if root_child_position < app_state.root_split_count && app_state.root_split_count > 0 {
+  if root_child_position < app_state.root_split_count &&
+    app_state.root_split_count > 0 {
     app_state.root_split_count -= 1
   }
 }
@@ -868,33 +869,46 @@ fn render_horizontal_mindmap(
   let right_parts = []
   if should_render_children(center) {
     let left_count = root_branch_left_count(center)
-    let right_count = center.children.length() - left_count
+    let left_total_weight = root_branch_total_span(center, 0, left_count)
+    let right_total_weight = root_branch_total_span(
+      center,
+      left_count,
+      center.children.length(),
+    )
+    let mut left_offset = 0
+    let mut right_offset = 0
     for index in 0..<center.children.length() {
       let child = center.children[index]
       let tone_index = fill_tone_index(index)
+      let child_weight = root_branch_span(child)
       if index < left_count {
+        let root_style = render_root_weight_style(
+          left_offset, child_weight, left_total_weight,
+        )
         left_parts.push(
           render_root_branch_node(
             child,
             center.flat_index,
             "left",
             tone_index,
-            index,
-            left_count,
+            root_style,
           ),
         )
+        left_offset += child_weight
       } else {
-        let right_index = index - left_count
+        let root_style = render_root_weight_style(
+          right_offset, child_weight, right_total_weight,
+        )
         right_parts.push(
           render_root_branch_node(
             child,
             center.flat_index,
             "right",
             tone_index,
-            right_index,
-            right_count,
+            root_style,
           ),
         )
+        right_offset += child_weight
       }
     }
   }
@@ -918,6 +932,24 @@ fn root_branch_left_count(center : OutlineNode) -> Int {
 }
 
 ///|
+fn root_branch_total_span(center : OutlineNode, start : Int, stop : Int) -> Int {
+  let mut total = 0
+  for index in start..<stop {
+    total += root_branch_span(center.children[index])
+  }
+  if total <= 0 {
+    1
+  } else {
+    total
+  }
+}
+
+///|
+fn root_branch_span(node : OutlineNode) -> Int {
+  count_subtree_nodes(node) * 2 + 2
+}
+
+///|
 fn clamp_int(value : Int, min_value : Int, max_value : Int) -> Int {
   if value < min_value {
     return min_value
@@ -934,22 +966,33 @@ fn render_root_branch_node(
   parent_index : Int,
   direction : String,
   tone_index : Int,
-  root_index : Int,
-  root_count : Int,
+  root_style : String,
 ) -> String {
   let before_slot = render_drop_slot(node.flat_index, parent_index, "before")
   let card = render_node_card(node, parent_index, false, tone_index)
   let after_slot = render_drop_slot(node.flat_index, parent_index, "after")
   let children_html = render_branch_children(node, direction, tone_index)
   let branch_attrs = render_node_visual_attrs(node, tone_index)
-  let safe_root_count = if root_count > 0 { root_count } else { 1 }
-  let root_style = " style=\"--root-index:\{root_index};--root-count:\{safe_root_count}\""
   let row_html = if direction == "left" {
     "<div class=\"branch-item__row\">\{children_html}<div class=\"branch-item__head\">\{card}</div></div>"
   } else {
     "<div class=\"branch-item__row\"><div class=\"branch-item__head\">\{card}</div>\{children_html}</div>"
   }
   "<div class=\"branch-item branch-item--\{direction} branch-item--root\"\{branch_attrs}\{root_style}>\{before_slot}\{row_html}\{after_slot}</div>"
+}
+
+///|
+fn render_root_weight_style(
+  offset : Int,
+  weight : Int,
+  total_weight : Int,
+) -> String {
+  let safe_total = if total_weight > 0 { total_weight } else { 1 }
+  let safe_weight = if weight > 0 { weight } else { 1 }
+  let center_bp = (offset * 1000 + safe_weight * 500) / safe_total
+  let whole = center_bp / 10
+  let frac = center_bp % 10
+  " style=\"top:\{whole}.\{frac}%;\""
 }
 
 ///|

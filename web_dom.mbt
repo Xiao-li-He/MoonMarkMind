@@ -655,7 +655,7 @@ extern "js" fn bind_input_listener(
   #|    if (!input || !gutter) return
   #|    const totalLines = Math.max(1, (input.value.match(/\n/g)?.length ?? 0) + 1)
   #|    gutter.textContent = Array.from({ length: totalLines }, (_, index) => `${index + 1}`).join("\n")
-  #|    gutter.scrollTop = input.scrollTop
+  #|    gutter.style.transform = `translateY(${-Math.round(input.scrollTop)}px)`
   #|  }
   #|  const setLineLayer = (element, lineIndex, visible) => {
   #|    if (!input || !element) return
@@ -773,6 +773,7 @@ extern "js" fn bind_input_listener(
   #|  }
   #|  const syncEditorChrome = () => {
   #|    syncLineNumbers()
+  #|    if (gutter) gutter.style.transform = `translateY(${-Math.round(input?.scrollTop ?? 0)}px)`
   #|    syncLinkedLine()
   #|    syncHoverLine()
   #|    syncActiveLine()
@@ -785,7 +786,7 @@ extern "js" fn bind_input_listener(
   #|    inputCallback()
   #|  })
   #|  input?.addEventListener("scroll", () => {
-  #|    if (gutter) gutter.scrollTop = input.scrollTop
+  #|    if (gutter) gutter.style.transform = `translateY(${-Math.round(input.scrollTop)}px)`
   #|    syncLinkedLine()
   #|    syncHoverLine()
   #|    syncActiveLine()
