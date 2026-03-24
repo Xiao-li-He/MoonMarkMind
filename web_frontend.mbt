@@ -102,6 +102,9 @@ fn on_input_change() -> Unit {
 
 ///|
 fn on_input_selected_headings_change(serialized : String) -> Unit {
+  if serialized.length() == 0 {
+    return
+  }
   let next_selected_nodes = parse_selection_indices(serialized)
   if same_int_set(app_state.selected_nodes, next_selected_nodes) {
     return

@@ -569,6 +569,7 @@
         width: 32px;
         height: 32px;
         padding: 0;
+        line-height: 0;
         border: 1px solid rgba(191, 208, 226, 0.96);
         border-radius: 999px;
         background:
@@ -617,13 +618,17 @@
       }
 
       .editor-chrome-action__icon {
-        display: inline-flex;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         width: 16px;
         height: 16px;
+        line-height: 0;
         color: currentColor;
       }
 
       .editor-chrome-action__icon svg {
+        display: block;
         width: 100%;
         height: 100%;
         stroke: currentColor;
@@ -762,7 +767,22 @@
         overflow: hidden;
         user-select: none;
         font-variant-numeric: tabular-nums;
-        white-space: pre;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .editor-gutter-number {
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-end;
+        width: 100%;
+        min-height: 28px;
+        padding: 0;
+        margin: 0;
+        box-sizing: border-box;
+        line-height: 28px;
+        white-space: nowrap;
       }
 
       textarea {
@@ -791,6 +811,7 @@
         color: var(--ink);
         font: 16px/28px "Cascadia Code", "Consolas", monospace;
         overflow: auto;
+        overflow-x: hidden;
         caret-color: #5e86b5;
         tab-size: 2;
       }

@@ -609,18 +609,80 @@ extern "js" fn bind_input_listener(
   #|  const linkedLines = document.querySelector("#input-linked-lines")
   #|  const hoverLine = document.querySelector("#input-hover-line")
   #|  const activeLine = document.querySelector("#input-active-line")
-  #|  const measureEditor = () => {
-  #|    if (!input) return { lineHeight: 28, paddingTop: 18 }
+  #|  let lineMetrics = {
+  #|    heights: [28],
+  #|    tops: [18],
+  #|    lineHeight: 28,
+  #|    paddingTop: 18,
+  #|    paddingBottom: 22,
+  #|  }
+  #|  const measureLineMetrics = () => {
+  #|    if (!input) return lineMetrics
   #|    const style = getComputedStyle(input)
   #|    const fontSize = Number.parseFloat(style.fontSize || "16")
   #|    const lineHeight = Number.parseFloat(style.lineHeight || "") || fontSize * 1.75
   #|    const paddingTop = Number.parseFloat(style.paddingTop || "0")
-  #|    return { lineHeight, paddingTop }
+  #|    const paddingBottom = Number.parseFloat(style.paddingBottom || "0")
+  #|    const mirror = document.createElement("div")
+  #|    mirror.style.position = "absolute"
+  #|    mirror.style.visibility = "hidden"
+  #|    mirror.style.pointerEvents = "none"
+  #|    mirror.style.inset = "0"
+  #|    mirror.style.width = "100%"
+  #|    mirror.style.height = "auto"
+  #|    mirror.style.boxSizing = "border-box"
+  #|    mirror.style.border = "0"
+  #|    mirror.style.padding = `${paddingTop}px ${Number.parseFloat(style.paddingRight || "0")}px ${paddingBottom}px ${Number.parseFloat(style.paddingLeft || "0")}px`
+  #|    mirror.style.font = style.font
+  #|    mirror.style.lineHeight = style.lineHeight
+  #|    mirror.style.letterSpacing = style.letterSpacing
+  #|    mirror.style.tabSize = style.tabSize || "2"
+  #|    mirror.style.whiteSpace = "normal"
+  #|    mirror.style.wordBreak = "break-word"
+  #|    mirror.style.overflowWrap = "anywhere"
+  #|    mirror.style.color = style.color
+  #|    mirror.style.textAlign = style.textAlign
+  #|    mirror.style.direction = style.direction
+  #|    const lines = input.value.split("\n")
+  #|    const heights = []
+  #|    const tops = []
+  #|    let currentTop = paddingTop
+  #|    const mirrorParent = input.parentElement ?? document.body
+  #|    const contentWidth = Math.max(1, input.clientWidth || input.getBoundingClientRect().width)
+  #|    mirrorParent.appendChild(mirror)
+  #|    mirror.style.width = `${contentWidth}px`
+  #|    for (const line of lines) {
+  #|      const block = document.createElement("div")
+  #|      block.style.display = "block"
+  #|      block.style.whiteSpace = "pre-wrap"
+  #|      block.style.wordBreak = "break-word"
+  #|      block.style.overflowWrap = "anywhere"
+  #|      block.style.margin = "0"
+  #|      block.style.padding = "0"
+  #|      block.textContent = line.length > 0 ? line : " "
+  #|      mirror.appendChild(block)
+  #|      const contentHeight = block.getBoundingClientRect().height
+  #|      const height = Math.max(lineHeight, contentHeight)
+  #|      heights.push(height)
+  #|      tops.push(currentTop)
+  #|      currentTop += height
+  #|    }
+  #|    const totalHeight = currentTop + paddingBottom
+  #|    mirror.remove()
+  #|    return { heights, tops, lineHeight, paddingTop, paddingBottom, totalHeight }
+  #|  }
+  #|  const syncLineMetrics = () => {
+  #|    lineMetrics = measureLineMetrics()
   #|  }
   #|  const syncLineNumbers = () => {
   #|    if (!input || !gutter) return
-  #|    const totalLines = Math.max(1, (input.value.match(/\n/g)?.length ?? 0) + 1)
-  #|    gutter.textContent = Array.from({ length: totalLines }, (_, index) => `${index + 1}`).join("\n")
+  #|    const heights = lineMetrics.heights.length > 0 ? lineMetrics.heights : [lineMetrics.lineHeight]
+  #|    gutter.innerHTML = heights
+  #|      .map((height, index) => {
+  #|        const blockHeight = Math.max(1, height)
+  #|        return `<div class="editor-gutter-number" style="height:${blockHeight}px">${index + 1}</div>`
+  #|      })
+  #|      .join("")
   #|    gutter.style.transform = `translateY(${-Math.round(input.scrollTop)}px)`
   #|  }
   #|  const setLineLayer = (element, lineIndex, visible) => {
@@ -629,10 +691,10 @@ extern "js" fn bind_input_listener(
   #|      element.style.opacity = "0"
   #|      return
   #|    }
-  #|    const { lineHeight, paddingTop } = measureEditor()
-  #|    const top = paddingTop + lineIndex * lineHeight - input.scrollTop
-  #|    element.style.height = `${Math.round(lineHeight)}px`
-  #|    element.style.transform = `translateY(${Math.round(top)}px)`
+  #|    const top = (lineMetrics.tops[lineIndex] ?? lineMetrics.paddingTop) - input.scrollTop
+  #|    const height = lineMetrics.heights[lineIndex] ?? lineMetrics.lineHeight
+  #|    element.style.height = `${Math.max(1, height)}px`
+  #|    element.style.transform = `translateY(${top}px)`
   #|    element.style.opacity = "1"
   #|  }
   #|  const setLineSpanLayer = (element, startLineIndex, endLineIndex, visible) => {
@@ -641,11 +703,14 @@ extern "js" fn bind_input_listener(
   #|      element.style.opacity = "0"
   #|      return
   #|    }
-  #|    const { lineHeight, paddingTop } = measureEditor()
-  #|    const top = paddingTop + startLineIndex * lineHeight - input.scrollTop
-  #|    const height = (endLineIndex - startLineIndex + 1) * lineHeight
-  #|    element.style.height = `${Math.round(height)}px`
-  #|    element.style.transform = `translateY(${Math.round(top)}px)`
+  #|    const startTop = (lineMetrics.tops[startLineIndex] ?? lineMetrics.paddingTop) - input.scrollTop
+  #|    const endBottom =
+  #|      (lineMetrics.tops[endLineIndex] ?? lineMetrics.paddingTop) +
+  #|      (lineMetrics.heights[endLineIndex] ?? lineMetrics.lineHeight) -
+  #|      input.scrollTop
+  #|    const height = endBottom - startTop
+  #|    element.style.height = `${Math.max(1, height)}px`
+  #|    element.style.transform = `translateY(${startTop}px)`
   #|    element.style.opacity = "1"
   #|  }
   #|  const setLineCollection = (container, lineIndexes, className) => {
@@ -654,11 +719,11 @@ extern "js" fn bind_input_listener(
   #|      container.innerHTML = ""
   #|      return
   #|    }
-  #|    const { lineHeight, paddingTop } = measureEditor()
+  #|    const heights = lineMetrics.heights.length > 0 ? lineMetrics.heights : [lineMetrics.lineHeight]
   #|    container.innerHTML = lineIndexes
   #|      .map((lineIndex) => {
-  #|        const top = Math.round(paddingTop + lineIndex * lineHeight - input.scrollTop)
-  #|        const height = Math.round(lineHeight)
+  #|        const top = (lineMetrics.tops[lineIndex] ?? lineMetrics.paddingTop) - input.scrollTop
+  #|        const height = Math.max(1, heights[lineIndex] ?? lineMetrics.lineHeight)
   #|        return `<div class="${className}" style="height:${height}px;transform:translateY(${top}px);opacity:1"></div>`
   #|      })
   #|      .join("")
@@ -696,6 +761,7 @@ extern "js" fn bind_input_listener(
   #|  }
   #|  let lastSelectedHeadingKey = "__init__"
   #|  const headingPattern = /^#+\s/
+  #|  const listPattern = /^(?:\s*)(?:[-+*]|\d+\.)\s+/
   #|  const lineIndexAtOffset = (offset) => input.value.slice(0, offset).split("\n").length - 1
   #|  const currentHeadingSelection = () => {
   #|    if (!input) return []
@@ -706,21 +772,34 @@ extern "js" fn bind_input_listener(
   #|    const startLine = lineIndexAtOffset(rangeStart)
   #|    const endLine = lineIndexAtOffset(rangeEnd)
   #|    const lines = input.value.split("\n")
-  #|    let headingIndex = 0
-  #|    let nearestHeading = -2
-  #|    const selectedHeadings = []
+  #|    const structuralLineIndexes = []
+  #|    let nodeIndex = 0
   #|    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
-  #|      if (headingPattern.test(lines[lineIndex])) {
-  #|        nearestHeading = headingIndex
-  #|        if (lineIndex >= startLine && lineIndex <= endLine) {
-  #|          selectedHeadings.push(headingIndex)
-  #|        }
-  #|        headingIndex += 1
+  #|      if (headingPattern.test(lines[lineIndex]) || listPattern.test(lines[lineIndex])) {
+  #|        structuralLineIndexes.push([lineIndex, nodeIndex])
+  #|        nodeIndex += 1
   #|      }
-  #|      if (lineIndex >= endLine) break
   #|    }
-  #|    if (selectedHeadings.length > 0) return selectedHeadings
-  #|    return nearestHeading >= 0 ? [nearestHeading] : []
+  #|    const isStructuralLine = (lineIndex) => {
+  #|      for (const [structuralLineIndex] of structuralLineIndexes) {
+  #|        if (structuralLineIndex === lineIndex) return true
+  #|      }
+  #|      return false
+  #|    }
+  #|    if (rangeStart === rangeEnd) {
+  #|      for (const [structuralLineIndex, structuralNodeIndex] of structuralLineIndexes) {
+  #|        if (structuralLineIndex === startLine) return [structuralNodeIndex]
+  #|      }
+  #|      return []
+  #|    }
+  #|    for (let lineIndex = startLine; lineIndex <= endLine; lineIndex += 1) {
+  #|      if (!isStructuralLine(lineIndex)) return []
+  #|    }
+  #|    return structuralLineIndexes
+  #|      .filter(([structuralLineIndex]) =>
+  #|        structuralLineIndex >= startLine && structuralLineIndex <= endLine,
+  #|      )
+  #|      .map(([, structuralNodeIndex]) => structuralNodeIndex)
   #|  }
   #|  const syncSelectedHeadings = () => {
   #|    const nextHeadings = currentHeadingSelection()
@@ -737,7 +816,12 @@ extern "js" fn bind_input_listener(
   #|      syncSelectedHeadings()
   #|    })
   #|  }
+  #|  const syncSelectionState = () => {
+  #|    scheduleSyncActiveLine()
+  #|    scheduleSyncSelectedHeadings()
+  #|  }
   #|  const syncEditorChrome = () => {
+  #|    syncLineMetrics()
   #|    syncLineNumbers()
   #|    if (gutter) gutter.style.transform = `translateY(${-Math.round(input?.scrollTop ?? 0)}px)`
   #|    syncLinkedLine()
@@ -745,10 +829,11 @@ extern "js" fn bind_input_listener(
   #|    syncActiveLine()
   #|  }
   #|  window.__moonmarkmindSyncLineNumbers = syncLineNumbers
+  #|  window.__moonmarkmindGetLineMetrics = () => lineMetrics
   #|  window.__moonmarkmindSyncEditorChrome = syncEditorChrome
   #|  input?.addEventListener("input", () => {
   #|    syncEditorChrome()
-  #|    scheduleSyncSelectedHeadings()
+  #|    syncSelectionState()
   #|    inputCallback()
   #|  })
   #|  input?.addEventListener("scroll", () => {
@@ -758,10 +843,18 @@ extern "js" fn bind_input_listener(
   #|    syncActiveLine()
   #|  })
   #|  input?.addEventListener("mousemove", (event) => {
-  #|    const { lineHeight, paddingTop } = measureEditor()
-  #|    const totalLines = Math.max(1, (input.value.match(/\n/g)?.length ?? 0) + 1)
-  #|    const rawLine = Math.floor((event.offsetY + input.scrollTop - paddingTop) / lineHeight)
-  #|    hoverLineIndex = Math.max(0, Math.min(totalLines - 1, rawLine))
+  #|    const pointerY = event.offsetY + input.scrollTop
+  #|    const heights = lineMetrics.heights.length > 0 ? lineMetrics.heights : [lineMetrics.lineHeight]
+  #|    let nextIndex = heights.length - 1
+  #|    for (let lineIndex = 0; lineIndex < heights.length; lineIndex += 1) {
+  #|      const top = lineMetrics.tops[lineIndex] ?? lineMetrics.paddingTop
+  #|      const bottom = top + (heights[lineIndex] ?? lineMetrics.lineHeight)
+  #|      if (pointerY < bottom) {
+  #|        nextIndex = lineIndex
+  #|        break
+  #|      }
+  #|    }
+  #|    hoverLineIndex = Math.max(0, nextIndex)
   #|    syncHoverLine()
   #|  })
   #|  input?.addEventListener("mouseleave", () => {
@@ -769,22 +862,28 @@ extern "js" fn bind_input_listener(
   #|    syncHoverLine()
   #|  })
   #|  input?.addEventListener("click", () => {
-  #|    scheduleSyncActiveLine()
-  #|    scheduleSyncSelectedHeadings()
+  #|    syncSelectionState()
+  #|  })
+  #|  input?.addEventListener("mouseup", () => {
+  #|    syncSelectionState()
   #|  })
   #|  input?.addEventListener("keyup", () => {
-  #|    syncActiveLine()
-  #|    scheduleSyncSelectedHeadings()
+  #|    syncSelectionState()
   #|  })
   #|  input?.addEventListener("select", () => {
-  #|    scheduleSyncActiveLine()
-  #|    scheduleSyncSelectedHeadings()
+  #|    syncSelectionState()
   #|  })
   #|  input?.addEventListener("focus", () => {
-  #|    scheduleSyncActiveLine()
-  #|    scheduleSyncSelectedHeadings()
+  #|    syncSelectionState()
   #|  })
   #|  input?.addEventListener("blur", syncActiveLine)
+  #|  document.addEventListener("selectionchange", () => {
+  #|    if (document.activeElement !== input) return
+  #|    syncSelectionState()
+  #|  })
+  #|  window.addEventListener("resize", () => {
+  #|    syncEditorChrome()
+  #|  })
   #|  syncEditorChrome()
   #|  syncSelectedHeadings()
   #|}
@@ -823,18 +922,21 @@ extern "js" fn reveal_input_line(line_index : Int) =
   #|(lineIndex) => {
   #|  const input = document.querySelector("#input")
   #|  if (!input || lineIndex == null || lineIndex < 0) return
+  #|  const metrics = window.__moonmarkmindGetLineMetrics?.() ?? null
   #|  const style = getComputedStyle(input)
   #|  const fontSize = Number.parseFloat(style.fontSize || "16")
-  #|  const lineHeight = Number.parseFloat(style.lineHeight || "") || fontSize * 1.75
+  #|  const fallbackLineHeight = Number.parseFloat(style.lineHeight || "") || fontSize * 1.75
   #|  const paddingTop = Number.parseFloat(style.paddingTop || "0")
-  #|  const lineTop = paddingTop + lineIndex * lineHeight
+  #|  const lineHeight = metrics?.lineHeight ?? fallbackLineHeight
+  #|  const lineTop = (metrics?.tops?.[lineIndex] ?? paddingTop)
+  #|  const lineBottom = lineTop + (metrics?.heights?.[lineIndex] ?? lineHeight)
   #|  const viewportTop = input.scrollTop
   #|  const viewportBottom = viewportTop + input.clientHeight
   #|  const topMargin = lineHeight * 2
   #|  const bottomMargin = lineHeight * 3
   #|  const visibleTop = viewportTop + topMargin
   #|  const visibleBottom = viewportBottom - bottomMargin
-  #|  if (lineTop >= visibleTop && lineTop + lineHeight <= visibleBottom) return
+  #|  if (lineTop >= visibleTop && lineBottom <= visibleBottom) return
   #|  const targetTop = Math.max(0, lineTop - Math.max(lineHeight * 2, input.clientHeight * 0.35))
   #|  if (typeof input.scrollTo === "function") {
   #|    input.scrollTo({ top: targetTop, behavior: "smooth" })
@@ -870,6 +972,7 @@ extern "js" fn set_workspace_split(percent : Int) =
   #|  if (workspace) {
   #|    workspace.style.setProperty("--left-pane-percent", `${percent}%`)
   #|  }
+  #|  window.__moonmarkmindSyncEditorChrome?.()
   #|}
 
 ///|

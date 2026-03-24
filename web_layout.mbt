@@ -47,8 +47,6 @@ fn render_topbar() -> String {
     $|  <div class="topbar-group">
     $|    <span class="brand-title">MoonMarkMind</span>
     $|    <span class="section-title">.md文档</span>
-    $|    <button type="button" class="tool-button tool-button--red" id="new-document">新建</button>
-    $|    <button type="button" class="tool-button tool-button--green" id="upload-markdown">上传</button>
     $|    <button type="button" class="tool-button tool-button--blue" id="download-markdown">下载</button>
     $|    <button type="button" class="tool-button tool-button--soft" id="load-sample">示例</button>
     $|  </div>
@@ -124,13 +122,13 @@ fn render_editor_panel() -> String {
     $|        <div class="editor-gutter-lines editor-gutter-lines--linked" id="input-linked-gutter-lines" aria-hidden="true"></div>
     $|        <div class="editor-gutter-line editor-gutter-line--hover" id="input-hover-gutter-line" aria-hidden="true"></div>
     $|        <div class="editor-gutter-line editor-gutter-line--active" id="input-active-gutter-line" aria-hidden="true"></div>
-    $|        <pre class="editor-gutter" id="input-gutter" aria-hidden="true">1</pre>
+    $|        <div class="editor-gutter" id="input-gutter" aria-hidden="true"></div>
     $|      </div>
     $|      <div class="editor-input-wrap">
     $|        <div class="editor-linked-lines" id="input-linked-lines" aria-hidden="true"></div>
     $|        <div class="editor-hover-line" id="input-hover-line" aria-hidden="true"></div>
     $|        <div class="editor-active-line" id="input-active-line" aria-hidden="true"></div>
-    $|        <textarea id="input" spellcheck="false" placeholder="# MoonMarkMind&#10;&#10;## Links&#10;- [MoonBit Package](https://mooncakes.io/)&#10;&#10;## Features&#10;### Lists&#10;- item"></textarea>
+    $|        <textarea id="input" wrap="soft" spellcheck="false" placeholder="# MoonMarkMind&#10;&#10;## Links&#10;- [MoonBit Package](https://mooncakes.io/)&#10;&#10;## Features&#10;### Lists&#10;- item"></textarea>
     $|      </div>
     $|    </div>
     $|  </div>
@@ -141,15 +139,23 @@ fn render_editor_panel() -> String {
 ///|
 fn render_editor_chrome() -> String {
   (
-    #|<div class="editor-chrome">
-    #|  <div class="editor-chrome__lights" aria-hidden="true">
-    #|    <span class="editor-chrome__light editor-chrome__light--red"></span>
-    #|    <span class="editor-chrome__light editor-chrome__light--yellow"></span>
-    #|    <span class="editor-chrome__light editor-chrome__light--green"></span>
-    #|  </div>
-    #|  <span class="editor-chrome__title">Markdown</span>
-    #|  <span class="editor-chrome__badge">notes.md</span>
-    #|</div>
+    $|<div class="editor-chrome">
+    $|  <div class="editor-chrome__lights" aria-hidden="true">
+    $|    <span class="editor-chrome__light editor-chrome__light--red"></span>
+    $|    <span class="editor-chrome__light editor-chrome__light--yellow"></span>
+    $|    <span class="editor-chrome__light editor-chrome__light--green"></span>
+    $|  </div>
+    $|  <span class="editor-chrome__title">Markdown</span>
+    $|  <div class="editor-chrome__actions" aria-label="Markdown编辑操作">
+    $|    <button type="button" class="editor-chrome-action" id="new-document" data-tip="新建">
+    $|      <span class="editor-chrome-action__icon">\{icon_plus()}</span>
+    $|    </button>
+    $|    <button type="button" class="editor-chrome-action" id="upload-markdown" data-tip="上传">
+    $|      <span class="editor-chrome-action__icon">\{icon_upload()}</span>
+    $|    </button>
+    $|  </div>
+    $|  <span class="editor-chrome__badge">notes.md</span>
+    $|</div>
   )
 }
 
@@ -487,6 +493,31 @@ fn icon_help() -> String {
       #|  <circle cx="12" cy="12" r="8"></circle>
       #|  <path d="M9.8 9.6a2.5 2.5 0 0 1 4.7 1.2c0 1.8-2.5 2.2-2.5 4"></path>
       #|  <circle cx="12" cy="17.3" r="0.9" fill="currentColor" stroke="none"></circle>
+      #|</svg>
+    ),
+  )
+}
+
+///|
+fn icon_plus() -> String {
+  icon_shell(
+    (
+      #|<svg viewBox="0 0 24 24" fill="none">
+      #|  <path d="M12 6.5v11"></path>
+      #|  <path d="M6.5 12h11"></path>
+      #|</svg>
+    ),
+  )
+}
+
+///|
+fn icon_upload() -> String {
+  icon_shell(
+    (
+      #|<svg viewBox="0 0 24 24" fill="none">
+      #|  <path d="M12 16V7"></path>
+      #|  <path d="M8.5 10.5 12 7l3.5 3.5"></path>
+      #|  <path d="M6.5 17.5h11"></path>
       #|</svg>
     ),
   )
