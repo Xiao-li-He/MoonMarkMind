@@ -466,6 +466,17 @@ fn bind_mindmap_ui(
 
       mindmap_sync_view(mindmap, zoom_value, zoom_edit)
       mindmap_schedule_connectors(connector_frame, window)
+      ignore(
+        window.requestAnimationFrame(fn(_) {
+          ignore(
+            window.requestAnimationFrame(fn(_) {
+              mindmap_fit_to_view(
+                mindmap, zoom_value, zoom_edit, connector_frame, window,
+              )
+            }),
+          )
+        }),
+      )
     }
     None => ()
   }

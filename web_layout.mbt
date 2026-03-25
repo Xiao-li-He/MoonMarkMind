@@ -17,6 +17,96 @@ fn render_app_shell_html() -> String {
 }
 
 ///|
+fn set_app_html(value : String) -> Unit {
+  match get_element("#app") {
+    Some(app) => app.setInnerHTML(value)
+    None => ()
+  }
+}
+
+///|
+fn set_workspace_split(percent : Int) -> Unit {
+  match get_element(".workspace") {
+    Some(workspace) => {
+      let style = @dom.css_style_from_val(
+        workspace.as_any()._get("style").cast(),
+      )
+      style.set_property("--left-pane-percent", "\{percent}%")
+    }
+    None => ()
+  }
+}
+
+///|
+fn set_select_value(id : String, value : String) -> Unit {
+  match get_element_by_id(id) {
+    Some(control) => {
+      @dom.HTMLSelectElement::cast_from_element(control).value = value
+      sync_custom_select_by_id(id)
+    }
+    None => ()
+  }
+}
+
+///|
+fn set_select_muted(id : String, muted : Bool) -> Unit {
+  match get_element_by_id(id) {
+    Some(control) => {
+      toggle_class(control, "tool-select--muted", muted)
+      sync_custom_select_by_id(id)
+    }
+    None => ()
+  }
+}
+
+///|
+fn set_toolbar_selection_enabled(enabled : Bool) -> Unit {
+  for button in @dom.document().querySelectorAll("[data-toolbar-action]") {
+    let disabled = (!enabled).to_string()
+    button.setAttribute("data-disabled", disabled)
+    button.setAttribute("aria-disabled", disabled)
+    toggle_class(button, "mindmap-tool--disabled", !enabled)
+  }
+}
+
+///|
+fn set_toolbar_action_enabled(action : String, enabled : Bool) -> Unit {
+  match get_element("[data-toolbar-action=\"\{action}\"]") {
+    Some(button) => {
+      let disabled = (!enabled).to_string()
+      button.setAttribute("data-disabled", disabled)
+      button.setAttribute("aria-disabled", disabled)
+      toggle_class(button, "mindmap-tool--disabled", !enabled)
+    }
+    None => ()
+  }
+}
+
+///|
+fn set_aux_action_enabled(id : String, enabled : Bool) -> Unit {
+  match get_element_by_id(id) {
+    Some(button) => {
+      let disabled = (!enabled).to_string()
+      button.setAttribute("data-disabled", disabled)
+      button.setAttribute("aria-disabled", disabled)
+      toggle_class(button, "mindmap-aux-button--disabled", !enabled)
+    }
+    None => ()
+  }
+}
+
+///|
+fn set_editor_document_name(value : String) -> Unit {
+  match get_element(".editor-chrome__badge") {
+    Some(badge) => {
+      badge.setTextContent(value)
+      badge.setAttribute("title", value)
+    }
+    None => ()
+  }
+}
+
+///|
 fn render_topbar() -> String {
   let layout_select = render_select_control(
     id="layout-select",

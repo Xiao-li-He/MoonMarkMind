@@ -61,12 +61,11 @@ pub fn start_web_app() -> Unit {
     on_style_change, on_detail_change, on_export_change, on_toolbar_action,
   )
   bind_splitter_ui(on_splitter_change)
-  bind_mindmap_ui_js()
-  bind_input_listener(on_input_change, on_input_selected_headings_change)
   bind_mindmap_ui(
     on_mindmap_click, on_mindmap_dblclick, on_mindmap_keydown, on_mindmap_focusout,
     on_mindmap_dragstart, on_mindmap_dragend, on_mindmap_dragover, on_mindmap_drop,
   )
+  bind_input_listener(on_input_change, on_input_selected_headings_change)
   load_markdown(rules_test_markdown(), true)
 }
 
@@ -629,6 +628,12 @@ fn render_ui() -> Unit {
   }
   set_aux_action_enabled("undo-action", app_state.undo_stack.length() > 0)
   set_aux_action_enabled("redo-action", app_state.redo_stack.length() > 0)
+  set_workspace_split(app_state.left_panel_percent)
+  set_mindmap_html(render_mindmap_html())
+  if app_state.editing_node >= 0 &&
+    (app_state.editing_node == app_state.selected_node || !has_selected_nodes()) {
+    focus_editor(app_state.editing_node)
+  }
   let linked_lines = selected_markdown_lines()
   set_input_linked_lines(ints_to_csv(linked_lines))
   let primary_linked_line = selected_markdown_line()
@@ -636,11 +641,6 @@ fn render_ui() -> Unit {
     reveal_input_line(primary_linked_line)
   }
   app_state.reveal_selected_line = false
-  set_workspace_split(app_state.left_panel_percent)
-  set_mindmap_html(render_mindmap_html())
-  if app_state.editing_node >= 0 {
-    focus_editor(app_state.editing_node)
-  }
 }
 
 ///|
@@ -738,37 +738,6 @@ fn ints_to_csv(values : Array[Int]) -> String {
     items.push(value.to_string())
   }
   items.join(",")
-}
-
-///|
-fn parse_selection_indices(serialized : String) -> Array[Int] {
-  if serialized.length() == 0 {
-    return []
-  }
-  let values = []
-  for item in serialized.split(",") {
-    let parsed = parse_nonnegative_int(item)
-    if parsed >= 0 && !contains_int(values, parsed) {
-      values.push(parsed)
-    }
-  }
-  values
-}
-
-///|
-fn parse_nonnegative_int(text : StringView) -> Int {
-  if text.length() == 0 {
-    return -1
-  }
-  let mut value = 0
-  for i in 0..<text.length() {
-    let ch = text[i]
-    if ch < '0' || ch > '9' {
-      return -1
-    }
-    value = value * 10 + (ch.to_int() - '0'.to_int())
-  }
-  value
 }
 
 ///|

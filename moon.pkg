@@ -1,5 +1,4 @@
 import {
-  "mizchi/js" @js,
   "mizchi/js/browser/dom" @dom,
   "mizchi/js/web/event" @event,
   "moonbitlang/core/math" @math,

@@ -14,30 +14,307 @@ fn to_text_area(element : @dom.Element) -> @dom.HTMLTextAreaElement {
 }
 
 ///|
-extern "js" fn sync_editor_chrome() =
-  #|() => {
-  #|  window.__moonmarkmindSyncEditorChrome?.()
-  #|}
+fn render_mindmap_connectors() -> Unit {
+  match get_element("#mindmap") {
+    Some(mindmap) =>
+      match mindmap.querySelector(".mindmap-content") {
+        Some(content) =>
+          match content.querySelector(".mindmap-stage") {
+            Some(stage) => {
+              let stage_element = stage
+              toggle_class(stage_element, "mindmap-stage--svg-connectors", true)
+              remove_mindmap_connector_layers(content)
+              if stage_has_vertical_layout(stage_element) {
+                return
+              }
+              let nodes = content.querySelectorAll(".node[data-node-index]")
+              if nodes.length() <= 1 {
+                return
+              }
+              let zoom = parse_float(
+                mindmap.getAttribute("data-zoom").unwrap_or("1"),
+              )
+              let safe_zoom = if zoom.is_nan() || zoom <= 0.0 {
+                1.0
+              } else {
+                zoom
+              }
+              let content_rect = element_rect(content)
+              let stage_rect = element_rect(stage_element)
+              let stage_left = stage_rect.left
+              let stage_top = stage_rect.top
+              let width = if stage_rect.width / safe_zoom < 1.0 {
+                1
+              } else {
+                (stage_rect.width / safe_zoom).round().to_int()
+              }
+              let height = if stage_rect.height / safe_zoom < 1.0 {
+                1
+              } else {
+                (stage_rect.height / safe_zoom).round().to_int()
+              }
+              let left = ((stage_rect.left - content_rect.left) / safe_zoom)
+                .round()
+                .to_int()
+              let top = ((stage_rect.top - content_rect.top) / safe_zoom)
+                .round()
+                .to_int()
+              let svg_paths : Array[String] = []
+              for node in nodes {
+                let parent_index = parse_int_or_default(
+                  node.getAttribute("data-parent-index").unwrap_or("-1"),
+                  -1,
+                )
+                if parent_index < 0 {
+                  continue
+                }
+                match find_node_by_index(nodes, parent_index) {
+                  Some(parent) => {
+                    let parent_rect = element_rect(parent)
+                    let node_rect = element_rect(node)
+                    let parent_center_x = stage_local_x(
+                      rect_center_x(parent_rect),
+                      stage_left,
+                      safe_zoom,
+                    )
+                    let parent_center_y = stage_local_y(
+                      rect_center_y(parent_rect),
+                      stage_top,
+                      safe_zoom,
+                    )
+                    let node_center_x = stage_local_x(
+                      rect_center_x(node_rect),
+                      stage_left,
+                      safe_zoom,
+                    )
+                    let node_center_y = stage_local_y(
+                      rect_center_y(node_rect),
+                      stage_top,
+                      safe_zoom,
+                    )
+                    let direction = if node_center_x >= parent_center_x {
+                      1
+                    } else {
+                      -1
+                    }
+                    let start_x = stage_local_x(
+                      if direction > 0 {
+                        parent_rect.right
+                      } else {
+                        parent_rect.left
+                      },
+                      stage_left,
+                      safe_zoom,
+                    )
+                    let end_x = stage_local_x(
+                      if direction > 0 {
+                        node_rect.left
+                      } else {
+                        node_rect.right
+                      },
+                      stage_left,
+                      safe_zoom,
+                    )
+                    let span = abs_double(end_x - start_x)
+                    let pull = min_double(24.0, max_double(10.0, span * 0.22))
+                    let settle = min_double(32.0, max_double(12.0, span * 0.34))
+                    let mid_y = parent_center_y +
+                      (node_center_y - parent_center_y) * 0.18
+                    let stroke_width = if parse_int_or_default(
+                        node.getAttribute("data-depth").unwrap_or("0"),
+                        0,
+                      ) ==
+                      1 {
+                      3.2
+                    } else {
+                      2.4
+                    }
+                    svg_paths.push(
+                      "<path d=\"M \{double_to_svg_number(start_x)} \{double_to_svg_number(parent_center_y)} C \{double_to_svg_number(start_x + direction.to_double() * pull)} \{double_to_svg_number(mid_y)}, \{double_to_svg_number(end_x - direction.to_double() * settle)} \{double_to_svg_number(node_center_y)}, \{double_to_svg_number(end_x)} \{double_to_svg_number(node_center_y)}\" fill=\"none\" stroke=\"#7ea7d1\" stroke-width=\"\{double_to_svg_number(stroke_width)}\" stroke-linecap=\"round\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\" />",
+                    )
+                  }
+                  None => ()
+                }
+              }
+              if svg_paths.length() == 0 {
+                return
+              }
+              let svg_paths_html = svg_paths.iter().join("")
+              let svg_html = "<svg class=\"mindmap-connector-layer\" width=\"\{width}\" height=\"\{height}\" viewBox=\"0 0 \{width} \{height}\" style=\"left:\{left}px;top:\{top}px;width:\{width}px;height:\{height}px;pointer-events:none;position:absolute;overflow:visible\">\{svg_paths_html}</svg>"
+              content.insertAdjacentHTML("afterbegin", svg_html)
+            }
+            None => ()
+          }
+        None => ()
+      }
+    None => ()
+  }
+}
 
 ///|
-extern "js" fn get_input_line_metrics() -> @js.Any? =
-  #|() => window.__moonmarkmindGetLineMetrics?.() ?? null
+fn remove_mindmap_connector_layers(content : @dom.Element) -> Unit {
+  for
+    element in content.querySelectorAll(
+      ".mindmap-connector-layer, .mindmap-connector-controls, .mindmap-node-anchor",
+    ) {
+    element.remove()
+  }
+}
 
 ///|
-extern "js" fn render_mindmap_connectors() =
-  #|() => {
-  #|  window.__moonmarkmindRenderConnectors?.()
-  #|}
+fn stage_has_vertical_layout(stage : @dom.Element) -> Bool {
+  has_class_name(stage, "mindmap-stage--vertical") ||
+  has_class_name(stage, "mindmap-stage--single-right")
+}
+
+///|
+fn find_node_by_index(
+  nodes : Array[@dom.Element],
+  target_index : Int,
+) -> @dom.Element? {
+  for node in nodes {
+    let node_index = parse_int_or_default(
+      node.getAttribute("data-node-index").unwrap_or("-1"),
+      -1,
+    )
+    if node_index == target_index {
+      return Some(node)
+    }
+  }
+  None
+}
+
+///|
+fn element_rect(element : @dom.Element) -> @dom.DOMRect {
+  element.as_any()._call("getBoundingClientRect", []).cast()
+}
+
+///|
+fn rect_center_x(rect : @dom.DOMRect) -> Double {
+  (rect.left + rect.right) / 2.0
+}
+
+///|
+fn rect_center_y(rect : @dom.DOMRect) -> Double {
+  (rect.top + rect.bottom) / 2.0
+}
+
+///|
+fn stage_local_x(
+  absolute_x : Double,
+  stage_left : Double,
+  zoom : Double,
+) -> Double {
+  (absolute_x - stage_left) / zoom
+}
+
+///|
+fn stage_local_y(
+  absolute_y : Double,
+  stage_top : Double,
+  zoom : Double,
+) -> Double {
+  (absolute_y - stage_top) / zoom
+}
+
+///|
+fn abs_double(value : Double) -> Double {
+  if value < 0.0 {
+    -value
+  } else {
+    value
+  }
+}
+
+///|
+fn min_double(left : Double, right : Double) -> Double {
+  if left < right {
+    left
+  } else {
+    right
+  }
+}
+
+///|
+fn max_double(left : Double, right : Double) -> Double {
+  if left > right {
+    left
+  } else {
+    right
+  }
+}
+
+///|
+fn double_to_svg_number(value : Double) -> String {
+  value.to_string()
+}
 
 ///|
 extern "js" fn parse_float(raw : String) -> Double =
   #|(raw) => Number.parseFloat(raw)
 
 ///|
-extern "js" fn set_input_linked_lines_state(line_indexes : Array[Int]) -> Unit =
-  #|(lineIndexes) => {
-  #|  window.__moonmarkmindSetLinkedLines?.(lineIndexes)
-  #|}
+let input_linked_line_indexes : @ref.Ref[Array[Int]] = @ref.Ref([])
+
+///|
+let input_hover_line_index : @ref.Ref[Int] = @ref.Ref(-1)
+
+///|
+let input_selection_frame : @ref.Ref[Int] = @ref.Ref(0)
+
+///|
+let input_selected_headings_frame : @ref.Ref[Int] = @ref.Ref(0)
+
+///|
+let input_last_selected_headings_key : @ref.Ref[String] = @ref.Ref("__init__")
+
+///|
+fn sync_editor_chrome() -> Unit {
+  match get_element("#input") {
+    Some(input_element) => {
+      let input = @dom.HTMLTextAreaElement::cast_from_element(input_element)
+      let metrics = input_line_metrics(input)
+      let scroll_top = input.scrollTop()
+      sync_input_line_numbers(input, metrics)
+      sync_input_linked_lines(input, metrics, scroll_top)
+      sync_input_hover_line(input, metrics, scroll_top)
+      sync_input_active_line(input, metrics, scroll_top)
+    }
+    None => ()
+  }
+}
+
+///|
+fn schedule_render_mindmap_connectors() -> Unit {
+  let window = @dom.window()
+  ignore(
+    window.requestAnimationFrame(fn(_) {
+      ignore(
+        window.requestAnimationFrame(fn(_) { render_mindmap_connectors() }),
+      )
+    }),
+  )
+}
+
+///|
+fn reveal_input_line_after_paint(target_top : Int) -> Unit {
+  let window = @dom.window()
+  let input = match get_element("#input") {
+    Some(input_element) =>
+      @dom.HTMLTextAreaElement::cast_from_element(input_element)
+    None => return
+  }
+  ignore(
+    window.requestAnimationFrame(fn(_) {
+      ignore(
+        window.requestAnimationFrame(fn(_) {
+          input.setScrollTop(target_top)
+          sync_editor_chrome()
+        }),
+      )
+    }),
+  )
+}
 
 ///|
 priv struct InputLineMetrics {
@@ -64,7 +341,34 @@ fn parse_int_or_default(raw : String, fallback : Int) -> Int {
 }
 
 ///|
-fn input_line_metrics_default(
+fn input_line_metrics(input : @dom.HTMLTextAreaElement) -> InputLineMetrics {
+  let raw = measure_input_line_metrics_raw(input)
+  let parts = raw.split("|".view()).to_array()
+  if parts.length() != 4 {
+    return input_line_metrics_fallback(input)
+  }
+  let heights = parse_int_list(parts[0])
+  let tops = parse_int_list(parts[1])
+  let line_height = parse_int_or_default(parts[2].to_string(), 28)
+  let padding_top = parse_int_or_default(parts[3].to_string(), 18)
+  InputLineMetrics::{
+    heights: if heights.length() > 0 {
+      heights
+    } else {
+      [line_height]
+    },
+    tops: if tops.length() > 0 {
+      tops
+    } else {
+      [padding_top]
+    },
+    line_height,
+    padding_top,
+  }
+}
+
+///|
+fn input_line_metrics_fallback(
   input : @dom.HTMLTextAreaElement,
 ) -> InputLineMetrics {
   let style = @dom.css_style_from_val(
@@ -75,12 +379,15 @@ fn input_line_metrics_default(
     16.0,
   )
   let line_height_raw = style.get_property_value("line-height")
-  let fallback_line_height = if line_height_raw.length() > 0 {
-    let line_height = parse_double_or_default(line_height_raw, font_size * 1.75)
-    if line_height.is_nan() || line_height <= 0.0 {
+  let line_height = if line_height_raw.length() > 0 {
+    let next_line_height = parse_double_or_default(
+      line_height_raw,
+      font_size * 1.75,
+    )
+    if next_line_height.is_nan() || next_line_height <= 0.0 {
       (font_size * 1.75).round().to_int()
     } else {
-      line_height.round().to_int()
+      next_line_height.round().to_int()
     }
   } else {
     (font_size * 1.75).round().to_int()
@@ -89,57 +396,94 @@ fn input_line_metrics_default(
     style.get_property_value("padding-top"),
     0,
   )
-  {
-    heights: [fallback_line_height],
+  InputLineMetrics::{
+    heights: [line_height],
     tops: [padding_top],
-    line_height: fallback_line_height,
+    line_height,
     padding_top,
   }
 }
 
 ///|
-fn input_line_metrics(input : @dom.HTMLTextAreaElement) -> InputLineMetrics {
-  match get_input_line_metrics() {
-    Some(metrics) => {
-      let metric_object = metrics
-      let heights_any : Array[@js.Any] = metric_object._get("heights").cast()
-      let tops_any : Array[@js.Any] = metric_object._get("tops").cast()
-      let heights = heights_any.map(v => {
-        parse_double_or_default(v.to_string(), 0.0).round().to_int()
-      })
-      let tops = tops_any.map(v => {
-        parse_double_or_default(v.to_string(), 0.0).round().to_int()
-      })
-      let line_height = parse_double_or_default(
-          metric_object._get("lineHeight").to_string(),
-          0.0,
-        )
-        .round()
-        .to_int()
-      let padding_top = parse_double_or_default(
-          metric_object._get("paddingTop").to_string(),
-          0.0,
-        )
-        .round()
-        .to_int()
-      {
-        heights: if heights.length() > 0 {
-          heights
-        } else {
-          [line_height]
-        },
-        tops: if tops.length() > 0 {
-          tops
-        } else {
-          [padding_top]
-        },
-        line_height,
-        padding_top,
-      }
-    }
-    None => input_line_metrics_default(input)
+fn parse_int_list(raw : StringView) -> Array[Int] {
+  let values : Array[Int] = []
+  if raw.length() == 0 {
+    return values
   }
+  for item in raw.split(",".view()) {
+    let trimmed = item.trim()
+    if trimmed.is_empty() {
+      continue
+    }
+    let parsed = @strconv.parse_int(trimmed) catch { _ => -1 }
+    if parsed >= 0 {
+      values.push(parsed)
+    }
+  }
+  values
 }
+
+///|
+extern "js" fn measure_input_line_metrics_raw(
+  input : @dom.HTMLTextAreaElement,
+) -> String =
+  #|(input) => {
+  #|  const style = getComputedStyle(input)
+  #|  const fontSize = Number.parseFloat(style.fontSize || "16")
+  #|  const lineHeightRaw = style.lineHeight || ""
+  #|  const lineHeight = lineHeightRaw.length > 0 ? Number.parseFloat(lineHeightRaw) : fontSize * 1.75
+  #|  const resolvedLineHeight = Number.isFinite(lineHeight) && lineHeight > 0 ? Math.round(lineHeight) : Math.round(fontSize * 1.75)
+  #|  const paddingTop = Math.round(Number.parseFloat(style.paddingTop || "0"))
+  #|  const paddingBottom = Math.round(Number.parseFloat(style.paddingBottom || "0"))
+  #|  const paddingRight = Number.parseFloat(style.paddingRight || "0")
+  #|  const paddingLeft = Number.parseFloat(style.paddingLeft || "0")
+  #|  const mirror = document.createElement("div")
+  #|  mirror.style.position = "absolute"
+  #|  mirror.style.visibility = "hidden"
+  #|  mirror.style.pointerEvents = "none"
+  #|  mirror.style.inset = "0"
+  #|  mirror.style.width = "100%"
+  #|  mirror.style.height = "auto"
+  #|  mirror.style.boxSizing = "border-box"
+  #|  mirror.style.border = "0"
+  #|  mirror.style.padding = `${paddingTop}px ${paddingRight}px ${paddingBottom}px ${paddingLeft}px`
+  #|  mirror.style.font = style.font
+  #|  mirror.style.lineHeight = style.lineHeight
+  #|  mirror.style.letterSpacing = style.letterSpacing
+  #|  mirror.style.tabSize = style.tabSize || "2"
+  #|  mirror.style.whiteSpace = "normal"
+  #|  mirror.style.wordBreak = "break-word"
+  #|  mirror.style.overflowWrap = "anywhere"
+  #|  mirror.style.color = style.color
+  #|  mirror.style.textAlign = style.textAlign
+  #|  mirror.style.direction = style.direction
+  #|  const lines = input.value.split("\n")
+  #|  const heights = []
+  #|  const tops = []
+  #|  let currentTop = paddingTop
+  #|  const parent = input.parentElement || document.body || document.documentElement
+  #|  const contentWidth = Math.max(1, Math.round(input.clientWidth || 1))
+  #|  parent.appendChild(mirror)
+  #|  mirror.style.width = `${contentWidth}px`
+  #|  for (const line of lines) {
+  #|    const block = document.createElement("div")
+  #|    block.style.display = "block"
+  #|    block.style.whiteSpace = "pre-wrap"
+  #|    block.style.wordBreak = "break-word"
+  #|    block.style.overflowWrap = "anywhere"
+  #|    block.style.margin = "0"
+  #|    block.style.padding = "0"
+  #|    block.textContent = line.length > 0 ? line : " "
+  #|    mirror.appendChild(block)
+  #|    const contentHeight = block.getBoundingClientRect().height
+  #|    const nextHeight = Math.max(Math.round(contentHeight), resolvedLineHeight)
+  #|    heights.push(nextHeight)
+  #|    tops.push(currentTop)
+  #|    currentTop += nextHeight
+  #|  }
+  #|  mirror.remove()
+  #|  return `${heights.join(",")}|${tops.join(",")}|${resolvedLineHeight}|${paddingTop}`
+  #|}
 
 ///|
 fn linked_line_html(
@@ -162,54 +506,325 @@ fn linked_line_html(
 }
 
 ///|
+fn input_scroll_top(input : @dom.HTMLTextAreaElement) -> Int {
+  input.scrollTop()
+}
+
+///|
+fn input_selection_start(input : @dom.HTMLTextAreaElement) -> Int {
+  parse_int_or_default(input.as_any()._get("selectionStart").to_string(), 0)
+}
+
+///|
+fn input_selection_end(input : @dom.HTMLTextAreaElement) -> Int {
+  parse_int_or_default(
+    input.as_any()._get("selectionEnd").to_string(),
+    input_selection_start(input),
+  )
+}
+
+///|
+fn input_active_element_is_input(input : @dom.HTMLTextAreaElement) -> Bool {
+  @dom.document().activeElement().isSameNode(Some(input.as_element().as_node()))
+}
+
+///|
+fn set_line_layer(
+  element : @dom.Element,
+  line_index : Int,
+  visible : Bool,
+  metrics : InputLineMetrics,
+  scroll_top : Int,
+) -> Unit {
+  let style = @dom.css_style_from_val(element.as_any()._get("style").cast())
+  if !visible || line_index < 0 {
+    style.set_property("opacity", "0")
+    return
+  }
+  let top = metrics.tops.get(line_index).unwrap_or(metrics.padding_top) -
+    scroll_top
+  let height = metrics.heights.get(line_index).unwrap_or(metrics.line_height)
+  let block_height = if height > 1 { height } else { 1 }
+  style.set_property("height", "\{block_height}px")
+  style.set_property("transform", "translateY(\{top}px)")
+  style.set_property("opacity", "1")
+}
+
+///|
+fn set_line_span_layer(
+  element : @dom.Element,
+  start_line_index : Int,
+  end_line_index : Int,
+  visible : Bool,
+  metrics : InputLineMetrics,
+  scroll_top : Int,
+) -> Unit {
+  let style = @dom.css_style_from_val(element.as_any()._get("style").cast())
+  if !visible || start_line_index < 0 || end_line_index < start_line_index {
+    style.set_property("opacity", "0")
+    return
+  }
+  let start_top = metrics.tops
+    .get(start_line_index)
+    .unwrap_or(metrics.padding_top) -
+    scroll_top
+  let end_bottom = metrics.tops
+    .get(end_line_index)
+    .unwrap_or(metrics.padding_top) +
+    metrics.heights.get(end_line_index).unwrap_or(metrics.line_height) -
+    scroll_top
+  let height = end_bottom - start_top
+  let block_height = if height > 1 { height } else { 1 }
+  style.set_property("height", "\{block_height}px")
+  style.set_property("transform", "translateY(\{start_top}px)")
+  style.set_property("opacity", "1")
+}
+
+///|
+fn set_line_collection(
+  container : @dom.Element,
+  line_indexes : Array[Int],
+  class_name : String,
+  metrics : InputLineMetrics,
+  scroll_top : Int,
+) -> Unit {
+  if line_indexes.length() == 0 {
+    container.setInnerHTML("")
+    return
+  }
+  let blocks = line_indexes.filter_map(fn(line_index) {
+    linked_line_html(metrics, line_index, scroll_top, class_name)
+  })
+  container.setInnerHTML(blocks.iter().join(""))
+}
+
+///|
+fn sync_input_line_numbers(
+  input : @dom.HTMLTextAreaElement,
+  metrics : InputLineMetrics,
+) -> Unit {
+  match get_element("#input-gutter") {
+    Some(gutter) => {
+      let heights = if metrics.heights.length() > 0 {
+        metrics.heights
+      } else {
+        [metrics.line_height]
+      }
+      let blocks : Array[String] = []
+      let mut line_number = 1
+      for height in heights {
+        let block_height = if height > 1 { height } else { 1 }
+        blocks.push(
+          "<div class=\"editor-gutter-number\" style=\"height:\{block_height}px\">\{line_number}</div>",
+        )
+        line_number += 1
+      }
+      gutter.setInnerHTML(blocks.iter().join(""))
+      let style = @dom.css_style_from_val(gutter.as_any()._get("style").cast())
+      style.set_property(
+        "transform",
+        "translateY(\{-input_scroll_top(input)}px)",
+      )
+    }
+    None => ()
+  }
+}
+
+///|
+fn sync_input_linked_lines(
+  _input : @dom.HTMLTextAreaElement,
+  metrics : InputLineMetrics,
+  scroll_top : Int,
+) -> Unit {
+  match get_element("#input-linked-lines") {
+    Some(linked_lines) =>
+      set_line_collection(
+        linked_lines,
+        input_linked_line_indexes.val,
+        "editor-linked-line",
+        metrics,
+        scroll_top,
+      )
+    None => ()
+  }
+  match get_element("#input-linked-gutter-lines") {
+    Some(linked_gutter_lines) =>
+      set_line_collection(
+        linked_gutter_lines,
+        input_linked_line_indexes.val,
+        "editor-gutter-line editor-gutter-line--linked",
+        metrics,
+        scroll_top,
+      )
+    None => ()
+  }
+}
+
+///|
+fn sync_input_hover_line(
+  _input : @dom.HTMLTextAreaElement,
+  metrics : InputLineMetrics,
+  scroll_top : Int,
+) -> Unit {
+  let line_index = input_hover_line_index.val
+  match get_element("#input-hover-line") {
+    Some(hover_line) =>
+      set_line_layer(
+        hover_line,
+        line_index,
+        line_index >= 0,
+        metrics,
+        scroll_top,
+      )
+    None => ()
+  }
+  match get_element("#input-hover-gutter-line") {
+    Some(hover_gutter_line) =>
+      set_line_layer(
+        hover_gutter_line,
+        line_index,
+        line_index >= 0,
+        metrics,
+        scroll_top,
+      )
+    None => ()
+  }
+}
+
+///|
+fn sync_input_active_line(
+  input : @dom.HTMLTextAreaElement,
+  metrics : InputLineMetrics,
+  scroll_top : Int,
+) -> Unit {
+  let selection_start = input_selection_start(input)
+  let selection_end = input_selection_end(input)
+  let start_line = line_index_at_offset(
+    input.value,
+    if selection_start < selection_end {
+      selection_start
+    } else {
+      selection_end
+    },
+  )
+  let end_line = line_index_at_offset(
+    input.value,
+    if selection_start > selection_end {
+      selection_start
+    } else {
+      selection_end
+    },
+  )
+  let visible = input_active_element_is_input(input)
+  match get_element("#input-active-line") {
+    Some(active_line) =>
+      set_line_span_layer(
+        active_line, start_line, end_line, visible, metrics, scroll_top,
+      )
+    None => ()
+  }
+  match get_element("#input-active-gutter-line") {
+    Some(active_gutter_line) =>
+      set_line_span_layer(
+        active_gutter_line, start_line, end_line, visible, metrics, scroll_top,
+      )
+    None => ()
+  }
+}
+
+///|
+fn line_index_at_offset(value : String, offset : Int) -> Int {
+  _line_index_at_offset_js(value, offset)
+}
+
+///|
+extern "js" fn _line_index_at_offset_js(value : String, offset : Int) -> Int =
+  #|(value, offset) => value.slice(0, offset).split("\n").length - 1
+
+///|
+fn parse_selection_indices(serialized : String) -> Array[Int] {
+  if serialized.length() == 0 {
+    return []
+  }
+  let values : Array[Int] = []
+  for item in serialized.split(",".view()) {
+    let trimmed = item.trim()
+    if trimmed.is_empty() {
+      continue
+    }
+    let parsed = @strconv.parse_int(trimmed) catch { _ => -1 }
+    if parsed >= 0 && !values.contains(parsed) {
+      values.push(parsed)
+    }
+  }
+  values
+}
+
+///|
+fn current_heading_selection(input : @dom.HTMLTextAreaElement) -> Array[Int] {
+  let selection_start = input_selection_start(input)
+  let selection_end = input_selection_end(input)
+  let range_start = if selection_start < selection_end {
+    selection_start
+  } else {
+    selection_end
+  }
+  let range_end = if selection_start > selection_end {
+    selection_start
+  } else {
+    selection_end
+  }
+  let start_line = line_index_at_offset(input.value, range_start)
+  let end_line = line_index_at_offset(input.value, range_end)
+  let lines = input.value.split("\n".view()).to_array()
+  let structural_line_indexes : Array[(Int, Int)] = []
+  let mut node_index = 0
+  for line_index in 0..<lines.length() {
+    let line = lines[line_index]
+    if line.has_prefix("#".view()) ||
+      line.has_prefix("-".view()) ||
+      line.has_prefix("+".view()) ||
+      line.has_prefix("*".view()) {
+      if line.contains(" ".view()) {
+        structural_line_indexes.push((line_index, node_index))
+        node_index += 1
+      }
+    }
+  }
+  if range_start == range_end {
+    for pair in structural_line_indexes {
+      if pair.0 == start_line {
+        return [pair.1]
+      }
+    }
+    return []
+  }
+  for line_index in start_line..<=end_line {
+    let mut structural = false
+    for pair in structural_line_indexes {
+      if pair.0 == line_index {
+        structural = true
+        break
+      }
+    }
+    if !structural {
+      return []
+    }
+  }
+  let result : Array[Int] = []
+  for pair in structural_line_indexes {
+    if pair.0 >= start_line && pair.0 <= end_line {
+      result.push(pair.1)
+    }
+  }
+  result
+}
+
+///|
 fn set_input_linked_lines(line_indexes : String) -> Unit {
   match get_element("#input") {
-    Some(input_element) => {
-      let input = @dom.HTMLTextAreaElement::cast_from_element(input_element)
-      let metrics = input_line_metrics(input)
-      let scroll_top = input.scrollTop()
-      let linked_line_indexes = line_indexes
-        .split(",".view())
-        .filter_map(fn(token) {
-          let trimmed = token.trim()
-          if trimmed.is_empty() {
-            None
-          } else {
-            Some(@strconv.parse_int(trimmed)) catch {
-              _ => None
-            }
-          }
-        })
-        .to_array()
-      match get_element("#input-linked-lines") {
-        Some(linked_lines) =>
-          linked_lines.setInnerHTML(
-            linked_line_indexes
-            .filter_map(fn(line_index) {
-              linked_line_html(
-                metrics, line_index, scroll_top, "editor-linked-line",
-              )
-            })
-            .iter()
-            .join(""),
-          )
-        None => ()
-      }
-      match get_element("#input-linked-gutter-lines") {
-        Some(linked_gutter_lines) =>
-          linked_gutter_lines.setInnerHTML(
-            linked_line_indexes
-            .filter_map(fn(line_index) {
-              linked_line_html(
-                metrics, line_index, scroll_top, "editor-gutter-line editor-gutter-line--linked",
-              )
-            })
-            .iter()
-            .join(""),
-          )
-        None => ()
-      }
-      set_input_linked_lines_state(linked_line_indexes)
+    Some(_) => {
+      input_linked_line_indexes.val = parse_selection_indices(line_indexes)
       sync_editor_chrome()
     }
     None => ()
@@ -232,15 +847,6 @@ fn reveal_input_line(line_index : Int) -> Unit {
       let line_height = metrics.heights
         .get(line_index)
         .unwrap_or(metrics.line_height)
-      let viewport_top = input.scrollTop()
-      let viewport_bottom = viewport_top + input.clientHeight()
-      let top_margin = line_height * 2
-      let bottom_margin = line_height * 3
-      let visible_top = viewport_top + top_margin
-      let visible_bottom = viewport_bottom - bottom_margin
-      if line_top >= visible_top && line_top + line_height <= visible_bottom {
-        return
-      }
       let target_top = {
         let offset = line_height * 2
         let minimum_view = (input.clientHeight().to_double() * 0.35)
@@ -258,12 +864,35 @@ fn reveal_input_line(line_index : Int) -> Unit {
           0
         }
       }
-      input.setScrollTop(target_top)
-      sync_editor_chrome()
+      reveal_input_line_after_paint(target_top)
+      select_input_line(input, line_index)
     }
     None => ()
   }
 }
+
+///|
+fn select_input_line(
+  input : @dom.HTMLTextAreaElement,
+  line_index : Int,
+) -> Unit {
+  set_input_selection_range_by_line(input, line_index)
+  sync_editor_chrome()
+}
+
+///|
+extern "js" fn set_input_selection_range_by_line(
+  input : @dom.HTMLTextAreaElement,
+  line_index : Int,
+) =
+  #|(input, lineIndex) => {
+  #|  const lines = input.value.split("\n")
+  #|  if (lineIndex == null || lineIndex < 0 || lineIndex >= lines.length) return
+  #|  const start = lines.slice(0, lineIndex).join("\n").length + (lineIndex === 0 ? 0 : lineIndex)
+  #|  const end = start + lines[lineIndex].length
+  #|  input.focus()
+  #|  input.setSelectionRange(start, end)
+  #|}
 
 ///|
 fn toggle_class(
@@ -727,695 +1356,107 @@ fn bind_splitter_ui(callback : (Int) -> Unit) -> Unit {
 }
 
 ///|
-extern "js" fn bind_mindmap_ui_js() =
-  #|() => {
-  #|  const mindmap = document.querySelector("#mindmap")
-  #|  if (!mindmap) return
-  #|  const zoomIn = document.querySelector("#zoom-in")
-  #|  const zoomOut = document.querySelector("#zoom-out")
-  #|  const zoomStrip = document.querySelector(".zoom-strip")
-  #|  const zoomValue = document.querySelector("#zoom-value")
-  #|  const zoomEdit = document.querySelector("#zoom-edit")
-  #|  const fitView = document.querySelector("#fit-view")
-  #|  const recenterView = document.querySelector("#recenter-view")
-  #|  const syncView = () => {
-  #|    const panX = Number(mindmap.dataset.panX ?? "0")
-  #|    const panY = Number(mindmap.dataset.panY ?? "0")
-  #|    const zoom = Number(mindmap.dataset.zoom ?? "1")
-  #|    mindmap.style.setProperty("--pan-x", `${panX}px`)
-  #|    mindmap.style.setProperty("--pan-y", `${panY}px`)
-  #|    mindmap.style.setProperty("--zoom", `${zoom}`)
-  #|    const percentText = `${Math.round(zoom * 100)}%`
-  #|    if (zoomValue) zoomValue.textContent = percentText
-  #|    if (zoomEdit) zoomEdit.value = `${Math.round(zoom * 100)}`
-  #|  }
-  #|  const renderConnectors = () => {
-  #|    const content = mindmap.querySelector(".mindmap-content")
-  #|    const stage = content?.querySelector(".mindmap-stage")
-  #|    if (!content || !stage) return
-  #|    stage.classList.remove("mindmap-stage--svg-connectors")
-  #|    content.querySelector(".mindmap-connector-layer")?.remove()
-  #|    content.querySelector(".mindmap-connector-controls")?.remove()
-  #|    content.querySelectorAll(".mindmap-node-anchor").forEach((element) => element.remove())
-  #|    if (
-  #|      stage.classList.contains("mindmap-stage--vertical") ||
-  #|      stage.classList.contains("mindmap-stage--single-right")
-  #|    ) {
-  #|      return
-  #|    }
-  #|    const nodes = [...content.querySelectorAll(".node[data-node-index]")]
-  #|    if (nodes.length <= 1) return
-  #|    const zoom = Number(mindmap.dataset.zoom ?? "1") || 1
-  #|    const contentRect = content.getBoundingClientRect()
-  #|    const stageRect = stage.getBoundingClientRect()
-  #|    const width = Math.max(1, Math.round(stageRect.width / zoom))
-  #|    const height = Math.max(1, Math.round(stageRect.height / zoom))
-  #|    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
-  #|    svg.setAttribute("class", "mindmap-connector-layer")
-  #|    svg.setAttribute("width", `${width}`)
-  #|    svg.setAttribute("height", `${height}`)
-  #|    svg.setAttribute("viewBox", `0 0 ${width} ${height}`)
-  #|    svg.style.left = `${Math.round((stageRect.left - contentRect.left) / zoom)}px`
-  #|    svg.style.top = `${Math.round((stageRect.top - contentRect.top) / zoom)}px`
-  #|    const controls = document.createElement("div")
-  #|    controls.className = "mindmap-connector-controls"
-  #|    controls.style.left = svg.style.left
-  #|    controls.style.top = svg.style.top
-  #|    controls.style.width = `${width}px`
-  #|    controls.style.height = `${height}px`
-  #|    const nodeMap = new Map(nodes.map((node) => [node.dataset.nodeIndex, node]))
-  #|    const stageOffsetX = (stageRect.left - contentRect.left) / zoom
-  #|    const stageOffsetY = (stageRect.top - contentRect.top) / zoom
-  #|    const localRect = (element) => {
-  #|      const rect = element.getBoundingClientRect()
-  #|      return {
-  #|        left: (rect.left - contentRect.left) / zoom - stageOffsetX,
-  #|        right: (rect.right - contentRect.left) / zoom - stageOffsetX,
-  #|        top: (rect.top - contentRect.top) / zoom - stageOffsetY,
-  #|        bottom: (rect.bottom - contentRect.top) / zoom - stageOffsetY,
-  #|        width: rect.width / zoom,
-  #|        height: rect.height / zoom,
-  #|      }
-  #|    }
-  #|    const appendCircle = (x, y, radius) => {
-  #|      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle")
-  #|      circle.setAttribute("cx", `${x}`)
-  #|      circle.setAttribute("cy", `${y}`)
-  #|      circle.setAttribute("r", `${radius}`)
-  #|      circle.setAttribute("fill", "rgba(255,255,255,0.98)")
-  #|      circle.setAttribute("stroke", "#6f9ccd")
-  #|      circle.setAttribute("stroke-width", "1.8")
-  #|      svg.appendChild(circle)
-  #|    }
-  #|    const appendPath = (d, strokeWidth) => {
-  #|      const path = document.createElementNS("http://www.w3.org/2000/svg", "path")
-  #|      path.setAttribute("d", d)
-  #|      path.setAttribute("fill", "none")
-  #|      path.setAttribute("stroke", "#7ea7d3")
-  #|      path.setAttribute("stroke-width", `${strokeWidth}`)
-  #|      path.setAttribute("stroke-linecap", "round")
-  #|      path.setAttribute("stroke-linejoin", "round")
-  #|      svg.appendChild(path)
-  #|    }
-  #|    const appendJoint = (x, y, node, count) => {
-  #|      if (!node || node.dataset.hiddenNode === "true") return
-  #|      if (node.dataset.hasChildren !== "true") return
-  #|      const joint = document.createElement("button")
-  #|      joint.type = "button"
-  #|      joint.className = "mindmap-connector-joint"
-  #|      joint.dataset.action = "toggle"
-  #|      joint.dataset.nodeIndex = node.dataset.nodeIndex ?? ""
-  #|      const collapsed = node.dataset.collapsed === "true"
-  #|      const subtreeCount = Number(count ?? node.dataset.hiddenCount ?? "0")
-  #|      const hiddenCount = Math.max(0, subtreeCount - 1)
-  #|      joint.dataset.collapsed = collapsed ? "true" : "false"
-  #|      joint.setAttribute(
-  #|        "aria-label",
-  #|        collapsed ? `Expand node (${hiddenCount} hidden)` : "Collapse node",
-  #|      )
-  #|      joint.setAttribute("aria-expanded", collapsed ? "false" : "true")
-  #|      joint.textContent = collapsed && hiddenCount > 0 ? `${hiddenCount}` : ""
-  #|      joint.style.left = `${x}px`
-  #|      joint.style.top = `${y}px`
-  #|      controls.appendChild(joint)
-  #|    }
-  #|    const edgeGroups = new Map()
-  #|    const rootEdges = { L: [], R: [] }
-  #|    for (const node of nodes) {
-  #|      const parentIndex = node.dataset.parentIndex ?? ""
-  #|      if (!parentIndex || parentIndex === "-1") continue
-  #|      const parent = nodeMap.get(parentIndex)
-  #|      if (!parent) continue
-  #|      const parentRect = localRect(parent)
-  #|      const childRect = localRect(node)
-  #|      const parentCenterX = parentRect.left + parentRect.width / 2
-  #|      const childCenterX = childRect.left + childRect.width / 2
-  #|      const childOnLeft = childCenterX < parentCenterX
-  #|      if (node.dataset.hasChildren === "true" && node.dataset.hiddenNode !== "true") {
-  #|        const jointX = childOnLeft ? childRect.left - 3 : childRect.right + 3
-  #|        const jointY = childRect.top + childRect.height / 2
-  #|        appendJoint(jointX, jointY, node, Number(node.dataset.hiddenCount ?? "0"))
-  #|      }
-  #|      if (parent.dataset.depth === "0") {
-  #|        const side = childOnLeft ? "L" : "R"
-  #|        rootEdges[side].push({ node, parentRect, childRect, childOnLeft, parentIndex })
-  #|        continue
-  #|      }
-  #|      const key = `${parentIndex}:${childOnLeft ? "L" : "R"}`
-  #|      const group = edgeGroups.get(key) ?? []
-  #|      group.push({ node, parentRect, childRect, childOnLeft, parentIndex })
-  #|      edgeGroups.set(key, group)
-  #|    }
-  #|    for (const side of ["L", "R"]) {
-  #|      const rootSide = rootEdges[side]
-  #|      if (!rootSide.length) continue
-  #|      rootSide.sort(
-  #|        (a, b) =>
-  #|          a.childRect.top + a.childRect.height / 2 - (b.childRect.top + b.childRect.height / 2),
-  #|      )
-  #|      const count = rootSide.length
-  #|      for (const [index, edge] of rootSide.entries()) {
-  #|        const { node, parentRect, childRect, childOnLeft } = edge
-  #|        const dir = childOnLeft ? -1 : 1
-  #|        const startX = childOnLeft ? parentRect.left : parentRect.right
-  #|        const startY =
-  #|          count === 1
-  #|            ? parentRect.top + parentRect.height / 2
-  #|            : parentRect.top + parentRect.height * ((index + 1) / (count + 1))
-  #|        const endX = childOnLeft ? childRect.right : childRect.left
-  #|        const endY = childRect.top + childRect.height / 2
-  #|        const span = Math.max(32, Math.abs(endX - startX))
-  #|        const lead = Math.min(74, Math.max(24, span * 0.34))
-  #|        const settle = Math.min(66, Math.max(20, span * 0.28))
-  #|        const bend = Math.min(44, Math.max(16, span * 0.16))
-  #|        const curveStartY = startY - bend
-  #|        const curveEndY = endY + bend
-  #|        appendPath(
-  #|          `M ${startX} ${startY} C ${startX + dir * lead} ${curveStartY}, ${endX - dir * settle} ${curveEndY}, ${endX} ${endY}`,
-  #|          node.dataset.depth === "1" ? 3.4 : 2.7,
-  #|        )
-  #|      }
-  #|    }
-  #|    for (const edges of edgeGroups.values()) {
-  #|      if (!edges.length) continue
-  #|      edges.sort(
-  #|        (a, b) =>
-  #|          a.childRect.top + a.childRect.height / 2 - (b.childRect.top + b.childRect.height / 2),
-  #|      )
-  #|      const sample = edges[0]
-  #|      const { parentRect, childOnLeft, parentIndex } = sample
-  #|      const parentNode = nodeMap.get(parentIndex)
-  #|      const dir = childOnLeft ? -1 : 1
-  #|      const startX = childOnLeft ? parentRect.left : parentRect.right
-  #|      const startY = parentRect.top + parentRect.height / 2
-  #|      const endpoints = edges.map((edge) => ({
-  #|        edge,
-  #|        endX: childOnLeft ? edge.childRect.right : edge.childRect.left,
-  #|        endY: edge.childRect.top + edge.childRect.height / 2,
-  #|      }))
-  #|      const groupStrokeWidth = edges.some((edge) => edge.node.dataset.depth === "1") ? 3.2 : 2.5
-  #|      if (endpoints.length === 1) {
-  #|        const target = endpoints[0]
-  #|        const span = Math.max(20, Math.abs(target.endX - startX))
-  #|        const lead = Math.min(26, Math.max(12, span * 0.24))
-  #|        const settle = Math.min(28, Math.max(16, span * 0.3))
-  #|        appendPath(
-  #|          `M ${startX} ${startY} C ${startX + dir * lead} ${startY}, ${target.endX - dir * settle} ${target.endY}, ${target.endX} ${target.endY}`,
-  #|          groupStrokeWidth,
-  #|        )
-  #|        continue
-  #|      }
-  #|      const nearestSpan = Math.max(
-  #|        20,
-  #|        Math.min(...endpoints.map((target) => Math.abs(target.endX - startX))),
-  #|      )
-  #|      const branchX = startX + dir * Math.min(30, Math.max(16, nearestSpan * 0.22))
-  #|      const branchLead = Math.min(18, Math.max(8, Math.abs(branchX - startX) * 0.7))
-  #|      appendPath(
-  #|        `M ${startX} ${startY} C ${startX + dir * branchLead} ${startY}, ${branchX - dir * 6} ${startY}, ${branchX} ${startY}`,
-  #|        groupStrokeWidth,
-  #|      )
-  #|      for (const target of endpoints) {
-  #|        const span = Math.max(18, Math.abs(target.endX - branchX))
-  #|        const pull = Math.min(18, Math.max(10, span * 0.2))
-  #|        const settle = Math.min(24, Math.max(12, span * 0.34))
-  #|        const easeY = startY + (target.endY - startY) * 0.18
-  #|        appendPath(
-  #|          `M ${branchX} ${startY} C ${branchX + dir * pull} ${easeY}, ${target.endX - dir * settle} ${target.endY}, ${target.endX} ${target.endY}`,
-  #|          target.edge.node.dataset.depth === "1" ? 3.2 : 2.4,
-  #|        )
-  #|      }
-  #|    }
-  #|    content.insertAdjacentElement("afterbegin", controls)
-  #|    content.insertAdjacentElement("afterbegin", svg)
-  #|    stage.classList.add("mindmap-stage--svg-connectors")
-  #|  }
-  #|  let connectorFrame = 0
-  #|  const scheduleConnectorRender = () => {
-  #|    if (connectorFrame) cancelAnimationFrame(connectorFrame)
-  #|    connectorFrame = requestAnimationFrame(() => {
-  #|      connectorFrame = 0
-  #|      renderConnectors()
-  #|    })
-  #|  }
-  #|  window.__moonmarkmindRenderConnectors = scheduleConnectorRender
-  #|  return
-  #|  const clampZoom = (value) => Math.max(0.4, Math.min(2, value))
-  #|  const setZoom = (value) => {
-  #|    mindmap.dataset.zoom = `${clampZoom(value)}`
-  #|    syncView()
-  #|    scheduleConnectorRender()
-  #|  }
-  #|  const applyWheelZoom = (event) => {
-  #|    const delta = event.deltaY ?? 0
-  #|    if (!Number.isFinite(delta) || delta === 0) return
-  #|    event.preventDefault()
-  #|    const currentZoom = Number(mindmap.dataset.zoom ?? "1") || 1
-  #|    const speed = event.ctrlKey ? 0.0032 : 0.0018
-  #|    const nextZoom = clampZoom(currentZoom * Math.exp(-delta * speed))
-  #|    setZoom(nextZoom)
-  #|  }
-  #|  const parseZoomInput = (raw) => {
-  #|    const trimmed = (raw ?? "").trim()
-  #|    if (!trimmed) return null
-  #|    const numeric = Number.parseFloat(trimmed.replace("%", ""))
-  #|    if (!Number.isFinite(numeric)) return null
-  #|    return trimmed.includes("%") || numeric > 10 ? numeric / 100 : numeric
-  #|  }
-  #|  const stopZoomEditing = (commit) => {
-  #|    if (!zoomStrip || !zoomEdit) return
-  #|    if (commit) {
-  #|      const nextZoom = parseZoomInput(zoomEdit.value)
-  #|      if (nextZoom != null) setZoom(nextZoom)
-  #|      else syncView()
-  #|    } else {
-  #|      syncView()
-  #|    }
-  #|    zoomStrip.classList.remove("is-editing")
-  #|  }
-  #|  const startZoomEditing = () => {
-  #|    if (!zoomStrip || !zoomEdit) return
-  #|    zoomStrip.classList.add("is-editing")
-  #|    zoomEdit.value = `${Math.round(Number(mindmap.dataset.zoom ?? "1") * 100)}`
-  #|    zoomEdit.focus()
-  #|    zoomEdit.select()
-  #|  }
-  #|  const fitToView = () => {
-  #|    const stage = mindmap.querySelector(".mindmap-stage")
-  #|    if (!stage) {
-  #|      mindmap.dataset.panX = "0"
-  #|      mindmap.dataset.panY = "0"
-  #|      setZoom(1)
-  #|      return
-  #|    }
-  #|    const viewportWidth = Math.max(0, mindmap.clientWidth - 24)
-  #|    const viewportHeight = Math.max(0, mindmap.clientHeight - 24)
-  #|    const stageWidth = stage.offsetWidth
-  #|    const stageHeight = stage.offsetHeight
-  #|    if (viewportWidth <= 0 || viewportHeight <= 0 || stageWidth <= 0 || stageHeight <= 0) {
-  #|      return
-  #|    }
-  #|    const nextZoom = clampZoom(Math.min(1, viewportWidth / stageWidth, viewportHeight / stageHeight))
-  #|    mindmap.dataset.panX = "0"
-  #|    mindmap.dataset.panY = "0"
-  #|    setZoom(nextZoom)
-  #|  }
-  #|  const recenterPan = () => {
-  #|    const stage = mindmap.querySelector(".mindmap-stage")
-  #|    if (!stage) {
-  #|      mindmap.dataset.panX = "0"
-  #|      mindmap.dataset.panY = "0"
-  #|      syncView()
-  #|      return
-  #|    }
-  #|    const viewportWidth = Math.ceil(mindmap.getBoundingClientRect().width)
-  #|    const viewportHeight = Math.ceil(mindmap.getBoundingClientRect().height)
-  #|    const stageWidth = Math.ceil(stage.getBoundingClientRect().width)
-  #|    const stageHeight = Math.ceil(stage.getBoundingClientRect().height)
-  #|    let nextPanX = 0
-  #|    let nextPanY = 0
-  #|    if (stage.classList.contains("mindmap-stage--vertical")) {
-  #|      const topMargin = 48
-  #|      nextPanY = Math.round((stageHeight - viewportHeight) / 2 + topMargin)
-  #|    } else if (stage.classList.contains("mindmap-stage--single-right")) {
-  #|      const leftMargin = 56
-  #|      nextPanX = Math.round((stageWidth - viewportWidth) / 2 + leftMargin)
-  #|    }
-  #|    mindmap.dataset.panX = `${nextPanX}`
-  #|    mindmap.dataset.panY = `${nextPanY}`
-  #|    syncView()
-  #|  }
-  #|  let panning = false
-  #|  let startX = 0
-  #|  let startY = 0
-  #|  let startPanX = 0
-  #|  let startPanY = 0
-  #|  const canPan = (target) => {
-  #|    if (!target) return false
-  #|    return !target.closest?.("[data-node-index], [data-action], [data-editor-for], button, input")
-  #|  }
-  #|  const stopPan = () => {
-  #|    panning = false
-  #|    mindmap.classList.remove("is-panning")
-  #|    document.body.style.userSelect = ""
-  #|  }
-  #|  mindmap.addEventListener("click", clickCallback)
-  #|  mindmap.addEventListener("dblclick", (event) => {
-  #|    if (canPan(event.target)) {
-  #|      event.preventDefault()
-  #|      recenterPan()
-  #|      return
-  #|    }
-  #|    dblclickCallback(event)
-  #|  })
-  #|  mindmap.addEventListener("keydown", keydownCallback)
-  #|  mindmap.addEventListener("focusout", focusoutCallback)
-  #|  mindmap.addEventListener("wheel", applyWheelZoom, { passive: false })
-  #|  mindmap.addEventListener("dragstart", dragstartCallback)
-  #|  mindmap.addEventListener("dragend", dragendCallback)
-  #|  mindmap.addEventListener("dragover", dragoverCallback)
-  #|  mindmap.addEventListener("drop", dropCallback)
-  #|  zoomOut?.addEventListener("click", () => {
-  #|    setZoom(Number(mindmap.dataset.zoom ?? "1") - 0.1)
-  #|  })
-  #|  zoomIn?.addEventListener("click", () => {
-  #|    setZoom(Number(mindmap.dataset.zoom ?? "1") + 0.1)
-  #|  })
-  #|  zoomValue?.addEventListener("dblclick", (event) => {
-  #|    event.preventDefault()
-  #|    startZoomEditing()
-  #|  })
-  #|  zoomEdit?.addEventListener("keydown", (event) => {
-  #|    if (event.key === "Enter") {
-  #|      event.preventDefault()
-  #|      stopZoomEditing(true)
-  #|    } else if (event.key === "Escape") {
-  #|      event.preventDefault()
-  #|      stopZoomEditing(false)
-  #|    }
-  #|  })
-  #|  zoomEdit?.addEventListener("blur", () => stopZoomEditing(true))
-  #|  fitView?.addEventListener("click", () => fitToView())
-  #|  recenterView?.addEventListener("click", () => recenterPan())
-  #|  mindmap.addEventListener("mousedown", (event) => {
-  #|    if (!canPan(event.target)) return
-  #|    panning = true
-  #|    startX = event.clientX
-  #|    startY = event.clientY
-  #|    startPanX = Number(mindmap.dataset.panX ?? "0")
-  #|    startPanY = Number(mindmap.dataset.panY ?? "0")
-  #|    mindmap.classList.add("is-panning")
-  #|    document.body.style.userSelect = "none"
-  #|    event.preventDefault()
-  #|  })
-  #|  window.addEventListener("mousemove", (event) => {
-  #|    if (!panning) return
-  #|    mindmap.dataset.panX = (startPanX + event.clientX - startX).toString()
-  #|    mindmap.dataset.panY = (startPanY + event.clientY - startY).toString()
-  #|    syncView()
-  #|  })
-  #|  window.addEventListener("mouseup", stopPan)
-  #|  window.addEventListener("resize", scheduleConnectorRender)
-  #|  syncView()
-  #|  scheduleConnectorRender()
-  #|}
-
-///|
-extern "js" fn bind_input_listener(
+fn bind_input_listener(
   input_callback : () -> Unit,
   selected_headings_callback : (String) -> Unit,
-) =
-  #|(inputCallback, selectedHeadingsCallback) => {
-  #|  const input = document.querySelector("#input")
-  #|  const gutter = document.querySelector("#input-gutter")
-  #|  const linkedGutterLines = document.querySelector("#input-linked-gutter-lines")
-  #|  const hoverGutterLine = document.querySelector("#input-hover-gutter-line")
-  #|  const activeGutterLine = document.querySelector("#input-active-gutter-line")
-  #|  const linkedLines = document.querySelector("#input-linked-lines")
-  #|  const hoverLine = document.querySelector("#input-hover-line")
-  #|  const activeLine = document.querySelector("#input-active-line")
-  #|  let lineMetrics = {
-  #|    heights: [28],
-  #|    tops: [18],
-  #|    lineHeight: 28,
-  #|    paddingTop: 18,
-  #|    paddingBottom: 22,
-  #|  }
-  #|  const measureLineMetrics = () => {
-  #|    if (!input) return lineMetrics
-  #|    const style = getComputedStyle(input)
-  #|    const fontSize = Number.parseFloat(style.fontSize || "16")
-  #|    const lineHeight = Number.parseFloat(style.lineHeight || "") || fontSize * 1.75
-  #|    const paddingTop = Number.parseFloat(style.paddingTop || "0")
-  #|    const paddingBottom = Number.parseFloat(style.paddingBottom || "0")
-  #|    const mirror = document.createElement("div")
-  #|    mirror.style.position = "absolute"
-  #|    mirror.style.visibility = "hidden"
-  #|    mirror.style.pointerEvents = "none"
-  #|    mirror.style.inset = "0"
-  #|    mirror.style.width = "100%"
-  #|    mirror.style.height = "auto"
-  #|    mirror.style.boxSizing = "border-box"
-  #|    mirror.style.border = "0"
-  #|    mirror.style.padding = `${paddingTop}px ${Number.parseFloat(style.paddingRight || "0")}px ${paddingBottom}px ${Number.parseFloat(style.paddingLeft || "0")}px`
-  #|    mirror.style.font = style.font
-  #|    mirror.style.lineHeight = style.lineHeight
-  #|    mirror.style.letterSpacing = style.letterSpacing
-  #|    mirror.style.tabSize = style.tabSize || "2"
-  #|    mirror.style.whiteSpace = "normal"
-  #|    mirror.style.wordBreak = "break-word"
-  #|    mirror.style.overflowWrap = "anywhere"
-  #|    mirror.style.color = style.color
-  #|    mirror.style.textAlign = style.textAlign
-  #|    mirror.style.direction = style.direction
-  #|    const lines = input.value.split("\n")
-  #|    const heights = []
-  #|    const tops = []
-  #|    let currentTop = paddingTop
-  #|    const mirrorParent = input.parentElement ?? document.body
-  #|    const contentWidth = Math.max(1, input.clientWidth || input.getBoundingClientRect().width)
-  #|    mirrorParent.appendChild(mirror)
-  #|    mirror.style.width = `${contentWidth}px`
-  #|    for (const line of lines) {
-  #|      const block = document.createElement("div")
-  #|      block.style.display = "block"
-  #|      block.style.whiteSpace = "pre-wrap"
-  #|      block.style.wordBreak = "break-word"
-  #|      block.style.overflowWrap = "anywhere"
-  #|      block.style.margin = "0"
-  #|      block.style.padding = "0"
-  #|      block.textContent = line.length > 0 ? line : " "
-  #|      mirror.appendChild(block)
-  #|      const contentHeight = block.getBoundingClientRect().height
-  #|      const height = Math.max(lineHeight, contentHeight)
-  #|      heights.push(height)
-  #|      tops.push(currentTop)
-  #|      currentTop += height
-  #|    }
-  #|    const totalHeight = currentTop + paddingBottom
-  #|    mirror.remove()
-  #|    return { heights, tops, lineHeight, paddingTop, paddingBottom, totalHeight }
-  #|  }
-  #|  const syncLineMetrics = () => {
-  #|    lineMetrics = measureLineMetrics()
-  #|  }
-  #|  const syncLineNumbers = () => {
-  #|    if (!input || !gutter) return
-  #|    const heights = lineMetrics.heights.length > 0 ? lineMetrics.heights : [lineMetrics.lineHeight]
-  #|    gutter.innerHTML = heights
-  #|      .map((height, index) => {
-  #|        const blockHeight = Math.max(1, height)
-  #|        return `<div class="editor-gutter-number" style="height:${blockHeight}px">${index + 1}</div>`
-  #|      })
-  #|      .join("")
-  #|    gutter.style.transform = `translateY(${-Math.round(input.scrollTop)}px)`
-  #|  }
-  #|  const setLineLayer = (element, lineIndex, visible) => {
-  #|    if (!input || !element) return
-  #|    if (!visible || lineIndex < 0) {
-  #|      element.style.opacity = "0"
-  #|      return
-  #|    }
-  #|    const top = (lineMetrics.tops[lineIndex] ?? lineMetrics.paddingTop) - input.scrollTop
-  #|    const height = lineMetrics.heights[lineIndex] ?? lineMetrics.lineHeight
-  #|    element.style.height = `${Math.max(1, height)}px`
-  #|    element.style.transform = `translateY(${top}px)`
-  #|    element.style.opacity = "1"
-  #|  }
-  #|  const setLineSpanLayer = (element, startLineIndex, endLineIndex, visible) => {
-  #|    if (!input || !element) return
-  #|    if (!visible || startLineIndex < 0 || endLineIndex < startLineIndex) {
-  #|      element.style.opacity = "0"
-  #|      return
-  #|    }
-  #|    const startTop = (lineMetrics.tops[startLineIndex] ?? lineMetrics.paddingTop) - input.scrollTop
-  #|    const endBottom =
-  #|      (lineMetrics.tops[endLineIndex] ?? lineMetrics.paddingTop) +
-  #|      (lineMetrics.heights[endLineIndex] ?? lineMetrics.lineHeight) -
-  #|      input.scrollTop
-  #|    const height = endBottom - startTop
-  #|    element.style.height = `${Math.max(1, height)}px`
-  #|    element.style.transform = `translateY(${startTop}px)`
-  #|    element.style.opacity = "1"
-  #|  }
-  #|  const setLineCollection = (container, lineIndexes, className) => {
-  #|    if (!input || !container) return
-  #|    if (!lineIndexes || lineIndexes.length === 0) {
-  #|      container.innerHTML = ""
-  #|      return
-  #|    }
-  #|    const heights = lineMetrics.heights.length > 0 ? lineMetrics.heights : [lineMetrics.lineHeight]
-  #|    container.innerHTML = lineIndexes
-  #|      .map((lineIndex) => {
-  #|        const top = (lineMetrics.tops[lineIndex] ?? lineMetrics.paddingTop) - input.scrollTop
-  #|        const height = Math.max(1, heights[lineIndex] ?? lineMetrics.lineHeight)
-  #|        return `<div class="${className}" style="height:${height}px;transform:translateY(${top}px);opacity:1"></div>`
-  #|      })
-  #|      .join("")
-  #|  }
-  #|  const syncActiveLine = () => {
-  #|    const selectionStart = input.selectionStart ?? 0
-  #|    const selectionEnd = input.selectionEnd ?? selectionStart
-  #|    const startLine = lineIndexAtOffset(Math.min(selectionStart, selectionEnd))
-  #|    const endLine = lineIndexAtOffset(Math.max(selectionStart, selectionEnd))
-  #|    const visible = document.activeElement === input
-  #|    setLineSpanLayer(activeLine, startLine, endLine, visible)
-  #|    setLineSpanLayer(activeGutterLine, startLine, endLine, visible)
-  #|  }
-  #|  let linkedLineIndexes = []
-  #|  const syncLinkedLine = () => {
-  #|    setLineCollection(linkedLines, linkedLineIndexes, "editor-linked-line")
-  #|    setLineCollection(linkedGutterLines, linkedLineIndexes, "editor-gutter-line editor-gutter-line--linked")
-  #|  }
-  #|  window.__moonmarkmindSetLinkedLines = (nextLineIndexes) => {
-  #|    linkedLineIndexes = Array.isArray(nextLineIndexes) ? nextLineIndexes : []
-  #|  }
-  #|  let hoverLineIndex = -1
-  #|  const syncHoverLine = () => {
-  #|    setLineLayer(hoverLine, hoverLineIndex, hoverLineIndex >= 0)
-  #|    setLineLayer(hoverGutterLine, hoverLineIndex, hoverLineIndex >= 0)
-  #|  }
-  #|  let activeLineFrame = 0
-  #|  const scheduleSyncActiveLine = () => {
-  #|    if (activeLineFrame) cancelAnimationFrame(activeLineFrame)
-  #|    activeLineFrame = requestAnimationFrame(() => {
-  #|      activeLineFrame = 0
-  #|      syncActiveLine()
-  #|    })
-  #|  }
-  #|  let lastSelectedHeadingKey = "__init__"
-  #|  const headingPattern = /^#+\s/
-  #|  const listPattern = /^(?:\s*)(?:[-+*]|\d+\.)\s+/
-  #|  const lineIndexAtOffset = (offset) => input.value.slice(0, offset).split("\n").length - 1
-  #|  const currentHeadingSelection = () => {
-  #|    if (!input) return []
-  #|    const selectionStart = input.selectionStart ?? 0
-  #|    const selectionEnd = input.selectionEnd ?? selectionStart
-  #|    const rangeStart = Math.min(selectionStart, selectionEnd)
-  #|    const rangeEnd = Math.max(selectionStart, selectionEnd)
-  #|    const startLine = lineIndexAtOffset(rangeStart)
-  #|    const endLine = lineIndexAtOffset(rangeEnd)
-  #|    const lines = input.value.split("\n")
-  #|    const structuralLineIndexes = []
-  #|    let nodeIndex = 0
-  #|    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
-  #|      if (headingPattern.test(lines[lineIndex]) || listPattern.test(lines[lineIndex])) {
-  #|        structuralLineIndexes.push([lineIndex, nodeIndex])
-  #|        nodeIndex += 1
-  #|      }
-  #|    }
-  #|    const isStructuralLine = (lineIndex) => {
-  #|      for (const [structuralLineIndex] of structuralLineIndexes) {
-  #|        if (structuralLineIndex === lineIndex) return true
-  #|      }
-  #|      return false
-  #|    }
-  #|    if (rangeStart === rangeEnd) {
-  #|      for (const [structuralLineIndex, structuralNodeIndex] of structuralLineIndexes) {
-  #|        if (structuralLineIndex === startLine) return [structuralNodeIndex]
-  #|      }
-  #|      return []
-  #|    }
-  #|    for (let lineIndex = startLine; lineIndex <= endLine; lineIndex += 1) {
-  #|      if (!isStructuralLine(lineIndex)) return []
-  #|    }
-  #|    return structuralLineIndexes
-  #|      .filter(([structuralLineIndex]) =>
-  #|        structuralLineIndex >= startLine && structuralLineIndex <= endLine,
-  #|      )
-  #|      .map(([, structuralNodeIndex]) => structuralNodeIndex)
-  #|  }
-  #|  const syncSelectedHeadings = () => {
-  #|    const nextHeadings = currentHeadingSelection()
-  #|    const nextKey = nextHeadings.join(",")
-  #|    if (nextKey === lastSelectedHeadingKey) return
-  #|    lastSelectedHeadingKey = nextKey
-  #|    selectedHeadingsCallback(nextKey)
-  #|  }
-  #|  let selectedHeadingsFrame = 0
-  #|  const scheduleSyncSelectedHeadings = () => {
-  #|    if (selectedHeadingsFrame) cancelAnimationFrame(selectedHeadingsFrame)
-  #|    selectedHeadingsFrame = requestAnimationFrame(() => {
-  #|      selectedHeadingsFrame = 0
-  #|      syncSelectedHeadings()
-  #|    })
-  #|  }
-  #|  const syncSelectionState = () => {
-  #|    scheduleSyncActiveLine()
-  #|    scheduleSyncSelectedHeadings()
-  #|  }
-  #|  const syncEditorChrome = () => {
-  #|    syncLineMetrics()
-  #|    syncLineNumbers()
-  #|    if (gutter) gutter.style.transform = `translateY(${-Math.round(input?.scrollTop ?? 0)}px)`
-  #|    syncLinkedLine()
-  #|    syncHoverLine()
-  #|    syncActiveLine()
-  #|  }
-  #|  window.__moonmarkmindSyncLineNumbers = syncLineNumbers
-  #|  window.__moonmarkmindGetLineMetrics = () => lineMetrics
-  #|  window.__moonmarkmindSyncEditorChrome = syncEditorChrome
-  #|  input?.addEventListener("input", () => {
-  #|    syncEditorChrome()
-  #|    syncSelectionState()
-  #|    inputCallback()
-  #|  })
-  #|  input?.addEventListener("scroll", () => {
-  #|    if (gutter) gutter.style.transform = `translateY(${-Math.round(input.scrollTop)}px)`
-  #|    syncLinkedLine()
-  #|    syncHoverLine()
-  #|    syncActiveLine()
-  #|  })
-  #|  input?.addEventListener("mousemove", (event) => {
-  #|    const pointerY = event.offsetY + input.scrollTop
-  #|    const heights = lineMetrics.heights.length > 0 ? lineMetrics.heights : [lineMetrics.lineHeight]
-  #|    let nextIndex = heights.length - 1
-  #|    for (let lineIndex = 0; lineIndex < heights.length; lineIndex += 1) {
-  #|      const top = lineMetrics.tops[lineIndex] ?? lineMetrics.paddingTop
-  #|      const bottom = top + (heights[lineIndex] ?? lineMetrics.lineHeight)
-  #|      if (pointerY < bottom) {
-  #|        nextIndex = lineIndex
-  #|        break
-  #|      }
-  #|    }
-  #|    hoverLineIndex = Math.max(0, nextIndex)
-  #|    syncHoverLine()
-  #|  })
-  #|  input?.addEventListener("mouseleave", () => {
-  #|    hoverLineIndex = -1
-  #|    syncHoverLine()
-  #|  })
-  #|  input?.addEventListener("click", () => {
-  #|    syncSelectionState()
-  #|  })
-  #|  input?.addEventListener("mouseup", () => {
-  #|    syncSelectionState()
-  #|  })
-  #|  input?.addEventListener("keyup", () => {
-  #|    syncSelectionState()
-  #|  })
-  #|  input?.addEventListener("select", () => {
-  #|    syncSelectionState()
-  #|  })
-  #|  input?.addEventListener("focus", () => {
-  #|    syncSelectionState()
-  #|  })
-  #|  input?.addEventListener("blur", syncActiveLine)
-  #|  document.addEventListener("selectionchange", () => {
-  #|    if (document.activeElement !== input) return
-  #|    syncSelectionState()
-  #|  })
-  #|  window.addEventListener("resize", () => {
-  #|    syncEditorChrome()
-  #|  })
-  #|  syncEditorChrome()
-  #|  syncSelectedHeadings()
-  #|}
+) -> Unit {
+  match get_element("#input") {
+    Some(input_element) => {
+      let input = @dom.HTMLTextAreaElement::cast_from_element(input_element)
+      if input.getAttribute("data-input-listener-ready").unwrap_or("") == "true" {
+        return
+      }
+      input.setAttribute("data-input-listener-ready", "true")
+      let window = @dom.window()
 
-///|
-fn set_app_html(value : String) -> Unit {
-  match get_element("#app") {
-    Some(app) => app.setInnerHTML(value)
+      let schedule_sync_selected_headings = fn() {
+        if input_selected_headings_frame.val != 0 {
+          window.cancelAnimationFrame(input_selected_headings_frame.val)
+        }
+        input_selected_headings_frame.val = window.requestAnimationFrame(fn(_) {
+          input_selected_headings_frame.val = 0
+          let next_key = current_heading_selection(input)
+            .map(fn(value) { value.to_string() })
+            .iter()
+            .join(",")
+          if next_key != input_last_selected_headings_key.val {
+            input_last_selected_headings_key.val = next_key
+            selected_headings_callback(next_key)
+          }
+        })
+      }
+
+      let schedule_sync_editor_chrome = fn() {
+        if input_selection_frame.val != 0 {
+          window.cancelAnimationFrame(input_selection_frame.val)
+        }
+        input_selection_frame.val = window.requestAnimationFrame(fn(_) {
+          input_selection_frame.val = 0
+          sync_editor_chrome()
+        })
+      }
+
+      let sync_selection_state = fn() {
+        schedule_sync_editor_chrome()
+        schedule_sync_selected_headings()
+      }
+
+      input
+      .as_event_target()
+      .on("input", fn(_) {
+        sync_editor_chrome()
+        sync_selection_state()
+        input_callback()
+      })
+      input.as_event_target().on("scroll", fn(_) { sync_editor_chrome() })
+      input
+      .as_event_target()
+      .on("mousemove", fn(raw) {
+        let event : @dom.MouseEvent = raw.cast()
+        let metrics = input_line_metrics(input)
+        let pointer_y = event.offsetY.to_int() + input.scrollTop()
+        let heights = if metrics.heights.length() > 0 {
+          metrics.heights
+        } else {
+          [metrics.line_height]
+        }
+        let mut next_index = heights.length() - 1
+        for line_index in 0..<heights.length() {
+          let top = metrics.tops.get(line_index).unwrap_or(metrics.padding_top)
+          let bottom = top +
+            heights.get(line_index).unwrap_or(metrics.line_height)
+          if pointer_y < bottom {
+            next_index = line_index
+            break
+          }
+        }
+        input_hover_line_index.val = next_index
+        sync_editor_chrome()
+      })
+      input
+      .as_event_target()
+      .on("mouseleave", fn(_) {
+        input_hover_line_index.val = -1
+        sync_editor_chrome()
+      })
+      input.as_event_target().on("click", fn(_) { sync_selection_state() })
+      input.as_event_target().on("mouseup", fn(_) { sync_selection_state() })
+      input.as_event_target().on("keyup", fn(_) { sync_selection_state() })
+      input.as_event_target().on("select", fn(_) { sync_selection_state() })
+      input.as_event_target().on("focus", fn(_) { sync_selection_state() })
+      input.as_event_target().on("blur", fn(_) { sync_editor_chrome() })
+      @dom.document()
+      .as_event_target()
+      .on("selectionchange", fn(_) {
+        if !input_active_element_is_input(input) {
+          return
+        }
+        sync_selection_state()
+      })
+      window.as_event_target().on("resize", fn(_) { sync_editor_chrome() })
+      sync_editor_chrome()
+      schedule_sync_selected_headings()
+    }
     None => ()
   }
 }
@@ -1465,78 +1506,7 @@ fn set_mindmap_html(value : String) -> Unit {
     }
     None => ()
   }
-  render_mindmap_connectors()
-}
-
-///|
-fn set_workspace_split(percent : Int) -> Unit {
-  match get_element(".workspace") {
-    Some(workspace) => {
-      let style = @dom.css_style_from_val(
-        workspace.as_any()._get("style").cast(),
-      )
-      style.set_property("--left-pane-percent", "\{percent}%")
-    }
-    None => ()
-  }
-}
-
-///|
-fn set_select_value(id : String, value : String) -> Unit {
-  match get_element_by_id(id) {
-    Some(control) => {
-      @dom.HTMLSelectElement::cast_from_element(control).value = value
-      sync_custom_select_by_id(id)
-    }
-    None => ()
-  }
-}
-
-///|
-fn set_select_muted(id : String, muted : Bool) -> Unit {
-  match get_element_by_id(id) {
-    Some(control) => {
-      toggle_class(control, "tool-select--muted", muted)
-      sync_custom_select_by_id(id)
-    }
-    None => ()
-  }
-}
-
-///|
-fn set_toolbar_selection_enabled(enabled : Bool) -> Unit {
-  for button in @dom.document().querySelectorAll("[data-toolbar-action]") {
-    let disabled = (!enabled).to_string()
-    button.setAttribute("data-disabled", disabled)
-    button.setAttribute("aria-disabled", disabled)
-    toggle_class(button, "mindmap-tool--disabled", !enabled)
-  }
-}
-
-///|
-fn set_toolbar_action_enabled(action : String, enabled : Bool) -> Unit {
-  match get_element("[data-toolbar-action=\"\{action}\"]") {
-    Some(button) => {
-      let disabled = (!enabled).to_string()
-      button.setAttribute("data-disabled", disabled)
-      button.setAttribute("aria-disabled", disabled)
-      toggle_class(button, "mindmap-tool--disabled", !enabled)
-    }
-    None => ()
-  }
-}
-
-///|
-fn set_aux_action_enabled(id : String, enabled : Bool) -> Unit {
-  match get_element_by_id(id) {
-    Some(button) => {
-      let disabled = (!enabled).to_string()
-      button.setAttribute("data-disabled", disabled)
-      button.setAttribute("aria-disabled", disabled)
-      toggle_class(button, "mindmap-aux-button--disabled", !enabled)
-    }
-    None => ()
-  }
+  schedule_render_mindmap_connectors()
 }
 
 ///|
@@ -1545,7 +1515,6 @@ fn focus_editor(node_index : Int) -> Unit {
     Some(editor) => {
       let textarea = to_text_area(editor)
       textarea.focus()
-      textarea.as_any()._call("select", []) |> ignore
     }
     None => ()
   }
@@ -1691,24 +1660,6 @@ extern "js" fn download_mindmap_png(filename : String) =
   #|}
 
 ///|
-fn stop_event(event : @dom.MouseEvent) -> Unit {
-  event.stopPropagation()
-}
-
-///|
-fn prevent_event_default(event : @dom.MouseEvent) -> Unit {
-  event.preventDefault()
-}
-
-///|
-fn event_action(event : @dom.MouseEvent) -> String {
-  match event.target().closest("[data-action]") {
-    Some(action) => action.getAttribute("data-action").unwrap_or("")
-    None => ""
-  }
-}
-
-///|
 fn event_action_from_point(event : @dom.MouseEvent) -> String {
   let target = event_target_from_point(event)
   match target.closest("[data-action]") {
@@ -1737,11 +1688,6 @@ fn event_node_index_from_target(target : @dom.Element) -> Int {
       }
     None => -1
   }
-}
-
-///|
-fn event_node_index(event : @dom.MouseEvent) -> Int {
-  event_node_index_from_target(event.target())
 }
 
 ///|
@@ -1812,11 +1758,6 @@ fn event_editor_index_from_target(target : @dom.Element) -> Int {
 }
 
 ///|
-fn event_editor_index(event : @dom.FocusEvent) -> Int {
-  event_editor_index_from_target(event.target())
-}
-
-///|
 fn event_editor_value_from_target(target : @dom.Element) -> String {
   if target.tagName() == "TEXTAREA" {
     to_text_area(target).value
@@ -1825,11 +1766,6 @@ fn event_editor_value_from_target(target : @dom.Element) -> String {
   } else {
     target.textContent()
   }
-}
-
-///|
-fn event_editor_value(event : @dom.FocusEvent) -> String {
-  event_editor_value_from_target(event.target())
 }
 
 ///|
@@ -1905,14 +1841,3 @@ extern "js" fn highlight_drop_target(node_index : Int, place_after : Bool) =
   #|  if (!card) return
   #|  card.classList.add(placeAfter ? "drop-after" : "drop-before")
   #|}
-
-///|
-fn set_editor_document_name(value : String) -> Unit {
-  match get_element(".editor-chrome__badge") {
-    Some(badge) => {
-      badge.setTextContent(value)
-      badge.setAttribute("title", value)
-    }
-    None => ()
-  }
-}
