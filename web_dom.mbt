@@ -20,6 +20,10 @@ extern "js" fn sync_editor_chrome() =
   #|}
 
 ///|
+extern "js" fn get_input_line_metrics() -> @js.Any? =
+  #|() => window.__moonmarkmindGetLineMetrics?.() ?? null
+
+///|
 extern "js" fn render_mindmap_connectors() =
   #|() => {
   #|  window.__moonmarkmindRenderConnectors?.()
@@ -28,6 +32,238 @@ extern "js" fn render_mindmap_connectors() =
 ///|
 extern "js" fn parse_float(raw : String) -> Double =
   #|(raw) => Number.parseFloat(raw)
+
+///|
+extern "js" fn set_input_linked_lines_state(line_indexes : Array[Int]) -> Unit =
+  #|(lineIndexes) => {
+  #|  window.__moonmarkmindSetLinkedLines?.(lineIndexes)
+  #|}
+
+///|
+priv struct InputLineMetrics {
+  heights : Array[Int]
+  tops : Array[Int]
+  line_height : Int
+  padding_top : Int
+}
+
+///|
+fn parse_double_or_default(raw : String, fallback : Double) -> Double {
+  if raw.length() == 0 {
+    fallback
+  } else {
+    @strconv.parse_double(raw.view()) catch {
+      _ => fallback
+    }
+  }
+}
+
+///|
+fn parse_int_or_default(raw : String, fallback : Int) -> Int {
+  parse_double_or_default(raw, fallback.to_double()).round().to_int()
+}
+
+///|
+fn input_line_metrics_default(
+  input : @dom.HTMLTextAreaElement,
+) -> InputLineMetrics {
+  let style = @dom.css_style_from_val(
+    @dom.window().getComputedStyle(input.as_element()),
+  )
+  let font_size = parse_double_or_default(
+    style.get_property_value("font-size"),
+    16.0,
+  )
+  let line_height_raw = style.get_property_value("line-height")
+  let fallback_line_height = if line_height_raw.length() > 0 {
+    let line_height = parse_double_or_default(line_height_raw, font_size * 1.75)
+    if line_height.is_nan() || line_height <= 0.0 {
+      (font_size * 1.75).round().to_int()
+    } else {
+      line_height.round().to_int()
+    }
+  } else {
+    (font_size * 1.75).round().to_int()
+  }
+  let padding_top = parse_int_or_default(
+    style.get_property_value("padding-top"),
+    0,
+  )
+  {
+    heights: [fallback_line_height],
+    tops: [padding_top],
+    line_height: fallback_line_height,
+    padding_top,
+  }
+}
+
+///|
+fn input_line_metrics(input : @dom.HTMLTextAreaElement) -> InputLineMetrics {
+  match get_input_line_metrics() {
+    Some(metrics) => {
+      let metric_object = metrics
+      let heights_any : Array[@js.Any] = metric_object._get("heights").cast()
+      let tops_any : Array[@js.Any] = metric_object._get("tops").cast()
+      let heights = heights_any.map(v => {
+        parse_double_or_default(v.to_string(), 0.0).round().to_int()
+      })
+      let tops = tops_any.map(v => {
+        parse_double_or_default(v.to_string(), 0.0).round().to_int()
+      })
+      let line_height = parse_double_or_default(
+          metric_object._get("lineHeight").to_string(),
+          0.0,
+        )
+        .round()
+        .to_int()
+      let padding_top = parse_double_or_default(
+          metric_object._get("paddingTop").to_string(),
+          0.0,
+        )
+        .round()
+        .to_int()
+      {
+        heights: if heights.length() > 0 {
+          heights
+        } else {
+          [line_height]
+        },
+        tops: if tops.length() > 0 {
+          tops
+        } else {
+          [padding_top]
+        },
+        line_height,
+        padding_top,
+      }
+    }
+    None => input_line_metrics_default(input)
+  }
+}
+
+///|
+fn linked_line_html(
+  metrics : InputLineMetrics,
+  line_index : Int,
+  scroll_top : Int,
+  class_name : String,
+) -> String? {
+  if line_index < 0 || line_index >= metrics.heights.length() {
+    None
+  } else {
+    let top = metrics.tops.get(line_index).unwrap_or(metrics.padding_top) -
+      scroll_top
+    let height = metrics.heights.get(line_index).unwrap_or(metrics.line_height)
+    let block_height = if height > 1 { height } else { 1 }
+    Some(
+      "<div class=\"\{class_name}\" style=\"height:\{block_height}px;transform:translateY(\{top}px);opacity:1\"></div>",
+    )
+  }
+}
+
+///|
+fn set_input_linked_lines(line_indexes : String) -> Unit {
+  match get_element("#input") {
+    Some(input_element) => {
+      let input = @dom.HTMLTextAreaElement::cast_from_element(input_element)
+      let metrics = input_line_metrics(input)
+      let scroll_top = input.scrollTop()
+      let linked_line_indexes = line_indexes
+        .split(",".view())
+        .filter_map(fn(token) {
+          let trimmed = token.trim()
+          if trimmed.is_empty() {
+            None
+          } else {
+            Some(@strconv.parse_int(trimmed)) catch {
+              _ => None
+            }
+          }
+        })
+        .to_array()
+      match get_element("#input-linked-lines") {
+        Some(linked_lines) =>
+          linked_lines.setInnerHTML(
+            linked_line_indexes
+            .filter_map(fn(line_index) {
+              linked_line_html(
+                metrics, line_index, scroll_top, "editor-linked-line",
+              )
+            })
+            .iter()
+            .join(""),
+          )
+        None => ()
+      }
+      match get_element("#input-linked-gutter-lines") {
+        Some(linked_gutter_lines) =>
+          linked_gutter_lines.setInnerHTML(
+            linked_line_indexes
+            .filter_map(fn(line_index) {
+              linked_line_html(
+                metrics, line_index, scroll_top, "editor-gutter-line editor-gutter-line--linked",
+              )
+            })
+            .iter()
+            .join(""),
+          )
+        None => ()
+      }
+      set_input_linked_lines_state(linked_line_indexes)
+      sync_editor_chrome()
+    }
+    None => ()
+  }
+}
+
+///|
+fn reveal_input_line(line_index : Int) -> Unit {
+  if line_index < 0 {
+    return
+  }
+  match get_element("#input") {
+    Some(input_element) => {
+      let input = @dom.HTMLTextAreaElement::cast_from_element(input_element)
+      let metrics = input_line_metrics(input)
+      if line_index >= metrics.heights.length() {
+        return
+      }
+      let line_top = metrics.tops.get(line_index).unwrap_or(metrics.padding_top)
+      let line_height = metrics.heights
+        .get(line_index)
+        .unwrap_or(metrics.line_height)
+      let viewport_top = input.scrollTop()
+      let viewport_bottom = viewport_top + input.clientHeight()
+      let top_margin = line_height * 2
+      let bottom_margin = line_height * 3
+      let visible_top = viewport_top + top_margin
+      let visible_bottom = viewport_bottom - bottom_margin
+      if line_top >= visible_top && line_top + line_height <= visible_bottom {
+        return
+      }
+      let target_top = {
+        let offset = line_height * 2
+        let minimum_view = (input.clientHeight().to_double() * 0.35)
+          .round()
+          .to_int()
+        let view_offset = if offset > minimum_view {
+          offset
+        } else {
+          minimum_view
+        }
+        let candidate = line_top - view_offset
+        if candidate > 0 {
+          candidate
+        } else {
+          0
+        }
+      }
+      input.setScrollTop(target_top)
+      sync_editor_chrome()
+    }
+    None => ()
+  }
+}
 
 ///|
 fn toggle_class(
@@ -491,26 +727,8 @@ fn bind_splitter_ui(callback : (Int) -> Unit) -> Unit {
 }
 
 ///|
-extern "js" fn bind_mindmap_ui(
-  click_callback : (@dom.MouseEvent) -> Unit,
-  dblclick_callback : (@dom.MouseEvent) -> Unit,
-  keydown_callback : (@dom.KeyboardEvent) -> Unit,
-  focusout_callback : (@dom.FocusEvent) -> Unit,
-  dragstart_callback : (@dom.DragEvent) -> Unit,
-  dragend_callback : (@dom.DragEvent) -> Unit,
-  dragover_callback : (@dom.DragEvent) -> Unit,
-  drop_callback : (@dom.DragEvent) -> Unit,
-) =
-  #|(
-  #|  clickCallback,
-  #|  dblclickCallback,
-  #|  keydownCallback,
-  #|  focusoutCallback,
-  #|  dragstartCallback,
-  #|  dragendCallback,
-  #|  dragoverCallback,
-  #|  dropCallback,
-  #|) => {
+extern "js" fn bind_mindmap_ui_js() =
+  #|() => {
   #|  const mindmap = document.querySelector("#mindmap")
   #|  if (!mindmap) return
   #|  const zoomIn = document.querySelector("#zoom-in")
@@ -741,6 +959,7 @@ extern "js" fn bind_mindmap_ui(
   #|    })
   #|  }
   #|  window.__moonmarkmindRenderConnectors = scheduleConnectorRender
+  #|  return
   #|  const clampZoom = (value) => Math.max(0.4, Math.min(2, value))
   #|  const setZoom = (value) => {
   #|    mindmap.dataset.zoom = `${clampZoom(value)}`
@@ -1050,7 +1269,6 @@ extern "js" fn bind_input_listener(
   #|  }
   #|  window.__moonmarkmindSetLinkedLines = (nextLineIndexes) => {
   #|    linkedLineIndexes = Array.isArray(nextLineIndexes) ? nextLineIndexes : []
-  #|    syncLinkedLine()
   #|  }
   #|  let hoverLineIndex = -1
   #|  const syncHoverLine = () => {
@@ -1218,45 +1436,6 @@ fn set_input_value(value : String) -> Unit {
   }
   sync_editor_chrome()
 }
-
-///|
-extern "js" fn set_input_linked_lines(line_indexes : String) =
-  #|(lineIndexes) => {
-  #|  const nextLineIndexes = (lineIndexes ?? "")
-  #|    .split(",")
-  #|    .map((value) => Number.parseInt(value, 10))
-  #|    .filter((value) => Number.isFinite(value) && value >= 0)
-  #|  window.__moonmarkmindSetLinkedLines(nextLineIndexes)
-  #|}
-
-///|
-extern "js" fn reveal_input_line(line_index : Int) =
-  #|(lineIndex) => {
-  #|  const input = document.querySelector("#input")
-  #|  if (!input || lineIndex == null || lineIndex < 0) return
-  #|  const metrics = window.__moonmarkmindGetLineMetrics?.() ?? null
-  #|  const style = getComputedStyle(input)
-  #|  const fontSize = Number.parseFloat(style.fontSize || "16")
-  #|  const fallbackLineHeight = Number.parseFloat(style.lineHeight || "") || fontSize * 1.75
-  #|  const paddingTop = Number.parseFloat(style.paddingTop || "0")
-  #|  const lineHeight = metrics?.lineHeight ?? fallbackLineHeight
-  #|  const lineTop = (metrics?.tops?.[lineIndex] ?? paddingTop)
-  #|  const lineBottom = lineTop + (metrics?.heights?.[lineIndex] ?? lineHeight)
-  #|  const viewportTop = input.scrollTop
-  #|  const viewportBottom = viewportTop + input.clientHeight
-  #|  const topMargin = lineHeight * 2
-  #|  const bottomMargin = lineHeight * 3
-  #|  const visibleTop = viewportTop + topMargin
-  #|  const visibleBottom = viewportBottom - bottomMargin
-  #|  if (lineTop >= visibleTop && lineBottom <= visibleBottom) return
-  #|  const targetTop = Math.max(0, lineTop - Math.max(lineHeight * 2, input.clientHeight * 0.35))
-  #|  if (typeof input.scrollTo === "function") {
-  #|    input.scrollTo({ top: targetTop, behavior: "smooth" })
-  #|  } else {
-  #|    input.scrollTop = targetTop
-  #|  }
-  #|  window.__moonmarkmindSyncEditorChrome?.()
-  #|}
 
 ///|
 fn set_mindmap_html(value : String) -> Unit {

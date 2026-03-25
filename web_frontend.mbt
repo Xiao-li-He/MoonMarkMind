@@ -61,6 +61,7 @@ pub fn start_web_app() -> Unit {
     on_style_change, on_detail_change, on_export_change, on_toolbar_action,
   )
   bind_splitter_ui(on_splitter_change)
+  bind_mindmap_ui_js()
   bind_input_listener(on_input_change, on_input_selected_headings_change)
   bind_mindmap_ui(
     on_mindmap_click, on_mindmap_dblclick, on_mindmap_keydown, on_mindmap_focusout,
