@@ -55,7 +55,7 @@ pub fn start_web_app() -> Unit {
     return
   }
   app_state.started = true
-  set_app_html(render_app_shell_html())
+  mount_app_shell()
   bind_static_ui(
     on_new_click, on_sample_click, on_upload_click, on_download_markdown_click, on_layout_change,
     on_style_change, on_detail_change, on_export_change, on_toolbar_action,
@@ -629,7 +629,7 @@ fn render_ui() -> Unit {
   set_aux_action_enabled("undo-action", app_state.undo_stack.length() > 0)
   set_aux_action_enabled("redo-action", app_state.redo_stack.length() > 0)
   set_workspace_split(app_state.left_panel_percent)
-  set_mindmap_html(render_mindmap_html())
+  set_mindmap_dom(build_mindmap_dom())
   if app_state.editing_node >= 0 &&
     (app_state.editing_node == app_state.selected_node || !has_selected_nodes()) {
     focus_editor(app_state.editing_node)
@@ -856,22 +856,32 @@ fn sync_detail_customized() -> Unit {
 }
 
 ///|
-fn render_mindmap_html() -> String {
+fn build_mindmap_dom() -> @dom.Element {
+  let content = create_element("div", "mindmap-content")
   let stage_class = render_stage_class()
-  match app_state.layout_mode {
-    "vertical" => render_vertical_mindmap(app_state.root, stage_class)
-    "single-right" => render_single_right_mindmap(app_state.root, stage_class)
-    _ => render_horizontal_mindmap(app_state.root, stage_class)
+  let stage = match app_state.layout_mode {
+    "vertical" => build_vertical_mindmap_dom(app_state.root, stage_class)
+    "single-right" =>
+      build_single_right_mindmap_dom(app_state.root, stage_class)
+    _ => build_horizontal_mindmap_dom(app_state.root, stage_class)
   }
+  append_child(content, stage)
+  content
 }
 
 ///|
-fn render_horizontal_mindmap(
+fn build_horizontal_mindmap_dom(
   center : OutlineNode,
   stage_class : String,
-) -> String {
-  let left_parts = []
-  let right_parts = []
+) -> @dom.Element {
+  let stage = create_element("div", "\{stage_class} mindmap-stage--radial")
+  let left_column = create_element(
+    "div", "branch-column branch-column--left branch-column--root",
+  )
+  let center_wrap = create_element("div", "center-wrap")
+  let right_column = create_element(
+    "div", "branch-column branch-column--right branch-column--root",
+  )
   if should_render_children(center) {
     let left_count = root_branch_left_count(center)
     let left_total_weight = root_branch_total_span(center, 0, left_count)
@@ -887,40 +897,489 @@ fn render_horizontal_mindmap(
       let tone_index = fill_tone_index(index)
       let child_weight = root_branch_span(child)
       if index < left_count {
-        let root_style = render_root_weight_style(
-          left_offset, child_weight, left_total_weight,
-        )
-        left_parts.push(
-          render_root_branch_node(
+        append_child(
+          left_column,
+          build_root_branch_node_dom(
             child,
             center.flat_index,
             "left",
             tone_index,
-            root_style,
+            left_offset,
+            child_weight,
+            left_total_weight,
           ),
         )
         left_offset += child_weight
       } else {
-        let root_style = render_root_weight_style(
-          right_offset, child_weight, right_total_weight,
-        )
-        right_parts.push(
-          render_root_branch_node(
+        append_child(
+          right_column,
+          build_root_branch_node_dom(
             child,
             center.flat_index,
             "right",
             tone_index,
-            root_style,
+            right_offset,
+            child_weight,
+            right_total_weight,
           ),
         )
         right_offset += child_weight
       }
     }
   }
-  let left_html = left_parts.join("")
-  let center_html = render_node_card(center, -1, true, -1)
-  let right_html = right_parts.join("")
-  "<div class=\"\{stage_class} mindmap-stage--radial\"><div class=\"branch-column branch-column--left branch-column--root\">\{left_html}</div><div class=\"center-wrap\">\{center_html}</div><div class=\"branch-column branch-column--right branch-column--root\">\{right_html}</div></div>"
+  append_child(center_wrap, build_node_card_dom(center, -1, true, -1))
+  append_child(stage, left_column)
+  append_child(stage, center_wrap)
+  append_child(stage, right_column)
+  stage
+}
+
+///|
+fn build_root_branch_node_dom(
+  node : OutlineNode,
+  parent_index : Int,
+  direction : String,
+  tone_index : Int,
+  offset : Int,
+  weight : Int,
+  total_weight : Int,
+) -> @dom.Element {
+  let branch = create_element(
+    "div",
+    "branch-item branch-item--\{direction} branch-item--root",
+  )
+  branch.setAttribute("data-node-index", node.flat_index.to_string())
+  branch.setAttribute("data-parent-index", parent_index.to_string())
+  apply_node_visual_attrs(branch, node, tone_index)
+  apply_root_weight_style(branch, offset, weight, total_weight)
+  append_child(
+    branch,
+    build_drop_slot_dom(node.flat_index, parent_index, "before"),
+  )
+  append_child(
+    branch,
+    build_branch_row_dom(node, parent_index, false, direction, tone_index),
+  )
+  append_child(
+    branch,
+    build_drop_slot_dom(node.flat_index, parent_index, "after"),
+  )
+  branch
+}
+
+///|
+fn build_branch_row_dom(
+  node : OutlineNode,
+  parent_index : Int,
+  is_root : Bool,
+  direction : String,
+  tone_index : Int,
+) -> @dom.Element {
+  let row = create_element("div", "branch-item__row")
+  let head = create_element("div", "branch-item__head")
+  let card = build_node_card_dom(node, parent_index, is_root, tone_index)
+  if direction == "left" {
+    append_child(row, build_branch_children_dom(node, direction, tone_index))
+    append_child(head, card)
+    append_child(row, head)
+  } else {
+    append_child(head, card)
+    append_child(row, head)
+    append_child(row, build_branch_children_dom(node, direction, tone_index))
+  }
+  row
+}
+
+///|
+fn build_branch_node_dom(
+  node : OutlineNode,
+  parent_index : Int,
+  direction : String,
+  tone_index : Int,
+) -> @dom.Element {
+  let branch = create_element("div", "branch-item branch-item--\{direction}")
+  branch.setAttribute("data-node-index", node.flat_index.to_string())
+  branch.setAttribute("data-parent-index", parent_index.to_string())
+  apply_node_visual_attrs(branch, node, tone_index)
+  append_child(
+    branch,
+    build_drop_slot_dom(node.flat_index, parent_index, "before"),
+  )
+  append_child(
+    branch,
+    build_branch_row_dom(node, parent_index, false, direction, tone_index),
+  )
+  append_child(
+    branch,
+    build_drop_slot_dom(node.flat_index, parent_index, "after"),
+  )
+  branch
+}
+
+///|
+fn build_hidden_branch_node_dom(
+  node : OutlineNode,
+  direction : String,
+  tone_index : Int,
+) -> @dom.Element {
+  let branch = create_element(
+    "div",
+    "branch-item branch-item--\{direction} branch-item--hidden",
+  )
+  branch.setAttribute("data-node-index", node.flat_index.to_string())
+  branch.setAttribute("data-parent-index", "-1")
+  apply_node_visual_attrs(branch, node, tone_index)
+  let row = create_element("div", "branch-item__row")
+  let head = create_element("div", "branch-item__head")
+  append_child(head, build_hidden_marker_dom(node, tone_index))
+  append_child(row, head)
+  append_child(branch, row)
+  branch
+}
+
+///|
+fn build_branch_children_dom(
+  node : OutlineNode,
+  direction : String,
+  tone_index : Int,
+) -> @dom.Element {
+  let children = create_element(
+    "div",
+    "branch-children branch-children--\{direction}",
+  )
+  apply_node_visual_attrs(children, node, tone_index)
+  if !should_render_children(node) {
+    return children
+  }
+  for child in node.children {
+    if is_hidden_node(child.flat_index) {
+      append_child(
+        children,
+        build_hidden_branch_node_dom(child, direction, tone_index),
+      )
+    } else {
+      append_child(
+        children,
+        build_branch_node_dom(child, node.flat_index, direction, tone_index),
+      )
+    }
+  }
+  children
+}
+
+///|
+fn build_vertical_mindmap_dom(
+  center : OutlineNode,
+  stage_class : String,
+) -> @dom.Element {
+  let stage = create_element("div", "\{stage_class} mindmap-stage--vertical")
+  let root = create_element("div", "vertical-root")
+  append_child(root, build_vertical_tree_dom(center, -1, true, -1))
+  append_child(stage, root)
+  stage
+}
+
+///|
+fn build_vertical_tree_dom(
+  node : OutlineNode,
+  parent_index : Int,
+  is_root : Bool,
+  tone_index : Int,
+) -> @dom.Element {
+  let tree = create_element("div", "vertical-tree")
+  tree.setAttribute("data-node-index", node.flat_index.to_string())
+  tree.setAttribute("data-parent-index", parent_index.to_string())
+  append_child(
+    tree,
+    build_drop_slot_dom(node.flat_index, parent_index, "before"),
+  )
+  append_child(
+    tree,
+    build_node_card_dom(node, parent_index, is_root, tone_index),
+  )
+  append_child(
+    tree,
+    build_drop_slot_dom(node.flat_index, parent_index, "after"),
+  )
+  append_child(tree, build_vertical_children_dom(node, tone_index))
+  tree
+}
+
+///|
+fn build_vertical_children_dom(
+  node : OutlineNode,
+  tone_index : Int,
+) -> @dom.Element {
+  let children = create_element("div", "vertical-tree__children")
+  let child_tone = if relative_node_depth(node) == 0 { -1 } else { tone_index }
+  apply_node_visual_attrs(children, node, child_tone)
+  if !should_render_children(node) {
+    return children
+  }
+  for index in 0..<node.children.length() {
+    let child = node.children[index]
+    let next_tone = if relative_node_depth(node) == 0 {
+      fill_tone_index(index)
+    } else {
+      tone_index
+    }
+    let child_wrap = create_element("div", "vertical-tree__child")
+    apply_node_visual_attrs(child_wrap, child, next_tone)
+    append_child(
+      child_wrap,
+      build_vertical_tree_dom(child, node.flat_index, false, next_tone),
+    )
+    append_child(children, child_wrap)
+  }
+  children
+}
+
+///|
+fn build_single_right_mindmap_dom(
+  center : OutlineNode,
+  stage_class : String,
+) -> @dom.Element {
+  let stage = create_element(
+    "div",
+    "\{stage_class} mindmap-stage--single-right",
+  )
+  let tree = create_element("div", "single-right-tree")
+  append_child(tree, build_single_right_tree_dom(center, -1, true, -1))
+  append_child(stage, tree)
+  stage
+}
+
+///|
+fn build_single_right_tree_dom(
+  node : OutlineNode,
+  parent_index : Int,
+  is_root : Bool,
+  tone_index : Int,
+) -> @dom.Element {
+  let tree = create_element("div", "single-right-tree__node")
+  tree.setAttribute("data-node-index", node.flat_index.to_string())
+  tree.setAttribute("data-parent-index", parent_index.to_string())
+  apply_node_visual_attrs(tree, node, tone_index)
+  append_child(
+    tree,
+    build_drop_slot_dom(node.flat_index, parent_index, "before"),
+  )
+  let head = create_element("div", "single-right-tree__head")
+  append_child(
+    head,
+    build_node_card_dom(node, parent_index, is_root, tone_index),
+  )
+  append_child(tree, head)
+  append_child(
+    tree,
+    build_drop_slot_dom(node.flat_index, parent_index, "after"),
+  )
+  append_child(tree, build_single_right_children_dom(node, tone_index))
+  tree
+}
+
+///|
+fn build_single_right_children_dom(
+  node : OutlineNode,
+  tone_index : Int,
+) -> @dom.Element {
+  let children = create_element("div", "single-right-tree__children")
+  let wrapper_tone = if relative_node_depth(node) == 0 {
+    -1
+  } else {
+    tone_index
+  }
+  apply_node_visual_attrs(children, node, wrapper_tone)
+  if !should_render_children(node) {
+    return children
+  }
+  for index in 0..<node.children.length() {
+    let child = node.children[index]
+    let next_tone = if relative_node_depth(node) == 0 {
+      fill_tone_index(index)
+    } else {
+      tone_index
+    }
+    append_child(
+      children,
+      build_single_right_tree_dom(child, node.flat_index, false, next_tone),
+    )
+  }
+  children
+}
+
+///|
+fn build_node_card_dom(
+  node : OutlineNode,
+  parent_index : Int,
+  is_center : Bool,
+  tone_index : Int,
+) -> @dom.Element {
+  let has_children = node.children.length() > 0
+  let editable = !node.synthetic
+  let is_editing = app_state.editing_node == node.flat_index
+  let is_draggable = editable && !is_center && !is_editing
+  let classes = ["node"]
+  if is_center {
+    classes.push("node--center")
+  }
+  if is_selected_node(node.flat_index) {
+    classes.push("is-selected")
+  }
+  classes.push(render_node_style_class())
+  if is_draggable {
+    classes.push("is-draggable")
+  }
+  let card = create_element("div", classes.iter().join(" "))
+  card.setAttribute("data-level", node.level.to_string())
+  card.setAttribute("data-node-index", node.flat_index.to_string())
+  card.setAttribute("data-parent-index", parent_index.to_string())
+  apply_node_visual_attrs(card, node, tone_index)
+  apply_drag_attrs(card, node, parent_index, is_draggable)
+  append_child(card, build_text_span("small", "", "Level \{node.level}"))
+  append_child(card, build_node_title_dom(node, is_editing))
+  if has_children && !is_center {
+    match build_node_actions_dom(node, editable, is_center) {
+      Some(actions) => append_child(card, actions)
+      None => ()
+    }
+  }
+  card
+}
+
+///|
+fn build_node_title_dom(node : OutlineNode, is_editing : Bool) -> @dom.Element {
+  if is_editing {
+    let input = create_element("input", "node-editor")
+    input.setAttribute("data-editor-for", node.flat_index.to_string())
+    input.setAttribute("type", "text")
+    @dom.HTMLInputElement::cast_from_element(input).value = node.title
+    input
+  } else {
+    let title = create_element("strong", "")
+    title.setTextContent(node.title)
+    title
+  }
+}
+
+///|
+fn build_node_actions_dom(
+  node : OutlineNode,
+  editable : Bool,
+  is_center : Bool,
+) -> @dom.Element? {
+  let _ = editable
+  if is_center || node.children.length() == 0 {
+    return None
+  }
+  let collapsed = is_collapsed(node.flat_index)
+  let hidden_count = count_hidden_descendants(node)
+  let label = if collapsed { hidden_count.to_string() } else { "" }
+  let title = if collapsed {
+    "Expand node (\{hidden_count} hidden)"
+  } else {
+    "Collapse node"
+  }
+  let expanded = (!collapsed).to_string()
+  let state_class = if collapsed { " node-action--collapsed" } else { "" }
+  let actions = create_element("div", "node-actions")
+  let button = create_element(
+    "button",
+    "node-action node-action--toggle\{state_class}",
+  )
+  button.setAttribute("type", "button")
+  button.setAttribute("data-action", "toggle")
+  button.setAttribute("title", title)
+  button.setAttribute("aria-label", title)
+  button.setAttribute("aria-expanded", expanded)
+  button.setTextContent(label)
+  append_child(actions, button)
+  Some(actions)
+}
+
+///|
+fn build_hidden_marker_dom(
+  node : OutlineNode,
+  tone_index : Int,
+) -> @dom.Element {
+  let marker = create_element("button", "node collapsed-node")
+  marker.setAttribute("type", "button")
+  marker.setAttribute("data-action", "toggle-hide")
+  marker.setAttribute("data-node-index", node.flat_index.to_string())
+  apply_node_visual_attrs(marker, node, tone_index)
+  marker.setTextContent(count_subtree_nodes(node).to_string())
+  marker
+}
+
+///|
+fn build_drop_slot_dom(
+  node_index : Int,
+  parent_index : Int,
+  position : String,
+) -> @dom.Element {
+  let slot = create_element("div", "drop-slot")
+  slot.setAttribute("data-drop-target", node_index.to_string())
+  slot.setAttribute("data-drop-parent", parent_index.to_string())
+  slot.setAttribute("data-drop-position", position)
+  slot
+}
+
+///|
+fn apply_node_visual_attrs(
+  element : @dom.Element,
+  node : OutlineNode,
+  tone_index : Int,
+) -> Unit {
+  element.setAttribute("data-depth", relative_node_depth(node).to_string())
+  element.setAttribute("data-tone", tone_index.to_string())
+  element.setAttribute(
+    "data-has-children",
+    (node.children.length() > 0).to_string(),
+  )
+  element.setAttribute("data-child-count", node.children.length().to_string())
+  element.setAttribute(
+    "data-collapsed",
+    is_collapsed(node.flat_index).to_string(),
+  )
+  element.setAttribute(
+    "data-hidden-count",
+    count_subtree_nodes(node).to_string(),
+  )
+  element.setAttribute(
+    "data-hidden-node",
+    is_hidden_node(node.flat_index).to_string(),
+  )
+}
+
+///|
+fn apply_drag_attrs(
+  element : @dom.Element,
+  node : OutlineNode,
+  parent_index : Int,
+  is_draggable : Bool,
+) -> Unit {
+  if !is_draggable {
+    return
+  }
+  element.setAttribute("draggable", "true")
+  element.setAttribute("data-drag-index", node.flat_index.to_string())
+  element.setAttribute("data-drag-parent", parent_index.to_string())
+}
+
+///|
+fn apply_root_weight_style(
+  element : @dom.Element,
+  offset : Int,
+  weight : Int,
+  total_weight : Int,
+) -> Unit {
+  let safe_total = if total_weight > 0 { total_weight } else { 1 }
+  let safe_weight = if weight > 0 { weight } else { 1 }
+  let center_bp = (offset * 1000 + safe_weight * 500) / safe_total
+  let whole = center_bp / 10
+  let frac = center_bp % 10
+  let style = @dom.css_style_from_val(element.as_any()._get("style").cast())
+  style.set_property("top", "\{whole}.\{frac}%")
 }
 
 ///|
@@ -963,41 +1422,6 @@ fn clamp_int(value : Int, min_value : Int, max_value : Int) -> Int {
     return max_value
   }
   value
-}
-
-///|
-fn render_root_branch_node(
-  node : OutlineNode,
-  parent_index : Int,
-  direction : String,
-  tone_index : Int,
-  root_style : String,
-) -> String {
-  let before_slot = render_drop_slot(node.flat_index, parent_index, "before")
-  let card = render_node_card(node, parent_index, false, tone_index)
-  let after_slot = render_drop_slot(node.flat_index, parent_index, "after")
-  let children_html = render_branch_children(node, direction, tone_index)
-  let branch_attrs = render_node_visual_attrs(node, tone_index)
-  let row_html = if direction == "left" {
-    "<div class=\"branch-item__row\">\{children_html}<div class=\"branch-item__head\">\{card}</div></div>"
-  } else {
-    "<div class=\"branch-item__row\"><div class=\"branch-item__head\">\{card}</div>\{children_html}</div>"
-  }
-  "<div class=\"branch-item branch-item--\{direction} branch-item--root\"\{branch_attrs}\{root_style}>\{before_slot}\{row_html}\{after_slot}</div>"
-}
-
-///|
-fn render_root_weight_style(
-  offset : Int,
-  weight : Int,
-  total_weight : Int,
-) -> String {
-  let safe_total = if total_weight > 0 { total_weight } else { 1 }
-  let safe_weight = if weight > 0 { weight } else { 1 }
-  let center_bp = (offset * 1000 + safe_weight * 500) / safe_total
-  let whole = center_bp / 10
-  let frac = center_bp % 10
-  " style=\"top:\{whole}.\{frac}%;\""
 }
 
 ///|
@@ -1057,15 +1481,6 @@ fn render_hidden_branch_node(
 }
 
 ///|
-fn render_vertical_mindmap(
-  center : OutlineNode,
-  stage_class : String,
-) -> String {
-  let tree_html = render_vertical_tree(center, -1, true, -1)
-  "<div class=\"\{stage_class} mindmap-stage--vertical\"><div class=\"vertical-root\">\{tree_html}</div></div>"
-}
-
-///|
 fn render_vertical_tree(
   node : OutlineNode,
   parent_index : Int,
@@ -1107,15 +1522,6 @@ fn render_vertical_children(node : OutlineNode, tone_index : Int) -> String {
   }
   let body = child_parts.join("")
   "<div class=\"vertical-tree__children\"\{wrapper_attrs}>\{body}</div>"
-}
-
-///|
-fn render_single_right_mindmap(
-  center : OutlineNode,
-  stage_class : String,
-) -> String {
-  let tree_html = render_single_right_tree(center, -1, true, -1)
-  "<div class=\"\{stage_class} mindmap-stage--single-right\"><div class=\"single-right-tree\">\{tree_html}</div></div>"
 }
 
 ///|

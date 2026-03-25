@@ -1,4 +1,5 @@
 import {
+  "mizchi/js/core" @core,
   "mizchi/js/browser/dom" @dom,
   "mizchi/js/web/event" @event,
   "moonbitlang/core/math" @math,
@@ -7,5 +8,17 @@ import {
 }
 
 options(
-  "supported-targets": [ "js" ],
+  "supported-targets": "js",
+  targets: {
+    "heading_parser.mbt": [ "js" ],
+    "md2mind_test.mbt": [ "js" ],
+    "outline_model.mbt": [ "js" ],
+    "outline_tree.mbt": [ "js" ],
+    "sample_data.mbt": [ "js" ],
+    "web_api.mbt": [ "js" ],
+    "web_dom.mbt": [ "js" ],
+    "web_frontend.mbt": [ "js" ],
+    "web_layout.mbt": [ "js" ],
+    "web_mindmap_bindings.mbt": [ "js" ],
+  },
 )

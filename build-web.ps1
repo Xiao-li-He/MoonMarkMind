@@ -1,3 +1,8 @@
+param(
+  [int]$Port = 8000,
+  [switch]$NoOpenBrowser
+)
+
 $ErrorActionPreference = "Stop"
 
 $root = $PSScriptRoot
@@ -84,4 +89,35 @@ $bridge = $bridge.
 Copy-Item $source $output -Force
 Add-Content $output $bridge -Encoding utf8
 
+function Get-PythonCommand {
+  if (Get-Command python -ErrorAction SilentlyContinue) {
+    return "python"
+  }
+  if (Get-Command py -ErrorAction SilentlyContinue) {
+    return "py"
+  }
+  throw "Python is required to serve the preview."
+}
+
+$pythonCmd = Get-PythonCommand
+$serverArgs = if ($pythonCmd -eq "py") {
+  @("-3", "-m", "http.server", $Port.ToString(), "--bind", "127.0.0.1")
+} else {
+  @("-m", "http.server", $Port.ToString(), "--bind", "127.0.0.1")
+}
+
+$server = Start-Process `
+  -FilePath $pythonCmd `
+  -ArgumentList $serverArgs `
+  -WorkingDirectory $webDir `
+  -PassThru `
+  -WindowStyle Hidden
+
+$previewUrl = "http://127.0.0.1:$Port/index.html"
+if (-not $NoOpenBrowser) {
+  Start-Process $previewUrl | Out-Null
+}
+
 Write-Output "Built web bundle: $output"
+Write-Output "Preview server: $previewUrl"
+Write-Output "Server PID: $($server.Id)"

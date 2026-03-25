@@ -59,7 +59,7 @@ fn render_mindmap_connectors() -> Unit {
               let top = ((stage_rect.top - content_rect.top) / safe_zoom)
                 .round()
                 .to_int()
-              let svg_paths : Array[String] = []
+              let svg_paths : Array[@dom.Element] = []
               for node in nodes {
                 let parent_index = parse_int_or_default(
                   node.getAttribute("data-parent-index").unwrap_or("-1"),
@@ -129,9 +129,21 @@ fn render_mindmap_connectors() -> Unit {
                     } else {
                       2.4
                     }
-                    svg_paths.push(
-                      "<path d=\"M \{double_to_svg_number(start_x)} \{double_to_svg_number(parent_center_y)} C \{double_to_svg_number(start_x + direction.to_double() * pull)} \{double_to_svg_number(mid_y)}, \{double_to_svg_number(end_x - direction.to_double() * settle)} \{double_to_svg_number(node_center_y)}, \{double_to_svg_number(end_x)} \{double_to_svg_number(node_center_y)}\" fill=\"none\" stroke=\"#7ea7d1\" stroke-width=\"\{double_to_svg_number(stroke_width)}\" stroke-linecap=\"round\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\" />",
+                    let path = create_element("path", "")
+                    path.setAttribute(
+                      "d",
+                      "M \{double_to_svg_number(start_x)} \{double_to_svg_number(parent_center_y)} C \{double_to_svg_number(start_x + direction.to_double() * pull)} \{double_to_svg_number(mid_y)}, \{double_to_svg_number(end_x - direction.to_double() * settle)} \{double_to_svg_number(node_center_y)}, \{double_to_svg_number(end_x)} \{double_to_svg_number(node_center_y)}",
                     )
+                    path.setAttribute("fill", "none")
+                    path.setAttribute("stroke", "#7ea7d1")
+                    path.setAttribute(
+                      "stroke-width",
+                      double_to_svg_number(stroke_width),
+                    )
+                    path.setAttribute("stroke-linecap", "round")
+                    path.setAttribute("stroke-linejoin", "round")
+                    path.setAttribute("vector-effect", "non-scaling-stroke")
+                    svg_paths.push(path)
                   }
                   None => ()
                 }
@@ -139,9 +151,24 @@ fn render_mindmap_connectors() -> Unit {
               if svg_paths.length() == 0 {
                 return
               }
-              let svg_paths_html = svg_paths.iter().join("")
-              let svg_html = "<svg class=\"mindmap-connector-layer\" width=\"\{width}\" height=\"\{height}\" viewBox=\"0 0 \{width} \{height}\" style=\"left:\{left}px;top:\{top}px;width:\{width}px;height:\{height}px;pointer-events:none;position:absolute;overflow:visible\">\{svg_paths_html}</svg>"
-              content.insertAdjacentHTML("afterbegin", svg_html)
+              let svg = create_element("svg", "mindmap-connector-layer")
+              svg.setAttribute("width", width.to_string())
+              svg.setAttribute("height", height.to_string())
+              svg.setAttribute("viewBox", "0 0 \{width} \{height}")
+              let style = @dom.css_style_from_val(
+                svg.as_any()._get("style").cast(),
+              )
+              style.set_property("left", "\{left}px")
+              style.set_property("top", "\{top}px")
+              style.set_property("width", "\{width}px")
+              style.set_property("height", "\{height}px")
+              style.set_property("pointer-events", "none")
+              style.set_property("position", "absolute")
+              style.set_property("overflow", "visible")
+              for path in svg_paths {
+                append_child(svg, path)
+              }
+              append_child(content, svg)
             }
             None => ()
           }
@@ -250,8 +277,9 @@ fn double_to_svg_number(value : Double) -> String {
 }
 
 ///|
-extern "js" fn parse_float(raw : String) -> Double =
-  #|(raw) => Number.parseFloat(raw)
+fn parse_float(raw : String) -> Double {
+  parse_double_or_default(raw, 0.0 / 0.0)
+}
 
 ///|
 let input_linked_line_indexes : @ref.Ref[Array[Int]] = @ref.Ref([])
@@ -486,12 +514,12 @@ extern "js" fn measure_input_line_metrics_raw(
   #|}
 
 ///|
-fn linked_line_html(
+fn build_linked_line_dom(
   metrics : InputLineMetrics,
   line_index : Int,
   scroll_top : Int,
   class_name : String,
-) -> String? {
+) -> @dom.Element? {
   if line_index < 0 || line_index >= metrics.heights.length() {
     None
   } else {
@@ -499,10 +527,23 @@ fn linked_line_html(
       scroll_top
     let height = metrics.heights.get(line_index).unwrap_or(metrics.line_height)
     let block_height = if height > 1 { height } else { 1 }
-    Some(
-      "<div class=\"\{class_name}\" style=\"height:\{block_height}px;transform:translateY(\{top}px);opacity:1\"></div>",
-    )
+    let block = create_element("div", class_name)
+    let style = @dom.css_style_from_val(block.as_any()._get("style").cast())
+    style.set_property("height", "\{block_height}px")
+    style.set_property("transform", "translateY(\{top}px)")
+    style.set_property("opacity", "1")
+    Some(block)
   }
+}
+
+///|
+fn build_gutter_number_dom(line_number : Int, height : Int) -> @dom.Element {
+  let block = create_element("div", "editor-gutter-number")
+  let block_height = if height > 1 { height } else { 1 }
+  let style = @dom.css_style_from_val(block.as_any()._get("style").cast())
+  style.set_property("height", "\{block_height}px")
+  block.setTextContent(line_number.to_string())
+  block
 }
 
 ///|
@@ -588,14 +629,16 @@ fn set_line_collection(
   metrics : InputLineMetrics,
   scroll_top : Int,
 ) -> Unit {
+  clear_element(container)
   if line_indexes.length() == 0 {
-    container.setInnerHTML("")
     return
   }
-  let blocks = line_indexes.filter_map(fn(line_index) {
-    linked_line_html(metrics, line_index, scroll_top, class_name)
-  })
-  container.setInnerHTML(blocks.iter().join(""))
+  for line_index in line_indexes {
+    match build_linked_line_dom(metrics, line_index, scroll_top, class_name) {
+      Some(block) => append_child(container, block)
+      None => ()
+    }
+  }
 }
 
 ///|
@@ -605,21 +648,17 @@ fn sync_input_line_numbers(
 ) -> Unit {
   match get_element("#input-gutter") {
     Some(gutter) => {
+      clear_element(gutter)
       let heights = if metrics.heights.length() > 0 {
         metrics.heights
       } else {
         [metrics.line_height]
       }
-      let blocks : Array[String] = []
       let mut line_number = 1
       for height in heights {
-        let block_height = if height > 1 { height } else { 1 }
-        blocks.push(
-          "<div class=\"editor-gutter-number\" style=\"height:\{block_height}px\">\{line_number}</div>",
-        )
+        append_child(gutter, build_gutter_number_dom(line_number, height))
         line_number += 1
       }
-      gutter.setInnerHTML(blocks.iter().join(""))
       let style = @dom.css_style_from_val(gutter.as_any()._get("style").cast())
       style.set_property(
         "transform",
@@ -881,18 +920,27 @@ fn select_input_line(
 }
 
 ///|
-extern "js" fn set_input_selection_range_by_line(
+fn set_input_selection_range_by_line(
   input : @dom.HTMLTextAreaElement,
   line_index : Int,
-) =
-  #|(input, lineIndex) => {
-  #|  const lines = input.value.split("\n")
-  #|  if (lineIndex == null || lineIndex < 0 || lineIndex >= lines.length) return
-  #|  const start = lines.slice(0, lineIndex).join("\n").length + (lineIndex === 0 ? 0 : lineIndex)
-  #|  const end = start + lines[lineIndex].length
-  #|  input.focus()
-  #|  input.setSelectionRange(start, end)
-  #|}
+) -> Unit {
+  let lines = input.value.split("\n".view()).to_array()
+  if line_index < 0 || line_index >= lines.length() {
+    return
+  }
+  let mut start = 0
+  for index in 0..<line_index {
+    start += lines[index].length() + 1
+  }
+  let end = start + lines[line_index].length()
+  input.focus()
+  let box = input.as_any()
+  box._set("__selection_start", @core.any(start))
+  box._set("__selection_end", @core.any(end))
+  let start_any = box._get("__selection_start")
+  let end_any = box._get("__selection_end")
+  input.as_any()._call("setSelectionRange", [start_any, end_any]) |> ignore
+}
 
 ///|
 fn toggle_class(
@@ -1479,7 +1527,7 @@ fn set_input_value(value : String) -> Unit {
 }
 
 ///|
-fn set_mindmap_html(value : String) -> Unit {
+fn set_mindmap_dom(value : @dom.Element) -> Unit {
   match get_element("#mindmap") {
     Some(mindmap) => {
       let pan_x = mindmap.getAttribute("data-pan-x").unwrap_or("0")
@@ -1488,12 +1536,15 @@ fn set_mindmap_html(value : String) -> Unit {
       mindmap.setAttribute("data-pan-x", pan_x)
       mindmap.setAttribute("data-pan-y", pan_y)
       mindmap.setAttribute("data-zoom", zoom)
-      mindmap.setInnerHTML("<div class=\"mindmap-content\">\{value}</div>")
+      clear_element(mindmap)
+      append_child(mindmap, value)
       let style = @dom.css_style_from_val(mindmap.as_any()._get("style").cast())
       style.set_property("--pan-x", "\{pan_x}px")
       style.set_property("--pan-y", "\{pan_y}px")
       style.set_property("--zoom", zoom)
-      let zoom_percent = (parse_float(zoom) * 100.0).round().to_int()
+      let zoom_percent = (parse_double_or_default(zoom, 1.0) * 100.0)
+        .round()
+        .to_int()
       match get_element("#zoom-value") {
         Some(zoom_value) => zoom_value.setTextContent("\{zoom_percent}%")
         None => ()
@@ -1824,20 +1875,27 @@ extern "js" fn set_drag_text(event : @dom.DragEvent, value : String) =
   #|}
 
 ///|
-extern "js" fn clear_drop_highlights() =
-  #|() => {
-  #|  for (const element of document.querySelectorAll(".drop-before, .drop-after")) {
-  #|    element.classList.remove("drop-before", "drop-after")
-  #|  }
-  #|}
+fn clear_drop_highlights() -> Unit {
+  for element in @dom.document().querySelectorAll(".drop-before, .drop-after") {
+    toggle_class(element, "drop-before", false)
+    toggle_class(element, "drop-after", false)
+  }
+}
 
 ///|
-extern "js" fn highlight_drop_target(node_index : Int, place_after : Bool) =
-  #|(nodeIndex, placeAfter) => {
-  #|  for (const element of document.querySelectorAll(".drop-before, .drop-after")) {
-  #|    element.classList.remove("drop-before", "drop-after")
-  #|  }
-  #|  const card = document.querySelector(`[data-node-index="${nodeIndex}"]`)
-  #|  if (!card) return
-  #|  card.classList.add(placeAfter ? "drop-after" : "drop-before")
-  #|}
+fn highlight_drop_target(node_index : Int, place_after : Bool) -> Unit {
+  clear_drop_highlights()
+  match get_element("[data-node-index=\"\{node_index}\"]") {
+    Some(card) =>
+      toggle_class(
+        card,
+        if place_after {
+          "drop-after"
+        } else {
+          "drop-before"
+        },
+        true,
+      )
+    None => ()
+  }
+}

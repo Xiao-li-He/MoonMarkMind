@@ -1,25 +1,18 @@
 ///|
-fn render_app_shell_html() -> String {
-  let topbar = render_topbar()
-  let editor_panel = render_editor_panel()
-  let divider = render_workspace_divider()
-  let mindmap_panel = render_mindmap_panel()
-  (
-    $|<main class="app-shell">
-    $|  \{topbar}
-    $|  <section class="workspace">
-    $|    \{editor_panel}
-    $|    \{divider}
-    $|    \{mindmap_panel}
-    $|  </section>
-    $|</main>
-  )
+priv struct SelectOption {
+  value : String
+  label : String
+  hidden : Bool
+  selected : Bool
 }
 
 ///|
-fn set_app_html(value : String) -> Unit {
-  match get_element("#app") {
-    Some(app) => app.setInnerHTML(value)
+fn mount_app_shell() -> Unit {
+  match get_element_by_id("app") {
+    Some(app) => {
+      clear_element(app)
+      append_child(app, build_app_shell())
+    }
     None => ()
   }
 }
@@ -107,508 +100,547 @@ fn set_editor_document_name(value : String) -> Unit {
 }
 
 ///|
-fn render_topbar() -> String {
-  let layout_select = render_select_control(
-    id="layout-select",
-    label="类型",
-    class_name="tool-select",
-    options=layout_options(),
-  )
-  let style_select = render_select_control(
-    id="style-select",
-    label="样式",
-    class_name="tool-select",
-    options=style_options(),
-  )
-  let detail_select = render_select_control(
-    id="detail-select",
-    label="层级",
-    class_name="tool-select",
-    options=detail_options(),
-  )
-  let export_select = render_select_control(
-    id="export-select",
-    label="导出",
-    class_name="tool-select tool-select--accent",
-    options=export_options(),
-  )
-  (
-    $|<header class="topbar">
-    $|  <div class="topbar-group">
-    $|    <span class="brand-title">MoonMarkMind</span>
-    $|    <span class="section-title">.md文档</span>
-    $|    <button type="button" class="tool-button tool-button--blue" id="download-markdown">下载</button>
-    $|    <button type="button" class="tool-button tool-button--soft" id="load-sample">示例</button>
-    $|  </div>
-    $|  <div class="topbar-group topbar-group--controls">
-    $|    <span class="section-title">脑图</span>
-    $|    \{layout_select}
-    $|    \{style_select}
-    $|    \{detail_select}
-    $|    \{export_select}
-    $|  </div>
-    $|</header>
-  )
+fn build_app_shell() -> @dom.Element {
+  let shell = create_element("main", "app-shell")
+  append_child(shell, build_topbar())
+  let workspace = create_element("section", "workspace")
+  append_child(workspace, build_editor_panel())
+  append_child(workspace, build_workspace_divider())
+  append_child(workspace, build_mindmap_panel())
+  append_child(shell, workspace)
+  shell
 }
 
 ///|
-fn render_select_control(
+fn build_topbar() -> @dom.Element {
+  let topbar = create_element("header", "topbar")
+  let left_group = create_element("div", "topbar-group")
+  append_child(
+    left_group,
+    build_text_span("span", "brand-title", "MoonMarkMind"),
+  )
+  append_child(left_group, build_text_span("span", "section-title", "文档"))
+  append_child(
+    left_group,
+    build_button(
+      "tool-button tool-button--blue", "download-markdown", "下载 Markdown", "导出",
+    ),
+  )
+  append_child(
+    left_group,
+    build_button(
+      "tool-button tool-button--soft", "load-sample", "加载示例", "示例",
+    ),
+  )
+
+  let right_group = create_element("div", "topbar-group topbar-group--controls")
+  append_child(right_group, build_text_span("span", "section-title", "脑图"))
+  append_child(
+    right_group,
+    build_select_control(
+      id="layout-select",
+      label="布局",
+      class_name="tool-select",
+      options=[
+        SelectOption::{
+          value: "horizontal",
+          label: "横向",
+          hidden: false,
+          selected: true,
+        },
+        SelectOption::{
+          value: "single-right",
+          label: "单右",
+          hidden: false,
+          selected: false,
+        },
+        SelectOption::{
+          value: "vertical",
+          label: "纵向",
+          hidden: false,
+          selected: false,
+        },
+      ],
+    ),
+  )
+  append_child(
+    right_group,
+    build_select_control(
+      id="style-select",
+      label="样式",
+      class_name="tool-select",
+      options=[
+        SelectOption::{
+          value: "line",
+          label: "线条",
+          hidden: false,
+          selected: true,
+        },
+        SelectOption::{
+          value: "fill",
+          label: "填充",
+          hidden: false,
+          selected: false,
+        },
+      ],
+    ),
+  )
+  append_child(
+    right_group,
+    build_select_control(
+      id="detail-select",
+      label="层级",
+      class_name="tool-select",
+      options=[
+        SelectOption::{
+          value: "small",
+          label: "精简",
+          hidden: false,
+          selected: false,
+        },
+        SelectOption::{
+          value: "custom-small",
+          label: "精简",
+          hidden: true,
+          selected: false,
+        },
+        SelectOption::{
+          value: "medium",
+          label: "中等",
+          hidden: false,
+          selected: false,
+        },
+        SelectOption::{
+          value: "custom-medium",
+          label: "中等",
+          hidden: true,
+          selected: false,
+        },
+        SelectOption::{
+          value: "all",
+          label: "全部",
+          hidden: false,
+          selected: true,
+        },
+        SelectOption::{
+          value: "custom-all",
+          label: "全部",
+          hidden: true,
+          selected: false,
+        },
+      ],
+    ),
+  )
+  append_child(
+    right_group,
+    build_select_control(
+      id="export-select",
+      label="导出",
+      class_name="tool-select tool-select--accent",
+      options=[
+        SelectOption::{
+          value: "",
+          label: "选择格式",
+          hidden: true,
+          selected: true,
+        },
+        SelectOption::{
+          value: "png",
+          label: ".PNG",
+          hidden: false,
+          selected: false,
+        },
+        SelectOption::{
+          value: "svg",
+          label: ".SVG",
+          hidden: false,
+          selected: false,
+        },
+        SelectOption::{
+          value: "html",
+          label: ".HTML",
+          hidden: false,
+          selected: false,
+        },
+      ],
+    ),
+  )
+  append_child(topbar, left_group)
+  append_child(topbar, right_group)
+  topbar
+}
+
+///|
+fn build_select_control(
   id~ : String,
   label~ : String,
   class_name~ : String,
-  options~ : String,
-) -> String {
-  (
-    $|<label class="tool-select-wrap">
-    $|  <span class="tool-select-label">\{label}</span>
-    $|  <select id="\{id}" class="\{class_name}">
-    $|    \{options}
-    $|  </select>
-    $|</label>
+  options~ : Array[SelectOption],
+) -> @dom.Element {
+  let label_el = create_element("label", "tool-select-wrap")
+  append_child(label_el, build_text_span("span", "tool-select-label", label))
+  let select = create_element("select", class_name)
+  select.setAttribute("id", id)
+  for option in options {
+    let option_el = create_element("option", "")
+    option_el.setAttribute("value", option.value)
+    if option.hidden {
+      option_el.setAttribute("hidden", "true")
+    }
+    if option.selected {
+      option_el.setAttribute("selected", "true")
+    }
+    option_el.setTextContent(option.label)
+    append_child(select, option_el)
+  }
+  append_child(label_el, select)
+  label_el
+}
+
+///|
+fn build_editor_panel() -> @dom.Element {
+  let panel = create_element("aside", "editor-panel")
+  let surface = create_element("div", "editor-surface")
+  append_child(surface, build_editor_chrome(filename=current_document_name()))
+  let body = create_element("div", "editor-body")
+  let gutter_wrap = create_element("div", "editor-gutter-wrap")
+  append_child(
+    gutter_wrap,
+    create_element("div", "editor-gutter-lines editor-gutter-lines--linked"),
   )
-}
-
-///|
-fn layout_options() -> String {
-  [
-    "<option value=\"horizontal\">思维图</option>", "<option value=\"single-right\">逻辑图</option>",
-    "<option value=\"vertical\">树状图</option>",
-  ].join("")
-}
-
-///|
-fn style_options() -> String {
-  [
-    "<option value=\"line\">线条</option>", "<option value=\"fill\">填充</option>",
-  ].join("")
-}
-
-///|
-fn detail_options() -> String {
-  [
-    "<option value=\"small\">最少</option>", "<option value=\"custom-small\" hidden>最少</option>",
-    "<option value=\"medium\">中等</option>", "<option value=\"custom-medium\" hidden>中等</option>",
-    "<option value=\"all\">全部</option>", "<option value=\"custom-all\" hidden>全部</option>",
-  ].join("")
-}
-
-///|
-fn export_options() -> String {
-  [
-    "<option value=\"\" hidden selected>选择</option>", "<option value=\"png\">.PNG</option>",
-    "<option value=\"svg\">.SVG</option>", "<option value=\"html\">.HTML</option>",
-  ].join("")
-}
-
-///|
-fn render_editor_panel() -> String {
-  let editor_chrome = render_editor_chrome(filename=current_document_name())
-  (
-    $|<aside class="editor-panel">
-    $|  <div class="editor-surface">
-    $|    \{editor_chrome}
-    $|    <div class="editor-body">
-    $|      <div class="editor-gutter-wrap">
-    $|        <div class="editor-gutter-lines editor-gutter-lines--linked" id="input-linked-gutter-lines" aria-hidden="true"></div>
-    $|        <div class="editor-gutter-line editor-gutter-line--hover" id="input-hover-gutter-line" aria-hidden="true"></div>
-    $|        <div class="editor-gutter-line editor-gutter-line--active" id="input-active-gutter-line" aria-hidden="true"></div>
-    $|        <div class="editor-gutter" id="input-gutter" aria-hidden="true"></div>
-    $|      </div>
-    $|      <div class="editor-input-wrap">
-    $|        <div class="editor-linked-lines" id="input-linked-lines" aria-hidden="true"></div>
-    $|        <div class="editor-hover-line" id="input-hover-line" aria-hidden="true"></div>
-    $|        <div class="editor-active-line" id="input-active-line" aria-hidden="true"></div>
-    $|        <textarea id="input" wrap="soft" spellcheck="false" placeholder="# MoonMarkMind&#10;&#10;## Links&#10;- [MoonBit Package](https://mooncakes.io/)&#10;&#10;## Features&#10;### Lists&#10;- item"></textarea>
-    $|      </div>
-    $|    </div>
-    $|  </div>
-    $|</aside>
+  append_child(
+    gutter_wrap,
+    create_element("div", "editor-gutter-line editor-gutter-line--hover"),
   )
-}
-
-///|
-fn render_editor_chrome(filename~ : String) -> String {
-  (
-    $|<div class="editor-chrome">
-    $|  <div class="editor-chrome__lights" aria-hidden="true">
-    $|    <span class="editor-chrome__light editor-chrome__light--red"></span>
-    $|    <span class="editor-chrome__light editor-chrome__light--yellow"></span>
-    $|    <span class="editor-chrome__light editor-chrome__light--green"></span>
-    $|  </div>
-    $|  <span class="editor-chrome__title">Markdown</span>
-    $|  <div class="editor-chrome__actions" aria-label="Markdown编辑操作">
-    $|    <button type="button" class="editor-chrome-action" id="new-document" data-tip="新建">
-    $|      <span class="editor-chrome-action__icon">\{icon_plus()}</span>
-    $|    </button>
-    $|    <button type="button" class="editor-chrome-action" id="upload-markdown" data-tip="上传">
-    $|      <span class="editor-chrome-action__icon">\{icon_upload()}</span>
-    $|    </button>
-    $|  </div>
-    $|  <span class="editor-chrome__badge" title="\{filename}">\{filename}</span>
-    $|</div>
+  append_child(
+    gutter_wrap,
+    create_element("div", "editor-gutter-line editor-gutter-line--active"),
   )
-}
+  append_child(gutter_wrap, create_element("div", "editor-gutter"))
 
-///|
-fn render_workspace_divider() -> String {
-  (
-    #|<div class="workspace-divider" id="workspace-divider" role="separator" aria-orientation="vertical" aria-label="调整左右面板宽度">
-    #|  <div class="workspace-divider__track"></div>
-    #|  <div class="workspace-divider__handle"></div>
-    #|</div>
+  let input_wrap = create_element("div", "editor-input-wrap")
+  append_child(input_wrap, create_element("div", "editor-linked-lines"))
+  append_child(input_wrap, create_element("div", "editor-hover-line"))
+  append_child(input_wrap, create_element("div", "editor-active-line"))
+  let input = create_element("textarea", "")
+  input.setAttribute("id", "input")
+  input.setAttribute("wrap", "soft")
+  input.setAttribute("spellcheck", "false")
+  input.setAttribute(
+    "placeholder", "# MoonMarkMind\n\n## 链接\n- [MoonBit 包](https://mooncakes.io/)\n\n## 功能\n### 列表\n- 条目",
   )
+  append_child(input_wrap, input)
+
+  append_child(body, gutter_wrap)
+  append_child(body, input_wrap)
+  append_child(surface, body)
+  append_child(panel, surface)
+  panel
 }
 
 ///|
-fn render_mindmap_panel() -> String {
-  let primary_toolbar = render_primary_toolbar()
-  let secondary_toolbar = render_secondary_toolbar()
-  let zoom_controls = render_zoom_controls()
-  (
-    $|<section class="mindmap-panel">
-    $|  <div class="mindmap-toolbar">
-    $|    <div class="mindmap-toolbar__actions">\{primary_toolbar}</div>
-    $|    <div class="mindmap-toolbar__side">
-    $|      <div class="mindmap-side-tools">\{secondary_toolbar}</div>
-    $|      \{zoom_controls}
-    $|    </div>
-    $|  </div>
-    $|  <div class="mindmap-canvas-shell">
-    $|    <div class="mindmap-surface">
-    $|      <div class="mindmap" id="mindmap"></div>
-    $|    </div>
-    $|  </div>
-    $|</section>
+fn build_editor_chrome(filename~ : String) -> @dom.Element {
+  let chrome = create_element("div", "editor-chrome")
+  let lights = create_element("div", "editor-chrome__lights")
+  lights.setAttribute("aria-hidden", "true")
+  append_child(
+    lights,
+    create_element("span", "editor-chrome__light editor-chrome__light--red"),
   )
-}
-
-///|
-fn render_zoom_controls() -> String {
-  (
-    #|<div class="mindmap-zoom">
-    #|  <div class="zoom-strip">
-    #|    <button type="button" class="zoom-chip" id="zoom-out" aria-label="缩小">
-    #|      <span class="tool-icon tool-icon--compact" aria-hidden="true">
-    #|        <svg viewBox="0 0 24 24" fill="none">
-    #|          <path d="M6 12h12"></path>
-    #|        </svg>
-    #|      </span>
-    #|    </button>
-    #|    <span class="zoom-value" id="zoom-value" title="双击编辑缩放比例">100%</span>
-    #|    <input type="text" class="zoom-edit" id="zoom-edit" value="100%" aria-label="编辑缩放比例" />
-    #|    <button type="button" class="zoom-chip" id="zoom-in" aria-label="放大">
-    #|      <span class="tool-icon tool-icon--compact" aria-hidden="true">
-    #|        <svg viewBox="0 0 24 24" fill="none">
-    #|          <path d="M12 6v12"></path>
-    #|          <path d="M6 12h12"></path>
-    #|        </svg>
-    #|      </span>
-    #|    </button>
-    #|  </div>
-    #|</div>
+  append_child(
+    lights,
+    create_element("span", "editor-chrome__light editor-chrome__light--yellow"),
   )
-}
+  append_child(
+    lights,
+    create_element("span", "editor-chrome__light editor-chrome__light--green"),
+  )
 
-///|
-fn render_primary_toolbar() -> String {
-  [
-    render_toolbar_icon_button(
-      action="new-branch",
-      tip="新建分支 / Enter",
-      icon=icon_branch(),
+  append_child(chrome, lights)
+  append_child(
+    chrome,
+    build_text_span("span", "editor-chrome__title", "Markdown 文档"),
+  )
+
+  let actions = create_element("div", "editor-chrome__actions")
+  actions.setAttribute("aria-label", "Markdown 编辑操作")
+  append_child(
+    actions,
+    build_icon_button(
+      class_name="editor-chrome-action",
+      id="new-document",
+      tip="新建",
+      label="+",
     ),
-    render_toolbar_icon_button(
+  )
+  append_child(
+    actions,
+    build_icon_button(
+      class_name="editor-chrome-action",
+      id="upload-markdown",
+      tip="导入",
+      label="⇪",
+    ),
+  )
+  append_child(chrome, actions)
+
+  let badge = build_text_span("span", "editor-chrome__badge", filename)
+  badge.setAttribute("title", filename)
+  append_child(chrome, badge)
+  chrome
+}
+
+///|
+fn build_workspace_divider() -> @dom.Element {
+  let divider = create_element("div", "workspace-divider")
+  divider.setAttribute("id", "workspace-divider")
+  divider.setAttribute("role", "separator")
+  divider.setAttribute("aria-orientation", "vertical")
+  divider.setAttribute("aria-label", "调整左右面板宽度")
+  append_child(divider, create_element("div", "workspace-divider__track"))
+  append_child(divider, create_element("div", "workspace-divider__handle"))
+  divider
+}
+
+///|
+fn build_mindmap_panel() -> @dom.Element {
+  let panel = create_element("section", "mindmap-panel")
+  let toolbar = create_element("div", "mindmap-toolbar")
+  let actions = create_element("div", "mindmap-toolbar__actions")
+  append_child(actions, build_primary_toolbar())
+
+  let side = create_element("div", "mindmap-toolbar__side")
+  append_child(side, build_secondary_toolbar())
+  append_child(side, build_zoom_controls())
+
+  append_child(toolbar, actions)
+  append_child(toolbar, side)
+
+  let shell = create_element("div", "mindmap-canvas-shell")
+  let surface = create_element("div", "mindmap-surface")
+  let mindmap = create_element("div", "mindmap")
+  mindmap.setAttribute("id", "mindmap")
+  mindmap.setAttribute("data-pan-x", "0")
+  mindmap.setAttribute("data-pan-y", "0")
+  mindmap.setAttribute("data-zoom", "1")
+  append_child(surface, mindmap)
+  append_child(shell, surface)
+
+  append_child(panel, toolbar)
+  append_child(panel, shell)
+  panel
+}
+
+///|
+fn build_zoom_controls() -> @dom.Element {
+  let zoom = create_element("div", "mindmap-zoom")
+  let strip = create_element("div", "zoom-strip")
+  append_child(
+    strip,
+    build_icon_button(
+      class_name="zoom-chip",
+      id="zoom-out",
+      tip="缩小",
+      label="-",
+    ),
+  )
+  append_child(strip, build_text_span("span", "zoom-value", "100%"))
+  let edit = create_element("input", "zoom-edit")
+  edit.setAttribute("id", "zoom-edit")
+  edit.setAttribute("type", "text")
+  edit.setAttribute("value", "100%")
+  edit.setAttribute("aria-label", "编辑缩放比例")
+  append_child(strip, edit)
+  append_child(
+    strip,
+    build_icon_button(
+      class_name="zoom-chip",
+      id="zoom-in",
+      tip="放大",
+      label="+",
+    ),
+  )
+  append_child(zoom, strip)
+  zoom
+}
+
+///|
+fn build_primary_toolbar() -> @dom.Element {
+  let toolbar = create_element("div", "")
+  append_child(
+    toolbar,
+    build_toolbar_button(
+      action="new-branch",
+      tip="新建兄弟节点 / Enter",
+      label="B",
+    ),
+  )
+  append_child(
+    toolbar,
+    build_toolbar_button(
       action="new-child",
       tip="新建子节点 / Tab",
-      icon=icon_child(),
+      label="C",
     ),
-    render_toolbar_icon_button(
+  )
+  append_child(
+    toolbar,
+    build_toolbar_button(
       action="delete-node",
       tip="删除当前节点 / Delete",
-      icon=icon_trash(),
+      label="X",
     ),
-    render_toolbar_icon_button(
+  )
+  append_child(
+    toolbar,
+    build_toolbar_button(
       action="edit-node",
       tip="编辑节点 / 双击",
-      icon=icon_edit(),
+      label="E",
     ),
-    render_toolbar_icon_button(
-      action="move-up",
-      tip="上移 / Ctrl+Up",
-      icon=icon_arrow_up(),
-    ),
-    render_toolbar_icon_button(
+  )
+  append_child(
+    toolbar,
+    build_toolbar_button(action="move-up", tip="上移 / Ctrl+Up", label="↑"),
+  )
+  append_child(
+    toolbar,
+    build_toolbar_button(
       action="move-down",
       tip="下移 / Ctrl+Down",
-      icon=icon_arrow_down(),
+      label="↓",
     ),
-    render_toolbar_icon_button(
+  )
+  append_child(
+    toolbar,
+    build_toolbar_button(
       action="toggle-node",
-      tip="收起或展开 / Space",
-      icon=icon_fold(),
+      tip="折叠或展开 / Space",
+      label="⤢",
     ),
-    render_toolbar_icon_button(
-      action="insert-node",
-      tip="插入…",
-      icon=icon_insert(),
-    ),
-  ].join("")
+  )
+  append_child(
+    toolbar,
+    build_toolbar_button(action="insert-node", tip="插入节点", label="+"),
+  )
+  toolbar
 }
 
 ///|
-fn render_secondary_toolbar() -> String {
-  [
-    render_aux_icon_button_with_id(
-      id="undo-action",
-      tip="撤回 / Ctrl+Z",
-      icon=icon_undo(),
-    ),
-    render_aux_icon_button_with_id(
-      id="redo-action",
-      tip="重做 / Ctrl+Y",
-      icon=icon_redo(),
-    ),
-    render_aux_icon_button_with_id(
-      id="fit-view",
-      tip="适配画布",
-      icon=icon_fit_view(),
-    ),
-    render_aux_icon_button_with_id(
-      id="recenter-view",
-      tip="回中视图 / 双击画布空白处",
-      icon=icon_play(),
-    ),
-    render_aux_icon_button(tip="帮助", icon=icon_help()),
-  ].join("")
+fn build_secondary_toolbar() -> @dom.Element {
+  let toolbar = create_element("div", "")
+  append_child(
+    toolbar,
+    build_aux_button(id="undo-action", tip="撤销 / Ctrl+Z", label="↶"),
+  )
+  append_child(
+    toolbar,
+    build_aux_button(id="redo-action", tip="重做 / Ctrl+Y", label="↷"),
+  )
+  append_child(
+    toolbar,
+    build_aux_button(id="fit-view", tip="适配视图", label="⤢"),
+  )
+  append_child(
+    toolbar,
+    build_aux_button(id="recenter-view", tip="居中视图", label="◎"),
+  )
+  append_child(toolbar, build_aux_button(tip="帮助", label="?"))
+  toolbar
 }
 
 ///|
-fn render_toolbar_icon_button(
+fn build_toolbar_button(
   action~ : String,
   tip~ : String,
-  icon~ : String,
-) -> String {
-  "<button type=\"button\" class=\"mindmap-tool\" data-toolbar-action=\"\{action}\" data-tip=\"\{tip}\" aria-label=\"\{tip}\">\{icon}</button>"
+  label~ : String,
+) -> @dom.Element {
+  let button = create_element("button", "mindmap-tool")
+  button.setAttribute("type", "button")
+  button.setAttribute("data-toolbar-action", action)
+  button.setAttribute("data-tip", tip)
+  button.setAttribute("aria-label", tip)
+  button.setTextContent(label)
+  button
 }
 
 ///|
-fn render_aux_icon_button(tip~ : String, icon~ : String) -> String {
-  "<button type=\"button\" class=\"mindmap-aux-button\" data-tip=\"\{tip}\" aria-label=\"\{tip}\">\{icon}</button>"
-}
-
-///|
-fn render_aux_icon_button_with_id(
-  id~ : String,
+fn build_aux_button(
   tip~ : String,
-  icon~ : String,
-) -> String {
-  "<button type=\"button\" class=\"mindmap-aux-button\" id=\"\{id}\" data-tip=\"\{tip}\" aria-label=\"\{tip}\">\{icon}</button>"
+  label~ : String,
+  id? : String = "",
+) -> @dom.Element {
+  let button = create_element("button", "mindmap-aux-button")
+  button.setAttribute("type", "button")
+  button.setAttribute("data-tip", tip)
+  button.setAttribute("aria-label", tip)
+  button.setTextContent(label)
+  if id.length() > 0 {
+    button.setAttribute("id", id)
+  }
+  button
 }
 
 ///|
-fn icon_shell(body : String) -> String {
-  "<span class=\"tool-icon\" aria-hidden=\"true\">\{body}</span>"
+fn build_button(
+  class_name : String,
+  id : String,
+  tip : String,
+  label : String,
+) -> @dom.Element {
+  let button = create_element("button", class_name)
+  button.setAttribute("type", "button")
+  button.setAttribute("id", id)
+  button.setAttribute("data-tip", tip)
+  button.setAttribute("aria-label", tip)
+  button.setTextContent(label)
+  button
 }
 
 ///|
-fn icon_branch() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <circle cx="7" cy="6" r="2"></circle>
-      #|  <circle cx="17" cy="9" r="2"></circle>
-      #|  <circle cx="17" cy="17" r="2"></circle>
-      #|  <path d="M7 8v8"></path>
-      #|  <path d="M9 9h6"></path>
-      #|  <path d="M9 17h6"></path>
-      #|</svg>
-    ),
-  )
+fn build_icon_button(
+  class_name~ : String,
+  tip~ : String,
+  label~ : String,
+  id? : String = "",
+) -> @dom.Element {
+  let button = create_element("button", class_name)
+  button.setAttribute("type", "button")
+  button.setAttribute("data-tip", tip)
+  button.setAttribute("aria-label", tip)
+  button.setTextContent(label)
+  if id.length() > 0 {
+    button.setAttribute("id", id)
+  }
+  button
 }
 
 ///|
-fn icon_child() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <rect x="3.5" y="4.5" width="6.5" height="5.2" rx="1.5"></rect>
-      #|  <path d="M10 7.1h3.1c2.4 0 4.4 2 4.4 4.4v2.7"></path>
-      #|  <rect x="13.8" y="14.2" width="6.7" height="5.3" rx="1.5"></rect>
-      #|  <path d="M17.15 12.7v4"></path>
-      #|  <path d="M15.15 14.7h4"></path>
-      #|</svg>
-    ),
-  )
+fn build_text_span(
+  tag : String,
+  class_name : String,
+  value : String,
+) -> @dom.Element {
+  let el = create_element(tag, class_name)
+  el.setTextContent(value)
+  el
 }
 
 ///|
-fn icon_trash() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <path d="M5 7h14"></path>
-      #|  <path d="M9 7V5h6v2"></path>
-      #|  <path d="M8 9v8"></path>
-      #|  <path d="M12 9v8"></path>
-      #|  <path d="M16 9v8"></path>
-      #|  <path d="M6 7l1 12h10l1-12"></path>
-      #|</svg>
-    ),
-  )
+fn create_element(tag : String, class_name : String) -> @dom.Element {
+  let element = @dom.document().createElement(tag)
+  if class_name.length() > 0 {
+    element.setClassName(class_name)
+  }
+  element
 }
 
 ///|
-fn icon_edit() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <path d="M4 20l4.2-1 9.1-9.1-3.2-3.2L5 15.8 4 20z"></path>
-      #|  <path d="M13.8 5.9l3.2 3.2"></path>
-      #|</svg>
-    ),
-  )
+fn append_child(parent : @dom.Element, child : @dom.Element) -> Unit {
+  parent.as_node().appendChild(child.as_node()) |> ignore
 }
 
 ///|
-fn icon_arrow_up() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <path d="M12 18V6"></path>
-      #|  <path d="M7 11l5-5 5 5"></path>
-      #|</svg>
-    ),
-  )
-}
-
-///|
-fn icon_arrow_down() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <path d="M12 6v12"></path>
-      #|  <path d="M17 13l-5 5-5-5"></path>
-      #|</svg>
-    ),
-  )
-}
-
-///|
-fn icon_fold() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <rect x="5" y="5.5" width="5" height="3.5" rx="1"></rect>
-      #|  <rect x="5" y="14.5" width="5" height="3.5" rx="1"></rect>
-      #|  <path d="M10 7.25h4.2c2.1 0 3.8 1.7 3.8 3.8v1.1"></path>
-      #|  <path d="M14.8 15.2l3.2 3.2 3.2-3.2"></path>
-      #|</svg>
-    ),
-  )
-}
-
-///|
-fn icon_insert() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <rect x="5" y="6" width="14" height="12" rx="2"></rect>
-      #|  <path d="M12 9v6"></path>
-      #|  <path d="M9 12h6"></path>
-      #|</svg>
-    ),
-  )
-}
-
-///|
-fn icon_undo() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <path d="M8.8 7.2 5.2 10.8l3.6 3.6"></path>
-      #|  <path d="M6 10.8h7.1c3.2 0 5.8 2.6 5.8 5.8"></path>
-      #|</svg>
-    ),
-  )
-}
-
-///|
-fn icon_redo() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <path d="M15.2 7.2 18.8 10.8l-3.6 3.6"></path>
-      #|  <path d="M18 10.8h-7.1c-3.2 0-5.8 2.6-5.8 5.8"></path>
-      #|</svg>
-    ),
-  )
-}
-
-///|
-fn icon_play() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <circle cx="12" cy="12" r="6.5"></circle>
-      #|  <path d="M12 3.8v2.4"></path>
-      #|  <path d="M12 17.8v2.4"></path>
-      #|  <path d="M3.8 12h2.4"></path>
-      #|  <path d="M17.8 12h2.4"></path>
-      #|  <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"></circle>
-      #|</svg>
-    ),
-  )
-}
-
-///|
-fn icon_fit_view() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <path d="M8 5.5H5.5V8"></path>
-      #|  <path d="M16 5.5h2.5V8"></path>
-      #|  <path d="M8 18.5H5.5V16"></path>
-      #|  <path d="M16 18.5h2.5V16"></path>
-      #|  <rect x="8.3" y="8.3" width="7.4" height="7.4" rx="1.4"></rect>
-      #|</svg>
-    ),
-  )
-}
-
-///|
-fn icon_help() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <circle cx="12" cy="12" r="8"></circle>
-      #|  <path d="M9.8 9.6a2.5 2.5 0 0 1 4.7 1.2c0 1.8-2.5 2.2-2.5 4"></path>
-      #|  <circle cx="12" cy="17.3" r="0.9" fill="currentColor" stroke="none"></circle>
-      #|</svg>
-    ),
-  )
-}
-
-///|
-fn icon_plus() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <path d="M12 6.5v11"></path>
-      #|  <path d="M6.5 12h11"></path>
-      #|</svg>
-    ),
-  )
-}
-
-///|
-fn icon_upload() -> String {
-  icon_shell(
-    (
-      #|<svg viewBox="0 0 24 24" fill="none">
-      #|  <path d="M12 16V7"></path>
-      #|  <path d="M8.5 10.5 12 7l3.5 3.5"></path>
-      #|  <path d="M6.5 17.5h11"></path>
-      #|</svg>
-    ),
-  )
+fn clear_element(element : @dom.Element) -> Unit {
+  element.setTextContent("")
 }
