@@ -8,6 +8,7 @@ priv struct SelectOption {
 
 ///|
 fn mount_app_shell() -> Unit {
+  apply_page_theme()
   match get_element_by_id("app") {
     Some(app) => {
       clear_element(app)
@@ -442,6 +443,7 @@ fn build_zoom_controls() -> @dom.Element {
       id="zoom-out",
       tip="缩小",
       label="-",
+      compact=true,
     ),
   )
   append_child(strip, build_text_span("span", "zoom-value", "100%"))
@@ -458,6 +460,7 @@ fn build_zoom_controls() -> @dom.Element {
       id="zoom-in",
       tip="放大",
       label="+",
+      compact=true,
     ),
   )
   append_child(zoom, strip)
@@ -466,7 +469,9 @@ fn build_zoom_controls() -> @dom.Element {
 
 ///|
 fn build_primary_toolbar() -> @dom.Element {
-  let toolbar = create_element("div", "")
+  let toolbar = create_element(
+    "div", "mindmap-toolbar__actions mindmap-toolbar__cluster mindmap-toolbar__cluster--primary",
+  )
   append_child(
     toolbar,
     build_toolbar_button(
@@ -528,7 +533,9 @@ fn build_primary_toolbar() -> @dom.Element {
 
 ///|
 fn build_secondary_toolbar() -> @dom.Element {
-  let toolbar = create_element("div", "")
+  let toolbar = create_element(
+    "div", "mindmap-side-tools mindmap-toolbar__side mindmap-toolbar__cluster mindmap-toolbar__cluster--secondary",
+  )
   append_child(
     toolbar,
     build_aux_button(id="undo-action", tip="撤销 / Ctrl+Z", label="↶"),
@@ -555,12 +562,13 @@ fn build_toolbar_button(
   tip~ : String,
   label~ : String,
 ) -> @dom.Element {
+  let _ = label
   let button = create_element("button", "mindmap-tool")
   button.setAttribute("type", "button")
   button.setAttribute("data-toolbar-action", action)
   button.setAttribute("data-tip", tip)
   button.setAttribute("aria-label", tip)
-  button.setTextContent(label)
+  append_child(button, build_tool_icon(toolbar_icon_key(action), false))
   button
 }
 
@@ -574,7 +582,7 @@ fn build_aux_button(
   button.setAttribute("type", "button")
   button.setAttribute("data-tip", tip)
   button.setAttribute("aria-label", tip)
-  button.setTextContent(label)
+  append_child(button, build_tool_icon(aux_icon_key(id, label), false))
   if id.length() > 0 {
     button.setAttribute("id", id)
   }
@@ -603,16 +611,184 @@ fn build_icon_button(
   tip~ : String,
   label~ : String,
   id? : String = "",
+  compact? : Bool = false,
 ) -> @dom.Element {
   let button = create_element("button", class_name)
   button.setAttribute("type", "button")
   button.setAttribute("data-tip", tip)
   button.setAttribute("aria-label", tip)
-  button.setTextContent(label)
+  append_child(button, build_tool_icon(zoom_icon_key(label), compact))
   if id.length() > 0 {
     button.setAttribute("id", id)
   }
   button
+}
+
+///|
+fn build_tool_icon(icon_key : String, compact : Bool) -> @dom.Element {
+  let icon_class = if compact {
+    "tool-icon tool-icon--compact"
+  } else {
+    "tool-icon"
+  }
+  let icon = create_element("span", icon_class)
+  icon.setAttribute("aria-hidden", "true")
+  append_child(icon, build_tool_svg(icon_key, compact))
+  icon
+}
+
+///|
+fn build_tool_svg(icon_key : String, compact : Bool) -> @dom.Element {
+  let svg = create_svg_element("svg", "")
+  svg.setAttribute("viewBox", "0 0 24 24")
+  svg.setAttribute("width", "100%")
+  svg.setAttribute("height", "100%")
+  svg.setAttribute("fill", "none")
+  svg.setAttribute("stroke", "currentColor")
+  svg.setAttribute("stroke-width", if compact { "2.2" } else { "1.9" })
+  svg.setAttribute("stroke-linecap", "round")
+  svg.setAttribute("stroke-linejoin", "round")
+  match icon_key {
+    "branch" => {
+      append_child(svg, build_svg_circle(7.0, 12.0, 1.8, true))
+      append_child(svg, build_svg_circle(17.0, 7.0, 1.8, true))
+      append_child(svg, build_svg_circle(17.0, 17.0, 1.8, true))
+      append_child(svg, build_svg_path("M8.8 12H13M13 12L18 7M13 12L18 17"))
+    }
+    "child" => {
+      append_child(svg, build_svg_circle(12.0, 6.5, 1.8, true))
+      append_child(svg, build_svg_circle(12.0, 17.5, 1.8, true))
+      append_child(
+        svg,
+        build_svg_path("M12 8.3V15.2M9.2 12.3L12 15.2L14.8 12.3"),
+      )
+    }
+    "delete" => append_child(svg, build_svg_path("M7 7L17 17M17 7L7 17"))
+    "edit" => {
+      append_child(
+        svg,
+        build_svg_path(
+          "M5.5 18.5L6.5 14.7L15.8 5.4L18.6 8.2L9.3 17.5L5.5 18.5Z",
+        ),
+      )
+      append_child(svg, build_svg_path("M14.9 6.3L17.7 9.1"))
+    }
+    "up" =>
+      append_child(svg, build_svg_path("M12 18V6M7.5 11.5L12 7L16.5 11.5"))
+    "down" =>
+      append_child(svg, build_svg_path("M12 6V18M7.5 12.5L12 17L16.5 12.5"))
+    "toggle" =>
+      append_child(svg, build_svg_path("M6.5 12H17.5M12 7.5L17.5 12L12 16.5"))
+    "insert" => {
+      append_child(svg, build_svg_path("M12 5.5V18.5M5.5 12H18.5"))
+      append_child(svg, build_svg_circle(12.0, 12.0, 8.5, false))
+    }
+    "undo" => {
+      append_child(svg, build_svg_path("M9 8H5V4M5.4 8A8 8 0 1 1 8 17.5"))
+      append_child(svg, build_svg_path("M5 4L8.2 7.2"))
+    }
+    "redo" => {
+      append_child(svg, build_svg_path("M15 8H19V4M18.6 8A8 8 0 1 0 16 17.5"))
+      append_child(svg, build_svg_path("M19 4L15.8 7.2"))
+    }
+    "fit" =>
+      append_child(
+        svg,
+        build_svg_path("M8 4H4V8M16 4H20V8M8 20H4V16M16 20H20V16"),
+      )
+    "center" => {
+      append_child(svg, build_svg_path("M12 4V7M12 17V20M4 12H7M17 12H20"))
+      append_child(svg, build_svg_circle(12.0, 12.0, 3.2, false))
+    }
+    "help" => {
+      append_child(
+        svg,
+        build_svg_path("M10.2 9a2 2 0 1 1 3.8 1c0 1.5-2 1.8-2 3.5M12 17.5V18"),
+      )
+      append_child(svg, build_svg_circle(12.0, 12.0, 8.5, false))
+    }
+    "zoom-in" => {
+      append_child(svg, build_svg_path("M12 5.5V18.5M5.5 12H18.5"))
+      append_child(svg, build_svg_circle(12.0, 12.0, 8.5, false))
+    }
+    "zoom-out" => {
+      append_child(svg, build_svg_path("M5.5 12H18.5"))
+      append_child(svg, build_svg_circle(12.0, 12.0, 8.5, false))
+    }
+    _ => append_child(svg, build_svg_path("M6 12H18"))
+  }
+  svg
+}
+
+///|
+fn build_svg_path(d : String) -> @dom.Element {
+  let path = create_svg_element("path", "")
+  path.setAttribute("d", d)
+  path.setAttribute("fill", "none")
+  path
+}
+
+///|
+fn build_svg_circle(
+  cx : Double,
+  cy : Double,
+  r : Double,
+  filled : Bool,
+) -> @dom.Element {
+  let circle = create_svg_element("circle", "")
+  circle.setAttribute("cx", cx.to_string())
+  circle.setAttribute("cy", cy.to_string())
+  circle.setAttribute("r", r.to_string())
+  if filled {
+    circle.setAttribute("fill", "currentColor")
+    circle.setAttribute("stroke", "none")
+  } else {
+    circle.setAttribute("fill", "none")
+  }
+  circle
+}
+
+///|
+fn toolbar_icon_key(action : String) -> String {
+  match action {
+    "new-branch" => "branch"
+    "new-child" => "child"
+    "delete-node" => "delete"
+    "edit-node" => "edit"
+    "move-up" => "up"
+    "move-down" => "down"
+    "toggle-node" => "toggle"
+    "insert-node" => "insert"
+    _ => "branch"
+  }
+}
+
+///|
+fn aux_icon_key(id : String, label : String) -> String {
+  if id == "undo-action" {
+    "undo"
+  } else if id == "redo-action" {
+    "redo"
+  } else if id == "fit-view" {
+    "fit"
+  } else if id == "recenter-view" {
+    "center"
+  } else if label == "?" {
+    "help"
+  } else {
+    "help"
+  }
+}
+
+///|
+fn zoom_icon_key(label : String) -> String {
+  if label == "-" {
+    "zoom-out"
+  } else if label == "+" {
+    "zoom-in"
+  } else {
+    "help"
+  }
 }
 
 ///|
@@ -629,6 +805,18 @@ fn build_text_span(
 ///|
 fn create_element(tag : String, class_name : String) -> @dom.Element {
   let element = @dom.document().createElement(tag)
+  if class_name.length() > 0 {
+    element.setClassName(class_name)
+  }
+  apply_theme_to_element(element)
+  element
+}
+
+///|
+fn create_svg_element(tag : String, class_name : String) -> @dom.Element {
+  let element = @dom.document().createElementNs(
+    "http://www.w3.org/2000/svg", tag,
+  )
   if class_name.length() > 0 {
     element.setClassName(class_name)
   }

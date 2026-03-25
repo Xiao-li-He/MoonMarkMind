@@ -55,7 +55,35 @@ fn mindmap_sync_zoom_display(
   }
   match zoom_edit {
     Some(edit) =>
-      @dom.HTMLInputElement::cast_from_element(edit).value = percent.to_string()
+      @dom.HTMLInputElement::cast_from_element(edit).value = "\{percent}%"
+    None => ()
+  }
+}
+
+///|
+fn mindmap_set_zoom_editing(editing : Bool) -> Unit {
+  match get_element(".zoom-strip") {
+    Some(strip) => {
+      toggle_class(strip, "is-editing", editing)
+      match strip.querySelector(".zoom-value") {
+        Some(value) => {
+          let style = @dom.css_style_from_val(
+            value.as_any()._get("style").cast(),
+          )
+          style.set_property("display", if editing { "none" } else { "block" })
+        }
+        None => ()
+      }
+      match strip.querySelector(".zoom-edit") {
+        Some(edit) => {
+          let style = @dom.css_style_from_val(
+            edit.as_any()._get("style").cast(),
+          )
+          style.set_property("display", if editing { "block" } else { "none" })
+        }
+        None => ()
+      }
+    }
     None => ()
   }
 }
@@ -394,6 +422,7 @@ fn bind_mindmap_ui(
                   .round()
                   .to_int()
                   .to_string()
+                mindmap_set_zoom_editing(true)
                 input.focus()
               }
               None => ()
@@ -418,9 +447,11 @@ fn bind_mindmap_ui(
                     )
                   None => mindmap_sync_view(mindmap, zoom_value, zoom_edit)
                 }
+                mindmap_set_zoom_editing(false)
               }
               "Escape" => {
                 event.preventDefault()
+                mindmap_set_zoom_editing(false)
                 mindmap_sync_view(mindmap, zoom_value, zoom_edit)
               }
               _ => ()
@@ -437,6 +468,7 @@ fn bind_mindmap_ui(
                 )
               None => mindmap_sync_view(mindmap, zoom_value, zoom_edit)
             }
+            mindmap_set_zoom_editing(false)
           })
         }
         None => ()

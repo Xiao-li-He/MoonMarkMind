@@ -116,18 +116,18 @@ fn render_mindmap_connectors() -> Unit {
                       safe_zoom,
                     )
                     let span = abs_double(end_x - start_x)
-                    let pull = min_double(24.0, max_double(10.0, span * 0.22))
-                    let settle = min_double(32.0, max_double(12.0, span * 0.34))
+                    let pull = min_double(30.0, max_double(12.0, span * 0.26))
+                    let settle = min_double(40.0, max_double(14.0, span * 0.38))
                     let mid_y = parent_center_y +
-                      (node_center_y - parent_center_y) * 0.18
+                      (node_center_y - parent_center_y) * 0.2
                     let stroke_width = if parse_int_or_default(
                         node.getAttribute("data-depth").unwrap_or("0"),
                         0,
                       ) ==
                       1 {
-                      3.2
+                      2.8
                     } else {
-                      2.4
+                      2.0
                     }
                     let path = create_element("path", "")
                     path.setAttribute(
@@ -135,7 +135,8 @@ fn render_mindmap_connectors() -> Unit {
                       "M \{double_to_svg_number(start_x)} \{double_to_svg_number(parent_center_y)} C \{double_to_svg_number(start_x + direction.to_double() * pull)} \{double_to_svg_number(mid_y)}, \{double_to_svg_number(end_x - direction.to_double() * settle)} \{double_to_svg_number(node_center_y)}, \{double_to_svg_number(end_x)} \{double_to_svg_number(node_center_y)}",
                     )
                     path.setAttribute("fill", "none")
-                    path.setAttribute("stroke", "#7ea7d1")
+                    path.setAttribute("stroke", "#94b6db")
+                    path.setAttribute("stroke-opacity", "0.9")
                     path.setAttribute(
                       "stroke-width",
                       double_to_svg_number(stroke_width),
@@ -1042,6 +1043,7 @@ fn toggle_class(
     tokens.iter().join(" ")
   }
   element.setClassName(next)
+  apply_theme_to_element(element)
 }
 
 ///|
@@ -1146,6 +1148,10 @@ fn sync_custom_select(select : @dom.HTMLSelectElement) -> Unit {
               option_value == current_value,
             )
           }
+          apply_tool_select_custom_theme(
+            custom,
+            has_class_name(select.as_element(), "tool-select--muted"),
+          )
         }
         None => ()
       }
@@ -1163,16 +1169,12 @@ fn init_custom_select(id : String) -> Unit {
       }
       select.setAttribute("data-custom-select-ready", "true")
       toggle_class(select.as_element(), "tool-select--native", true)
-      let doc = @dom.document()
-      let custom = doc.createElement("div")
-      custom.setClassName("tool-select-custom")
-      let trigger = doc.createElement("button")
+      let custom = create_element("div", "tool-select-custom")
+      let trigger = create_element("button", "tool-select-trigger")
       trigger.setAttribute("type", "button")
-      trigger.setClassName("tool-select-trigger")
       trigger.setAttribute("aria-haspopup", "listbox")
       trigger.setAttribute("aria-expanded", "false")
-      let menu = doc.createElement("div")
-      menu.setClassName("tool-select-menu")
+      let menu = create_element("div", "tool-select-menu")
       menu.setAttribute("role", "listbox")
       for child in select.children() {
         let option = @dom.HTMLOptionElement::cast_from_element(child)
@@ -1181,9 +1183,8 @@ fn init_custom_select(id : String) -> Unit {
         }
         let option_value = option.value
         let option_text = option.textContent()
-        let option_button = doc.createElement("button")
+        let option_button = create_element("button", "tool-select-option")
         option_button.setAttribute("type", "button")
-        option_button.setClassName("tool-select-option")
         option_button.setAttribute("data-value", option_value)
         option_button.setTextContent(option_text)
         option_button
@@ -1427,6 +1428,8 @@ fn bind_splitter_ui(callback : (Int) -> Unit) -> Unit {
           .addEventListener("mousedown", fn(raw) {
             let event : @dom.MouseEvent = raw.cast()
             dragging.val = true
+            toggle_class(divider, "workspace-divider--dragging", true)
+            toggle_class(workspace, "workspace--dragging-divider", true)
             set_body_drag_style("col-resize", "none")
             event.preventDefault()
           })
@@ -1471,6 +1474,8 @@ fn bind_splitter_ui(callback : (Int) -> Unit) -> Unit {
           .as_event_target()
           .addEventListener("mouseup", fn(_) {
             dragging.val = false
+            toggle_class(divider, "workspace-divider--dragging", false)
+            toggle_class(workspace, "workspace--dragging-divider", false)
             clear_body_drag_style()
           })
         }

@@ -66,7 +66,7 @@ pub fn start_web_app() -> Unit {
     on_mindmap_dragstart, on_mindmap_dragend, on_mindmap_dragover, on_mindmap_drop,
   )
   bind_input_listener(on_input_change, on_input_selected_headings_change)
-  load_markdown(rules_test_markdown(), true)
+  load_markdown(sample_markdown(), true)
 }
 
 ///|
@@ -80,7 +80,7 @@ fn on_new_click() -> Unit {
 fn on_sample_click() -> Unit {
   reset_history()
   app_state.document_name = "notes.md"
-  load_markdown(rules_test_markdown(), true)
+  load_markdown(sample_markdown(), true)
 }
 
 ///|
@@ -288,11 +288,21 @@ fn on_mindmap_dragstart(event : @dom.DragEvent) -> Unit {
   }
   app_state.drag_source_index = node_index
   app_state.drag_source_parent = event_drag_parent(event)
+  match get_element("[data-drag-index=\"\{node_index}\"]") {
+    Some(node) => toggle_class(node, "is-dragging", true)
+    None => ()
+  }
   set_drag_text(event, node_index.to_string())
 }
 
 ///|
 fn on_mindmap_dragend(_event : @dom.DragEvent) -> Unit {
+  if app_state.drag_source_index >= 0 {
+    match get_element("[data-drag-index=\"\{app_state.drag_source_index}\"]") {
+      Some(node) => toggle_class(node, "is-dragging", false)
+      None => ()
+    }
+  }
   app_state.drag_source_index = -1
   app_state.drag_source_parent = -2
   clear_drop_highlights()
