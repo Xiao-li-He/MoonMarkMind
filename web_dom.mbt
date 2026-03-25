@@ -452,66 +452,134 @@ fn parse_int_list(raw : StringView) -> Array[Int] {
 }
 
 ///|
-extern "js" fn measure_input_line_metrics_raw(
-  input : @dom.HTMLTextAreaElement,
-) -> String =
-  #|(input) => {
-  #|  const style = getComputedStyle(input)
-  #|  const fontSize = Number.parseFloat(style.fontSize || "16")
-  #|  const lineHeightRaw = style.lineHeight || ""
-  #|  const lineHeight = lineHeightRaw.length > 0 ? Number.parseFloat(lineHeightRaw) : fontSize * 1.75
-  #|  const resolvedLineHeight = Number.isFinite(lineHeight) && lineHeight > 0 ? Math.round(lineHeight) : Math.round(fontSize * 1.75)
-  #|  const paddingTop = Math.round(Number.parseFloat(style.paddingTop || "0"))
-  #|  const paddingBottom = Math.round(Number.parseFloat(style.paddingBottom || "0"))
-  #|  const paddingRight = Number.parseFloat(style.paddingRight || "0")
-  #|  const paddingLeft = Number.parseFloat(style.paddingLeft || "0")
-  #|  const mirror = document.createElement("div")
-  #|  mirror.style.position = "absolute"
-  #|  mirror.style.visibility = "hidden"
-  #|  mirror.style.pointerEvents = "none"
-  #|  mirror.style.inset = "0"
-  #|  mirror.style.width = "100%"
-  #|  mirror.style.height = "auto"
-  #|  mirror.style.boxSizing = "border-box"
-  #|  mirror.style.border = "0"
-  #|  mirror.style.padding = `${paddingTop}px ${paddingRight}px ${paddingBottom}px ${paddingLeft}px`
-  #|  mirror.style.font = style.font
-  #|  mirror.style.lineHeight = style.lineHeight
-  #|  mirror.style.letterSpacing = style.letterSpacing
-  #|  mirror.style.tabSize = style.tabSize || "2"
-  #|  mirror.style.whiteSpace = "normal"
-  #|  mirror.style.wordBreak = "break-word"
-  #|  mirror.style.overflowWrap = "anywhere"
-  #|  mirror.style.color = style.color
-  #|  mirror.style.textAlign = style.textAlign
-  #|  mirror.style.direction = style.direction
-  #|  const lines = input.value.split("\n")
-  #|  const heights = []
-  #|  const tops = []
-  #|  let currentTop = paddingTop
-  #|  const parent = input.parentElement || document.body || document.documentElement
-  #|  const contentWidth = Math.max(1, Math.round(input.clientWidth || 1))
-  #|  parent.appendChild(mirror)
-  #|  mirror.style.width = `${contentWidth}px`
-  #|  for (const line of lines) {
-  #|    const block = document.createElement("div")
-  #|    block.style.display = "block"
-  #|    block.style.whiteSpace = "pre-wrap"
-  #|    block.style.wordBreak = "break-word"
-  #|    block.style.overflowWrap = "anywhere"
-  #|    block.style.margin = "0"
-  #|    block.style.padding = "0"
-  #|    block.textContent = line.length > 0 ? line : " "
-  #|    mirror.appendChild(block)
-  #|    const contentHeight = block.getBoundingClientRect().height
-  #|    const nextHeight = Math.max(Math.round(contentHeight), resolvedLineHeight)
-  #|    heights.push(nextHeight)
-  #|    tops.push(currentTop)
-  #|    currentTop += nextHeight
-  #|  }
-  #|  mirror.remove()
-  #|  return `${heights.join(",")}|${tops.join(",")}|${resolvedLineHeight}|${paddingTop}`
-  #|}
+fn serialize_int_list(values : Array[Int]) -> String {
+  let parts : Array[String] = []
+  for value in values {
+    parts.push(value.to_string())
+  }
+  parts.join(",")
+}
+
+///|
+fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
+  let style = @dom.css_style_from_val(
+    @dom.window().getComputedStyle(input.as_element()),
+  )
+  let font_size = parse_double_or_default(
+    style.get_property_value("font-size"),
+    16.0,
+  )
+  let line_height_raw = style.get_property_value("line-height")
+  let resolved_line_height = if line_height_raw.length() > 0 {
+    let next_line_height = parse_double_or_default(
+      line_height_raw,
+      font_size * 1.75,
+    )
+    if next_line_height.is_nan() || next_line_height <= 0.0 {
+      (font_size * 1.75).round().to_int()
+    } else {
+      next_line_height.round().to_int()
+    }
+  } else {
+    (font_size * 1.75).round().to_int()
+  }
+  let padding_top = parse_int_or_default(
+    style.get_property_value("padding-top"),
+    0,
+  )
+  let padding_bottom = parse_int_or_default(
+    style.get_property_value("padding-bottom"),
+    0,
+  )
+  let padding_right = parse_double_or_default(
+    style.get_property_value("padding-right"),
+    0.0,
+  )
+  let padding_left = parse_double_or_default(
+    style.get_property_value("padding-left"),
+    0.0,
+  )
+  let mirror = create_element("div", "")
+  let mirror_style = @dom.css_style_from_val(
+    mirror.as_any()._get("style").cast(),
+  )
+  mirror_style.set_property("position", "absolute")
+  mirror_style.set_property("visibility", "hidden")
+  mirror_style.set_property("pointer-events", "none")
+  mirror_style.set_property("inset", "0")
+  mirror_style.set_property("width", "100%")
+  mirror_style.set_property("height", "auto")
+  mirror_style.set_property("box-sizing", "border-box")
+  mirror_style.set_property("border", "0")
+  mirror_style.set_property(
+    "padding",
+    "\{padding_top}px \{padding_right}px \{padding_bottom}px \{padding_left}px",
+  )
+  mirror_style.set_property("font", style.get_property_value("font"))
+  mirror_style.set_property(
+    "line-height",
+    style.get_property_value("line-height"),
+  )
+  mirror_style.set_property(
+    "letter-spacing",
+    style.get_property_value("letter-spacing"),
+  )
+  mirror_style.set_property(
+    "tab-size",
+    if style.get_property_value("tab-size").length() > 0 {
+      style.get_property_value("tab-size")
+    } else {
+      "2"
+    },
+  )
+  mirror_style.set_property("white-space", "normal")
+  mirror_style.set_property("word-break", "break-word")
+  mirror_style.set_property("overflow-wrap", "anywhere")
+  mirror_style.set_property("color", style.get_property_value("color"))
+  mirror_style.set_property(
+    "text-align",
+    style.get_property_value("text-align"),
+  )
+  mirror_style.set_property("direction", style.get_property_value("direction"))
+  mirror_style.set_property(
+    "width",
+    "\{max_double(1.0, input.clientWidth().to_double()).round().to_int()}px",
+  )
+  let lines = input.value.split("\n".view())
+  let heights : Array[Int] = []
+  let tops : Array[Int] = []
+  let mut current_top = padding_top
+  let parent = match input.parentElement() {
+    Some(parent) => parent
+    None => @dom.document().documentElement()
+  }
+  append_child(parent, mirror)
+  for line in lines {
+    let block = create_element("div", "")
+    let block_style = @dom.css_style_from_val(
+      block.as_any()._get("style").cast(),
+    )
+    block_style.set_property("display", "block")
+    block_style.set_property("white-space", "pre-wrap")
+    block_style.set_property("word-break", "break-word")
+    block_style.set_property("overflow-wrap", "anywhere")
+    block_style.set_property("margin", "0")
+    block_style.set_property("padding", "0")
+    block.setTextContent(if line.length() > 0 { line.to_string() } else { " " })
+    append_child(mirror, block)
+    let content_height = block.clientHeight()
+    let next_height = if content_height > resolved_line_height {
+      content_height
+    } else {
+      resolved_line_height
+    }
+    heights.push(next_height)
+    tops.push(current_top)
+    current_top += next_height
+  }
+  mirror.remove()
+  "\{serialize_int_list(heights)}|\{serialize_int_list(tops)}|\{resolved_line_height}|\{padding_top}"
+}
 
 ///|
 fn build_linked_line_dom(
@@ -773,12 +841,21 @@ fn sync_input_active_line(
 
 ///|
 fn line_index_at_offset(value : String, offset : Int) -> Int {
-  _line_index_at_offset_js(value, offset)
+  let limit = if offset < 0 {
+    0
+  } else if offset > value.length() {
+    value.length()
+  } else {
+    offset
+  }
+  let mut line = 0
+  for index in 0..<limit {
+    if value[index] == '\n' {
+      line += 1
+    }
+  }
+  line
 }
-
-///|
-extern "js" fn _line_index_at_offset_js(value : String, offset : Int) -> Int =
-  #|(value, offset) => value.slice(0, offset).split("\n").length - 1
 
 ///|
 fn parse_selection_indices(serialized : String) -> Array[Int] {
@@ -1572,143 +1649,202 @@ fn focus_editor(node_index : Int) -> Unit {
 }
 
 ///|
-extern "js" fn pick_markdown_file(callback : (String, String) -> Unit) =
-  #|(callback) => {
-  #|  const input = document.createElement("input")
-  #|  input.type = "file"
-  #|  input.accept = ".md,.markdown,text/markdown,text/plain"
-  #|  input.addEventListener("change", async () => {
-  #|    const file = input.files?.[0]
-  #|    if (!file) return
-  #|    callback(file.name || "notes.md", await file.text())
-  #|  })
-  #|  input.click()
-  #|}
+fn pick_markdown_file(callback : (String, String) -> Unit) -> Unit {
+  let input = create_element("input", "")
+  let file_input = @dom.HTMLInputElement::cast_from_element(input)
+  file_input.setType("file")
+  file_input.setAttribute("accept", ".md,.markdown,text/markdown,text/plain")
+  file_input.setAttribute("style", "display:none")
+  match @dom.document().body() {
+    Some(body) => append_child(body.as_element(), input)
+    None => append_child(@dom.document().documentElement(), input)
+  }
+  file_input
+  .as_event_target()
+  .addEventListener("change", fn(_) {
+    let files = @core.array_from(file_input.as_any()._get("files")).map(fn(
+      value,
+    ) {
+      value
+    })
+    if files.length() == 0 {
+      input.remove()
+      return
+    }
+    let file : @file.File = @core.identity(files[0])
+    ignore(
+      @core.Promise::new(async fn(resolve, _reject) {
+        let markdown = file.text()
+        callback(file.name, markdown)
+        input.remove()
+        resolve(())
+      }),
+    )
+  })
+  file_input.click()
+}
 
 ///|
-extern "js" fn download_text(filename : String, content : String) =
-  #|(filename, content) => {
-  #|  const blob = new Blob([content], { type: "text/plain;charset=utf-8" })
-  #|  const url = URL.createObjectURL(blob)
-  #|  const link = document.createElement("a")
-  #|  link.href = url
-  #|  link.download = filename
-  #|  document.body.appendChild(link)
-  #|  link.click()
-  #|  link.remove()
-  #|  URL.revokeObjectURL(url)
-  #|}
+fn download_link_from_data_url(filename : String, data_url : String) -> Unit {
+  let link = create_element("a", "")
+  let anchor = @dom.HTMLAnchorElement::cast_from_element(link)
+  anchor.setAttribute("href", data_url)
+  anchor.setAttribute("download", filename)
+  match @dom.document().body() {
+    Some(body) => append_child(body.as_element(), link)
+    None => append_child(@dom.document().documentElement(), link)
+  }
+  anchor.click()
+  link.remove()
+}
 
 ///|
-extern "js" fn download_current_page_html(filename : String) =
-  #|(filename) => {
-  #|  const html = document.documentElement.outerHTML
-  #|  const blob = new Blob([html], { type: "text/html;charset=utf-8" })
-  #|  const url = URL.createObjectURL(blob)
-  #|  const link = document.createElement("a")
-  #|  link.href = url
-  #|  link.download = filename
-  #|  document.body.appendChild(link)
-  #|  link.click()
-  #|  link.remove()
-  #|  URL.revokeObjectURL(url)
-  #|}
+fn download_text(filename : String, content : String) -> Unit {
+  download_link_from_data_url(
+    filename,
+    "data:text/plain;charset=utf-8,\{@global.encodeURIComponent(content)}",
+  )
+}
 
 ///|
-extern "js" fn download_mindmap_svg(filename : String) =
-  #|(filename) => {
-  #|  const svg = (() => {
-  #|    const mindmap = document.querySelector("#mindmap")
-  #|    if (!mindmap) return null
-  #|    const content = mindmap.querySelector(".mindmap-content")
-  #|    const contentRect = content?.getBoundingClientRect()
-  #|    const width = Math.max(Math.ceil(contentRect?.width ?? 0), Math.ceil(mindmap.getBoundingClientRect().width), 640)
-  #|    const height = Math.max(Math.ceil(contentRect?.height ?? 0), Math.ceil(mindmap.getBoundingClientRect().height), 360)
-  #|    const styles = [...document.querySelectorAll("style")]
-  #|      .map((node) => node.textContent ?? "")
-  #|      .join("\n")
-  #|    const panX = Number(mindmap.dataset.panX ?? "0")
-  #|    const panY = Number(mindmap.dataset.panY ?? "0")
-  #|    const zoom = Number(mindmap.dataset.zoom ?? "1")
-  #|    const body = content?.innerHTML ?? ""
-  #|    return `<?xml version="1.0" encoding="UTF-8"?>
-  #|<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-  #|  <foreignObject width="100%" height="100%">
-  #|    <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;background:#ffffff;">
-  #|      <style>${styles}</style>
-  #|      <div class="mindmap" style="width:${width}px;height:${height}px;min-height:${height}px;overflow:hidden;padding:20px;--pan-x:${panX}px;--pan-y:${panY}px;--zoom:${zoom};"><div class="mindmap-content">${body}</div></div>
-  #|    </div>
-  #|  </foreignObject>
-  #|</svg>`
-  #|  })()
-  #|  if (!svg) return
-  #|  const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" })
-  #|  const url = URL.createObjectURL(blob)
-  #|  const link = document.createElement("a")
-  #|  link.href = url
-  #|  link.download = filename
-  #|  document.body.appendChild(link)
-  #|  link.click()
-  #|  link.remove()
-  #|  URL.revokeObjectURL(url)
-  #|}
+fn download_current_page_html(filename : String) -> Unit {
+  let html = @dom.document().documentElement().outerHTML()
+  download_link_from_data_url(
+    filename,
+    "data:text/html;charset=utf-8,\{@global.encodeURIComponent(html)}",
+  )
+}
 
 ///|
-extern "js" fn download_mindmap_png(filename : String) =
-  #|(filename) => {
-  #|  const mindmap = document.querySelector("#mindmap")
-  #|  if (!mindmap) return
-  #|  const content = mindmap.querySelector(".mindmap-content")
-  #|  const contentRect = content?.getBoundingClientRect()
-  #|  const width = Math.max(Math.ceil(contentRect?.width ?? 0), Math.ceil(mindmap.getBoundingClientRect().width), 640)
-  #|  const height = Math.max(Math.ceil(contentRect?.height ?? 0), Math.ceil(mindmap.getBoundingClientRect().height), 360)
-  #|  const styles = [...document.querySelectorAll("style")]
-  #|    .map((node) => node.textContent ?? "")
-  #|    .join("\n")
-  #|  const panX = Number(mindmap.dataset.panX ?? "0")
-  #|  const panY = Number(mindmap.dataset.panY ?? "0")
-  #|  const zoom = Number(mindmap.dataset.zoom ?? "1")
-  #|  const body = content?.innerHTML ?? ""
-  #|  const svg = `<?xml version="1.0" encoding="UTF-8"?>
-  #|<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-  #|  <foreignObject width="100%" height="100%">
-  #|    <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;background:#ffffff;">
-  #|      <style>${styles}</style>
-  #|      <div class="mindmap" style="width:${width}px;height:${height}px;min-height:${height}px;overflow:hidden;padding:20px;--pan-x:${panX}px;--pan-y:${panY}px;--zoom:${zoom};"><div class="mindmap-content">${body}</div></div>
-  #|    </div>
-  #|  </foreignObject>
-  #|</svg>`
-  #|  const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" })
-  #|  const url = URL.createObjectURL(blob)
-  #|  const image = new Image()
-  #|  image.onload = () => {
-  #|    const canvas = document.createElement("canvas")
-  #|    canvas.width = width
-  #|    canvas.height = height
-  #|    const ctx = canvas.getContext("2d")
-  #|    if (!ctx) {
-  #|      URL.revokeObjectURL(url)
-  #|      return
-  #|    }
-  #|    ctx.fillStyle = "#ffffff"
-  #|    ctx.fillRect(0, 0, width, height)
-  #|    ctx.drawImage(image, 0, 0)
-  #|    canvas.toBlob((pngBlob) => {
-  #|      URL.revokeObjectURL(url)
-  #|      if (!pngBlob) return
-  #|      const pngUrl = URL.createObjectURL(pngBlob)
-  #|      const link = document.createElement("a")
-  #|      link.href = pngUrl
-  #|      link.download = filename
-  #|      document.body.appendChild(link)
-  #|      link.click()
-  #|      link.remove()
-  #|      URL.revokeObjectURL(pngUrl)
-  #|    }, "image/png")
-  #|  }
-  #|  image.onerror = () => URL.revokeObjectURL(url)
-  #|  image.src = url
-  #|}
+fn collect_inline_style_text() -> String {
+  let styles : Array[String] = []
+  for style_element in @dom.document().querySelectorAll("style") {
+    styles.push(style_element.textContent())
+  }
+  styles.join("\n")
+}
+
+///|
+fn export_dimension(
+  content_size : Double,
+  mindmap_size : Double,
+  minimum : Int,
+) -> Int {
+  if content_size > mindmap_size && content_size > minimum.to_double() {
+    content_size.ceil().to_int()
+  } else if mindmap_size > minimum.to_double() {
+    mindmap_size.ceil().to_int()
+  } else {
+    minimum
+  }
+}
+
+///|
+fn build_mindmap_export_svg() -> String {
+  match get_element("#mindmap") {
+    Some(mindmap) =>
+      match mindmap.querySelector(".mindmap-content") {
+        Some(content) => {
+          let content_rect = element_rect(content)
+          let mindmap_rect = element_rect(mindmap)
+          let width = export_dimension(
+            content_rect.width,
+            mindmap_rect.width,
+            640,
+          )
+          let height = export_dimension(
+            content_rect.height,
+            mindmap_rect.height,
+            360,
+          )
+          let pan_x = mindmap.getAttribute("data-pan-x").unwrap_or("0")
+          let pan_y = mindmap.getAttribute("data-pan-y").unwrap_or("0")
+          let zoom = mindmap.getAttribute("data-zoom").unwrap_or("1")
+          let css = collect_inline_style_text()
+          let body = content.innerHTML()
+          let svg =
+            $|<?xml version="1.0" encoding="UTF-8"?>
+            $|<svg xmlns="http://www.w3.org/2000/svg" width="\{width}" height="\{height}" viewBox="0 0 \{width} \{height}">
+            $|  <foreignObject width="100%" height="100%">
+            $|    <div xmlns="http://www.w3.org/1999/xhtml" style="width:\{width}px;height:\{height}px;background:#ffffff;">
+            $|      <style>\{css}</style>
+            $|      <div class="mindmap" style="width:\{width}px;height:\{height}px;min-height:\{height}px;overflow:hidden;padding:20px;--pan-x:\{pan_x}px;--pan-y:\{pan_y}px;--zoom:\{zoom};"><div class="mindmap-content">\{body}</div></div>
+            $|    </div>
+            $|  </foreignObject>
+            $|</svg>
+          svg
+        }
+        None => ""
+      }
+    None => ""
+  }
+}
+
+///|
+fn download_mindmap_svg(filename : String) -> Unit {
+  let svg = build_mindmap_export_svg()
+  if svg.length() == 0 {
+    return
+  }
+  download_link_from_data_url(
+    filename,
+    "data:image/svg+xml;charset=utf-8,\{@global.encodeURIComponent(svg)}",
+  )
+}
+
+///|
+fn download_mindmap_png(filename : String) -> Unit {
+  let svg = build_mindmap_export_svg()
+  if svg.length() == 0 {
+    return
+  }
+  let image = create_element("img", "")
+  let image_element = @dom.HTMLImageElement::cast_from_element(image)
+  let export_url = "data:image/svg+xml;charset=utf-8,\{@global.encodeURIComponent(svg)}"
+  image_element
+  .as_event_target()
+  .addEventListener("load", fn(_) {
+    match get_element("#mindmap") {
+      Some(mindmap) =>
+        match mindmap.querySelector(".mindmap-content") {
+          Some(content) => {
+            let canvas = create_element("canvas", "")
+            let canvas_element = @dom.HTMLCanvasElement::cast_from_element(
+              canvas,
+            )
+            let content_rect = element_rect(content)
+            let mindmap_rect = element_rect(mindmap)
+            let width = export_dimension(
+              content_rect.width,
+              mindmap_rect.width,
+              640,
+            )
+            let height = export_dimension(
+              content_rect.height,
+              mindmap_rect.height,
+              360,
+            )
+            canvas_element.width = width
+            canvas_element.height = height
+            let ctx : @canvas.CanvasRenderingContext2D = @core.identity(
+              canvas_element.getContext("2d"),
+            )
+            ctx.fillStyle = "#ffffff"
+            ctx.fillRect(0.0, 0.0, width.to_double(), height.to_double())
+            ctx.drawImage(image_element.as_any(), 0.0, 0.0)
+            download_link_from_data_url(
+              filename,
+              canvas_element.toDataURL(image_type="image/png"),
+            )
+          }
+          None => ()
+        }
+      None => ()
+    }
+  })
+  image_element.as_event_target().addEventListener("error", fn(_) { () })
+  image_element.src = export_url
+}
 
 ///|
 fn event_action_from_point(event : @dom.MouseEvent) -> String {
@@ -1720,15 +1856,19 @@ fn event_action_from_point(event : @dom.MouseEvent) -> String {
 }
 
 ///|
-extern "js" fn event_target_from_point(event : @dom.MouseEvent) -> @dom.Element =
-  #|(event) => {
-  #|  const stack = document.elementsFromPoint(event.clientX, event.clientY)
-  #|  for (const element of stack) {
-  #|    const target = element.closest?.("[data-node-index], [data-action], [data-editor-for]")
-  #|    if (target) return target
-  #|  }
-  #|  return document.elementFromPoint(event.clientX, event.clientY) ?? event.target
-  #|}
+fn event_target_from_point(event : @dom.MouseEvent) -> @dom.Element {
+  for element in @dom.document().elementsFromPoint(event.clientX, event.clientY) {
+    match
+      element.closest("[data-node-index], [data-action], [data-editor-for]") {
+      Some(target) => return target
+      None => ()
+    }
+  }
+  match @dom.document().elementFromPoint(event.clientX, event.clientY) {
+    Some(element) => element
+    None => event.target()
+  }
+}
 
 ///|
 fn event_node_index_from_target(target : @dom.Element) -> Int {
@@ -1867,12 +2007,15 @@ fn event_drag_parent(event : @dom.DragEvent) -> Int {
 }
 
 ///|
-extern "js" fn set_drag_text(event : @dom.DragEvent, value : String) =
-  #|(event, value) => {
-  #|  if (!event.dataTransfer) return
-  #|  event.dataTransfer.effectAllowed = "move"
-  #|  event.dataTransfer.setData("text/plain", value)
-  #|}
+fn set_drag_text(event : @dom.DragEvent, value : String) -> Unit {
+  match event.dataTransfer.to_option() {
+    Some(data_transfer) => {
+      data_transfer.effectAllowed = "move"
+      data_transfer.setData("text/plain", value)
+    }
+    None => ()
+  }
+}
 
 ///|
 fn clear_drop_highlights() -> Unit {

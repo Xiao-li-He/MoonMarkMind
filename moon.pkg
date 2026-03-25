@@ -1,10 +1,13 @@
 import {
   "mizchi/js/core" @core,
   "mizchi/js/browser/dom" @dom,
+  "mizchi/js/browser/canvas" @canvas,
+  "mizchi/js/browser/file" @file,
   "mizchi/js/web/event" @event,
   "moonbitlang/core/math" @math,
   "moonbitlang/core/ref" @ref,
   "moonbitlang/core/strconv" @strconv,
+  "mizchi/js/builtins/global" @global,
 }
 
 options(
