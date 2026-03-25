@@ -156,9 +156,9 @@ fn on_splitter_change(percent : Int) -> Unit {
 }
 
 ///|
-fn on_mindmap_click(event : BrowserEvent) -> Unit {
-  let action = event_action(event)
-  let node_index = event_node_index(event)
+fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
+  let action = event_action_from_point(event)
+  let node_index = event_node_index_from_point(event)
   if node_index >= 0 {
     if event_shift_key(event) {
       select_node_range(node_index, true)
@@ -172,21 +172,21 @@ fn on_mindmap_click(event : BrowserEvent) -> Unit {
   }
   match action {
     "add" => {
-      stop_event(event)
+      event.stopPropagation()
       handle_add_child(node_index)
     }
     "delete" => {
-      stop_event(event)
+      event.stopPropagation()
       handle_delete(node_index)
     }
     "toggle" => {
-      stop_event(event)
+      event.stopPropagation()
       toggle_collapsed(node_index)
       sync_detail_customized()
       render_ui()
     }
     "toggle-hide" => {
-      stop_event(event)
+      event.stopPropagation()
       toggle_hidden_node(node_index)
       render_ui()
     }
@@ -219,11 +219,11 @@ fn on_toolbar_action(action : String) -> Unit {
 }
 
 ///|
-fn on_mindmap_dblclick(event : BrowserEvent) -> Unit {
-  if event_editor_index(event) >= 0 {
+fn on_mindmap_dblclick(event : @dom.MouseEvent) -> Unit {
+  if event_editor_index_from_target(event.target()) >= 0 {
     return
   }
-  let node_index = event_node_index(event)
+  let node_index = event_node_index_from_point(event)
   if node_index < 0 {
     return
   }
@@ -231,20 +231,23 @@ fn on_mindmap_dblclick(event : BrowserEvent) -> Unit {
     Some(node) => if node.synthetic { return }
     None => return
   }
-  stop_event(event)
+  event.stopPropagation()
   select_single_node(node_index, true)
   app_state.editing_node = node_index
   render_ui()
 }
 
 ///|
-fn on_mindmap_keydown(event : BrowserEvent) -> Unit {
-  let editor_index = event_editor_index(event)
+fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
+  let editor_index = event_editor_index_from_target(event.target())
   if editor_index >= 0 {
     match event_key(event) {
       "Enter" => {
-        prevent_event_default(event)
-        save_editor(editor_index, event_editor_value(event))
+        event.preventDefault()
+        save_editor(
+          editor_index,
+          event_editor_value_from_target(event.target()),
+        )
       }
       "Escape" => {
         app_state.editing_node = -2
@@ -254,14 +257,14 @@ fn on_mindmap_keydown(event : BrowserEvent) -> Unit {
     }
     return
   }
-  let node_index = event_node_index(event)
+  let node_index = event_keyboard_node_index(event)
   if node_index < 0 {
     return
   }
   match event_key(event) {
     "Enter" => {
-      prevent_event_default(event)
-      stop_event(event)
+      event.preventDefault()
+      event.stopPropagation()
       handle_add_sibling(node_index, true)
     }
     _ => ()
@@ -269,16 +272,16 @@ fn on_mindmap_keydown(event : BrowserEvent) -> Unit {
 }
 
 ///|
-fn on_mindmap_focusout(event : BrowserEvent) -> Unit {
-  let node_index = event_editor_index(event)
+fn on_mindmap_focusout(event : @dom.FocusEvent) -> Unit {
+  let node_index = event_editor_index_from_target(event.target())
   if node_index < 0 {
     return
   }
-  save_editor(node_index, event_editor_value(event))
+  save_editor(node_index, event_editor_value_from_target(event.target()))
 }
 
 ///|
-fn on_mindmap_dragstart(event : BrowserEvent) -> Unit {
+fn on_mindmap_dragstart(event : @dom.DragEvent) -> Unit {
   let node_index = event_drag_source_index(event)
   if node_index < 0 {
     return
@@ -289,33 +292,33 @@ fn on_mindmap_dragstart(event : BrowserEvent) -> Unit {
 }
 
 ///|
-fn on_mindmap_dragend(_event : BrowserEvent) -> Unit {
+fn on_mindmap_dragend(_event : @dom.DragEvent) -> Unit {
   app_state.drag_source_index = -1
   app_state.drag_source_parent = -2
   clear_drop_highlights()
 }
 
 ///|
-fn on_mindmap_dragover(event : BrowserEvent) -> Unit {
+fn on_mindmap_dragover(event : @dom.DragEvent) -> Unit {
   let target_index = event_drop_target_index(event)
   let parent_index = event_drop_parent_index(event)
   if !is_valid_drop_target(target_index, parent_index) {
     clear_drop_highlights()
     return
   }
-  prevent_event_default(event)
+  event.preventDefault()
   highlight_drop_target(target_index, event_drop_place_after(event))
 }
 
 ///|
-fn on_mindmap_drop(event : BrowserEvent) -> Unit {
+fn on_mindmap_drop(event : @dom.DragEvent) -> Unit {
   let target_index = event_drop_target_index(event)
   let parent_index = event_drop_parent_index(event)
   if !is_valid_drop_target(target_index, parent_index) {
     clear_drop_highlights()
     return
   }
-  prevent_event_default(event)
+  event.preventDefault()
   clear_drop_highlights()
   let next_markdown = move_heading(
     app_state.markdown,
@@ -1044,7 +1047,7 @@ fn render_branch_node(
   } else {
     "<div class=\"branch-item__row\"><div class=\"branch-item__head\">\{card}</div>\{children_html}</div>"
   }
-  "<div class=\"branch-item branch-item--\{direction}\"\{branch_attrs}>\{before_slot}\{row_html}\{after_slot}</div>"
+  "<div class=\"branch-item branch-item--\{direction}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{branch_attrs}>\{before_slot}\{row_html}\{after_slot}</div>"
 }
 
 ///|
@@ -1080,7 +1083,7 @@ fn render_hidden_branch_node(
   let marker = render_hidden_marker(node, tone_index)
   let attrs = render_node_visual_attrs(node, tone_index)
   let row_html = "<div class=\"branch-item__row\"><div class=\"branch-item__head\">\{marker}</div></div>"
-  "<div class=\"branch-item branch-item--\{direction} branch-item--hidden\"\{attrs}>\{row_html}</div>"
+  "<div class=\"branch-item branch-item--\{direction} branch-item--hidden\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"-1\"\{attrs}>\{row_html}</div>"
 }
 
 ///|
@@ -1103,7 +1106,7 @@ fn render_vertical_tree(
   let card = render_node_card(node, parent_index, is_root, tone_index)
   let after_slot = render_drop_slot(node.flat_index, parent_index, "after")
   let children_html = render_vertical_children(node, tone_index)
-  "<div class=\"vertical-tree\">\{before_slot}\{card}\{after_slot}\{children_html}</div>"
+  "<div class=\"vertical-tree\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\">\{before_slot}\{card}\{after_slot}\{children_html}</div>"
 }
 
 ///|
@@ -1157,7 +1160,7 @@ fn render_single_right_tree(
   let after_slot = render_drop_slot(node.flat_index, parent_index, "after")
   let children_html = render_single_right_children(node, tone_index)
   let node_attrs = render_node_visual_attrs(node, tone_index)
-  "<div class=\"single-right-tree__node\"\{node_attrs}>\{before_slot}<div class=\"single-right-tree__head\">\{card}</div>\{after_slot}\{children_html}</div>"
+  "<div class=\"single-right-tree__node\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{node_attrs}>\{before_slot}<div class=\"single-right-tree__head\">\{card}</div>\{after_slot}\{children_html}</div>"
 }
 
 ///|

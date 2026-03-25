@@ -1,9 +1,255 @@
 ///|
-#external
-priv type BrowserEvent
+fn get_element(selector : String) -> @dom.Element? {
+  @dom.document().querySelector(selector)
+}
 
 ///|
-extern "js" fn bind_static_ui(
+fn get_element_by_id(id : String) -> @dom.Element? {
+  @dom.document().getElementById(id)
+}
+
+///|
+fn to_text_area(element : @dom.Element) -> @dom.HTMLTextAreaElement {
+  @dom.HTMLTextAreaElement::cast_from_element(element)
+}
+
+///|
+extern "js" fn sync_editor_chrome() =
+  #|() => {
+  #|  window.__moonmarkmindSyncEditorChrome?.()
+  #|}
+
+///|
+extern "js" fn render_mindmap_connectors() =
+  #|() => {
+  #|  window.__moonmarkmindRenderConnectors?.()
+  #|}
+
+///|
+extern "js" fn parse_float(raw : String) -> Double =
+  #|(raw) => Number.parseFloat(raw)
+
+///|
+fn toggle_class(
+  element : @dom.Element,
+  class_name : String,
+  enabled : Bool,
+) -> Unit {
+  let tokens : Array[String] = element
+    .className()
+    .split(" ")
+    .map(token => token.to_string())
+    .filter(token => token.length() > 0 && token != class_name)
+    .to_array()
+  let next = if enabled {
+    if tokens.length() == 0 {
+      class_name
+    } else {
+      tokens.push(class_name)
+      tokens.iter().join(" ")
+    }
+  } else {
+    tokens.iter().join(" ")
+  }
+  element.setClassName(next)
+}
+
+///|
+fn has_class_name(element : @dom.Element, class_name : String) -> Bool {
+  let tokens : Array[String] = element
+    .className()
+    .split(" ")
+    .map(token => token.to_string())
+    .filter(token => token.length() > 0)
+    .to_array()
+  tokens.contains(class_name)
+}
+
+///|
+fn set_body_drag_style(cursor : String, user_select : String) -> Unit {
+  match @dom.window().document().body() {
+    Some(body) => {
+      let style = @dom.css_style_from_val(body.as_any()._get("style").cast())
+      style.set_property("cursor", cursor)
+      style.set_property("user-select", user_select)
+    }
+    None => ()
+  }
+}
+
+///|
+fn clear_body_drag_style() -> Unit {
+  match @dom.window().document().body() {
+    Some(body) => {
+      let style = @dom.css_style_from_val(body.as_any()._get("style").cast())
+      ignore(style.remove_property("cursor"))
+      ignore(style.remove_property("user-select"))
+    }
+    None => ()
+  }
+}
+
+///|
+fn close_custom_selects(except : @dom.Element?) -> Unit {
+  for custom in @dom.document().querySelectorAll(".tool-select-custom") {
+    match except {
+      Some(except_element) =>
+        if custom.isSameNode(Some(except_element.as_node())) {
+          continue
+        }
+      None => ()
+    }
+    toggle_class(custom, "is-open", false)
+    match custom.querySelector(".tool-select-trigger") {
+      Some(trigger) => trigger.setAttribute("aria-expanded", "false")
+      None => ()
+    }
+  }
+}
+
+///|
+fn sync_custom_select(select : @dom.HTMLSelectElement) -> Unit {
+  match select.parentElement() {
+    Some(parent) =>
+      match parent.querySelector(".tool-select-custom") {
+        Some(custom) => {
+          let mut fallback_text = ""
+          let mut selected_text = ""
+          let current_value = select.value
+          for child in select.children() {
+            let option = @dom.HTMLOptionElement::cast_from_element(child)
+            if option.hasAttribute("hidden") {
+              continue
+            }
+            let option_text = option.textContent()
+            if fallback_text == "" {
+              fallback_text = option_text
+            }
+            if option.value == current_value {
+              selected_text = option_text
+              break
+            }
+          }
+          let next_text = if selected_text == "" {
+            fallback_text
+          } else {
+            selected_text
+          }
+          match custom.querySelector(".tool-select-trigger") {
+            Some(trigger) => {
+              trigger.setTextContent(next_text)
+              toggle_class(
+                trigger,
+                "tool-select--muted",
+                has_class_name(select.as_element(), "tool-select--muted"),
+              )
+            }
+            None => ()
+          }
+          for option_button in custom.querySelectorAll(".tool-select-option") {
+            let option_value = option_button
+              .getAttribute("data-value")
+              .unwrap_or("")
+            toggle_class(
+              option_button,
+              "is-selected",
+              option_value == current_value,
+            )
+          }
+        }
+        None => ()
+      }
+    None => ()
+  }
+}
+
+///|
+fn init_custom_select(id : String) -> Unit {
+  match get_element_by_id(id) {
+    Some(control) => {
+      let select = @dom.HTMLSelectElement::cast_from_element(control)
+      if select.getAttribute("data-custom-select-ready").unwrap_or("") == "true" {
+        return
+      }
+      select.setAttribute("data-custom-select-ready", "true")
+      toggle_class(select.as_element(), "tool-select--native", true)
+      let doc = @dom.document()
+      let custom = doc.createElement("div")
+      custom.setClassName("tool-select-custom")
+      let trigger = doc.createElement("button")
+      trigger.setAttribute("type", "button")
+      trigger.setClassName("tool-select-trigger")
+      trigger.setAttribute("aria-haspopup", "listbox")
+      trigger.setAttribute("aria-expanded", "false")
+      let menu = doc.createElement("div")
+      menu.setClassName("tool-select-menu")
+      menu.setAttribute("role", "listbox")
+      for child in select.children() {
+        let option = @dom.HTMLOptionElement::cast_from_element(child)
+        if option.hasAttribute("hidden") {
+          continue
+        }
+        let option_value = option.value
+        let option_text = option.textContent()
+        let option_button = doc.createElement("button")
+        option_button.setAttribute("type", "button")
+        option_button.setClassName("tool-select-option")
+        option_button.setAttribute("data-value", option_value)
+        option_button.setTextContent(option_text)
+        option_button
+        .as_event_target()
+        .addEventListener("click", fn(raw) {
+          let event : @dom.MouseEvent = raw.cast()
+          event.preventDefault()
+          select.value = option_value
+          sync_custom_select(select)
+          toggle_class(custom, "is-open", false)
+          trigger.setAttribute("aria-expanded", "false")
+          let change_event = @event.Event::new("change", bubbles=true)
+          ignore(select.as_event_target().dispatchEvent(change_event))
+        })
+        menu.as_node().appendChild(option_button.as_node()) |> ignore
+      }
+      trigger
+      .as_event_target()
+      .addEventListener("click", fn(raw) {
+        let event : @dom.MouseEvent = raw.cast()
+        event.preventDefault()
+        let next_open = !has_class_name(custom, "is-open")
+        close_custom_selects(Some(custom))
+        toggle_class(custom, "is-open", next_open)
+        trigger.setAttribute(
+          "aria-expanded",
+          if next_open {
+            "true"
+          } else {
+            "false"
+          },
+        )
+      })
+      custom.as_node().appendChild(trigger.as_node()) |> ignore
+      custom.as_node().appendChild(menu.as_node()) |> ignore
+      select.insertAdjacentElement("afterend", custom) |> ignore
+      select
+      .as_event_target()
+      .addEventListener("change", fn(_) { sync_custom_select(select) })
+      sync_custom_select(select)
+    }
+    None => ()
+  }
+}
+
+///|
+fn sync_custom_select_by_id(id : String) -> Unit {
+  match get_element_by_id(id) {
+    Some(control) =>
+      sync_custom_select(@dom.HTMLSelectElement::cast_from_element(control))
+    None => ()
+  }
+}
+
+///|
+fn bind_static_ui(
   new_callback : () -> Unit,
   sample_callback : () -> Unit,
   upload_callback : () -> Unit,
@@ -13,187 +259,247 @@ extern "js" fn bind_static_ui(
   detail_callback : (String) -> Unit,
   export_callback : (String) -> Unit,
   toolbar_callback : (String) -> Unit,
-) =
-  #|(
-  #|  newCallback,
-  #|  sampleCallback,
-  #|  uploadCallback,
-  #|  downloadMarkdownCallback,
-  #|  layoutCallback,
-  #|  styleCallback,
-  #|  detailCallback,
-  #|  exportCallback,
-  #|  toolbarCallback,
-  #|) => {
-  #|  const syncCustomSelect = (select) => {
-  #|    if (!select) return
-  #|    const custom = select.parentElement?.querySelector?.(".tool-select-custom")
-  #|    if (!custom) return
-  #|    const trigger = custom.querySelector(".tool-select-trigger")
-  #|    const selectedOption = [...select.options].find((option) => option.value === select.value) ?? select.options[0]
-  #|    if (trigger) trigger.textContent = selectedOption?.textContent ?? ""
-  #|    trigger?.classList.toggle("tool-select--muted", select.classList.contains("tool-select--muted"))
-  #|    for (const optionButton of custom.querySelectorAll(".tool-select-option")) {
-  #|      optionButton.classList.toggle("is-selected", optionButton.dataset.value === select.value)
-  #|    }
-  #|  }
-  #|  const closeCustomSelects = (except) => {
-  #|    for (const custom of document.querySelectorAll(".tool-select-custom")) {
-  #|      if (custom === except) continue
-  #|      custom.classList.remove("is-open")
-  #|      custom.querySelector(".tool-select-trigger")?.setAttribute("aria-expanded", "false")
-  #|    }
-  #|  }
-  #|  const initCustomSelect = (id) => {
-  #|    const select = document.querySelector(`#${id}`)
-  #|    if (!select || select.dataset.customSelectReady === "true") return
-  #|    select.dataset.customSelectReady = "true"
-  #|    select.classList.add("tool-select--native")
-  #|    const custom = document.createElement("div")
-  #|    custom.className = "tool-select-custom"
-  #|    const trigger = document.createElement("button")
-  #|    trigger.type = "button"
-  #|    trigger.className = "tool-select-trigger"
-  #|    trigger.setAttribute("aria-haspopup", "listbox")
-  #|    trigger.setAttribute("aria-expanded", "false")
-  #|    const menu = document.createElement("div")
-  #|    menu.className = "tool-select-menu"
-  #|    menu.setAttribute("role", "listbox")
-  #|    for (const option of select.options) {
-  #|      if (option.hidden) continue
-  #|      const optionButton = document.createElement("button")
-  #|      optionButton.type = "button"
-  #|      optionButton.className = "tool-select-option"
-  #|      optionButton.dataset.value = option.value
-  #|      optionButton.textContent = option.textContent ?? ""
-  #|      optionButton.addEventListener("click", () => {
-  #|        select.value = option.value
-  #|        syncCustomSelect(select)
-  #|        custom.classList.remove("is-open")
-  #|        trigger.setAttribute("aria-expanded", "false")
-  #|        select.dispatchEvent(new Event("change", { bubbles: true }))
-  #|      })
-  #|      menu.appendChild(optionButton)
-  #|    }
-  #|    trigger.addEventListener("click", (event) => {
-  #|      event.preventDefault()
-  #|      const nextOpen = !custom.classList.contains("is-open")
-  #|      closeCustomSelects(nextOpen ? custom : null)
-  #|      custom.classList.toggle("is-open", nextOpen)
-  #|      trigger.setAttribute("aria-expanded", nextOpen ? "true" : "false")
-  #|    })
-  #|    custom.appendChild(trigger)
-  #|    custom.appendChild(menu)
-  #|    select.insertAdjacentElement("afterend", custom)
-  #|    select.addEventListener("change", () => syncCustomSelect(select))
-  #|    syncCustomSelect(select)
-  #|  }
-  #|  window.__moonmarkmindSyncCustomSelect = syncCustomSelect
-  #|  document.querySelector("#new-document")?.addEventListener("click", () => newCallback())
-  #|  document.querySelector("#load-sample")?.addEventListener("click", () => sampleCallback())
-  #|  document.querySelector("#upload-markdown")?.addEventListener("click", () => uploadCallback())
-  #|  document.querySelector("#download-markdown")?.addEventListener("click", () => downloadMarkdownCallback())
-  #|  initCustomSelect("layout-select")
-  #|  initCustomSelect("style-select")
-  #|  initCustomSelect("detail-select")
-  #|  initCustomSelect("export-select")
-  #|  document.querySelector("#layout-select")?.addEventListener("change", (event) => {
-  #|    layoutCallback(event.target?.value ?? "horizontal")
-  #|  })
-  #|  document.querySelector("#style-select")?.addEventListener("change", (event) => {
-  #|    styleCallback(event.target?.value ?? "line")
-  #|  })
-  #|  document.querySelector("#detail-select")?.addEventListener("change", (event) => {
-  #|    detailCallback(event.target?.value ?? "medium")
-  #|  })
-  #|  document.querySelector("#export-select")?.addEventListener("change", (event) => {
-  #|    exportCallback(event.target?.value ?? "")
-  #|  })
-  #|  document.addEventListener("click", (event) => {
-  #|    if (event.target?.closest?.(".tool-select-custom")) return
-  #|    closeCustomSelects(null)
-  #|  })
-  #|  document.querySelector("#undo-action")?.addEventListener("click", (event) => {
-  #|    if (event.currentTarget?.dataset?.disabled === "true") return
-  #|    toolbarCallback("undo")
-  #|  })
-  #|  document.querySelector("#redo-action")?.addEventListener("click", (event) => {
-  #|    if (event.currentTarget?.dataset?.disabled === "true") return
-  #|    toolbarCallback("redo")
-  #|  })
-  #|  for (const button of document.querySelectorAll("[data-toolbar-action]")) {
-  #|    button.addEventListener("click", () => {
-  #|      if (button.dataset.disabled === "true") return
-  #|      toolbarCallback(button.dataset.toolbarAction ?? "")
-  #|    })
-  #|  }
-  #|  window.addEventListener("keydown", (event) => {
-  #|    const target = event.target
-  #|    if (target?.closest?.("input, textarea, select")) return
-  #|    let action = ""
-  #|    if (event.key === "Enter") action = "new-branch"
-  #|    else if (event.key === "Tab") action = "new-child"
-  #|    else if (event.key === "Delete" || event.key === "Backspace") action = "delete-node"
-  #|    else if (event.key === " " || event.code === "Space") action = "toggle-node"
-  #|    else if (event.ctrlKey && event.key === "ArrowUp") action = "move-up"
-  #|    else if (event.ctrlKey && event.key === "ArrowDown") action = "move-down"
-  #|    else if (event.ctrlKey && !event.shiftKey && (event.key === "z" || event.key === "Z")) action = "undo"
-  #|    else if (event.ctrlKey && (event.key === "y" || event.key === "Y")) action = "redo"
-  #|    if (!action) return
-  #|    event.preventDefault()
-  #|    toolbarCallback(action)
-  #|  })
-  #|}
+) -> Unit {
+  match get_element("#new-document") {
+    Some(button) =>
+      button
+      .as_event_target()
+      .addEventListener("click", fn(_) { new_callback() })
+    None => ()
+  }
+  match get_element("#load-sample") {
+    Some(button) =>
+      button
+      .as_event_target()
+      .addEventListener("click", fn(_) { sample_callback() })
+    None => ()
+  }
+  match get_element("#upload-markdown") {
+    Some(button) =>
+      button
+      .as_event_target()
+      .addEventListener("click", fn(_) { upload_callback() })
+    None => ()
+  }
+  match get_element("#download-markdown") {
+    Some(button) =>
+      button
+      .as_event_target()
+      .addEventListener("click", fn(_) { download_markdown_callback() })
+    None => ()
+  }
+  init_custom_select("layout-select")
+  init_custom_select("style-select")
+  init_custom_select("detail-select")
+  init_custom_select("export-select")
+  match get_element_by_id("layout-select") {
+    Some(select) => {
+      let select = @dom.HTMLSelectElement::cast_from_element(select)
+      select
+      .as_event_target()
+      .addEventListener("change", fn(_) { layout_callback(select.value) })
+    }
+    None => ()
+  }
+  match get_element_by_id("style-select") {
+    Some(select) => {
+      let select = @dom.HTMLSelectElement::cast_from_element(select)
+      select
+      .as_event_target()
+      .addEventListener("change", fn(_) { style_callback(select.value) })
+    }
+    None => ()
+  }
+  match get_element_by_id("detail-select") {
+    Some(select) => {
+      let select = @dom.HTMLSelectElement::cast_from_element(select)
+      select
+      .as_event_target()
+      .addEventListener("change", fn(_) { detail_callback(select.value) })
+    }
+    None => ()
+  }
+  match get_element_by_id("export-select") {
+    Some(select) => {
+      let select = @dom.HTMLSelectElement::cast_from_element(select)
+      select
+      .as_event_target()
+      .addEventListener("change", fn(_) { export_callback(select.value) })
+    }
+    None => ()
+  }
+  @dom.document()
+  .as_event_target()
+  .addEventListener("click", fn(raw) {
+    let event : @dom.MouseEvent = raw.cast()
+    match event.target().closest(".tool-select-custom") {
+      Some(_) => return
+      None => ()
+    }
+    close_custom_selects(None)
+  })
+  match get_element("#undo-action") {
+    Some(button) =>
+      button
+      .as_event_target()
+      .addEventListener("click", fn(_) {
+        if button.getAttribute("data-disabled").unwrap_or("") == "true" {
+          return
+        }
+        toolbar_callback("undo")
+      })
+    None => ()
+  }
+  match get_element("#redo-action") {
+    Some(button) =>
+      button
+      .as_event_target()
+      .addEventListener("click", fn(_) {
+        if button.getAttribute("data-disabled").unwrap_or("") == "true" {
+          return
+        }
+        toolbar_callback("redo")
+      })
+    None => ()
+  }
+  for button in @dom.document().querySelectorAll("[data-toolbar-action]") {
+    let action = button.getAttribute("data-toolbar-action").unwrap_or("")
+    button
+    .as_event_target()
+    .addEventListener("click", fn(_) {
+      if button.getAttribute("data-disabled").unwrap_or("") == "true" {
+        return
+      }
+      toolbar_callback(action)
+    })
+  }
+  @dom.window()
+  .as_event_target()
+  .addEventListener("keydown", fn(raw) {
+    let event : @dom.KeyboardEvent = raw.cast()
+    let target = event.target()
+    match target.closest("input, textarea, select") {
+      Some(_) => return
+      None => ()
+    }
+    let mut action = ""
+    if event.key == "Enter" {
+      action = "new-branch"
+    } else if event.key == "Tab" {
+      action = "new-child"
+    } else if event.key == "Delete" || event.key == "Backspace" {
+      action = "delete-node"
+    } else if event.key == " " || event.code == "Space" {
+      action = "toggle-node"
+    } else if event.ctrlKey && event.key == "ArrowUp" {
+      action = "move-up"
+    } else if event.ctrlKey && event.key == "ArrowDown" {
+      action = "move-down"
+    } else if event.ctrlKey &&
+      !event.shiftKey &&
+      (event.key == "z" || event.key == "Z") {
+      action = "undo"
+    } else if event.ctrlKey && (event.key == "y" || event.key == "Y") {
+      action = "redo"
+    }
+    if action == "" {
+      return
+    }
+    event.preventDefault()
+    toolbar_callback(action)
+  })
+}
 
 ///|
-extern "js" fn bind_splitter_ui(callback : (Int) -> Unit) =
-  #|(callback) => {
-  #|  const divider = document.querySelector("#workspace-divider")
-  #|  const workspace = document.querySelector(".workspace")
-  #|  if (!divider || !workspace) return
-  #|  let dragging = false
-  #|  const parseCssPixels = (name, fallback) => {
-  #|    const raw = getComputedStyle(workspace).getPropertyValue(name).trim()
-  #|    const value = Number.parseFloat(raw.replace("px", ""))
-  #|    return Number.isFinite(value) ? value : fallback
-  #|  }
-  #|  const onMove = (event) => {
-  #|    if (!dragging) return
-  #|    const rect = workspace.getBoundingClientRect()
-  #|    if (rect.width <= 0) return
-  #|    const minLeft = 300
-  #|    const dividerWidth = 14
-  #|    const minRight = parseCssPixels("--mindmap-toolbar-min-width", 390)
-  #|    const maxLeft = Math.max(minLeft, rect.width - minRight - dividerWidth)
-  #|    const clampedLeft = Math.max(minLeft, Math.min(event.clientX - rect.left, maxLeft))
-  #|    const percent = (clampedLeft / rect.width) * 100
-  #|    callback(Math.round(percent))
-  #|  }
-  #|  const stop = () => {
-  #|    dragging = false
-  #|    document.body.style.cursor = ""
-  #|    document.body.style.userSelect = ""
-  #|  }
-  #|  divider.addEventListener("mousedown", (event) => {
-  #|    dragging = true
-  #|    document.body.style.cursor = "col-resize"
-  #|    document.body.style.userSelect = "none"
-  #|    event.preventDefault()
-  #|  })
-  #|  window.addEventListener("mousemove", onMove)
-  #|  window.addEventListener("mouseup", stop)
-  #|}
+fn parse_css_pixels(
+  style : @dom.CSSStyleDeclaration,
+  name : String,
+  fallback : Double,
+) -> Double {
+  let raw = style.get_property_value(name).trim().to_string()
+  let value = parse_float(raw.replace(old="px", new=""))
+  if value != value {
+    fallback
+  } else {
+    value
+  }
+}
+
+///|
+fn bind_splitter_ui(callback : (Int) -> Unit) -> Unit {
+  match get_element("#workspace-divider") {
+    Some(divider) =>
+      match get_element(".workspace") {
+        Some(workspace) => {
+          let dragging = @ref.Ref(false)
+          divider
+          .as_event_target()
+          .addEventListener("mousedown", fn(raw) {
+            let event : @dom.MouseEvent = raw.cast()
+            dragging.val = true
+            set_body_drag_style("col-resize", "none")
+            event.preventDefault()
+          })
+          @dom.window()
+          .as_event_target()
+          .addEventListener("mousemove", fn(raw) {
+            let event : @dom.MouseEvent = raw.cast()
+            if !dragging.val {
+              return
+            }
+            let rect : @dom.DOMRect = workspace
+              .as_any()
+              ._call("getBoundingClientRect", [])
+              .cast()
+            if rect.width <= 0.0 {
+              return
+            }
+            let min_left = 300.0
+            let divider_width = 14.0
+            let min_right = parse_css_pixels(
+              @dom.css_style_from_val(@dom.window().getComputedStyle(workspace)),
+              "--mindmap-toolbar-min-width",
+              390.0,
+            )
+            let max_left = if rect.width - min_right - divider_width > min_left {
+              rect.width - min_right - divider_width
+            } else {
+              min_left
+            }
+            let raw_left = event.clientX - rect.left
+            let clamped_left = if raw_left < min_left {
+              min_left
+            } else if raw_left > max_left {
+              max_left
+            } else {
+              raw_left
+            }
+            let percent = clamped_left / rect.width * 100.0
+            callback(percent.round().to_int())
+          })
+          @dom.window()
+          .as_event_target()
+          .addEventListener("mouseup", fn(_) {
+            dragging.val = false
+            clear_body_drag_style()
+          })
+        }
+        None => ()
+      }
+    None => ()
+  }
+}
 
 ///|
 extern "js" fn bind_mindmap_ui(
-  click_callback : (BrowserEvent) -> Unit,
-  dblclick_callback : (BrowserEvent) -> Unit,
-  keydown_callback : (BrowserEvent) -> Unit,
-  focusout_callback : (BrowserEvent) -> Unit,
-  dragstart_callback : (BrowserEvent) -> Unit,
-  dragend_callback : (BrowserEvent) -> Unit,
-  dragover_callback : (BrowserEvent) -> Unit,
-  drop_callback : (BrowserEvent) -> Unit,
+  click_callback : (@dom.MouseEvent) -> Unit,
+  dblclick_callback : (@dom.MouseEvent) -> Unit,
+  keydown_callback : (@dom.KeyboardEvent) -> Unit,
+  focusout_callback : (@dom.FocusEvent) -> Unit,
+  dragstart_callback : (@dom.DragEvent) -> Unit,
+  dragend_callback : (@dom.DragEvent) -> Unit,
+  dragover_callback : (@dom.DragEvent) -> Unit,
+  drop_callback : (@dom.DragEvent) -> Unit,
 ) =
   #|(
   #|  clickCallback,
@@ -889,23 +1195,29 @@ extern "js" fn bind_input_listener(
   #|}
 
 ///|
-extern "js" fn set_app_html(value : String) =
-  #|(value) => {
-  #|  const app = document.querySelector("#app")
-  #|  if (app) app.innerHTML = value
-  #|}
+fn set_app_html(value : String) -> Unit {
+  match get_element("#app") {
+    Some(app) => app.setInnerHTML(value)
+    None => ()
+  }
+}
 
 ///|
-extern "js" fn get_input_value() -> String =
-  #|() => document.querySelector("#input")?.value ?? ""
+fn get_input_value() -> String {
+  match get_element("#input") {
+    Some(input) => to_text_area(input).value
+    None => ""
+  }
+}
 
 ///|
-extern "js" fn set_input_value(value : String) =
-  #|(value) => {
-  #|  const input = document.querySelector("#input")
-  #|  if (input) input.value = value
-  #|  window.__moonmarkmindSyncEditorChrome?.()
-  #|}
+fn set_input_value(value : String) -> Unit {
+  match get_element("#input") {
+    Some(input) => to_text_area(input).value = value
+    None => ()
+  }
+  sync_editor_chrome()
+}
 
 ///|
 extern "js" fn set_input_linked_lines(line_indexes : String) =
@@ -947,93 +1259,118 @@ extern "js" fn reveal_input_line(line_index : Int) =
   #|}
 
 ///|
-extern "js" fn set_mindmap_html(value : String) =
-  #|(value) => {
-  #|  const mindmap = document.querySelector("#mindmap")
-  #|  if (!mindmap) return
-  #|  if (mindmap.dataset.panX == null) mindmap.dataset.panX = "0"
-  #|  if (mindmap.dataset.panY == null) mindmap.dataset.panY = "0"
-  #|  if (mindmap.dataset.zoom == null) mindmap.dataset.zoom = "1"
-  #|  mindmap.innerHTML = `<div class="mindmap-content">${value}</div>`
-  #|  mindmap.style.setProperty("--pan-x", `${Number(mindmap.dataset.panX ?? "0")}px`)
-  #|  mindmap.style.setProperty("--pan-y", `${Number(mindmap.dataset.panY ?? "0")}px`)
-  #|  mindmap.style.setProperty("--zoom", `${Number(mindmap.dataset.zoom ?? "1")}`)
-  #|  const zoomValue = document.querySelector("#zoom-value")
-  #|  const zoomEdit = document.querySelector("#zoom-edit")
-  #|  if (zoomValue) zoomValue.textContent = `${Math.round(Number(mindmap.dataset.zoom ?? "1") * 100)}%`
-  #|  if (zoomEdit) zoomEdit.value = `${Math.round(Number(mindmap.dataset.zoom ?? "1") * 100)}`
-  #|  window.__moonmarkmindRenderConnectors?.()
-  #|}
+fn set_mindmap_html(value : String) -> Unit {
+  match get_element("#mindmap") {
+    Some(mindmap) => {
+      let pan_x = mindmap.getAttribute("data-pan-x").unwrap_or("0")
+      let pan_y = mindmap.getAttribute("data-pan-y").unwrap_or("0")
+      let zoom = mindmap.getAttribute("data-zoom").unwrap_or("1")
+      mindmap.setAttribute("data-pan-x", pan_x)
+      mindmap.setAttribute("data-pan-y", pan_y)
+      mindmap.setAttribute("data-zoom", zoom)
+      mindmap.setInnerHTML("<div class=\"mindmap-content\">\{value}</div>")
+      let style = @dom.css_style_from_val(mindmap.as_any()._get("style").cast())
+      style.set_property("--pan-x", "\{pan_x}px")
+      style.set_property("--pan-y", "\{pan_y}px")
+      style.set_property("--zoom", zoom)
+      let zoom_percent = (parse_float(zoom) * 100.0).round().to_int()
+      match get_element("#zoom-value") {
+        Some(zoom_value) => zoom_value.setTextContent("\{zoom_percent}%")
+        None => ()
+      }
+      match get_element("#zoom-edit") {
+        Some(zoom_edit) =>
+          @dom.HTMLInputElement::cast_from_element(zoom_edit).value = "\{zoom_percent}%"
+        None => ()
+      }
+    }
+    None => ()
+  }
+  render_mindmap_connectors()
+}
 
 ///|
-extern "js" fn set_workspace_split(percent : Int) =
-  #|(percent) => {
-  #|  const workspace = document.querySelector(".workspace")
-  #|  if (workspace) {
-  #|    workspace.style.setProperty("--left-pane-percent", `${percent}%`)
-  #|  }
-  #|  window.__moonmarkmindSyncEditorChrome?.()
-  #|}
+fn set_workspace_split(percent : Int) -> Unit {
+  match get_element(".workspace") {
+    Some(workspace) => {
+      let style = @dom.css_style_from_val(
+        workspace.as_any()._get("style").cast(),
+      )
+      style.set_property("--left-pane-percent", "\{percent}%")
+    }
+    None => ()
+  }
+}
 
 ///|
-extern "js" fn set_select_value(id : String, value : String) =
-  #|(id, value) => {
-  #|  const control = document.querySelector(`#${id}`)
-  #|  if (!control) return
-  #|  control.value = value
-  #|  window.__moonmarkmindSyncCustomSelect?.(control)
-  #|}
+fn set_select_value(id : String, value : String) -> Unit {
+  match get_element_by_id(id) {
+    Some(control) => {
+      @dom.HTMLSelectElement::cast_from_element(control).value = value
+      sync_custom_select_by_id(id)
+    }
+    None => ()
+  }
+}
 
 ///|
-extern "js" fn set_select_muted(id : String, muted : Bool) =
-  #|(id, muted) => {
-  #|  const control = document.querySelector(`#${id}`)
-  #|  if (!control) return
-  #|  control.classList.toggle("tool-select--muted", muted)
-  #|  window.__moonmarkmindSyncCustomSelect?.(control)
-  #|}
+fn set_select_muted(id : String, muted : Bool) -> Unit {
+  match get_element_by_id(id) {
+    Some(control) => {
+      toggle_class(control, "tool-select--muted", muted)
+      sync_custom_select_by_id(id)
+    }
+    None => ()
+  }
+}
 
 ///|
-extern "js" fn set_toolbar_selection_enabled(enabled : Bool) =
-  #|(enabled) => {
-  #|  for (const button of document.querySelectorAll("[data-toolbar-action]")) {
-  #|    button.dataset.disabled = (!enabled).toString()
-  #|    button.setAttribute("aria-disabled", (!enabled).toString())
-  #|    button.classList.toggle("mindmap-tool--disabled", !enabled)
-  #|  }
-  #|}
+fn set_toolbar_selection_enabled(enabled : Bool) -> Unit {
+  for button in @dom.document().querySelectorAll("[data-toolbar-action]") {
+    let disabled = (!enabled).to_string()
+    button.setAttribute("data-disabled", disabled)
+    button.setAttribute("aria-disabled", disabled)
+    toggle_class(button, "mindmap-tool--disabled", !enabled)
+  }
+}
 
 ///|
-extern "js" fn set_toolbar_action_enabled(action : String, enabled : Bool) =
-  #|(action, enabled) => {
-  #|  const button = document.querySelector(`[data-toolbar-action="${action}"]`)
-  #|  if (!button) return
-  #|  button.dataset.disabled = (!enabled).toString()
-  #|  button.setAttribute("aria-disabled", (!enabled).toString())
-  #|  button.classList.toggle("mindmap-tool--disabled", !enabled)
-  #|}
+fn set_toolbar_action_enabled(action : String, enabled : Bool) -> Unit {
+  match get_element("[data-toolbar-action=\"\{action}\"]") {
+    Some(button) => {
+      let disabled = (!enabled).to_string()
+      button.setAttribute("data-disabled", disabled)
+      button.setAttribute("aria-disabled", disabled)
+      toggle_class(button, "mindmap-tool--disabled", !enabled)
+    }
+    None => ()
+  }
+}
 
 ///|
-extern "js" fn set_aux_action_enabled(id : String, enabled : Bool) =
-  #|(id, enabled) => {
-  #|  const button = document.querySelector(`#${id}`)
-  #|  if (!button) return
-  #|  button.dataset.disabled = (!enabled).toString()
-  #|  button.setAttribute("aria-disabled", (!enabled).toString())
-  #|  button.classList.toggle("mindmap-aux-button--disabled", !enabled)
-  #|}
+fn set_aux_action_enabled(id : String, enabled : Bool) -> Unit {
+  match get_element_by_id(id) {
+    Some(button) => {
+      let disabled = (!enabled).to_string()
+      button.setAttribute("data-disabled", disabled)
+      button.setAttribute("aria-disabled", disabled)
+      toggle_class(button, "mindmap-aux-button--disabled", !enabled)
+    }
+    None => ()
+  }
+}
 
 ///|
-extern "js" fn focus_editor(node_index : Int) =
-  #|(nodeIndex) => {
-  #|  queueMicrotask(() => {
-  #|    const editor = document.querySelector(`[data-editor-for="${nodeIndex}"]`)
-  #|    if (editor) {
-  #|      editor.focus()
-  #|      editor.select?.()
-  #|    }
-  #|  })
-  #|}
+fn focus_editor(node_index : Int) -> Unit {
+  match get_element("[data-editor-for=\"\{node_index}\"]") {
+    Some(editor) => {
+      let textarea = to_text_area(editor)
+      textarea.focus()
+      textarea.as_any()._call("select", []) |> ignore
+    }
+    None => ()
+  }
+}
 
 ///|
 extern "js" fn pick_markdown_file(callback : (String, String) -> Unit) =
@@ -1175,63 +1512,196 @@ extern "js" fn download_mindmap_png(filename : String) =
   #|}
 
 ///|
-extern "js" fn stop_event(event : BrowserEvent) =
-  #|(event) => event.stopPropagation()
+fn stop_event(event : @dom.MouseEvent) -> Unit {
+  event.stopPropagation()
+}
 
 ///|
-extern "js" fn prevent_event_default(event : BrowserEvent) =
-  #|(event) => event.preventDefault()
+fn prevent_event_default(event : @dom.MouseEvent) -> Unit {
+  event.preventDefault()
+}
 
 ///|
-extern "js" fn event_action(event : BrowserEvent) -> String =
-  #|(event) => event.target?.closest?.("[data-action]")?.dataset?.action ?? ""
+fn event_action(event : @dom.MouseEvent) -> String {
+  match event.target().closest("[data-action]") {
+    Some(action) => action.getAttribute("data-action").unwrap_or("")
+    None => ""
+  }
+}
 
 ///|
-extern "js" fn event_node_index(event : BrowserEvent) -> Int =
-  #|(event) => Number(event.target?.closest?.("[data-node-index]")?.dataset?.nodeIndex ?? -1)
+fn event_action_from_point(event : @dom.MouseEvent) -> String {
+  let target = event_target_from_point(event)
+  match target.closest("[data-action]") {
+    Some(action) => action.getAttribute("data-action").unwrap_or("")
+    None => ""
+  }
+}
 
 ///|
-extern "js" fn event_drop_target_index(event : BrowserEvent) -> Int =
-  #|(event) => Number(event.target?.closest?.("[data-drop-target]")?.dataset?.dropTarget ?? -1)
+extern "js" fn event_target_from_point(event : @dom.MouseEvent) -> @dom.Element =
+  #|(event) => {
+  #|  const stack = document.elementsFromPoint(event.clientX, event.clientY)
+  #|  for (const element of stack) {
+  #|    const target = element.closest?.("[data-node-index], [data-action], [data-editor-for]")
+  #|    if (target) return target
+  #|  }
+  #|  return document.elementFromPoint(event.clientX, event.clientY) ?? event.target
+  #|}
 
 ///|
-extern "js" fn event_drop_parent_index(event : BrowserEvent) -> Int =
-  #|(event) => Number(event.target?.closest?.("[data-drop-parent]")?.dataset?.dropParent ?? -1)
+fn event_node_index_from_target(target : @dom.Element) -> Int {
+  match target.closest("[data-node-index]") {
+    Some(node) =>
+      @strconv.parse_int(node.getAttribute("data-node-index").unwrap_or("-1")) catch {
+        _ => -1
+      }
+    None => -1
+  }
+}
 
 ///|
-extern "js" fn event_drop_place_after(event : BrowserEvent) -> Bool =
-  #|(event) => (event.target?.closest?.("[data-drop-position]")?.dataset?.dropPosition ?? "before") === "after"
+fn event_node_index(event : @dom.MouseEvent) -> Int {
+  event_node_index_from_target(event.target())
+}
 
 ///|
-extern "js" fn event_editor_index(event : BrowserEvent) -> Int =
-  #|(event) => Number(event.target?.closest?.("[data-editor-for]")?.dataset?.editorFor ?? -1)
+fn event_node_index_from_point(event : @dom.MouseEvent) -> Int {
+  event_node_index_from_target(event_target_from_point(event))
+}
 
 ///|
-extern "js" fn event_editor_value(event : BrowserEvent) -> String =
-  #|(event) => event.target?.value ?? ""
+fn event_keyboard_node_index(event : @dom.KeyboardEvent) -> Int {
+  event_node_index_from_target(event.target())
+}
 
 ///|
-extern "js" fn event_key(event : BrowserEvent) -> String =
-  #|(event) => event.key ?? ""
+fn event_drop_target_index_from_target(target : @dom.Element) -> Int {
+  match target.closest("[data-drop-target]") {
+    Some(node) =>
+      @strconv.parse_int(node.getAttribute("data-drop-target").unwrap_or("-1")) catch {
+        _ => -1
+      }
+    None => -1
+  }
+}
 
 ///|
-extern "js" fn event_multi_select_key(event : BrowserEvent) -> Bool =
-  #|(event) => Boolean(event.ctrlKey || event.metaKey)
+fn event_drop_target_index(event : @dom.DragEvent) -> Int {
+  event_drop_target_index_from_target(event.target())
+}
 
 ///|
-extern "js" fn event_shift_key(event : BrowserEvent) -> Bool =
-  #|(event) => Boolean(event.shiftKey)
+fn event_drop_parent_index_from_target(target : @dom.Element) -> Int {
+  match target.closest("[data-drop-parent]") {
+    Some(node) =>
+      @strconv.parse_int(node.getAttribute("data-drop-parent").unwrap_or("-1")) catch {
+        _ => -1
+      }
+    None => -1
+  }
+}
 
 ///|
-extern "js" fn event_drag_source_index(event : BrowserEvent) -> Int =
-  #|(event) => Number(event.target?.closest?.("[data-drag-index]")?.dataset?.dragIndex ?? -1)
+fn event_drop_parent_index(event : @dom.DragEvent) -> Int {
+  event_drop_parent_index_from_target(event.target())
+}
 
 ///|
-extern "js" fn event_drag_parent(event : BrowserEvent) -> Int =
-  #|(event) => Number(event.target?.closest?.("[data-drag-parent]")?.dataset?.dragParent ?? -1)
+fn event_drop_place_after_from_target(target : @dom.Element) -> Bool {
+  match target.closest("[data-drop-position]") {
+    Some(node) =>
+      node.getAttribute("data-drop-position").unwrap_or("before") == "after"
+    None => false
+  }
+}
 
 ///|
-extern "js" fn set_drag_text(event : BrowserEvent, value : String) =
+fn event_drop_place_after(event : @dom.DragEvent) -> Bool {
+  event_drop_place_after_from_target(event.target())
+}
+
+///|
+fn event_editor_index_from_target(target : @dom.Element) -> Int {
+  match target.closest("[data-editor-for]") {
+    Some(node) =>
+      @strconv.parse_int(node.getAttribute("data-editor-for").unwrap_or("-1")) catch {
+        _ => -1
+      }
+    None => -1
+  }
+}
+
+///|
+fn event_editor_index(event : @dom.FocusEvent) -> Int {
+  event_editor_index_from_target(event.target())
+}
+
+///|
+fn event_editor_value_from_target(target : @dom.Element) -> String {
+  if target.tagName() == "TEXTAREA" {
+    to_text_area(target).value
+  } else if target.tagName() == "INPUT" {
+    @dom.HTMLInputElement::cast_from_element(target).value
+  } else {
+    target.textContent()
+  }
+}
+
+///|
+fn event_editor_value(event : @dom.FocusEvent) -> String {
+  event_editor_value_from_target(event.target())
+}
+
+///|
+fn event_key(event : @dom.KeyboardEvent) -> String {
+  event.key
+}
+
+///|
+fn event_multi_select_key(event : @dom.MouseEvent) -> Bool {
+  event.ctrlKey || event.metaKey
+}
+
+///|
+fn event_shift_key(event : @dom.MouseEvent) -> Bool {
+  event.shiftKey
+}
+
+///|
+fn event_drag_source_index_from_target(target : @dom.Element) -> Int {
+  match target.closest("[data-drag-index]") {
+    Some(node) =>
+      @strconv.parse_int(node.getAttribute("data-drag-index").unwrap_or("-1")) catch {
+        _ => -1
+      }
+    None => -1
+  }
+}
+
+///|
+fn event_drag_source_index(event : @dom.DragEvent) -> Int {
+  event_drag_source_index_from_target(event.target())
+}
+
+///|
+fn event_drag_parent_from_target(target : @dom.Element) -> Int {
+  match target.closest("[data-drag-parent]") {
+    Some(node) =>
+      @strconv.parse_int(node.getAttribute("data-drag-parent").unwrap_or("-1")) catch {
+        _ => -1
+      }
+    None => -1
+  }
+}
+
+///|
+fn event_drag_parent(event : @dom.DragEvent) -> Int {
+  event_drag_parent_from_target(event.target())
+}
+
+///|
+extern "js" fn set_drag_text(event : @dom.DragEvent, value : String) =
   #|(event, value) => {
   #|  if (!event.dataTransfer) return
   #|  event.dataTransfer.effectAllowed = "move"
@@ -1258,10 +1728,12 @@ extern "js" fn highlight_drop_target(node_index : Int, place_after : Bool) =
   #|}
 
 ///|
-extern "js" fn set_editor_document_name(value : String) =
-  #|(value) => {
-  #|  const badge = document.querySelector(".editor-chrome__badge")
-  #|  if (!badge) return
-  #|  badge.textContent = value
-  #|  badge.title = value
-  #|}
+fn set_editor_document_name(value : String) -> Unit {
+  match get_element(".editor-chrome__badge") {
+    Some(badge) => {
+      badge.setTextContent(value)
+      badge.setAttribute("title", value)
+    }
+    None => ()
+  }
+}

@@ -1,1 +1,10 @@
+import {
+  "mizchi/js/browser/dom" @dom,
+  "mizchi/js/web/event" @event,
+  "moonbitlang/core/ref" @ref,
+  "moonbitlang/core/strconv" @strconv,
+}
 
+options(
+  "supported-targets": [ "js" ],
+)
