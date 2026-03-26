@@ -885,6 +885,7 @@ fn build_horizontal_mindmap_dom(
   stage_class : String,
 ) -> @dom.Element {
   let stage = create_element("div", "\{stage_class} mindmap-stage--radial")
+  append_child(stage, create_svg_element("svg", "mindmap-connector-layer"))
   let left_column = create_element(
     "div", "branch-column branch-column--left branch-column--root",
   )
@@ -1083,6 +1084,7 @@ fn build_vertical_mindmap_dom(
   stage_class : String,
 ) -> @dom.Element {
   let stage = create_element("div", "\{stage_class} mindmap-stage--vertical")
+  append_child(stage, create_svg_element("svg", "mindmap-connector-layer"))
   let root = create_element("div", "vertical-root")
   append_child(root, build_vertical_tree_dom(center, -1, true, -1))
   append_child(stage, root)
@@ -1153,6 +1155,7 @@ fn build_single_right_mindmap_dom(
     "div",
     "\{stage_class} mindmap-stage--single-right",
   )
+  append_child(stage, create_svg_element("svg", "mindmap-connector-layer"))
   let tree = create_element("div", "single-right-tree")
   append_child(tree, build_single_right_tree_dom(center, -1, true, -1))
   append_child(stage, tree)

@@ -22,12 +22,9 @@ fn render_mindmap_connectors() -> Unit {
           match content.querySelector(".mindmap-stage") {
             Some(stage) => {
               let stage_element = stage
-              toggle_class(stage_element, "mindmap-stage--svg-connectors", true)
-              remove_mindmap_connector_layers(content)
-              if stage_has_vertical_layout(stage_element) {
-                return
-              }
-              let nodes = content.querySelectorAll(".node[data-node-index]")
+              let nodes : Array[@dom.Element] = content.querySelectorAll(
+                ".node[data-node-index]",
+              )
               if nodes.length() <= 1 {
                 return
               }
@@ -59,117 +56,129 @@ fn render_mindmap_connectors() -> Unit {
               let top = ((stage_rect.top - content_rect.top) / safe_zoom)
                 .round()
                 .to_int()
-              let svg_paths : Array[@dom.Element] = []
-              for node in nodes {
-                let parent_index = parse_int_or_default(
-                  node.getAttribute("data-parent-index").unwrap_or("-1"),
-                  -1,
-                )
-                if parent_index < 0 {
-                  continue
-                }
-                match find_node_by_index(nodes, parent_index) {
-                  Some(parent) => {
-                    let parent_rect = element_rect(parent)
-                    let node_rect = element_rect(node)
-                    let parent_center_x = stage_local_x(
-                      rect_center_x(parent_rect),
-                      stage_left,
-                      safe_zoom,
-                    )
-                    let parent_center_y = stage_local_y(
-                      rect_center_y(parent_rect),
-                      stage_top,
-                      safe_zoom,
-                    )
-                    let node_center_x = stage_local_x(
-                      rect_center_x(node_rect),
-                      stage_left,
-                      safe_zoom,
-                    )
-                    let node_center_y = stage_local_y(
-                      rect_center_y(node_rect),
-                      stage_top,
-                      safe_zoom,
-                    )
-                    let direction = if node_center_x >= parent_center_x {
-                      1
-                    } else {
-                      -1
-                    }
-                    let start_x = stage_local_x(
-                      if direction > 0 {
-                        parent_rect.right
-                      } else {
-                        parent_rect.left
-                      },
-                      stage_left,
-                      safe_zoom,
-                    )
-                    let end_x = stage_local_x(
-                      if direction > 0 {
-                        node_rect.left
-                      } else {
-                        node_rect.right
-                      },
-                      stage_left,
-                      safe_zoom,
-                    )
-                    let span = abs_double(end_x - start_x)
-                    let pull = min_double(30.0, max_double(12.0, span * 0.26))
-                    let settle = min_double(40.0, max_double(14.0, span * 0.38))
-                    let mid_y = parent_center_y +
-                      (node_center_y - parent_center_y) * 0.2
-                    let stroke_width = if parse_int_or_default(
-                        node.getAttribute("data-depth").unwrap_or("0"),
-                        0,
-                      ) ==
-                      1 {
-                      2.8
-                    } else {
-                      2.0
-                    }
-                    let path = create_element("path", "")
-                    path.setAttribute(
-                      "d",
-                      "M \{double_to_svg_number(start_x)} \{double_to_svg_number(parent_center_y)} C \{double_to_svg_number(start_x + direction.to_double() * pull)} \{double_to_svg_number(mid_y)}, \{double_to_svg_number(end_x - direction.to_double() * settle)} \{double_to_svg_number(node_center_y)}, \{double_to_svg_number(end_x)} \{double_to_svg_number(node_center_y)}",
-                    )
-                    path.setAttribute("fill", "none")
-                    path.setAttribute("stroke", "#94b6db")
-                    path.setAttribute("stroke-opacity", "0.9")
-                    path.setAttribute(
-                      "stroke-width",
-                      double_to_svg_number(stroke_width),
-                    )
-                    path.setAttribute("stroke-linecap", "round")
-                    path.setAttribute("stroke-linejoin", "round")
-                    path.setAttribute("vector-effect", "non-scaling-stroke")
-                    svg_paths.push(path)
+              let _ = if stage_has_vertical_layout(stage_element) {
+                false
+              } else {
+                let svg_paths : Array[@dom.Element] = []
+                for node in nodes {
+                  let parent_index = parse_int_or_default(
+                    node.getAttribute("data-parent-index").unwrap_or("-1"),
+                    -1,
+                  )
+                  if parent_index < 0 {
+                    continue
                   }
-                  None => ()
+                  match find_node_by_index(nodes, parent_index) {
+                    Some(parent) => {
+                      let parent_rect = element_rect(parent)
+                      let node_rect = element_rect(node)
+                      let parent_center_x = stage_local_x(
+                        rect_center_x(parent_rect),
+                        stage_left,
+                        safe_zoom,
+                      )
+                      let parent_center_y = stage_local_y(
+                        rect_center_y(parent_rect),
+                        stage_top,
+                        safe_zoom,
+                      )
+                      let node_center_x = stage_local_x(
+                        rect_center_x(node_rect),
+                        stage_left,
+                        safe_zoom,
+                      )
+                      let node_center_y = stage_local_y(
+                        rect_center_y(node_rect),
+                        stage_top,
+                        safe_zoom,
+                      )
+                      let direction = if node_center_x >= parent_center_x {
+                        1
+                      } else {
+                        -1
+                      }
+                      let start_x = stage_local_x(
+                        if direction > 0 {
+                          parent_rect.right
+                        } else {
+                          parent_rect.left
+                        },
+                        stage_left,
+                        safe_zoom,
+                      )
+                      let end_x = stage_local_x(
+                        if direction > 0 {
+                          node_rect.left
+                        } else {
+                          node_rect.right
+                        },
+                        stage_left,
+                        safe_zoom,
+                      )
+                      let span = abs_double(end_x - start_x)
+                      let pull = min_double(30.0, max_double(12.0, span * 0.26))
+                      let settle = min_double(
+                        40.0,
+                        max_double(14.0, span * 0.38),
+                      )
+                      let mid_y = parent_center_y +
+                        (node_center_y - parent_center_y) * 0.2
+                      let stroke_width = if parse_int_or_default(
+                          node.getAttribute("data-depth").unwrap_or("0"),
+                          0,
+                        ) ==
+                        1 {
+                        2.8
+                      } else {
+                        2.0
+                      }
+                      let path = create_svg_element("path", "")
+                      path.setAttribute(
+                        "d",
+                        "M \{double_to_svg_number(start_x)} \{double_to_svg_number(parent_center_y)} C \{double_to_svg_number(start_x + direction.to_double() * pull)} \{double_to_svg_number(mid_y)}, \{double_to_svg_number(end_x - direction.to_double() * settle)} \{double_to_svg_number(node_center_y)}, \{double_to_svg_number(end_x)} \{double_to_svg_number(node_center_y)}",
+                      )
+                      path.setAttribute("fill", "none")
+                      path.setAttribute("stroke", "#94b6db")
+                      path.setAttribute("stroke-opacity", "0.9")
+                      path.setAttribute(
+                        "stroke-width",
+                        double_to_svg_number(stroke_width),
+                      )
+                      path.setAttribute("stroke-linecap", "round")
+                      path.setAttribute("stroke-linejoin", "round")
+                      path.setAttribute("vector-effect", "non-scaling-stroke")
+                      svg_paths.push(path)
+                    }
+                    None => ()
+                  }
                 }
+                let svg = ensure_mindmap_connector_svg(stage_element)
+                clear_element(svg)
+                svg.setAttribute("width", width.to_string())
+                svg.setAttribute("height", height.to_string())
+                svg.setAttribute("viewBox", "0 0 \{width} \{height}")
+                let style = @dom.css_style_from_val(
+                  svg.as_any()._get("style").cast(),
+                )
+                style.set_property("left", "0px")
+                style.set_property("top", "0px")
+                style.set_property("width", "\{width}px")
+                style.set_property("height", "\{height}px")
+                style.set_property("z-index", "0")
+                style.set_property("pointer-events", "none")
+                style.set_property("position", "absolute")
+                style.set_property("overflow", "visible")
+                for path in svg_paths {
+                  append_child(svg, path)
+                }
+                svg_paths.length() > 0
               }
-              if svg_paths.length() == 0 {
-                return
-              }
-              let svg = create_element("svg", "mindmap-connector-layer")
-              svg.setAttribute("width", width.to_string())
-              svg.setAttribute("height", height.to_string())
-              svg.setAttribute("viewBox", "0 0 \{width} \{height}")
-              let style = @dom.css_style_from_val(
-                svg.as_any()._get("style").cast(),
+              ignore(
+                render_mindmap_connector_controls(
+                  content, stage_element, nodes, stage_left, stage_top, safe_zoom,
+                  left, top, width, height,
+                ),
               )
-              style.set_property("left", "\{left}px")
-              style.set_property("top", "\{top}px")
-              style.set_property("width", "\{width}px")
-              style.set_property("height", "\{height}px")
-              style.set_property("pointer-events", "none")
-              style.set_property("position", "absolute")
-              style.set_property("overflow", "visible")
-              for path in svg_paths {
-                append_child(svg, path)
-              }
-              append_child(content, svg)
             }
             None => ()
           }
@@ -180,12 +189,154 @@ fn render_mindmap_connectors() -> Unit {
 }
 
 ///|
-fn remove_mindmap_connector_layers(content : @dom.Element) -> Unit {
-  for
-    element in content.querySelectorAll(
-      ".mindmap-connector-layer, .mindmap-connector-controls, .mindmap-node-anchor",
-    ) {
-    element.remove()
+fn render_mindmap_connector_controls(
+  content : @dom.Element,
+  stage : @dom.Element,
+  nodes : Array[@dom.Element],
+  stage_left : Double,
+  stage_top : Double,
+  safe_zoom : Double,
+  left : Int,
+  top : Int,
+  width : Int,
+  height : Int,
+) -> Bool {
+  match content.querySelector(".mindmap-connector-controls") {
+    Some(existing) => existing.remove()
+    None => ()
+  }
+  let control_layer = create_element("div", "mindmap-connector-controls")
+  let layer_style = style_of(control_layer)
+  layer_style.set_property("left", "\{left}px")
+  layer_style.set_property("top", "\{top}px")
+  layer_style.set_property("width", "\{width}px")
+  layer_style.set_property("height", "\{height}px")
+  layer_style.set_property("position", "absolute")
+  layer_style.set_property("overflow", "visible")
+  layer_style.set_property("pointer-events", "none")
+  let mut has_controls = false
+  for node in nodes {
+    let node_index = parse_int_or_default(
+      node.getAttribute("data-node-index").unwrap_or("-1"),
+      -1,
+    )
+    let parent_index = parse_int_or_default(
+      node.getAttribute("data-parent-index").unwrap_or("-1"),
+      -1,
+    )
+    if node_index < 0 || parent_index < 0 {
+      continue
+    }
+    match find_node_by_index(nodes, parent_index) {
+      Some(parent) => {
+        let node_rect = element_rect(node)
+        let parent_rect = element_rect(parent)
+        let node_center_x = rect_center_x(node_rect)
+        let node_center_y = rect_center_y(node_rect)
+        let parent_center_x = rect_center_x(parent_rect)
+        let has_children = node
+          .getAttribute("data-has-children")
+          .unwrap_or("false") ==
+          "true"
+        let collapsed = node.getAttribute("data-collapsed").unwrap_or("false") ==
+          "true"
+        let selected = is_selected_node(node_index)
+        let button_class = if has_children {
+          "mindmap-connector-joint"
+        } else {
+          "mindmap-node-anchor"
+        }
+        let button = create_element("button", button_class)
+        button.setAttribute("type", "button")
+        button.setAttribute("data-node-index", node_index.to_string())
+        button.setAttribute("data-parent-index", parent_index.to_string())
+        button.setAttribute(
+          "aria-label",
+          if has_children {
+            if collapsed {
+              "Expand node"
+            } else {
+              "Collapse node"
+            }
+          } else {
+            "Select node"
+          },
+        )
+        if has_children {
+          button.setAttribute("data-action", "toggle")
+          button.setAttribute("data-collapsed", collapsed.to_string())
+          button.setAttribute(
+            "aria-expanded",
+            if collapsed {
+              "false"
+            } else {
+              "true"
+            },
+          )
+          let hidden_count = parse_int_or_default(
+              node.getAttribute("data-hidden-count").unwrap_or("0"),
+              0,
+            ) -
+            1
+          if hidden_count > 0 && collapsed {
+            button.setTextContent(hidden_count.to_string())
+          }
+        }
+        if selected {
+          toggle_class(button, "is-selected", true)
+        }
+        let button_style = style_of(button)
+        let (button_left, button_top) = if stage_has_vertical_layout(stage) {
+          (
+            stage_local_x(node_center_x, stage_left, safe_zoom).round().to_int() -
+            8,
+            stage_local_y(node_rect.top, stage_top, safe_zoom).round().to_int() -
+            8,
+          )
+        } else if has_class_name(stage, "mindmap-stage--single-right") {
+          (
+            stage_local_x(node_rect.left, stage_left, safe_zoom)
+            .round()
+            .to_int() -
+            8,
+            stage_local_y(node_center_y, stage_top, safe_zoom).round().to_int() -
+            8,
+          )
+        } else {
+          let anchor_x = if node_center_x >= parent_center_x {
+            node_rect.left
+          } else {
+            node_rect.right
+          }
+          (
+            stage_local_x(anchor_x, stage_left, safe_zoom).round().to_int() - 8,
+            stage_local_y(node_center_y, stage_top, safe_zoom).round().to_int() -
+            8,
+          )
+        }
+        button_style.set_property("left", "\{button_left}px")
+        button_style.set_property("top", "\{button_top}px")
+        append_child(control_layer, button)
+        has_controls = true
+      }
+      None => ()
+    }
+  }
+  if has_controls {
+    append_child(content, control_layer)
+  }
+  has_controls
+}
+
+///|
+fn ensure_mindmap_connector_svg(stage : @dom.Element) -> @dom.Element {
+  match stage.querySelector(".mindmap-connector-layer") {
+    Some(svg) => svg
+    None => {
+      let svg = create_svg_element("svg", "mindmap-connector-layer")
+      append_child(stage, svg)
+      svg
+    }
   }
 }
 

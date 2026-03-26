@@ -824,7 +824,7 @@ fn create_svg_element(tag : String, class_name : String) -> @dom.Element {
     "http://www.w3.org/2000/svg", tag,
   )
   if class_name.length() > 0 {
-    element.setClassName(class_name)
+    element.setAttribute("class", class_name)
   }
   element
 }
