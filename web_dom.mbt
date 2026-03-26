@@ -291,25 +291,36 @@ fn render_mindmap_connector_controls(
             stage_local_x(node_center_x, stage_left, safe_zoom).round().to_int() -
             8,
             stage_local_y(node_rect.top, stage_top, safe_zoom).round().to_int() -
-            8,
+            22,
           )
         } else if has_class_name(stage, "mindmap-stage--single-right") {
           (
             stage_local_x(node_rect.left, stage_left, safe_zoom)
             .round()
             .to_int() -
-            8,
+            22,
             stage_local_y(node_center_y, stage_top, safe_zoom).round().to_int() -
             8,
           )
         } else {
-          let anchor_x = if node_center_x >= parent_center_x {
+          let button_left_raw = if node_center_x >= parent_center_x {
             node_rect.left
           } else {
             node_rect.right
           }
+          let button_left = if node_center_x >= parent_center_x {
+            stage_local_x(button_left_raw, stage_left, safe_zoom)
+            .round()
+            .to_int() -
+            22
+          } else {
+            stage_local_x(button_left_raw, stage_left, safe_zoom)
+            .round()
+            .to_int() +
+            6
+          }
           (
-            stage_local_x(anchor_x, stage_left, safe_zoom).round().to_int() - 8,
+            button_left,
             stage_local_y(node_center_y, stage_top, safe_zoom).round().to_int() -
             8,
           )

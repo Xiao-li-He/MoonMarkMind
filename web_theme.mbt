@@ -1383,8 +1383,8 @@ fn style_mindmap_node_anchor(element : @dom.Element) -> Unit {
   set_style(element, "border", "2px solid rgba(115, 166, 216, 0.82)")
   set_style(element, "background", "rgba(255, 255, 255, 0.98)")
   set_style(element, "box-shadow", "0 0 0 3px rgba(123, 178, 233, 0.2)")
-  set_style(element, "pointer-events", "auto")
-  set_style(element, "cursor", "pointer")
+  set_style(element, "pointer-events", "none")
+  set_style(element, "cursor", "default")
 }
 
 ///|
@@ -1405,8 +1405,8 @@ fn style_mindmap_connector_joint(element : @dom.Element) -> Unit {
   set_style(element, "display", "inline-flex")
   set_style(element, "align-items", "center")
   set_style(element, "justify-content", "center")
-  set_style(element, "pointer-events", "auto")
-  set_style(element, "cursor", "pointer")
+  set_style(element, "pointer-events", "none")
+  set_style(element, "cursor", "default")
   if has_class_name(element, "is-selected") {
     set_style(element, "border-color", "rgba(44, 112, 206, 0.95)")
     set_style(
