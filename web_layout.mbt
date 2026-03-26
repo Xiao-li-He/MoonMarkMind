@@ -35,7 +35,8 @@ fn set_workspace_split(percent : Int) -> Unit {
 fn set_select_value(id : String, value : String) -> Unit {
   match get_element_by_id(id) {
     Some(control) => {
-      @dom.HTMLSelectElement::cast_from_element(control).value = value
+      let select = @dom.HTMLSelectElement::cast_from_element(control)
+      select.value = value
       sync_custom_select_by_id(id)
     }
     None => ()
@@ -48,6 +49,7 @@ fn set_select_muted(id : String, muted : Bool) -> Unit {
     Some(control) => {
       toggle_class(control, "tool-select--muted", muted)
       sync_custom_select_by_id(id)
+      apply_theme_to_element(control)
     }
     None => ()
   }
@@ -60,6 +62,7 @@ fn set_toolbar_selection_enabled(enabled : Bool) -> Unit {
     button.setAttribute("data-disabled", disabled)
     button.setAttribute("aria-disabled", disabled)
     toggle_class(button, "mindmap-tool--disabled", !enabled)
+    apply_theme_to_element(button)
   }
 }
 
@@ -71,6 +74,7 @@ fn set_toolbar_action_enabled(action : String, enabled : Bool) -> Unit {
       button.setAttribute("data-disabled", disabled)
       button.setAttribute("aria-disabled", disabled)
       toggle_class(button, "mindmap-tool--disabled", !enabled)
+      apply_theme_to_element(button)
     }
     None => ()
   }
@@ -84,6 +88,7 @@ fn set_aux_action_enabled(id : String, enabled : Bool) -> Unit {
       button.setAttribute("data-disabled", disabled)
       button.setAttribute("aria-disabled", disabled)
       toggle_class(button, "mindmap-aux-button--disabled", !enabled)
+      apply_theme_to_element(button)
     }
     None => ()
   }
@@ -805,6 +810,7 @@ fn build_text_span(
 ///|
 fn create_element(tag : String, class_name : String) -> @dom.Element {
   let element = @dom.document().createElement(tag)
+  style_of(element).set_property("box-sizing", "border-box")
   if class_name.length() > 0 {
     element.setClassName(class_name)
   }

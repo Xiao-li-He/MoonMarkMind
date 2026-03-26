@@ -1129,7 +1129,10 @@ fn sync_custom_select(select : @dom.HTMLSelectElement) -> Unit {
           }
           match custom.querySelector(".tool-select-trigger") {
             Some(trigger) => {
-              trigger.setTextContent(next_text)
+              match trigger.querySelector(".tool-select-trigger__label") {
+                Some(label) => label.setTextContent(next_text)
+                None => trigger.setTextContent(next_text)
+              }
               toggle_class(
                 trigger,
                 "tool-select--muted",
@@ -1174,6 +1177,11 @@ fn init_custom_select(id : String) -> Unit {
       trigger.setAttribute("type", "button")
       trigger.setAttribute("aria-haspopup", "listbox")
       trigger.setAttribute("aria-expanded", "false")
+      let trigger_label = create_element("span", "tool-select-trigger__label")
+      let trigger_arrow = create_element("span", "tool-select-trigger__arrow")
+      trigger_arrow.setTextContent("▾")
+      trigger.as_node().appendChild(trigger_label.as_node()) |> ignore
+      trigger.as_node().appendChild(trigger_arrow.as_node()) |> ignore
       let menu = create_element("div", "tool-select-menu")
       menu.setAttribute("role", "listbox")
       for child in select.children() {
@@ -1216,6 +1224,10 @@ fn init_custom_select(id : String) -> Unit {
           } else {
             "false"
           },
+        )
+        apply_tool_select_custom_theme(
+          custom,
+          has_class_name(select.as_element(), "tool-select--muted"),
         )
       })
       custom.as_node().appendChild(trigger.as_node()) |> ignore

@@ -23,7 +23,9 @@ fn apply_page_theme() -> Unit {
   match get_element_by_id("app") {
     Some(app) => {
       let style = style_of(app)
+      style.set_property("width", "100%")
       style.set_property("height", "100vh")
+      style.set_property("box-sizing", "border-box")
       style.set_property("min-width", "812px")
       style.set_property("min-height", "540px")
       style.set_property("padding", "14px")
@@ -115,11 +117,17 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "tool-select-option") {
     style_tool_select_option(element)
   }
+  if has_class_name(element, "tool-select-trigger__label") {
+    style_tool_select_trigger_label(element)
+  }
+  if has_class_name(element, "tool-select-trigger__arrow") {
+    style_tool_select_trigger_arrow(element)
+  }
   if has_class_name(element, "editor-panel") {
     style_editor_panel(element)
   }
   if has_class_name(element, "editor-surface") {
-    style_card_surface(element)
+    style_editor_surface(element)
   }
   if has_class_name(element, "editor-chrome") {
     style_editor_chrome(element)
@@ -215,6 +223,12 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "mindmap-stage--radial") {
     style_mindmap_stage_radial(element)
   }
+  if has_class_name(element, "mindmap-stage--fill") {
+    style_mindmap_stage_fill(element)
+  }
+  if has_class_name(element, "mindmap-stage--line") {
+    style_mindmap_stage_line(element)
+  }
   if has_class_name(element, "mindmap-stage--vertical") {
     style_mindmap_stage_vertical(element)
   }
@@ -223,6 +237,12 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   }
   if has_class_name(element, "mindmap-stage--svg-connectors") {
     style_mindmap_stage_svg_connectors(element)
+  }
+  if has_class_name(element, "mindmap-connector-controls") {
+    style_mindmap_connector_controls(element)
+  }
+  if has_class_name(element, "mindmap-node-anchor") {
+    style_mindmap_node_anchor(element)
   }
   if has_class_name(element, "branch-column") ||
     has_class_name(element, "center-wrap") ||
@@ -340,6 +360,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "node-action--collapsed") {
     style_node_action_collapsed(element)
   }
+  if has_class_name(element, "node-action--danger") {
+    style_node_action_danger(element)
+  }
   if has_class_name(element, "collapsed-node") {
     style_collapsed_node(element)
   }
@@ -394,6 +417,31 @@ fn apply_tool_select_custom_theme(custom : @dom.Element, muted : Bool) -> Unit {
         trigger_style.set_property(
           "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(244, 249, 253, 0.6))",
         )
+        trigger_style.set_property(
+          "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 12px 28px rgba(120, 139, 164, 0.12)",
+        )
+      }
+      match trigger.querySelector(".tool-select-trigger__arrow") {
+        Some(arrow) => {
+          let arrow_style = style_of(arrow)
+          arrow_style.set_property(
+            "transform",
+            if open {
+              "translateY(-48%) rotate(180deg)"
+            } else {
+              "translateY(-52%) rotate(0deg)"
+            },
+          )
+          arrow_style.set_property(
+            "color",
+            if muted {
+              "rgba(146, 164, 184, 1)"
+            } else {
+              "rgba(86, 116, 147, 0.88)"
+            },
+          )
+        }
+        None => ()
       }
     }
     None => ()
@@ -535,6 +583,13 @@ fn style_icon_button(element : @dom.Element, size : String) -> Unit {
 }
 
 ///|
+fn is_control_disabled(element : @dom.Element) -> Bool {
+  has_class_name(element, "mindmap-tool--disabled") ||
+  has_class_name(element, "mindmap-aux-button--disabled") ||
+  element.getAttribute("data-disabled").unwrap_or("") == "true"
+}
+
+///|
 fn style_mindmap_tool(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
   set_style(element, "display", "inline-flex")
@@ -556,7 +611,14 @@ fn style_mindmap_tool(element : @dom.Element) -> Unit {
   set_style(element, "font-size", "14px")
   set_style(element, "line-height", "1")
   set_style(element, "white-space", "nowrap")
-  set_style(element, "cursor", "pointer")
+  if is_control_disabled(element) {
+    set_style(element, "cursor", "not-allowed")
+    set_style(element, "opacity", "0.72")
+    set_style(element, "background", "rgba(247, 249, 252, 0.58)")
+    set_style(element, "box-shadow", "none")
+  } else {
+    set_style(element, "cursor", "pointer")
+  }
 }
 
 ///|
@@ -581,7 +643,14 @@ fn style_mindmap_aux_button(element : @dom.Element) -> Unit {
   set_style(element, "font-size", "14px")
   set_style(element, "line-height", "1")
   set_style(element, "white-space", "nowrap")
-  set_style(element, "cursor", "default")
+  if is_control_disabled(element) {
+    set_style(element, "cursor", "not-allowed")
+    set_style(element, "opacity", "0.72")
+    set_style(element, "background", "rgba(247, 249, 252, 0.58)")
+    set_style(element, "box-shadow", "none")
+  } else {
+    set_style(element, "cursor", "default")
+  }
 }
 
 ///|
@@ -647,6 +716,10 @@ fn style_tool_select(element : @dom.Element) -> Unit {
     element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.88), 0 10px 24px rgba(120, 139, 164, 0.08)",
   )
   set_style(element, "cursor", "pointer")
+  if has_class_name(element, "tool-select--muted") {
+    set_style(element, "border-color", "rgba(214, 225, 237, 0.76)")
+    set_style(element, "color", "rgba(146, 164, 184, 1)")
+  }
 }
 
 ///|
@@ -659,6 +732,72 @@ fn style_tool_select_custom(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
   set_style(element, "display", "inline-flex")
   let open = has_class_name(element, "is-open")
+  match element.querySelector(".tool-select-trigger") {
+    Some(trigger) => {
+      set_style(trigger, "position", "relative")
+      set_style(trigger, "display", "inline-flex")
+      set_style(trigger, "align-items", "center")
+      set_style(trigger, "justify-content", "flex-start")
+      set_style(trigger, "gap", "8px")
+      set_style(trigger, "min-width", "96px")
+      set_style(trigger, "height", "40px")
+      set_style(trigger, "padding", "0 32px 0 12px")
+      set_style(trigger, "border", "1px solid rgba(214, 225, 237, 0.76)")
+      set_style(trigger, "border-radius", "15px")
+      set_style(
+        trigger, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(245, 249, 253, 0.42))",
+      )
+      set_style(trigger, "color", "#23384d")
+      set_style(
+        trigger, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.88), 0 10px 24px rgba(120, 139, 164, 0.08)",
+      )
+      set_style(trigger, "cursor", "pointer")
+      if has_class_name(trigger, "tool-select--muted") {
+        set_style(trigger, "color", "rgba(146, 164, 184, 1)")
+      }
+      match trigger.querySelector(".tool-select-trigger__label") {
+        Some(label) => {
+          set_style(label, "flex", "1")
+          set_style(label, "min-width", "0")
+          set_style(label, "overflow", "hidden")
+          set_style(label, "text-overflow", "ellipsis")
+          set_style(label, "white-space", "nowrap")
+        }
+        None => ()
+      }
+      match trigger.querySelector(".tool-select-trigger__arrow") {
+        Some(arrow) => {
+          set_style(arrow, "position", "absolute")
+          set_style(arrow, "right", "12px")
+          set_style(arrow, "top", "50%")
+          set_style(
+            arrow,
+            "transform",
+            if open {
+              "translateY(-48%) rotate(180deg)"
+            } else {
+              "translateY(-52%) rotate(0deg)"
+            },
+          )
+          set_style(arrow, "color", "rgba(86, 116, 147, 0.88)")
+          set_style(arrow, "font-size", "11px")
+          set_style(arrow, "line-height", "1")
+          set_style(arrow, "pointer-events", "none")
+        }
+        None => ()
+      }
+      if open {
+        set_style(trigger, "border-color", "rgba(192, 208, 226, 0.96)")
+        set_style(
+          trigger, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(244, 249, 253, 0.6))",
+        )
+        set_style(
+          trigger, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 12px 28px rgba(120, 139, 164, 0.12)",
+        )
+      }
+    }
+    None => ()
+  }
   match element.querySelector(".tool-select-menu") {
     Some(menu) =>
       if open {
@@ -677,9 +816,13 @@ fn style_tool_select_custom(element : @dom.Element) -> Unit {
 ///|
 fn style_tool_select_trigger(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
+  set_style(element, "display", "inline-flex")
+  set_style(element, "align-items", "center")
+  set_style(element, "justify-content", "flex-start")
+  set_style(element, "gap", "8px")
   set_style(element, "min-width", "96px")
   set_style(element, "height", "40px")
-  set_style(element, "padding", "0 34px 0 12px")
+  set_style(element, "padding", "0 32px 0 12px")
   set_style(element, "border", "1px solid rgba(214, 225, 237, 0.76)")
   set_style(element, "border-radius", "15px")
   set_style(
@@ -690,6 +833,29 @@ fn style_tool_select_trigger(element : @dom.Element) -> Unit {
     element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.88), 0 10px 24px rgba(120, 139, 164, 0.08)",
   )
   set_style(element, "cursor", "pointer")
+  if has_class_name(element, "tool-select--muted") {
+    set_style(element, "color", "rgba(146, 164, 184, 1)")
+  }
+}
+
+///|
+fn style_tool_select_trigger_label(element : @dom.Element) -> Unit {
+  set_style(element, "flex", "1")
+  set_style(element, "min-width", "0")
+  set_style(element, "overflow", "hidden")
+  set_style(element, "text-overflow", "ellipsis")
+  set_style(element, "white-space", "nowrap")
+}
+
+///|
+fn style_tool_select_trigger_arrow(element : @dom.Element) -> Unit {
+  set_style(element, "position", "absolute")
+  set_style(element, "right", "12px")
+  set_style(element, "top", "50%")
+  set_style(element, "color", "rgba(86, 116, 147, 0.88)")
+  set_style(element, "font-size", "11px")
+  set_style(element, "line-height", "1")
+  set_style(element, "pointer-events", "none")
 }
 
 ///|
@@ -729,27 +895,38 @@ fn style_tool_select_option(element : @dom.Element) -> Unit {
 
 ///|
 fn style_editor_panel(element : @dom.Element) -> Unit {
-  set_style(element, "display", "flex")
+  set_style(element, "display", "grid")
+  set_style(element, "grid-template-rows", "minmax(0, 1fr)")
   set_style(element, "min-width", "0")
   set_style(element, "min-height", "0")
   set_style(element, "height", "100%")
   set_style(element, "grid-column", "1")
+  set_style(element, "padding", "0")
+  set_style(element, "border", "0")
+  set_style(element, "border-radius", "0")
+  set_style(element, "background", "transparent")
+  set_style(element, "box-shadow", "none")
+  set_style(element, "backdrop-filter", "none")
+  set_style(element, "overflow", "hidden")
 }
 
 ///|
-fn style_card_surface(element : @dom.Element) -> Unit {
+fn style_editor_surface(element : @dom.Element) -> Unit {
   set_style(element, "display", "grid")
   set_style(element, "grid-template-rows", "auto 1fr")
   set_style(element, "height", "100%")
   set_style(element, "min-height", "0")
   set_style(element, "min-width", "0")
-  set_style(element, "border-radius", "0")
+  set_style(element, "padding", "0")
+  set_style(element, "border", "1px solid rgba(222, 232, 242, 0.84)")
+  set_style(element, "border-radius", "32px")
   set_style(
-    element, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(248, 251, 255, 0.34))",
+    element, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 251, 255, 0.84))",
   )
   set_style(
-    element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.82), 0 18px 40px rgba(120, 139, 164, 0.08)",
+    element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 18px 46px rgba(120, 139, 164, 0.09)",
   )
+  set_style(element, "backdrop-filter", "blur(22px) saturate(122%)")
   set_style(element, "overflow", "hidden")
 }
 
@@ -811,13 +988,16 @@ fn style_badge(element : @dom.Element) -> Unit {
 fn style_editor_body(element : @dom.Element) -> Unit {
   set_style(element, "display", "grid")
   set_style(element, "grid-template-columns", "44px minmax(0, 1fr)")
+  set_style(element, "align-self", "stretch")
   set_style(element, "min-height", "0")
   set_style(element, "height", "100%")
+  set_style(element, "overflow", "hidden")
 }
 
 ///|
 fn style_editor_gutter_wrap(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
+  set_style(element, "height", "100%")
   set_style(element, "min-height", "0")
   set_style(element, "width", "44px")
   set_style(element, "min-width", "44px")
@@ -831,6 +1011,7 @@ fn style_editor_gutter_wrap(element : @dom.Element) -> Unit {
 ///|
 fn style_editor_input_wrap(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
+  set_style(element, "height", "100%")
   set_style(element, "min-width", "0")
   set_style(element, "min-height", "0")
   set_style(element, "overflow", "hidden")
@@ -969,6 +1150,17 @@ fn style_mindmap_panel(element : @dom.Element) -> Unit {
   set_style(element, "min-height", "0")
   set_style(element, "gap", "8px")
   set_style(element, "grid-column", "3")
+  set_style(element, "padding", "18px 20px")
+  set_style(element, "border", "1px solid rgba(222, 232, 242, 0.84)")
+  set_style(element, "border-radius", "32px")
+  set_style(
+    element, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 251, 255, 0.84))",
+  )
+  set_style(
+    element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 18px 46px rgba(120, 139, 164, 0.09)",
+  )
+  set_style(element, "backdrop-filter", "blur(22px) saturate(122%)")
+  set_style(element, "overflow", "visible")
 }
 
 ///|
@@ -1047,13 +1239,16 @@ fn style_mindmap_surface(element : @dom.Element) -> Unit {
   set_style(element, "flex", "1")
   set_style(element, "min-height", "0")
   set_style(element, "min-width", "0")
-  set_style(element, "border", "2px dashed rgba(187, 203, 221, 0.52)")
+  set_style(element, "border", "1px solid rgba(223, 233, 243, 0.9)")
   set_style(element, "border-radius", "26px")
   set_style(
-    element, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(248, 251, 254, 0.14))",
+    element, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(249, 252, 255, 0.62))",
   )
-  set_style(element, "box-shadow", "none")
+  set_style(
+    element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.88), 0 12px 28px rgba(120, 139, 164, 0.06)",
+  )
   set_style(element, "height", "100%")
+  set_style(element, "overflow", "visible")
 }
 
 ///|
@@ -1108,6 +1303,32 @@ fn style_mindmap_stage_radial(element : @dom.Element) -> Unit {
 }
 
 ///|
+fn style_mindmap_stage_fill(element : @dom.Element) -> Unit {
+  set_style(element, "--fill-branch", "#5c88a8")
+  set_style(element, "--fill-outline", "#55c3fb")
+  set_style(element, "--fill-soft-outline", "rgba(136, 169, 199, 0.42)")
+  set_style(
+    element, "--fill-card-bg", "linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 254, 0.92))",
+  )
+  set_style(element, "--mindmap-connector-color", "#7ca5d4")
+  set_style(element, "--mindmap-connector-accent", "#5c88a8")
+  set_style(element, "--mindmap-node-muted", "#7287a0")
+}
+
+///|
+fn style_mindmap_stage_line(element : @dom.Element) -> Unit {
+  set_style(element, "--fill-branch", "#5c88a8")
+  set_style(element, "--fill-outline", "#55c3fb")
+  set_style(element, "--fill-soft-outline", "rgba(136, 169, 199, 0.42)")
+  set_style(
+    element, "--fill-card-bg", "linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 254, 0.92))",
+  )
+  set_style(element, "--mindmap-connector-color", "#94b6db")
+  set_style(element, "--mindmap-connector-accent", "#5c88a8")
+  set_style(element, "--mindmap-node-muted", "#7287a0")
+}
+
+///|
 fn style_mindmap_stage_vertical(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
@@ -1130,6 +1351,30 @@ fn style_mindmap_connector_layer(element : @dom.Element) -> Unit {
   set_style(element, "z-index", "0")
   set_style(element, "mix-blend-mode", "multiply")
   set_style(element, "opacity", "0.92")
+  set_style(element, "pointer-events", "none")
+}
+
+///|
+fn style_mindmap_connector_controls(element : @dom.Element) -> Unit {
+  set_style(element, "position", "absolute")
+  set_style(element, "inset", "0")
+  set_style(element, "overflow", "visible")
+  set_style(element, "pointer-events", "none")
+  set_style(element, "z-index", "2")
+}
+
+///|
+fn style_mindmap_node_anchor(element : @dom.Element) -> Unit {
+  set_style(element, "position", "absolute")
+  set_style(element, "width", "16px")
+  set_style(element, "height", "16px")
+  set_style(element, "margin", "0")
+  set_style(element, "padding", "0")
+  set_style(element, "border-radius", "999px")
+  set_style(element, "border", "2px solid #73a6d8")
+  set_style(element, "background", "rgba(255, 255, 255, 0.98)")
+  set_style(element, "box-shadow", "0 0 0 3px rgba(123, 178, 233, 0.24)")
+  set_style(element, "pointer-events", "none")
 }
 
 ///|
@@ -1498,6 +1743,19 @@ fn style_node_action(element : @dom.Element) -> Unit {
   set_style(element, "align-items", "center")
   set_style(element, "justify-content", "center")
   set_style(element, "line-height", "1")
+  if has_class_name(element, "node-action--toggle") {
+    set_style(element, "border", "2px solid rgba(95, 143, 190, 0.92)")
+    set_style(element, "background", "rgba(255, 255, 255, 0.98)")
+    set_style(element, "color", "rgba(95, 143, 190, 0.92)")
+  }
+  match element.closest(".mindmap-stage--fill") {
+    Some(_) => {
+      set_style(element, "background", "rgba(39, 64, 92, 0.12)")
+      set_style(element, "color", "rgba(39, 64, 92, 0.62)")
+      set_style(element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.3)")
+    }
+    None => ()
+  }
 }
 
 ///|
@@ -1505,6 +1763,15 @@ fn style_node_action_toggle(element : @dom.Element) -> Unit {
   set_style(element, "border", "2px solid rgba(95, 143, 190, 0.92)")
   set_style(element, "background", "rgba(255, 255, 255, 0.98)")
   set_style(element, "color", "rgba(95, 143, 190, 0.92)")
+  match element.closest(".mindmap-stage--fill") {
+    Some(_) => {
+      set_style(element, "border", "3px solid var(--fill-branch)")
+      set_style(element, "background", "rgba(255, 255, 255, 0.98)")
+      set_style(element, "color", "var(--fill-branch)")
+      set_style(element, "box-shadow", "0 0 0 2px rgba(255, 255, 255, 0.42)")
+    }
+    None => ()
+  }
 }
 
 ///|
@@ -1512,6 +1779,12 @@ fn style_node_action_collapsed(element : @dom.Element) -> Unit {
   set_style(element, "min-width", "28px")
   set_style(element, "width", "auto")
   set_style(element, "padding", "0 7px")
+}
+
+///|
+fn style_node_action_danger(element : @dom.Element) -> Unit {
+  set_style(element, "color", "var(--red)")
+  set_style(element, "background", "rgba(239, 79, 67, 0.14)")
 }
 
 ///|
@@ -1532,6 +1805,13 @@ fn style_collapsed_node(element : @dom.Element) -> Unit {
   set_style(element, "align-items", "center")
   set_style(element, "justify-content", "center")
   set_style(element, "cursor", "pointer")
+  match element.closest(".mindmap-stage--fill") {
+    Some(_) => {
+      set_style(element, "border", "2px solid var(--fill-branch)")
+      set_style(element, "color", "var(--fill-branch)")
+    }
+    None => ()
+  }
 }
 
 ///|
@@ -1559,14 +1839,14 @@ fn style_drop_slot(element : @dom.Element) -> Unit {
 ///|
 fn style_drop_before(element : @dom.Element) -> Unit {
   set_style(
-    element, "box-shadow", "inset 0 4px 0 #5c88a8, 0 14px 28px rgba(120, 139, 164, 0.1)",
+    element, "box-shadow", "inset 0 4px 0 var(--mindmap-connector-accent, #5c88a8), 0 14px 28px rgba(120, 139, 164, 0.1)",
   )
 }
 
 ///|
 fn style_drop_after(element : @dom.Element) -> Unit {
   set_style(
-    element, "box-shadow", "inset 0 -4px 0 #5c88a8, 0 14px 28px rgba(120, 139, 164, 0.1)",
+    element, "box-shadow", "inset 0 -4px 0 var(--mindmap-connector-accent, #5c88a8), 0 14px 28px rgba(120, 139, 164, 0.1)",
   )
 }
 
