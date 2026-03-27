@@ -1104,7 +1104,15 @@ fn style_editor_textarea(element : @dom.Element) -> Unit {
   set_style(element, "resize", "none")
   set_style(element, "border", "0")
   set_style(element, "padding", "18px 18px 22px 16px")
-  set_style(element, "background", "transparent")
+  set_style(element, "background-color", "transparent")
+  set_style(
+    element, "background-image", "linear-gradient(180deg, transparent calc(100% - 1px), rgba(198, 213, 228, 0.86) calc(100% - 1px) 100%)",
+  )
+  set_style(element, "background-position", "0 19px")
+  set_style(element, "background-size", "100% 28px")
+  set_style(element, "background-attachment", "local")
+  set_style(element, "background-repeat", "repeat-y")
+  set_style(element, "background-clip", "padding-box")
   set_style(element, "color", "#23384d")
   set_style(
     element, "font", "16px/28px \"Cascadia Code\", \"Consolas\", monospace",

@@ -352,22 +352,68 @@ fn build_editor_panel() -> @dom.Element {
   let gutter_wrap = create_element("div", "editor-gutter-wrap")
   append_child(
     gutter_wrap,
-    create_element("div", "editor-gutter-lines editor-gutter-lines--linked"),
+    {
+      let linked_gutter_lines = create_element(
+        "div", "editor-gutter-lines editor-gutter-lines--linked",
+      )
+      linked_gutter_lines.setAttribute("id", "input-linked-gutter-lines")
+      linked_gutter_lines
+    },
   )
   append_child(
     gutter_wrap,
-    create_element("div", "editor-gutter-line editor-gutter-line--hover"),
+    {
+      let hover_gutter_line = create_element(
+        "div", "editor-gutter-line editor-gutter-line--hover",
+      )
+      hover_gutter_line.setAttribute("id", "input-hover-gutter-line")
+      hover_gutter_line
+    },
   )
   append_child(
     gutter_wrap,
-    create_element("div", "editor-gutter-line editor-gutter-line--active"),
+    {
+      let active_gutter_line = create_element(
+        "div", "editor-gutter-line editor-gutter-line--active",
+      )
+      active_gutter_line.setAttribute("id", "input-active-gutter-line")
+      active_gutter_line
+    },
   )
-  append_child(gutter_wrap, create_element("div", "editor-gutter"))
+  append_child(
+    gutter_wrap,
+    {
+      let gutter = create_element("div", "editor-gutter")
+      gutter.setAttribute("id", "input-gutter")
+      gutter
+    },
+  )
 
   let input_wrap = create_element("div", "editor-input-wrap")
-  append_child(input_wrap, create_element("div", "editor-linked-lines"))
-  append_child(input_wrap, create_element("div", "editor-hover-line"))
-  append_child(input_wrap, create_element("div", "editor-active-line"))
+  append_child(
+    input_wrap,
+    {
+      let linked_lines = create_element("div", "editor-linked-lines")
+      linked_lines.setAttribute("id", "input-linked-lines")
+      linked_lines
+    },
+  )
+  append_child(
+    input_wrap,
+    {
+      let hover_line = create_element("div", "editor-hover-line")
+      hover_line.setAttribute("id", "input-hover-line")
+      hover_line
+    },
+  )
+  append_child(
+    input_wrap,
+    {
+      let active_line = create_element("div", "editor-active-line")
+      active_line.setAttribute("id", "input-active-line")
+      active_line
+    },
+  )
   let input = create_element("textarea", "")
   input.setAttribute("id", "input")
   input.setAttribute("wrap", "soft")

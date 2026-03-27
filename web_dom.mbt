@@ -646,12 +646,16 @@ fn build_linked_line_dom(
 }
 
 ///|
-fn build_gutter_number_dom(line_number : Int, height : Int) -> @dom.Element {
+fn build_gutter_number_dom(
+  line_number : Int,
+  height : Int,
+  show_number : Bool,
+) -> @dom.Element {
   let block = create_element("div", "editor-gutter-number")
   let block_height = if height > 1 { height } else { 1 }
   let style = @dom.css_style_from_val(block.as_any()._get("style").cast())
   style.set_property("height", "\{block_height}px")
-  block.setTextContent(line_number.to_string())
+  block.setTextContent(if show_number { line_number.to_string() } else { "" })
   block
 }
 
@@ -765,7 +769,32 @@ fn sync_input_line_numbers(
       }
       let mut line_number = 1
       for height in heights {
-        append_child(gutter, build_gutter_number_dom(line_number, height))
+        let line_height = if metrics.line_height > 0 {
+          metrics.line_height
+        } else {
+          1
+        }
+        let visual_line_count = (height + line_height - 1) / line_height
+        for visual_index in 0..<visual_line_count {
+          let visual_height = if visual_index == visual_line_count - 1 {
+            let remainder = height - line_height * (visual_line_count - 1)
+            if remainder > 0 {
+              remainder
+            } else {
+              line_height
+            }
+          } else {
+            line_height
+          }
+          append_child(
+            gutter,
+            build_gutter_number_dom(
+              line_number,
+              visual_height,
+              visual_index == 0,
+            ),
+          )
+        }
         line_number += 1
       }
       let style = @dom.css_style_from_val(gutter.as_any()._get("style").cast())
