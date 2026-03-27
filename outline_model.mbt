@@ -37,6 +37,7 @@ pub fn rename_heading(
         title: next_title,
         marker: node.marker,
         body: node.body,
+        source_line: node.source_line,
       })
     } else {
       updated.push(node)
@@ -95,6 +96,7 @@ pub fn add_child_heading(
         title: next_title,
         marker: "",
         body: [],
+        source_line: -1,
       },
     ])
     return render_markdown_nodes(rebuilt)
@@ -126,6 +128,7 @@ pub fn add_child_heading(
           ""
         },
         body: [],
+        source_line: -1,
       },
     ]),
     slice_nodes(nodes, insert_at, nodes.length()),
@@ -162,6 +165,7 @@ pub fn add_sibling_heading(
         title: next_title,
         marker: node.marker,
         body: [],
+        source_line: -1,
       },
     ]),
     slice_nodes(nodes, insert_at, nodes.length()),

@@ -178,6 +178,24 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
     has_class_name(element, "editor-active-line") {
     style_line_layer(element)
   }
+  if has_class_name(element, "editor-linked-line") {
+    style_editor_linked_line(element)
+  }
+  if has_class_name(element, "editor-hover-line") {
+    style_editor_hover_line(element)
+  }
+  if has_class_name(element, "editor-active-line") {
+    style_editor_active_line(element)
+  }
+  if has_class_name(element, "editor-gutter-line--linked") {
+    style_editor_gutter_line_linked(element)
+  }
+  if has_class_name(element, "editor-gutter-line--hover") {
+    style_editor_gutter_line_hover(element)
+  }
+  if has_class_name(element, "editor-gutter-line--active") {
+    style_editor_gutter_line_active(element)
+  }
   if has_class_name(element, "editor-gutter") {
     style_editor_gutter(element)
   }
@@ -1064,6 +1082,82 @@ fn style_line_layer(element : @dom.Element) -> Unit {
   set_style(element, "height", "28px")
   set_style(element, "opacity", "0")
   set_style(element, "pointer-events", "none")
+  set_style(element, "transform", "translateY(0)")
+  set_style(element, "transition", "opacity 120ms ease")
+  set_style(element, "z-index", "0")
+  set_style(element, "left", "0")
+  set_style(element, "right", "0")
+}
+
+///|
+fn style_editor_linked_line(element : @dom.Element) -> Unit {
+  set_style(element, "left", "10px")
+  set_style(element, "right", "12px")
+  set_style(element, "border-radius", "9px")
+  set_style(
+    element, "background", "linear-gradient(180deg, rgba(111, 214, 183, 0.22), rgba(111, 214, 183, 0.1))",
+  )
+  set_style(
+    element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 3px 0 0 rgba(37, 162, 122, 0.48), 0 0 0 1px rgba(83, 188, 157, 0.18)",
+  )
+}
+
+///|
+fn style_editor_hover_line(element : @dom.Element) -> Unit {
+  set_style(element, "left", "10px")
+  set_style(element, "right", "12px")
+  set_style(element, "border-radius", "9px")
+  set_style(
+    element, "background", "linear-gradient(180deg, rgba(146, 196, 248, 0.18), rgba(146, 196, 248, 0.08))",
+  )
+  set_style(
+    element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.44), 0 0 0 1px rgba(146, 196, 248, 0.16)",
+  )
+  set_style(element, "z-index", "1")
+}
+
+///|
+fn style_editor_active_line(element : @dom.Element) -> Unit {
+  set_style(element, "left", "10px")
+  set_style(element, "right", "12px")
+  set_style(element, "border-radius", "9px")
+  set_style(
+    element, "background", "linear-gradient(180deg, rgba(134, 186, 244, 0.34), rgba(134, 186, 244, 0.18))",
+  )
+  set_style(
+    element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.56), inset 3px 0 0 rgba(72, 137, 210, 0.58), 0 0 0 1px rgba(126, 173, 225, 0.32)",
+  )
+  set_style(element, "z-index", "2")
+}
+
+///|
+fn style_editor_gutter_line_linked(element : @dom.Element) -> Unit {
+  set_style(
+    element, "background", "linear-gradient(180deg, rgba(111, 214, 183, 0.18), rgba(111, 214, 183, 0.08))",
+  )
+  set_style(
+    element, "box-shadow", "inset 2px 0 0 rgba(37, 162, 122, 0.42), 0 0 0 1px rgba(83, 188, 157, 0.14)",
+  )
+}
+
+///|
+fn style_editor_gutter_line_hover(element : @dom.Element) -> Unit {
+  set_style(
+    element, "background", "linear-gradient(180deg, rgba(146, 196, 248, 0.14), rgba(146, 196, 248, 0.05))",
+  )
+  set_style(element, "box-shadow", "0 0 0 1px rgba(146, 196, 248, 0.12)")
+  set_style(element, "z-index", "1")
+}
+
+///|
+fn style_editor_gutter_line_active(element : @dom.Element) -> Unit {
+  set_style(
+    element, "background", "linear-gradient(180deg, rgba(134, 186, 244, 0.26), rgba(134, 186, 244, 0.12))",
+  )
+  set_style(
+    element, "box-shadow", "inset 2px 0 0 rgba(72, 137, 210, 0.46), 0 0 0 1px rgba(126, 173, 225, 0.22)",
+  )
+  set_style(element, "z-index", "2")
 }
 
 ///|
@@ -1110,19 +1204,21 @@ fn style_editor_textarea(element : @dom.Element) -> Unit {
   set_style(element, "resize", "none")
   set_style(element, "border", "0")
   set_style(element, "padding", "18px 18px 22px 16px")
-  set_style(element, "background-color", "transparent")
   set_style(
-    element, "background-image", "linear-gradient(180deg, transparent calc(100% - 1px), rgba(198, 213, 228, 0.86) calc(100% - 1px) 100%)",
+    element, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)), repeating-linear-gradient(180deg, transparent 0, transparent 27px, rgba(198, 213, 228, 0.86) 27px, rgba(198, 213, 228, 0.86) 28px, transparent 28px)",
   )
-  set_style(element, "background-position", "0 19px")
-  set_style(element, "background-size", "100% 28px")
-  set_style(element, "background-attachment", "local")
-  set_style(element, "background-repeat", "repeat-y")
-  set_style(element, "background-clip", "padding-box")
+  set_style(element, "background-position", "0 0, 0 0")
+  set_style(element, "background-origin", "border-box, content-box")
+  set_style(element, "background-attachment", "local, local")
+  set_style(element, "background-repeat", "no-repeat, repeat")
   set_style(element, "color", "#23384d")
   set_style(
     element, "font", "16px/28px \"Cascadia Code\", \"Consolas\", monospace",
   )
+  set_style(element, "white-space", "pre-wrap")
+  set_style(element, "word-break", "normal")
+  set_style(element, "overflow-wrap", "break-word")
+  set_style(element, "word-wrap", "break-word")
   set_style(element, "overflow", "auto")
   set_style(element, "overflow-x", "hidden")
   set_style(element, "caret-color", "#5e86b5")
@@ -1133,7 +1229,10 @@ fn style_editor_textarea(element : @dom.Element) -> Unit {
 ///|
 fn style_editor_input_mirror(element : @dom.Element) -> Unit {
   set_style(element, "position", "absolute")
-  set_style(element, "inset", "0")
+  set_style(element, "top", "0")
+  set_style(element, "left", "0")
+  set_style(element, "right", "auto")
+  set_style(element, "bottom", "auto")
   set_style(element, "z-index", "0")
   set_style(element, "visibility", "hidden")
   set_style(element, "pointer-events", "none")
@@ -1141,8 +1240,10 @@ fn style_editor_input_mirror(element : @dom.Element) -> Unit {
   set_style(element, "overflow", "hidden")
   set_style(element, "box-sizing", "border-box")
   set_style(element, "width", "100%")
-  set_style(element, "height", "auto")
+  set_style(element, "height", "0")
+  set_style(element, "min-height", "0")
   set_style(element, "border", "0")
+  set_style(element, "resize", "none")
 }
 
 ///|

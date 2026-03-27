@@ -1,6 +1,7 @@
 ///|
 priv struct OutlineNode {
   flat_index : Int
+  source_line : Int
   level : Int
   title : String
   marker : String
@@ -27,6 +28,7 @@ fn build_outline_from_nodes(nodes : Array[MarkdownNode]) -> OutlineNode {
   }
   OutlineNode::{
     flat_index: -1,
+    source_line: -1,
     level: 1,
     title: "Document",
     marker: "",
@@ -41,6 +43,7 @@ fn build_outline_from_nodes(nodes : Array[MarkdownNode]) -> OutlineNode {
 fn empty_outline() -> OutlineNode {
   OutlineNode::{
     flat_index: -1,
+    source_line: -1,
     level: 1,
     title: "Empty Document",
     marker: "",
@@ -70,6 +73,7 @@ fn build_node(nodes : Array[MarkdownNode], index : Int) -> (OutlineNode, Int) {
   (
     OutlineNode::{
       flat_index: index,
+      source_line: node.source_line,
       level: node.level,
       title: node.title,
       marker: node.marker,

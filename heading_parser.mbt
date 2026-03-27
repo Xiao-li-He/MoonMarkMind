@@ -11,6 +11,7 @@ priv struct MarkdownNode {
   title : String
   marker : String
   body : Array[String]
+  source_line : Int
 }
 
 ///|
@@ -37,7 +38,8 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
   let nodes = []
   let mut stack : Array[ParseContext] = []
   let lines = markdown.split("\n").to_array()
-  for line in lines {
+  for line_index in 0..<lines.length() {
+    let line = lines[line_index]
     match parse_heading_line(line) {
       Some(heading) => {
         let (level, title) = heading
@@ -48,6 +50,7 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
           title,
           marker: "",
           body: [],
+          source_line: line_index,
         })
         stack.push(ParseContext::{
           kind: MarkdownNodeKind::Heading,
@@ -72,6 +75,7 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
               title,
               marker,
               body: [],
+              source_line: line_index,
             })
             stack.push(ParseContext::{
               kind: MarkdownNodeKind::ListItem,

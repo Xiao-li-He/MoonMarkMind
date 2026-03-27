@@ -419,6 +419,11 @@ fn max_int(left : Int, right : Int) -> Int {
 }
 
 ///|
+fn text_area_scroll_height(input : @dom.HTMLTextAreaElement) -> Int {
+  parse_int_or_default(input.as_any()._get("scrollHeight").to_string(), 0)
+}
+
+///|
 fn input_line_metrics(input : @dom.HTMLTextAreaElement) -> InputLineMetrics {
   let raw = measure_input_line_metrics_raw(input)
   let parts = raw.split("|".view()).to_array()
@@ -537,21 +542,38 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
     style.get_property_value("padding-top"),
     0,
   )
-  let mirror = match get_element("#input-measure-mirror") {
+  let mirror_element = match get_element("#input-measure-mirror") {
     Some(mirror) => mirror
     None => return ""
   }
+  let mirror = to_text_area(mirror_element)
   let mirror_style = @dom.css_style_from_val(
-    mirror.as_any()._get("style").cast(),
+    mirror_element.as_any()._get("style").cast(),
   )
   let content_width = input.clientWidth()
   let fallback_width = element_rect(input.as_element()).width.round().to_int()
+  let padding_left = parse_int_or_default(
+    style.get_property_value("padding-left"),
+    0,
+  )
+  let padding_right = parse_int_or_default(
+    style.get_property_value("padding-right"),
+    0,
+  )
+  let padding_bottom = parse_int_or_default(
+    style.get_property_value("padding-bottom"),
+    0,
+  )
   let mirror_width = if content_width > 0 {
     content_width
   } else {
     fallback_width
   }
   mirror_style.set_property("width", "\{max_int(1, mirror_width)}px")
+  mirror_style.set_property(
+    "padding",
+    "\{padding_top}px \{padding_right}px \{padding_bottom}px \{padding_left}px",
+  )
   mirror_style.set_property("font", style.get_property_value("font"))
   mirror_style.set_property(
     "line-height",
@@ -569,34 +591,35 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
       "2"
     },
   )
-  mirror_style.set_property("white-space", "normal")
-  mirror_style.set_property("word-break", "break-word")
-  mirror_style.set_property("overflow-wrap", "anywhere")
+  mirror_style.set_property("white-space", "pre-wrap")
+  mirror_style.set_property("word-break", "normal")
+  mirror_style.set_property("overflow-wrap", "break-word")
+  mirror_style.set_property("word-wrap", "break-word")
   mirror_style.set_property("color", style.get_property_value("color"))
   mirror_style.set_property(
     "text-align",
     style.get_property_value("text-align"),
   )
   mirror_style.set_property("direction", style.get_property_value("direction"))
-  clear_element(mirror)
+  mirror.value = ""
   let lines = input.value.split("\n".view())
   let heights : Array[Int] = []
   let tops : Array[Int] = []
   let mut current_top = padding_top
-  for line in lines {
-    let block = create_element("div", "")
-    let block_style = @dom.css_style_from_val(
-      block.as_any()._get("style").cast(),
-    )
-    block_style.set_property("display", "block")
-    block_style.set_property("white-space", "pre-wrap")
-    block_style.set_property("word-break", "break-word")
-    block_style.set_property("overflow-wrap", "anywhere")
-    block_style.set_property("margin", "0")
-    block_style.set_property("padding", "0")
-    block.setTextContent(if line.length() > 0 { line.to_string() } else { " " })
-    append_child(mirror, block)
-    let measured_height = element_rect(block).height.round().to_int()
+  let mut previous_total_height = padding_top + padding_bottom
+  let mut measured_value = ""
+  for index, line in lines {
+    if index > 0 {
+      measured_value = measured_value + "\n"
+    }
+    measured_value = measured_value + line.to_string()
+    mirror.value = measured_value
+    let total_height = text_area_scroll_height(mirror)
+    let measured_height = if index == 0 {
+      total_height - padding_top - padding_bottom
+    } else {
+      total_height - previous_total_height
+    }
     let next_height = if measured_height > resolved_line_height {
       measured_height
     } else {
@@ -605,6 +628,7 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
     heights.push(next_height)
     tops.push(current_top)
     current_top += next_height
+    previous_total_height = total_height
   }
   "\{serialize_int_list(heights)}|\{serialize_int_list(tops)}|\{resolved_line_height}|\{padding_top}"
 }
@@ -1020,24 +1044,21 @@ fn reveal_input_line(line_index : Int) -> Unit {
       let line_height = metrics.heights
         .get(line_index)
         .unwrap_or(metrics.line_height)
-      let target_top = {
-        let offset = line_height * 2
-        let minimum_view = (input.clientHeight().to_double() * 0.35)
-          .round()
-          .to_int()
-        let view_offset = if offset > minimum_view {
-          offset
-        } else {
-          minimum_view
-        }
-        let candidate = line_top - view_offset
-        if candidate > 0 {
-          candidate
-        } else {
-          0
-        }
+      let viewport_top = input.scrollTop()
+      let viewport_bottom = viewport_top + input.clientHeight()
+      let top_margin = line_height * 2
+      let bottom_margin = line_height * 3
+      let visible_top = viewport_top + top_margin
+      let visible_bottom = viewport_bottom - bottom_margin
+      let target_top = if line_top < visible_top {
+        line_top - top_margin
+      } else if line_top + line_height > visible_bottom {
+        line_top + line_height - input.clientHeight() + bottom_margin
+      } else {
+        viewport_top
       }
-      reveal_input_line_after_paint(target_top)
+      let next_top = if target_top > 0 { target_top } else { 0 }
+      reveal_input_line_after_paint(next_top)
       select_input_line(input, line_index)
     }
     None => ()

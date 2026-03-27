@@ -752,14 +752,14 @@ fn apply_selected_nodes(nodes : Array[Int], reveal_line : Bool) -> Unit {
 
 ///|
 fn selected_markdown_line() -> Int {
-  markdown_line_for_flat_index(app_state.markdown, app_state.selected_node)
+  source_line_for_flat_index(app_state.root, app_state.selected_node)
 }
 
 ///|
 fn selected_markdown_lines() -> Array[Int] {
   let lines = []
   for node_index in app_state.selected_nodes {
-    let line = markdown_line_for_flat_index(app_state.markdown, node_index)
+    let line = source_line_for_flat_index(app_state.root, node_index)
     if line >= 0 && !contains_int(lines, line) {
       lines.push(line)
     }
@@ -835,34 +835,14 @@ fn same_int_set(left : Array[Int], right : Array[Int]) -> Bool {
 }
 
 ///|
-fn markdown_line_for_flat_index(markdown : String, flat_index : Int) -> Int {
+fn source_line_for_flat_index(root : OutlineNode, flat_index : Int) -> Int {
   if flat_index < 0 {
     return -1
   }
-  let nodes = parse_markdown_nodes(markdown)
-  let lines = markdown.split("\n").to_array()
-  let mut node_index = 0
-  for line_index in 0..<lines.length() {
-    match parse_heading_line(lines[line_index]) {
-      Some(_) => {
-        if node_index < nodes.length() && node_index == flat_index {
-          return line_index
-        }
-        node_index += 1
-      }
-      None =>
-        match parse_list_line(lines[line_index]) {
-          Some(_) => {
-            if node_index < nodes.length() && node_index == flat_index {
-              return line_index
-            }
-            node_index += 1
-          }
-          None => ()
-        }
-    }
+  match find_node(root, flat_index) {
+    Some(node) => node.source_line
+    None => -1
   }
-  -1
 }
 
 ///|
