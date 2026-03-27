@@ -47,6 +47,44 @@ test "delete heading subtree" {
 }
 
 ///|
+test "add sibling heading after subtree" {
+  inspect(
+    add_sibling_heading(sample_markdown(), 1, "Tokenizer", true),
+    content="# MoonMarkMind Demo\n## Parser\n### Heading extraction\n### Level mapping\n## Tokenizer\n## Renderer\n### Tree preview\n### Round-trip preview",
+  )
+}
+
+///|
+test "move sibling heading up" {
+  let markdown = "# Root\n## A\n## B\n## C"
+  inspect(
+    move_heading_among_siblings(markdown, 2, false),
+    content="# Root\n## B\n## A\n## C",
+  )
+}
+
+///|
+test "move sibling heading down" {
+  let markdown = "# Root\n## A\n## B\n## C"
+  inspect(
+    move_heading_among_siblings(markdown, 2, true),
+    content="# Root\n## A\n## C\n## B",
+  )
+}
+
+///|
+test "seventh level falls back to list" {
+  let markdown = "# Root\n## A\n### B\n#### C\n##### D\n###### E\n- F\n  - G"
+  let outline = outline_json(markdown)
+  guard outline.contains("\"title\":\"F\"") && outline.contains("\"level\":7") else {
+    fail("missing seventh level list node")
+  }
+  guard outline.contains("\"title\":\"G\"") && outline.contains("\"level\":8") else {
+    fail("missing eighth level list node")
+  }
+}
+
+///|
 test "export structural outline json" {
   let markdown = "# Root\n- A\n  - B\n## C\n1. D\n   1. E"
   inspect(
