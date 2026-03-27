@@ -410,6 +410,15 @@ fn parse_int_or_default(raw : String, fallback : Int) -> Int {
 }
 
 ///|
+fn max_int(left : Int, right : Int) -> Int {
+  if left > right {
+    left
+  } else {
+    right
+  }
+}
+
+///|
 fn input_line_metrics(input : @dom.HTMLTextAreaElement) -> InputLineMetrics {
   let raw = measure_input_line_metrics_raw(input)
   let parts = raw.split("|".view()).to_array()
@@ -528,34 +537,21 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
     style.get_property_value("padding-top"),
     0,
   )
-  let padding_bottom = parse_int_or_default(
-    style.get_property_value("padding-bottom"),
-    0,
-  )
-  let padding_right = parse_double_or_default(
-    style.get_property_value("padding-right"),
-    0.0,
-  )
-  let padding_left = parse_double_or_default(
-    style.get_property_value("padding-left"),
-    0.0,
-  )
-  let mirror = create_element("div", "")
+  let mirror = match get_element("#input-measure-mirror") {
+    Some(mirror) => mirror
+    None => return ""
+  }
   let mirror_style = @dom.css_style_from_val(
     mirror.as_any()._get("style").cast(),
   )
-  mirror_style.set_property("position", "absolute")
-  mirror_style.set_property("visibility", "hidden")
-  mirror_style.set_property("pointer-events", "none")
-  mirror_style.set_property("inset", "0")
-  mirror_style.set_property("width", "100%")
-  mirror_style.set_property("height", "auto")
-  mirror_style.set_property("box-sizing", "border-box")
-  mirror_style.set_property("border", "0")
-  mirror_style.set_property(
-    "padding",
-    "\{padding_top}px \{padding_right}px \{padding_bottom}px \{padding_left}px",
-  )
+  let content_width = input.clientWidth()
+  let fallback_width = element_rect(input.as_element()).width.round().to_int()
+  let mirror_width = if content_width > 0 {
+    content_width
+  } else {
+    fallback_width
+  }
+  mirror_style.set_property("width", "\{max_int(1, mirror_width)}px")
   mirror_style.set_property("font", style.get_property_value("font"))
   mirror_style.set_property(
     "line-height",
@@ -582,19 +578,11 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
     style.get_property_value("text-align"),
   )
   mirror_style.set_property("direction", style.get_property_value("direction"))
-  mirror_style.set_property(
-    "width",
-    "\{max_double(1.0, input.clientWidth().to_double()).round().to_int()}px",
-  )
+  clear_element(mirror)
   let lines = input.value.split("\n".view())
   let heights : Array[Int] = []
   let tops : Array[Int] = []
   let mut current_top = padding_top
-  let parent = match input.parentElement() {
-    Some(parent) => parent
-    None => @dom.document().documentElement()
-  }
-  append_child(parent, mirror)
   for line in lines {
     let block = create_element("div", "")
     let block_style = @dom.css_style_from_val(
@@ -608,9 +596,9 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
     block_style.set_property("padding", "0")
     block.setTextContent(if line.length() > 0 { line.to_string() } else { " " })
     append_child(mirror, block)
-    let content_height = block.clientHeight()
-    let next_height = if content_height > resolved_line_height {
-      content_height
+    let measured_height = element_rect(block).height.round().to_int()
+    let next_height = if measured_height > resolved_line_height {
+      measured_height
     } else {
       resolved_line_height
     }
@@ -618,7 +606,6 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
     tops.push(current_top)
     current_top += next_height
   }
-  mirror.remove()
   "\{serialize_int_list(heights)}|\{serialize_int_list(tops)}|\{resolved_line_height}|\{padding_top}"
 }
 
@@ -1813,15 +1800,6 @@ fn download_current_page_html(filename : String) -> Unit {
 }
 
 ///|
-fn collect_inline_style_text() -> String {
-  let styles : Array[String] = []
-  for style_element in @dom.document().querySelectorAll("style") {
-    styles.push(style_element.textContent())
-  }
-  styles.join("\n")
-}
-
-///|
 fn export_dimension(
   content_size : Double,
   mindmap_size : Double,
@@ -1838,42 +1816,60 @@ fn export_dimension(
 
 ///|
 fn build_mindmap_export_svg() -> String {
-  match get_element("#mindmap") {
-    Some(mindmap) =>
-      match mindmap.querySelector(".mindmap-content") {
-        Some(content) => {
-          let content_rect = element_rect(content)
-          let mindmap_rect = element_rect(mindmap)
-          let width = export_dimension(
-            content_rect.width,
-            mindmap_rect.width,
-            640,
-          )
-          let height = export_dimension(
-            content_rect.height,
-            mindmap_rect.height,
-            360,
-          )
-          let pan_x = mindmap.getAttribute("data-pan-x").unwrap_or("0")
-          let pan_y = mindmap.getAttribute("data-pan-y").unwrap_or("0")
-          let zoom = mindmap.getAttribute("data-zoom").unwrap_or("1")
-          let css = collect_inline_style_text()
-          let body = content.innerHTML()
-          let svg =
-            $|<?xml version="1.0" encoding="UTF-8"?>
-            $|<svg xmlns="http://www.w3.org/2000/svg" width="\{width}" height="\{height}" viewBox="0 0 \{width} \{height}">
-            $|  <foreignObject width="100%" height="100%">
-            $|    <div xmlns="http://www.w3.org/1999/xhtml" style="width:\{width}px;height:\{height}px;background:#ffffff;">
-            $|      <style>\{css}</style>
-            $|      <div class="mindmap" style="width:\{width}px;height:\{height}px;min-height:\{height}px;overflow:hidden;padding:20px;--pan-x:\{pan_x}px;--pan-y:\{pan_y}px;--zoom:\{zoom};"><div class="mindmap-content">\{body}</div></div>
-            $|    </div>
-            $|  </foreignObject>
-            $|</svg>
-          svg
-        }
-        None => ""
-      }
+  match build_mindmap_export_svg_element() {
+    Some(svg) => svg.outerHTML()
     None => ""
+  }
+}
+
+///|
+fn build_mindmap_export_svg_element() -> @dom.Element? {
+  match get_element("#mindmap") {
+    Some(mindmap) => {
+      let clone = @dom.Element::cast_from_node(mindmap.cloneNode(true))
+      let content_rect = match mindmap.querySelector(".mindmap-content") {
+        Some(content) => element_rect(content)
+        None => return None
+      }
+      let mindmap_rect = element_rect(mindmap)
+      let width = export_dimension(content_rect.width, mindmap_rect.width, 640)
+      let height = export_dimension(
+        content_rect.height,
+        mindmap_rect.height,
+        360,
+      )
+      let pan_x = mindmap.getAttribute("data-pan-x").unwrap_or("0")
+      let pan_y = mindmap.getAttribute("data-pan-y").unwrap_or("0")
+      let zoom = mindmap.getAttribute("data-zoom").unwrap_or("1")
+      let svg = create_svg_element("svg", "")
+      svg.setAttribute("xmlns", "http://www.w3.org/2000/svg")
+      svg.setAttribute("width", width.to_string())
+      svg.setAttribute("height", height.to_string())
+      svg.setAttribute("viewBox", "0 0 \{width} \{height}")
+      let foreign_object = create_svg_element("foreignObject", "")
+      foreign_object.setAttribute("width", "100%")
+      foreign_object.setAttribute("height", "100%")
+      let wrapper = create_element("div", "")
+      wrapper.setAttribute("xmlns", "http://www.w3.org/1999/xhtml")
+      let wrapper_style = style_of(wrapper)
+      wrapper_style.set_property("width", "\{width}px")
+      wrapper_style.set_property("height", "\{height}px")
+      wrapper_style.set_property("background", "#ffffff")
+      let mindmap_style = style_of(clone)
+      mindmap_style.set_property("width", "\{width}px")
+      mindmap_style.set_property("height", "\{height}px")
+      mindmap_style.set_property("min-height", "\{height}px")
+      mindmap_style.set_property("overflow", "hidden")
+      mindmap_style.set_property("padding", "20px")
+      mindmap_style.set_property("--pan-x", "\{pan_x}px")
+      mindmap_style.set_property("--pan-y", "\{pan_y}px")
+      mindmap_style.set_property("--zoom", zoom)
+      wrapper.as_node().appendChild(clone.as_node()) |> ignore
+      foreign_object.as_node().appendChild(wrapper.as_node()) |> ignore
+      svg.as_node().appendChild(foreign_object.as_node()) |> ignore
+      Some(svg)
+    }
+    None => None
   }
 }
 

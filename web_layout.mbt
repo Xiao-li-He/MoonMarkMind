@@ -433,6 +433,15 @@ fn build_editor_panel() -> @dom.Element {
       active_line
     },
   )
+  append_child(
+    input_wrap,
+    {
+      let measure_mirror = create_element("div", "editor-input-mirror")
+      measure_mirror.setAttribute("id", "input-measure-mirror")
+      measure_mirror.setAttribute("aria-hidden", "true")
+      measure_mirror
+    },
+  )
   let input = create_element("textarea", "")
   input.setAttribute("id", "input")
   input.setAttribute("wrap", "soft")

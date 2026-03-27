@@ -165,6 +165,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "editor-input-wrap") {
     style_editor_input_wrap(element)
   }
+  if has_class_name(element, "editor-input-mirror") {
+    style_editor_input_mirror(element)
+  }
   if has_class_name(element, "editor-gutter-lines") ||
     has_class_name(element, "editor-linked-lines") {
     style_overlay_layer(element)
@@ -1128,6 +1131,21 @@ fn style_editor_textarea(element : @dom.Element) -> Unit {
 }
 
 ///|
+fn style_editor_input_mirror(element : @dom.Element) -> Unit {
+  set_style(element, "position", "absolute")
+  set_style(element, "inset", "0")
+  set_style(element, "z-index", "0")
+  set_style(element, "visibility", "hidden")
+  set_style(element, "pointer-events", "none")
+  set_style(element, "user-select", "none")
+  set_style(element, "overflow", "hidden")
+  set_style(element, "box-sizing", "border-box")
+  set_style(element, "width", "100%")
+  set_style(element, "height", "auto")
+  set_style(element, "border", "0")
+}
+
+///|
 fn style_workspace_divider(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "align-items", "stretch")
@@ -1143,9 +1161,7 @@ fn style_workspace_divider(element : @dom.Element) -> Unit {
 
 ///|
 fn style_workspace_divider_dragging(element : @dom.Element) -> Unit {
-  set_style(
-    element, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(240, 246, 251, 0.16))",
-  )
+  ignore(element)
 }
 
 ///|
