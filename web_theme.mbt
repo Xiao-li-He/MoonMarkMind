@@ -138,6 +138,15 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "editor-chrome__light") {
     style_dot(element)
   }
+  if has_class_name(element, "editor-chrome__light--red") {
+    style_dot_red(element)
+  }
+  if has_class_name(element, "editor-chrome__light--yellow") {
+    style_dot_yellow(element)
+  }
+  if has_class_name(element, "editor-chrome__light--green") {
+    style_dot_green(element)
+  }
   if has_class_name(element, "editor-chrome__title") {
     style_editor_title(element)
   }
@@ -904,7 +913,7 @@ fn style_editor_panel(element : @dom.Element) -> Unit {
   set_style(element, "background", "transparent")
   set_style(element, "box-shadow", "none")
   set_style(element, "backdrop-filter", "none")
-  set_style(element, "overflow", "hidden")
+  set_style(element, "overflow", "visible")
 }
 
 ///|
@@ -944,14 +953,33 @@ fn style_editor_chrome(element : @dom.Element) -> Unit {
 fn style_row_center(element : @dom.Element) -> Unit {
   set_style(element, "display", "inline-flex")
   set_style(element, "align-items", "center")
-  set_style(element, "gap", "7px")
+  set_style(element, "gap", "6px")
 }
 
 ///|
 fn style_dot(element : @dom.Element) -> Unit {
-  set_style(element, "width", "10px")
-  set_style(element, "height", "10px")
+  set_style(element, "width", "8px")
+  set_style(element, "height", "8px")
   set_style(element, "border-radius", "999px")
+  set_style(element, "box-shadow", "inset 0 1px 1px rgba(255, 255, 255, 0.42)")
+}
+
+///|
+fn style_dot_red(element : @dom.Element) -> Unit {
+  set_style(element, "background", "#ff5f57")
+  set_style(element, "border", "1px solid rgba(214, 69, 58, 0.42)")
+}
+
+///|
+fn style_dot_yellow(element : @dom.Element) -> Unit {
+  set_style(element, "background", "#febc2e")
+  set_style(element, "border", "1px solid rgba(199, 149, 28, 0.42)")
+}
+
+///|
+fn style_dot_green(element : @dom.Element) -> Unit {
+  set_style(element, "background", "#28c840")
+  set_style(element, "border", "1px solid rgba(26, 147, 44, 0.42)")
 }
 
 ///|
@@ -988,6 +1016,7 @@ fn style_editor_body(element : @dom.Element) -> Unit {
   set_style(element, "align-self", "stretch")
   set_style(element, "min-height", "0")
   set_style(element, "height", "100%")
+  set_style(element, "background", "#f8fbff")
   set_style(element, "overflow", "hidden")
 }
 
@@ -1011,6 +1040,7 @@ fn style_editor_input_wrap(element : @dom.Element) -> Unit {
   set_style(element, "height", "100%")
   set_style(element, "min-width", "0")
   set_style(element, "min-height", "0")
+  set_style(element, "background", "transparent")
   set_style(element, "overflow", "hidden")
 }
 
@@ -1074,11 +1104,7 @@ fn style_editor_textarea(element : @dom.Element) -> Unit {
   set_style(element, "resize", "none")
   set_style(element, "border", "0")
   set_style(element, "padding", "18px 18px 22px 16px")
-  set_style(
-    element, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)), repeating-linear-gradient(180deg, transparent 0, transparent 27px, rgba(198, 213, 228, 0.86) 27px, rgba(198, 213, 228, 0.86) 28px, transparent 28px)",
-  )
-  set_style(element, "background-attachment", "local, local")
-  set_style(element, "background-repeat", "no-repeat, repeat")
+  set_style(element, "background", "transparent")
   set_style(element, "color", "#23384d")
   set_style(
     element, "font", "16px/28px \"Cascadia Code\", \"Consolas\", monospace",

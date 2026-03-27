@@ -405,7 +405,7 @@ fn build_editor_chrome(filename~ : String) -> @dom.Element {
   append_child(chrome, lights)
   append_child(
     chrome,
-    build_text_span("span", "editor-chrome__title", "Markdown 文档"),
+    build_text_span("span", "editor-chrome__title", "Markdown"),
   )
 
   let actions = create_element("div", "editor-chrome__actions")
@@ -655,6 +655,7 @@ fn build_icon_button(
   class_name~ : String,
   tip~ : String,
   label~ : String,
+  icon? : String = "",
   id? : String = "",
   compact? : Bool = false,
 ) -> @dom.Element {
@@ -662,7 +663,12 @@ fn build_icon_button(
   button.setAttribute("type", "button")
   button.setAttribute("data-tip", tip)
   button.setAttribute("aria-label", tip)
-  append_child(button, build_tool_icon(zoom_icon_key(label), compact))
+  let icon_key = if icon.length() == 0 {
+    default_icon_key(tip, label)
+  } else {
+    icon
+  }
+  append_child(button, build_tool_icon(icon_key, compact))
   if id.length() > 0 {
     button.setAttribute("id", id)
   }
@@ -728,6 +734,16 @@ fn build_tool_svg(icon_key : String, compact : Bool) -> @dom.Element {
       append_child(svg, build_svg_path("M12 5.5V18.5M5.5 12H18.5"))
       append_child(svg, build_svg_circle(12.0, 12.0, 8.5, false))
     }
+    "document" => {
+      append_child(svg, build_svg_path("M8 4H14.2L18 7.8V20H8V4Z"))
+      append_child(svg, build_svg_path("M14.2 4V8H18"))
+      append_child(svg, build_svg_path("M10.5 11H15.5M10.5 14H15.5"))
+      append_child(svg, build_svg_path("M10.5 17H13"))
+    }
+    "upload" => {
+      append_child(svg, build_svg_path("M12 16V6M8.5 9.5L12 6L15.5 9.5"))
+      append_child(svg, build_svg_path("M6.5 15.5V18.5H17.5V15.5"))
+    }
     "undo" => {
       append_child(svg, build_svg_path("M9 8H5V4M5.4 8A8 8 0 1 1 8 17.5"))
       append_child(svg, build_svg_path("M5 4L8.2 7.2"))
@@ -763,6 +779,17 @@ fn build_tool_svg(icon_key : String, compact : Bool) -> @dom.Element {
     _ => append_child(svg, build_svg_path("M6 12H18"))
   }
   svg
+}
+
+///|
+fn default_icon_key(tip : String, label : String) -> String {
+  if tip.contains("新建") {
+    "document"
+  } else if tip.contains("导入") || tip.contains("上传") {
+    "upload"
+  } else {
+    zoom_icon_key(label)
+  }
 }
 
 ///|
