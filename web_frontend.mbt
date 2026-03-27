@@ -665,7 +665,6 @@ fn render_ui() -> Unit {
   }
   set_aux_action_enabled("undo-action", app_state.undo_stack.length() > 0)
   set_aux_action_enabled("redo-action", app_state.redo_stack.length() > 0)
-  set_workspace_split(app_state.left_panel_percent)
   set_mindmap_dom(build_mindmap_dom())
   if app_state.editing_node >= 0 &&
     (app_state.editing_node == app_state.selected_node || !has_selected_nodes()) {

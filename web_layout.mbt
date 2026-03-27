@@ -32,6 +32,25 @@ fn set_workspace_split(percent : Int) -> Unit {
 }
 
 ///|
+fn read_workspace_split() -> Int? {
+  match get_element(".workspace") {
+    Some(workspace) => {
+      let style = @dom.css_style_from_val(
+        workspace.as_any()._get("style").cast(),
+      )
+      let raw = style.get_property_value("--left-pane-percent")
+      if raw.length() == 0 {
+        None
+      } else {
+        let cleaned = raw.replace(old="%", new="").trim().to_string()
+        Some(@strconv.parse_int(cleaned) catch { _ => -1 })
+      }
+    }
+    None => None
+  }
+}
+
+///|
 fn set_select_value(id : String, value : String) -> Unit {
   match get_element_by_id(id) {
     Some(control) => {

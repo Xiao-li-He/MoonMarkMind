@@ -520,7 +520,10 @@ fn style_topbar_group(element : @dom.Element) -> Unit {
 
 ///|
 fn style_workspace(element : @dom.Element) -> Unit {
-  set_style(element, "--left-pane-percent", "33%")
+  match read_workspace_split() {
+    Some(percent) => set_style(element, "--left-pane-percent", "\{percent}%")
+    None => set_style(element, "--left-pane-percent", "33%")
+  }
   set_style(element, "--mindmap-toolbar-actions-width", "390px")
   set_style(element, "--mindmap-toolbar-min-width", "412px")
   set_style(element, "display", "grid")

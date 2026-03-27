@@ -1508,6 +1508,7 @@ fn bind_splitter_ui(callback : (Int) -> Unit) -> Unit {
       match get_element(".workspace") {
         Some(workspace) => {
           let dragging = @ref.Ref(false)
+          let last_percent = @ref.Ref(-1)
           divider
           .as_event_target()
           .addEventListener("mousedown", fn(raw) {
@@ -1553,12 +1554,18 @@ fn bind_splitter_ui(callback : (Int) -> Unit) -> Unit {
               raw_left
             }
             let percent = clamped_left / rect.width * 100.0
-            callback(percent.round().to_int())
+            let next_percent = percent.round().to_int()
+            last_percent.val = next_percent
+            callback(next_percent)
           })
           @dom.window()
           .as_event_target()
           .addEventListener("mouseup", fn(_) {
+            if dragging.val && last_percent.val >= 0 {
+              callback(last_percent.val)
+            }
             dragging.val = false
+            last_percent.val = -1
             toggle_class(divider, "workspace-divider--dragging", false)
             toggle_class(workspace, "workspace--dragging-divider", false)
             clear_body_drag_style()
