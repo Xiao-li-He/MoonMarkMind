@@ -134,8 +134,48 @@ fn build_topbar() -> @dom.Element {
   )
   append_child(
     left_group,
-    build_button(
-      "tool-button tool-button--soft", "load-sample", "加载示例", "示例",
+    build_select_control(
+      id="sample-select",
+      label="示例",
+      class_name="tool-select",
+      options=[
+        SelectOption::{
+          value: "custom",
+          label: "自定义",
+          hidden: true,
+          selected: false,
+        },
+        SelectOption::{
+          value: "part1",
+          label: "片段一",
+          hidden: false,
+          selected: true,
+        },
+        SelectOption::{
+          value: "part2",
+          label: "片段二",
+          hidden: false,
+          selected: false,
+        },
+        SelectOption::{
+          value: "part3",
+          label: "片段三",
+          hidden: false,
+          selected: false,
+        },
+        SelectOption::{
+          value: "part4",
+          label: "片段四",
+          hidden: false,
+          selected: false,
+        },
+        SelectOption::{
+          value: "full",
+          label: "完整规则",
+          hidden: false,
+          selected: false,
+        },
+      ],
     ),
   )
 

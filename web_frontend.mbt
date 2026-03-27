@@ -21,6 +21,7 @@ priv struct AppState {
   mut reveal_selected_line : Bool
   mut drag_source_index : Int
   mut drag_source_parent : Int
+  mut sample_variant : String
 }
 
 ///|
@@ -46,6 +47,7 @@ let app_state : AppState = AppState::{
   reveal_selected_line: false,
   drag_source_index: -1,
   drag_source_parent: -2,
+  sample_variant: rules_sample_default_id(),
 }
 
 ///|
@@ -57,8 +59,8 @@ pub fn start_web_app() -> Unit {
   app_state.started = true
   mount_app_shell()
   bind_static_ui(
-    on_new_click, on_sample_click, on_upload_click, on_download_markdown_click, on_layout_change,
-    on_style_change, on_detail_change, on_export_change, on_toolbar_action,
+    on_new_click, on_sample_select_change, on_upload_click, on_download_markdown_click,
+    on_layout_change, on_style_change, on_detail_change, on_export_change, on_toolbar_action,
   )
   bind_splitter_ui(on_splitter_change)
   bind_mindmap_ui(
@@ -66,21 +68,20 @@ pub fn start_web_app() -> Unit {
     on_mindmap_dragstart, on_mindmap_dragend, on_mindmap_dragover, on_mindmap_drop,
   )
   bind_input_listener(on_input_change, on_input_selected_headings_change)
-  load_markdown(rules_test_markdown(), true)
+  load_rules_sample(rules_sample_default_id(), true)
 }
 
 ///|
 fn on_new_click() -> Unit {
   reset_history()
   app_state.document_name = "notes.md"
+  app_state.sample_variant = "custom"
   load_markdown("", true)
 }
 
 ///|
-fn on_sample_click() -> Unit {
-  reset_history()
-  app_state.document_name = "notes.md"
-  load_markdown(rules_test_markdown(), true)
+fn on_sample_select_change(sample_variant : String) -> Unit {
+  load_rules_sample(sample_variant, true)
 }
 
 ///|
@@ -92,6 +93,7 @@ fn on_upload_click() -> Unit {
 fn on_upload_loaded(filename : String, markdown : String) -> Unit {
   reset_history()
   app_state.document_name = normalize_document_name(filename)
+  app_state.sample_variant = "custom"
   load_markdown(markdown, true)
 }
 
@@ -571,6 +573,30 @@ fn can_move_selected(move_down : Bool) -> Bool {
 }
 
 ///|
+fn load_rules_sample(sample_variant : String, reset_ui : Bool) -> Unit {
+  let normalized = normalize_rules_sample_variant(sample_variant)
+  if normalized == "custom" {
+    return
+  }
+  reset_history()
+  app_state.document_name = "notes.md"
+  app_state.sample_variant = normalized
+  load_markdown(rules_sample_markdown(normalized), reset_ui)
+}
+
+///|
+fn normalize_rules_sample_variant(sample_variant : String) -> String {
+  match sample_variant {
+    "part2" => "part2"
+    "part3" => "part3"
+    "part4" => "part4"
+    "full" => "full"
+    "custom" => "custom"
+    _ => "part1"
+  }
+}
+
+///|
 fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
   if reset_ui {
     app_state.editing_node = -2
@@ -614,6 +640,7 @@ fn current_document_name() -> String {
 
 ///|
 fn render_ui() -> Unit {
+  set_select_value("sample-select", app_state.sample_variant)
   set_select_value("layout-select", app_state.layout_mode)
   set_select_value("style-select", app_state.style_mode)
   set_editor_document_name(app_state.document_name)

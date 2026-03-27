@@ -1294,7 +1294,7 @@ fn sync_custom_select_by_id(id : String) -> Unit {
 ///|
 fn bind_static_ui(
   new_callback : () -> Unit,
-  sample_callback : () -> Unit,
+  sample_select_callback : (String) -> Unit,
   upload_callback : () -> Unit,
   download_markdown_callback : () -> Unit,
   layout_callback : (String) -> Unit,
@@ -1310,11 +1310,15 @@ fn bind_static_ui(
       .addEventListener("click", fn(_) { new_callback() })
     None => ()
   }
-  match get_element("#load-sample") {
-    Some(button) =>
-      button
+  match get_element_by_id("sample-select") {
+    Some(select) => {
+      let sample_select = @dom.HTMLSelectElement::cast_from_element(select)
+      sample_select
       .as_event_target()
-      .addEventListener("click", fn(_) { sample_callback() })
+      .addEventListener("change", fn(_) {
+        sample_select_callback(sample_select.value)
+      })
+    }
     None => ()
   }
   match get_element("#upload-markdown") {
