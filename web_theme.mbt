@@ -238,15 +238,6 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "mindmap-stage--svg-connectors") {
     style_mindmap_stage_svg_connectors(element)
   }
-  if has_class_name(element, "mindmap-connector-controls") {
-    style_mindmap_connector_controls(element)
-  }
-  if has_class_name(element, "mindmap-node-anchor") {
-    style_mindmap_node_anchor(element)
-  }
-  if has_class_name(element, "mindmap-connector-joint") {
-    style_mindmap_connector_joint(element)
-  }
   if has_class_name(element, "branch-column") ||
     has_class_name(element, "center-wrap") ||
     has_class_name(element, "branch-item") ||
@@ -1364,63 +1355,6 @@ fn style_mindmap_connector_layer(element : @dom.Element) -> Unit {
   set_style(element, "mix-blend-mode", "multiply")
   set_style(element, "opacity", "0.92")
   set_style(element, "pointer-events", "none")
-}
-
-///|
-fn style_mindmap_connector_controls(element : @dom.Element) -> Unit {
-  set_style(element, "position", "absolute")
-  set_style(element, "inset", "0")
-  set_style(element, "overflow", "visible")
-  set_style(element, "pointer-events", "none")
-  set_style(element, "z-index", "2")
-}
-
-///|
-fn style_mindmap_node_anchor(element : @dom.Element) -> Unit {
-  set_style(element, "position", "absolute")
-  set_style(element, "width", "16px")
-  set_style(element, "height", "16px")
-  set_style(element, "margin", "0")
-  set_style(element, "padding", "0")
-  set_style(element, "border-radius", "999px")
-  set_style(element, "border", "2px solid rgba(115, 166, 216, 0.82)")
-  set_style(element, "background", "rgba(255, 255, 255, 0.98)")
-  set_style(element, "box-shadow", "0 0 0 3px rgba(123, 178, 233, 0.2)")
-  set_style(element, "pointer-events", "none")
-  set_style(element, "cursor", "default")
-}
-
-///|
-fn style_mindmap_connector_joint(element : @dom.Element) -> Unit {
-  set_style(element, "position", "absolute")
-  set_style(element, "width", "16px")
-  set_style(element, "height", "16px")
-  set_style(element, "margin", "0")
-  set_style(element, "padding", "0")
-  set_style(element, "border-radius", "999px")
-  set_style(element, "border", "2px solid #6f9ccd")
-  set_style(element, "background", "rgba(255, 255, 255, 0.98)")
-  set_style(element, "box-shadow", "0 0 0 3px rgba(123, 178, 233, 0.24)")
-  set_style(element, "color", "#5f8fbe")
-  set_style(element, "font-size", "9px")
-  set_style(element, "font-weight", "700")
-  set_style(element, "line-height", "1")
-  set_style(element, "display", "inline-flex")
-  set_style(element, "align-items", "center")
-  set_style(element, "justify-content", "center")
-  set_style(element, "pointer-events", "none")
-  set_style(element, "cursor", "default")
-  if has_class_name(element, "is-selected") {
-    set_style(element, "border-color", "rgba(44, 112, 206, 0.95)")
-    set_style(
-      element, "box-shadow", "inset 0 0 0 1px rgba(255, 255, 255, 0.8), 0 0 0 2px rgba(44, 112, 206, 0.42)",
-    )
-  }
-  if element.getAttribute("data-collapsed").unwrap_or("") == "true" {
-    set_style(element, "min-width", "22px")
-    set_style(element, "width", "auto")
-    set_style(element, "padding", "0 5px")
-  }
 }
 
 ///|

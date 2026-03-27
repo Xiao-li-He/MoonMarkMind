@@ -205,138 +205,16 @@ fn render_mindmap_connector_controls(
     Some(existing) => existing.remove()
     None => ()
   }
-  let control_layer = create_element("div", "mindmap-connector-controls")
-  let layer_style = style_of(control_layer)
-  layer_style.set_property("left", "\{left}px")
-  layer_style.set_property("top", "\{top}px")
-  layer_style.set_property("width", "\{width}px")
-  layer_style.set_property("height", "\{height}px")
-  layer_style.set_property("position", "absolute")
-  layer_style.set_property("overflow", "visible")
-  layer_style.set_property("pointer-events", "none")
-  let mut has_controls = false
-  for node in nodes {
-    let node_index = parse_int_or_default(
-      node.getAttribute("data-node-index").unwrap_or("-1"),
-      -1,
-    )
-    let parent_index = parse_int_or_default(
-      node.getAttribute("data-parent-index").unwrap_or("-1"),
-      -1,
-    )
-    if node_index < 0 || parent_index < 0 {
-      continue
-    }
-    match find_node_by_index(nodes, parent_index) {
-      Some(parent) => {
-        let node_rect = element_rect(node)
-        let parent_rect = element_rect(parent)
-        let node_center_x = rect_center_x(node_rect)
-        let node_center_y = rect_center_y(node_rect)
-        let parent_center_x = rect_center_x(parent_rect)
-        let has_children = node
-          .getAttribute("data-has-children")
-          .unwrap_or("false") ==
-          "true"
-        let collapsed = node.getAttribute("data-collapsed").unwrap_or("false") ==
-          "true"
-        let selected = is_selected_node(node_index)
-        let button_class = if has_children {
-          "mindmap-connector-joint"
-        } else {
-          "mindmap-node-anchor"
-        }
-        let button = create_element("button", button_class)
-        button.setAttribute("type", "button")
-        button.setAttribute("data-node-index", node_index.to_string())
-        button.setAttribute("data-parent-index", parent_index.to_string())
-        button.setAttribute(
-          "aria-label",
-          if has_children {
-            if collapsed {
-              "Expand node"
-            } else {
-              "Collapse node"
-            }
-          } else {
-            "Select node"
-          },
-        )
-        if has_children {
-          button.setAttribute("data-action", "toggle")
-          button.setAttribute("data-collapsed", collapsed.to_string())
-          button.setAttribute(
-            "aria-expanded",
-            if collapsed {
-              "false"
-            } else {
-              "true"
-            },
-          )
-          let hidden_count = parse_int_or_default(
-              node.getAttribute("data-hidden-count").unwrap_or("0"),
-              0,
-            ) -
-            1
-          if hidden_count > 0 && collapsed {
-            button.setTextContent(hidden_count.to_string())
-          }
-        }
-        if selected {
-          toggle_class(button, "is-selected", true)
-        }
-        let button_style = style_of(button)
-        let (button_left, button_top) = if stage_has_vertical_layout(stage) {
-          (
-            stage_local_x(node_center_x, stage_left, safe_zoom).round().to_int() -
-            8,
-            stage_local_y(node_rect.top, stage_top, safe_zoom).round().to_int() -
-            22,
-          )
-        } else if has_class_name(stage, "mindmap-stage--single-right") {
-          (
-            stage_local_x(node_rect.left, stage_left, safe_zoom)
-            .round()
-            .to_int() -
-            22,
-            stage_local_y(node_center_y, stage_top, safe_zoom).round().to_int() -
-            8,
-          )
-        } else {
-          let button_left_raw = if node_center_x >= parent_center_x {
-            node_rect.left
-          } else {
-            node_rect.right
-          }
-          let button_left = if node_center_x >= parent_center_x {
-            stage_local_x(button_left_raw, stage_left, safe_zoom)
-            .round()
-            .to_int() -
-            22
-          } else {
-            stage_local_x(button_left_raw, stage_left, safe_zoom)
-            .round()
-            .to_int() +
-            6
-          }
-          (
-            button_left,
-            stage_local_y(node_center_y, stage_top, safe_zoom).round().to_int() -
-            8,
-          )
-        }
-        button_style.set_property("left", "\{button_left}px")
-        button_style.set_property("top", "\{button_top}px")
-        append_child(control_layer, button)
-        has_controls = true
-      }
-      None => ()
-    }
-  }
-  if has_controls {
-    append_child(content, control_layer)
-  }
-  has_controls
+  let _ = nodes
+  let _ = stage
+  let _ = stage_left
+  let _ = stage_top
+  let _ = safe_zoom
+  let _ = left
+  let _ = top
+  let _ = width
+  let _ = height
+  false
 }
 
 ///|
@@ -2027,10 +1905,21 @@ fn download_mindmap_png(filename : String) -> Unit {
 
 ///|
 fn event_action_from_point(event : @dom.MouseEvent) -> String {
-  let target = event_target_from_point(event)
+  let target = event_interaction_target(event)
   match target.closest("[data-action]") {
     Some(action) => action.getAttribute("data-action").unwrap_or("")
     None => ""
+  }
+}
+
+///|
+fn event_interaction_target(event : @dom.MouseEvent) -> @dom.Element {
+  match
+    event
+    .target()
+    .closest("[data-node-index], [data-action], [data-editor-for]") {
+    Some(target) => target
+    None => event_target_from_point(event)
   }
 }
 
@@ -2062,7 +1951,7 @@ fn event_node_index_from_target(target : @dom.Element) -> Int {
 
 ///|
 fn event_node_index_from_point(event : @dom.MouseEvent) -> Int {
-  event_node_index_from_target(event_target_from_point(event))
+  event_node_index_from_target(event_interaction_target(event))
 }
 
 ///|
