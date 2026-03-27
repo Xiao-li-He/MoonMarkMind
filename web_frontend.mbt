@@ -66,7 +66,7 @@ pub fn start_web_app() -> Unit {
     on_mindmap_dragstart, on_mindmap_dragend, on_mindmap_dragover, on_mindmap_drop,
   )
   bind_input_listener(on_input_change, on_input_selected_headings_change)
-  load_markdown(sample_markdown(), true)
+  load_markdown(rules_test_markdown(), true)
 }
 
 ///|
@@ -80,7 +80,7 @@ fn on_new_click() -> Unit {
 fn on_sample_click() -> Unit {
   reset_history()
   app_state.document_name = "notes.md"
-  load_markdown(sample_markdown(), true)
+  load_markdown(rules_test_markdown(), true)
 }
 
 ///|
@@ -1246,8 +1246,11 @@ fn build_node_card_dom(
   card.setAttribute("data-parent-index", parent_index.to_string())
   apply_node_visual_attrs(card, node, tone_index)
   apply_drag_attrs(card, node, parent_index, is_draggable)
-  append_child(card, build_text_span("small", "", "Level \{node.level}"))
   append_child(card, build_node_title_dom(node, is_editing))
+  match build_node_body_dom(node) {
+    Some(body) => append_child(card, body)
+    None => ()
+  }
   if has_children && !is_center {
     match build_node_actions_dom(node, editable, is_center) {
       Some(actions) => append_child(card, actions)
@@ -1270,6 +1273,16 @@ fn build_node_title_dom(node : OutlineNode, is_editing : Bool) -> @dom.Element {
     title.setTextContent(node.title)
     title
   }
+}
+
+///|
+fn build_node_body_dom(node : OutlineNode) -> @dom.Element? {
+  if node.body.length() == 0 {
+    return None
+  }
+  let body = create_element("div", "node-body")
+  body.setTextContent(node.body.join("\n"))
+  Some(body)
 }
 
 ///|
@@ -1600,10 +1613,11 @@ fn render_node_card(
   }
   let class_name = classes.join(" ")
   let title_html = render_node_title(node, is_editing)
+  let body_html = render_node_body(node)
   let action_html = render_node_actions(node, has_children, editable, is_center)
   let drag_attrs = render_drag_attrs(node, parent_index, is_draggable)
   let visual_attrs = render_node_visual_attrs(node, tone_index)
-  "<div class=\"\{class_name}\" data-level=\"\{node.level}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{visual_attrs}\{drag_attrs}><small>Level \{node.level}</small>\{title_html}\{action_html}</div>"
+  "<div class=\"\{class_name}\" data-level=\"\{node.level}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{visual_attrs}\{drag_attrs}>\{title_html}\{body_html}\{action_html}</div>"
 }
 
 ///|
@@ -1643,6 +1657,15 @@ fn render_node_title(node : OutlineNode, is_editing : Bool) -> String {
   }
   let title = escape_html(node.title)
   "<strong>\{title}</strong>"
+}
+
+///|
+fn render_node_body(node : OutlineNode) -> String {
+  if node.body.length() == 0 {
+    return ""
+  }
+  let body = escape_html(node.body.join("\n"))
+  "<div class=\"node-body\">\{body}</div>"
 }
 
 ///|

@@ -9,6 +9,8 @@ priv struct MarkdownNode {
   kind : MarkdownNodeKind
   level : Int
   title : String
+  marker : String
+  body : Array[String]
 }
 
 ///|
@@ -44,6 +46,8 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
           kind: MarkdownNodeKind::Heading,
           level,
           title,
+          marker: "",
+          body: [],
         })
         stack.push(ParseContext::{
           kind: MarkdownNodeKind::Heading,
@@ -54,7 +58,7 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
       None =>
         match parse_list_line(line) {
           Some(list_item) => {
-            let (indent, title) = list_item
+            let (indent, marker, title) = list_item
             stack = pop_list_contexts_while_indent_at_least(stack, indent)
             let parent_level = if stack.length() == 0 {
               0
@@ -66,6 +70,8 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
               kind: MarkdownNodeKind::ListItem,
               level,
               title,
+              marker,
+              body: [],
             })
             stack.push(ParseContext::{
               kind: MarkdownNodeKind::ListItem,
@@ -73,7 +79,10 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
               indent,
             })
           }
-          None => ()
+          None =>
+            if nodes.length() > 0 {
+              nodes[nodes.length() - 1].body.push(line.to_string())
+            }
         }
     }
   }
@@ -99,7 +108,7 @@ fn parse_heading_line(line : StringView) -> (Int, String)? {
 }
 
 ///|
-fn parse_list_line(line : StringView) -> (Int, String)? {
+fn parse_list_line(line : StringView) -> (Int, String, String)? {
   let indent = count_leading_spaces(line)
   if indent >= line.length() {
     return None
@@ -110,7 +119,7 @@ fn parse_list_line(line : StringView) -> (Int, String)? {
     if start + 1 >= line.length() || line[start + 1] != ' ' {
       return None
     }
-    return Some((indent, view_tail_to_string(line, start + 2)))
+    return Some((indent, "\{marker}", view_tail_to_string(line, start + 2)))
   }
   if marker < '0' || marker > '9' {
     return None
@@ -130,7 +139,13 @@ fn parse_list_line(line : StringView) -> (Int, String)? {
   if cursor >= line.length() || line[cursor] != ' ' {
     return None
   }
-  Some((indent, view_tail_to_string(line, cursor + 1)))
+  Some(
+    (
+      indent,
+      view_slice_to_string(line, start, cursor),
+      view_tail_to_string(line, cursor + 1),
+    ),
+  )
 }
 
 ///|
@@ -152,6 +167,11 @@ fn count_leading_spaces(line : StringView) -> Int {
 ///|
 fn view_tail_to_string(line : StringView, start : Int) -> String {
   line[start:].to_string()
+}
+
+///|
+fn view_slice_to_string(line : StringView, start : Int, end_ : Int) -> String {
+  line[start:end_].to_string()
 }
 
 ///|

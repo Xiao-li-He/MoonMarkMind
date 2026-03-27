@@ -35,6 +35,8 @@ pub fn rename_heading(
         kind: node.kind,
         level: node.level,
         title: next_title,
+        marker: node.marker,
+        body: node.body,
       })
     } else {
       updated.push(node)
@@ -91,6 +93,8 @@ pub fn add_child_heading(
         kind: MarkdownNodeKind::Heading,
         level: 1,
         title: next_title,
+        marker: "",
+        body: [],
       },
     ])
     return render_markdown_nodes(rebuilt)
@@ -112,7 +116,17 @@ pub fn add_child_heading(
   let insert_at = subtree_end(nodes, parent_flat_index)
   let rebuilt = concat_nodes(
     concat_nodes(slice_nodes(nodes, 0, insert_at), [
-      MarkdownNode::{ kind: child_kind, level: child_level, title: next_title },
+      MarkdownNode::{
+        kind: child_kind,
+        level: child_level,
+        title: next_title,
+        marker: if child_kind is MarkdownNodeKind::ListItem {
+          "-"
+        } else {
+          ""
+        },
+        body: [],
+      },
     ]),
     slice_nodes(nodes, insert_at, nodes.length()),
   )
@@ -142,7 +156,13 @@ pub fn add_sibling_heading(
   }
   let rebuilt = concat_nodes(
     concat_nodes(slice_nodes(nodes, 0, insert_at), [
-      MarkdownNode::{ kind: node.kind, level: node.level, title: next_title },
+      MarkdownNode::{
+        kind: node.kind,
+        level: node.level,
+        title: next_title,
+        marker: node.marker,
+        body: [],
+      },
     ]),
     slice_nodes(nodes, insert_at, nodes.length()),
   )
@@ -225,23 +245,34 @@ fn render_outline_node_markdown(
   let current = match node.kind {
     MarkdownNodeKind::Heading => "\{repeat_hashes(node.level)} \{node.title}"
     MarkdownNodeKind::ListItem =>
-      "\{repeat_spaces(list_indent * 2)}- \{node.title}"
+      "\{repeat_spaces(list_indent * 2)}\{node.marker} \{node.title}"
   }
+  let body = render_markdown_body(node.body)
   let child_indent = match node.kind {
     MarkdownNodeKind::Heading => 0
     MarkdownNodeKind::ListItem => list_indent + 1
   }
   let children = render_outline_children_markdown(node.children, child_indent)
-  if children.length() == 0 {
+  let with_body = if body.length() == 0 {
     current
   } else {
-    "\{current}\n\{children}"
+    "\{current}\n\{body}"
+  }
+  if children.length() == 0 {
+    with_body
+  } else {
+    "\{with_body}\n\{children}"
   }
 }
 
 ///|
 fn render_markdown_nodes(nodes : Array[MarkdownNode]) -> String {
   render_outline_markdown(build_outline_from_nodes(nodes))
+}
+
+///|
+fn render_markdown_body(body : Array[String]) -> String {
+  body.join("\n")
 }
 
 ///|

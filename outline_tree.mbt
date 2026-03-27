@@ -3,6 +3,8 @@ priv struct OutlineNode {
   flat_index : Int
   level : Int
   title : String
+  marker : String
+  body : Array[String]
   kind : MarkdownNodeKind
   synthetic : Bool
   children : Array[OutlineNode]
@@ -27,6 +29,8 @@ fn build_outline_from_nodes(nodes : Array[MarkdownNode]) -> OutlineNode {
     flat_index: -1,
     level: 1,
     title: "Document",
+    marker: "",
+    body: [],
     kind: MarkdownNodeKind::Heading,
     synthetic: true,
     children: build_root_nodes(nodes),
@@ -39,6 +43,8 @@ fn empty_outline() -> OutlineNode {
     flat_index: -1,
     level: 1,
     title: "Empty Document",
+    marker: "",
+    body: [],
     kind: MarkdownNodeKind::Heading,
     synthetic: true,
     children: [],
@@ -66,6 +72,8 @@ fn build_node(nodes : Array[MarkdownNode], index : Int) -> (OutlineNode, Int) {
       flat_index: index,
       level: node.level,
       title: node.title,
+      marker: node.marker,
+      body: node.body,
       kind: node.kind,
       synthetic: false,
       children,

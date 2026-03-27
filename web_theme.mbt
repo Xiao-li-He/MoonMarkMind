@@ -348,6 +348,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if tag == "STRONG" {
     style_node_title(element)
   }
+  if has_class_name(element, "node-body") {
+    style_node_body(element)
+  }
   if has_class_name(element, "node-editor") {
     style_node_editor(element)
   }
@@ -1741,6 +1744,24 @@ fn style_node_title(element : @dom.Element) -> Unit {
   set_style(element, "line-height", "1.3")
   set_style(element, "font-weight", "700")
   set_style(element, "color", "inherit")
+}
+
+///|
+fn style_node_body(element : @dom.Element) -> Unit {
+  set_style(element, "display", "block")
+  set_style(element, "margin-top", "8px")
+  set_style(element, "padding", "8px 10px")
+  set_style(element, "border-radius", "12px")
+  set_style(element, "background", "rgba(247, 250, 253, 0.84)")
+  set_style(element, "border", "1px solid rgba(214, 225, 237, 0.68)")
+  set_style(element, "color", "rgba(92, 122, 153, 0.95)")
+  set_style(element, "font-size", "12px")
+  set_style(element, "line-height", "1.45")
+  set_style(element, "white-space", "pre-wrap")
+  set_style(element, "word-break", "break-word")
+  set_style(element, "max-height", "120px")
+  set_style(element, "overflow", "auto")
+  set_style(element, "font-weight", "500")
 }
 
 ///|
