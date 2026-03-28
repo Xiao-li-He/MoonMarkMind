@@ -1198,6 +1198,7 @@ fn style_editor_gutter_number(element : @dom.Element) -> Unit {
 fn style_editor_textarea(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
   set_style(element, "z-index", "3")
+  set_style(element, "box-sizing", "border-box")
   set_style(element, "width", "100%")
   set_style(element, "height", "100%")
   set_style(element, "min-height", "0")
@@ -1238,12 +1239,20 @@ fn style_editor_input_mirror(element : @dom.Element) -> Unit {
   set_style(element, "pointer-events", "none")
   set_style(element, "user-select", "none")
   set_style(element, "overflow", "hidden")
+  set_style(element, "overflow-x", "hidden")
+  set_style(element, "overflow-y", "hidden")
   set_style(element, "box-sizing", "border-box")
   set_style(element, "width", "100%")
   set_style(element, "height", "0")
   set_style(element, "min-height", "0")
   set_style(element, "border", "0")
   set_style(element, "resize", "none")
+  set_style(element, "padding", "0")
+  set_style(element, "margin", "0")
+  set_style(element, "white-space", "pre-wrap")
+  set_style(element, "word-break", "normal")
+  set_style(element, "overflow-wrap", "break-word")
+  set_style(element, "word-wrap", "break-word")
 }
 
 ///|

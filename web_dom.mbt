@@ -394,6 +394,19 @@ priv struct InputLineMetrics {
 }
 
 ///|
+priv struct GutterVisualRow {
+  line_number : Int
+  height : Int
+  show_number : Bool
+}
+
+///|
+priv struct LineLayerBounds {
+  top : Int
+  height : Int
+}
+
+///|
 fn parse_double_or_default(raw : String, fallback : Double) -> Double {
   if raw.length() == 0 {
     fallback
@@ -421,6 +434,231 @@ fn max_int(left : Int, right : Int) -> Int {
 ///|
 fn text_area_scroll_height(input : @dom.HTMLTextAreaElement) -> Int {
   parse_int_or_default(input.as_any()._get("scrollHeight").to_string(), 0)
+}
+
+///|
+fn resolve_input_line_height(style : @dom.CSSStyleDeclaration) -> Int {
+  let font_size = parse_double_or_default(
+    style.get_property_value("font-size"),
+    16.0,
+  )
+  let line_height_raw = style.get_property_value("line-height")
+  if line_height_raw.length() > 0 {
+    let next_line_height = parse_double_or_default(
+      line_height_raw,
+      font_size * 1.75,
+    )
+    if next_line_height.is_nan() || next_line_height <= 0.0 {
+      (font_size * 1.75).round().to_int()
+    } else {
+      next_line_height.round().to_int()
+    }
+  } else {
+    (font_size * 1.75).round().to_int()
+  }
+}
+
+///|
+fn resolved_metric_line_height(metrics : InputLineMetrics) -> Int {
+  if metrics.line_height > 0 {
+    metrics.line_height
+  } else {
+    1
+  }
+}
+
+///|
+fn metric_line_top(metrics : InputLineMetrics, line_index : Int) -> Int {
+  metrics.tops.get(line_index).unwrap_or(metrics.padding_top)
+}
+
+///|
+fn metric_line_height(metrics : InputLineMetrics, line_index : Int) -> Int {
+  let default_height = resolved_metric_line_height(metrics)
+  let height = metrics.heights.get(line_index).unwrap_or(default_height)
+  if height > 1 {
+    height
+  } else {
+    default_height
+  }
+}
+
+///|
+fn measure_mirror_line_heights(
+  block_height : Int,
+  line_height : Int,
+) -> Array[Int] {
+  let resolved_line_height = if line_height > 0 { line_height } else { 1 }
+  let resolved_block_height = if block_height > 1 {
+    block_height
+  } else {
+    resolved_line_height
+  }
+  let visual_line_count = max_int(
+    1,
+    (resolved_block_height + resolved_line_height - 1) / resolved_line_height,
+  )
+  let heights : Array[Int] = []
+  for visual_index in 0..<visual_line_count {
+    let visual_height = if visual_index == visual_line_count - 1 {
+      let remainder = resolved_block_height -
+        resolved_line_height * (visual_line_count - 1)
+      if remainder > 0 {
+        remainder
+      } else {
+        resolved_line_height
+      }
+    } else {
+      resolved_line_height
+    }
+    heights.push(visual_height)
+  }
+  heights
+}
+
+///|
+fn gutter_visual_rows(metrics : InputLineMetrics) -> Array[GutterVisualRow] {
+  let rows : Array[GutterVisualRow] = []
+  let heights = if metrics.heights.length() > 0 {
+    metrics.heights
+  } else {
+    [resolved_metric_line_height(metrics)]
+  }
+  let mut line_number = 1
+  for height in heights {
+    for
+      visual_index, visual_height in measure_mirror_line_heights(
+        height,
+        metrics.line_height,
+      ) {
+      rows.push(GutterVisualRow::{
+        line_number,
+        height: visual_height,
+        show_number: visual_index == 0,
+      })
+    }
+    line_number += 1
+  }
+  rows
+}
+
+///|
+fn line_layer_bounds(
+  metrics : InputLineMetrics,
+  line_index : Int,
+  scroll_top : Int,
+) -> LineLayerBounds? {
+  if line_index < 0 || line_index >= metrics.heights.length() {
+    None
+  } else {
+    Some(LineLayerBounds::{
+      top: metric_line_top(metrics, line_index) - scroll_top,
+      height: metric_line_height(metrics, line_index),
+    })
+  }
+}
+
+///|
+fn line_span_bounds(
+  metrics : InputLineMetrics,
+  start_line_index : Int,
+  end_line_index : Int,
+  scroll_top : Int,
+) -> LineLayerBounds? {
+  if start_line_index < 0 ||
+    end_line_index < start_line_index ||
+    end_line_index >= metrics.heights.length() {
+    None
+  } else {
+    let start_top = metric_line_top(metrics, start_line_index) - scroll_top
+    let end_bottom = metric_line_top(metrics, end_line_index) +
+      metric_line_height(metrics, end_line_index) -
+      scroll_top
+    let height = end_bottom - start_top
+    Some(LineLayerBounds::{
+      top: start_top,
+      height: if height > 1 {
+        height
+      } else {
+        1
+      },
+    })
+  }
+}
+
+///|
+fn sync_input_measure_mirror_style(
+  mirror_element : @dom.Element,
+  input_style : @dom.CSSStyleDeclaration,
+  mirror_width : Int,
+  padding_top : Int,
+  padding_right : Int,
+  padding_bottom : Int,
+  padding_left : Int,
+) -> Unit {
+  let mirror_style = style_of(mirror_element)
+  mirror_style.set_property(
+    "box-sizing",
+    input_style.get_property_value("box-sizing"),
+  )
+  mirror_style.set_property("width", "\{max_int(1, mirror_width)}px")
+  mirror_style.set_property(
+    "padding",
+    "\{padding_top}px \{padding_right}px \{padding_bottom}px \{padding_left}px",
+  )
+  mirror_style.set_property(
+    "border-top-width",
+    input_style.get_property_value("border-top-width"),
+  )
+  mirror_style.set_property(
+    "border-right-width",
+    input_style.get_property_value("border-right-width"),
+  )
+  mirror_style.set_property(
+    "border-bottom-width",
+    input_style.get_property_value("border-bottom-width"),
+  )
+  mirror_style.set_property(
+    "border-left-width",
+    input_style.get_property_value("border-left-width"),
+  )
+  mirror_style.set_property("border-style", "solid")
+  mirror_style.set_property("border-color", "transparent")
+  mirror_style.set_property("margin", "0")
+  mirror_style.set_property("font", input_style.get_property_value("font"))
+  mirror_style.set_property(
+    "line-height",
+    input_style.get_property_value("line-height"),
+  )
+  mirror_style.set_property(
+    "letter-spacing",
+    input_style.get_property_value("letter-spacing"),
+  )
+  mirror_style.set_property(
+    "tab-size",
+    if input_style.get_property_value("tab-size").length() > 0 {
+      input_style.get_property_value("tab-size")
+    } else {
+      "2"
+    },
+  )
+  mirror_style.set_property("white-space", "pre-wrap")
+  mirror_style.set_property("word-break", "normal")
+  mirror_style.set_property("overflow-wrap", "break-word")
+  mirror_style.set_property("word-wrap", "break-word")
+  mirror_style.set_property("overflow", "hidden")
+  mirror_style.set_property("overflow-x", "hidden")
+  mirror_style.set_property("overflow-y", "hidden")
+  mirror_style.set_property("resize", "none")
+  mirror_style.set_property("color", input_style.get_property_value("color"))
+  mirror_style.set_property(
+    "text-align",
+    input_style.get_property_value("text-align"),
+  )
+  mirror_style.set_property(
+    "direction",
+    input_style.get_property_value("direction"),
+  )
 }
 
 ///|
@@ -457,24 +695,7 @@ fn input_line_metrics_fallback(
   let style = @dom.css_style_from_val(
     @dom.window().getComputedStyle(input.as_element()),
   )
-  let font_size = parse_double_or_default(
-    style.get_property_value("font-size"),
-    16.0,
-  )
-  let line_height_raw = style.get_property_value("line-height")
-  let line_height = if line_height_raw.length() > 0 {
-    let next_line_height = parse_double_or_default(
-      line_height_raw,
-      font_size * 1.75,
-    )
-    if next_line_height.is_nan() || next_line_height <= 0.0 {
-      (font_size * 1.75).round().to_int()
-    } else {
-      next_line_height.round().to_int()
-    }
-  } else {
-    (font_size * 1.75).round().to_int()
-  }
+  let line_height = resolve_input_line_height(style)
   let padding_top = parse_int_or_default(
     style.get_property_value("padding-top"),
     0,
@@ -520,24 +741,7 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
   let style = @dom.css_style_from_val(
     @dom.window().getComputedStyle(input.as_element()),
   )
-  let font_size = parse_double_or_default(
-    style.get_property_value("font-size"),
-    16.0,
-  )
-  let line_height_raw = style.get_property_value("line-height")
-  let resolved_line_height = if line_height_raw.length() > 0 {
-    let next_line_height = parse_double_or_default(
-      line_height_raw,
-      font_size * 1.75,
-    )
-    if next_line_height.is_nan() || next_line_height <= 0.0 {
-      (font_size * 1.75).round().to_int()
-    } else {
-      next_line_height.round().to_int()
-    }
-  } else {
-    (font_size * 1.75).round().to_int()
-  }
+  let resolved_line_height = resolve_input_line_height(style)
   let padding_top = parse_int_or_default(
     style.get_property_value("padding-top"),
     0,
@@ -547,9 +751,6 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
     None => return ""
   }
   let mirror = to_text_area(mirror_element)
-  let mirror_style = @dom.css_style_from_val(
-    mirror_element.as_any()._get("style").cast(),
-  )
   let content_width = input.clientWidth()
   let fallback_width = element_rect(input.as_element()).width.round().to_int()
   let padding_left = parse_int_or_default(
@@ -569,44 +770,17 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
   } else {
     fallback_width
   }
-  mirror_style.set_property("width", "\{max_int(1, mirror_width)}px")
-  mirror_style.set_property(
-    "padding",
-    "\{padding_top}px \{padding_right}px \{padding_bottom}px \{padding_left}px",
+  sync_input_measure_mirror_style(
+    mirror_element, style, mirror_width, padding_top, padding_right, padding_bottom,
+    padding_left,
   )
-  mirror_style.set_property("font", style.get_property_value("font"))
-  mirror_style.set_property(
-    "line-height",
-    style.get_property_value("line-height"),
-  )
-  mirror_style.set_property(
-    "letter-spacing",
-    style.get_property_value("letter-spacing"),
-  )
-  mirror_style.set_property(
-    "tab-size",
-    if style.get_property_value("tab-size").length() > 0 {
-      style.get_property_value("tab-size")
-    } else {
-      "2"
-    },
-  )
-  mirror_style.set_property("white-space", "pre-wrap")
-  mirror_style.set_property("word-break", "normal")
-  mirror_style.set_property("overflow-wrap", "break-word")
-  mirror_style.set_property("word-wrap", "break-word")
-  mirror_style.set_property("color", style.get_property_value("color"))
-  mirror_style.set_property(
-    "text-align",
-    style.get_property_value("text-align"),
-  )
-  mirror_style.set_property("direction", style.get_property_value("direction"))
   mirror.value = ""
   let lines = input.value.split("\n".view())
   let heights : Array[Int] = []
   let tops : Array[Int] = []
+  let vertical_padding = padding_top + padding_bottom
   let mut current_top = padding_top
-  let mut previous_total_height = padding_top + padding_bottom
+  let mut previous_total_height = vertical_padding
   let mut measured_value = ""
   for index, line in lines {
     if index > 0 {
@@ -615,21 +789,32 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
     measured_value = measured_value + line.to_string()
     mirror.value = measured_value
     let total_height = text_area_scroll_height(mirror)
-    let measured_height = if index == 0 {
-      total_height - padding_top - padding_bottom
+    let content_height = if total_height > vertical_padding {
+      total_height - vertical_padding
     } else {
-      total_height - previous_total_height
+      0
     }
-    let next_height = if measured_height > resolved_line_height {
+    let previous_content_height = if previous_total_height > vertical_padding {
+      previous_total_height - vertical_padding
+    } else {
+      0
+    }
+    let measured_height = if index == 0 {
+      content_height
+    } else {
+      content_height - previous_content_height
+    }
+    let height = if measured_height > resolved_line_height {
       measured_height
     } else {
       resolved_line_height
     }
-    heights.push(next_height)
     tops.push(current_top)
-    current_top += next_height
+    heights.push(height)
+    current_top += height
     previous_total_height = total_height
   }
+  mirror.value = ""
   "\{serialize_int_list(heights)}|\{serialize_int_list(tops)}|\{resolved_line_height}|\{padding_top}"
 }
 
@@ -640,19 +825,16 @@ fn build_linked_line_dom(
   scroll_top : Int,
   class_name : String,
 ) -> @dom.Element? {
-  if line_index < 0 || line_index >= metrics.heights.length() {
-    None
-  } else {
-    let top = metrics.tops.get(line_index).unwrap_or(metrics.padding_top) -
-      scroll_top
-    let height = metrics.heights.get(line_index).unwrap_or(metrics.line_height)
-    let block_height = if height > 1 { height } else { 1 }
-    let block = create_element("div", class_name)
-    let style = @dom.css_style_from_val(block.as_any()._get("style").cast())
-    style.set_property("height", "\{block_height}px")
-    style.set_property("transform", "translateY(\{top}px)")
-    style.set_property("opacity", "1")
-    Some(block)
+  match line_layer_bounds(metrics, line_index, scroll_top) {
+    Some(bounds) => {
+      let block = create_element("div", class_name)
+      let style = @dom.css_style_from_val(block.as_any()._get("style").cast())
+      style.set_property("height", "\{bounds.height}px")
+      style.set_property("transform", "translateY(\{bounds.top}px)")
+      style.set_property("opacity", "1")
+      Some(block)
+    }
+    None => None
   }
 }
 
@@ -702,17 +884,18 @@ fn set_line_layer(
   scroll_top : Int,
 ) -> Unit {
   let style = @dom.css_style_from_val(element.as_any()._get("style").cast())
-  if !visible || line_index < 0 {
+  if !visible {
     style.set_property("opacity", "0")
     return
   }
-  let top = metrics.tops.get(line_index).unwrap_or(metrics.padding_top) -
-    scroll_top
-  let height = metrics.heights.get(line_index).unwrap_or(metrics.line_height)
-  let block_height = if height > 1 { height } else { 1 }
-  style.set_property("height", "\{block_height}px")
-  style.set_property("transform", "translateY(\{top}px)")
-  style.set_property("opacity", "1")
+  match line_layer_bounds(metrics, line_index, scroll_top) {
+    Some(bounds) => {
+      style.set_property("height", "\{bounds.height}px")
+      style.set_property("transform", "translateY(\{bounds.top}px)")
+      style.set_property("opacity", "1")
+    }
+    None => style.set_property("opacity", "0")
+  }
 }
 
 ///|
@@ -725,24 +908,19 @@ fn set_line_span_layer(
   scroll_top : Int,
 ) -> Unit {
   let style = @dom.css_style_from_val(element.as_any()._get("style").cast())
-  if !visible || start_line_index < 0 || end_line_index < start_line_index {
+  if !visible {
     style.set_property("opacity", "0")
     return
   }
-  let start_top = metrics.tops
-    .get(start_line_index)
-    .unwrap_or(metrics.padding_top) -
-    scroll_top
-  let end_bottom = metrics.tops
-    .get(end_line_index)
-    .unwrap_or(metrics.padding_top) +
-    metrics.heights.get(end_line_index).unwrap_or(metrics.line_height) -
-    scroll_top
-  let height = end_bottom - start_top
-  let block_height = if height > 1 { height } else { 1 }
-  style.set_property("height", "\{block_height}px")
-  style.set_property("transform", "translateY(\{start_top}px)")
-  style.set_property("opacity", "1")
+  match
+    line_span_bounds(metrics, start_line_index, end_line_index, scroll_top) {
+    Some(bounds) => {
+      style.set_property("height", "\{bounds.height}px")
+      style.set_property("transform", "translateY(\{bounds.top}px)")
+      style.set_property("opacity", "1")
+    }
+    None => style.set_property("opacity", "0")
+  }
 }
 
 ///|
@@ -773,40 +951,11 @@ fn sync_input_line_numbers(
   match get_element("#input-gutter") {
     Some(gutter) => {
       clear_element(gutter)
-      let heights = if metrics.heights.length() > 0 {
-        metrics.heights
-      } else {
-        [metrics.line_height]
-      }
-      let mut line_number = 1
-      for height in heights {
-        let line_height = if metrics.line_height > 0 {
-          metrics.line_height
-        } else {
-          1
-        }
-        let visual_line_count = (height + line_height - 1) / line_height
-        for visual_index in 0..<visual_line_count {
-          let visual_height = if visual_index == visual_line_count - 1 {
-            let remainder = height - line_height * (visual_line_count - 1)
-            if remainder > 0 {
-              remainder
-            } else {
-              line_height
-            }
-          } else {
-            line_height
-          }
-          append_child(
-            gutter,
-            build_gutter_number_dom(
-              line_number,
-              visual_height,
-              visual_index == 0,
-            ),
-          )
-        }
-        line_number += 1
+      for row in gutter_visual_rows(metrics) {
+        append_child(
+          gutter,
+          build_gutter_number_dom(row.line_number, row.height, row.show_number),
+        )
       }
       let style = @dom.css_style_from_val(gutter.as_any()._get("style").cast())
       style.set_property(
@@ -1040,10 +1189,8 @@ fn reveal_input_line(line_index : Int) -> Unit {
       if line_index >= metrics.heights.length() {
         return
       }
-      let line_top = metrics.tops.get(line_index).unwrap_or(metrics.padding_top)
-      let line_height = metrics.heights
-        .get(line_index)
-        .unwrap_or(metrics.line_height)
+      let line_top = metric_line_top(metrics, line_index)
+      let line_height = metric_line_height(metrics, line_index)
       let viewport_top = input.scrollTop()
       let viewport_bottom = viewport_top + input.clientHeight()
       let top_margin = line_height * 2
