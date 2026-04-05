@@ -1007,7 +1007,10 @@ fn build_horizontal_mindmap_dom(
       }
     }
   }
-  append_child(center_wrap, build_node_card_dom(center, -1, true, -1))
+  append_child(
+    center_wrap,
+    build_node_card_dom(center, -1, true, -1, "node-actions--corner"),
+  )
   append_child(stage, left_column)
   append_child(stage, center_wrap)
   append_child(stage, right_column)
@@ -1057,7 +1060,17 @@ fn build_branch_row_dom(
 ) -> @dom.Element {
   let row = create_element("div", "branch-item__row")
   let head = create_element("div", "branch-item__head")
-  let card = build_node_card_dom(node, parent_index, is_root, tone_index)
+  let card = build_node_card_dom(
+    node,
+    parent_index,
+    is_root,
+    tone_index,
+    if direction == "left" {
+      "node-actions--right-mid"
+    } else {
+      "node-actions--left-mid"
+    },
+  )
   if direction == "left" {
     append_child(row, build_branch_children_dom(node, direction, tone_index))
     append_child(head, card)
@@ -1175,7 +1188,13 @@ fn build_vertical_tree_dom(
   )
   append_child(
     tree,
-    build_node_card_dom(node, parent_index, is_root, tone_index),
+    build_node_card_dom(
+      node,
+      parent_index,
+      is_root,
+      tone_index,
+      "node-actions--top-center",
+    ),
   )
   append_child(
     tree,
@@ -1247,7 +1266,13 @@ fn build_single_right_tree_dom(
   let head = create_element("div", "single-right-tree__head")
   append_child(
     head,
-    build_node_card_dom(node, parent_index, is_root, tone_index),
+    build_node_card_dom(
+      node,
+      parent_index,
+      is_root,
+      tone_index,
+      "node-actions--left-mid",
+    ),
   )
   append_child(tree, head)
   append_child(
@@ -1294,6 +1319,7 @@ fn build_node_card_dom(
   parent_index : Int,
   is_center : Bool,
   tone_index : Int,
+  action_anchor : String,
 ) -> @dom.Element {
   let has_children = node.children.length() > 0
   let editable = !node.synthetic
@@ -1322,7 +1348,7 @@ fn build_node_card_dom(
     None => ()
   }
   if has_children && !is_center {
-    match build_node_actions_dom(node, editable, is_center) {
+    match build_node_actions_dom(node, editable, is_center, action_anchor) {
       Some(actions) => append_child(card, actions)
       None => ()
     }
@@ -1360,6 +1386,7 @@ fn build_node_actions_dom(
   node : OutlineNode,
   editable : Bool,
   is_center : Bool,
+  action_anchor : String,
 ) -> @dom.Element? {
   let _ = editable
   if is_center || node.children.length() == 0 {
@@ -1375,7 +1402,7 @@ fn build_node_actions_dom(
   }
   let expanded = (!collapsed).to_string()
   let state_class = if collapsed { " node-action--collapsed" } else { "" }
-  let actions = create_element("div", "node-actions")
+  let actions = create_element("div", "node-actions \{action_anchor}")
   let button = create_element(
     "button",
     "node-action node-action--toggle\{state_class}",

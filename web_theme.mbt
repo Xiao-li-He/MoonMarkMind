@@ -381,6 +381,18 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "node-actions") {
     style_node_actions(element)
   }
+  if has_class_name(element, "node-actions--left-mid") {
+    style_node_actions_left_mid(element)
+  }
+  if has_class_name(element, "node-actions--right-mid") {
+    style_node_actions_right_mid(element)
+  }
+  if has_class_name(element, "node-actions--top-center") {
+    style_node_actions_top_center(element)
+  }
+  if has_class_name(element, "node-actions--corner") {
+    style_node_actions_corner(element)
+  }
   if has_class_name(element, "node-action") {
     style_node_action(element)
   }
@@ -1898,11 +1910,46 @@ fn style_node_selected(element : @dom.Element) -> Unit {
 ///|
 fn style_node_actions(element : @dom.Element) -> Unit {
   set_style(element, "position", "absolute")
-  set_style(element, "top", "8px")
-  set_style(element, "right", "8px")
   set_style(element, "display", "flex")
   set_style(element, "gap", "6px")
   set_style(element, "z-index", "2")
+  style_node_actions_corner(element)
+}
+
+///|
+fn style_node_actions_left_mid(element : @dom.Element) -> Unit {
+  set_style(element, "top", "50%")
+  set_style(element, "left", "0")
+  set_style(element, "right", "auto")
+  set_style(element, "bottom", "auto")
+  set_style(element, "transform", "translate(-50%, -50%)")
+}
+
+///|
+fn style_node_actions_right_mid(element : @dom.Element) -> Unit {
+  set_style(element, "top", "50%")
+  set_style(element, "right", "0")
+  set_style(element, "left", "auto")
+  set_style(element, "bottom", "auto")
+  set_style(element, "transform", "translate(50%, -50%)")
+}
+
+///|
+fn style_node_actions_top_center(element : @dom.Element) -> Unit {
+  set_style(element, "top", "0")
+  set_style(element, "left", "50%")
+  set_style(element, "right", "auto")
+  set_style(element, "bottom", "auto")
+  set_style(element, "transform", "translate(-50%, -50%)")
+}
+
+///|
+fn style_node_actions_corner(element : @dom.Element) -> Unit {
+  set_style(element, "top", "8px")
+  set_style(element, "right", "8px")
+  set_style(element, "left", "auto")
+  set_style(element, "bottom", "auto")
+  set_style(element, "transform", "none")
 }
 
 ///|
