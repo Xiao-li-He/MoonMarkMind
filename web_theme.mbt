@@ -390,6 +390,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "node-actions--top-center") {
     style_node_actions_top_center(element)
   }
+  if has_class_name(element, "node-actions--bottom-center") {
+    style_node_actions_bottom_center(element)
+  }
   if has_class_name(element, "node-actions--corner") {
     style_node_actions_corner(element)
   }
@@ -1941,6 +1944,15 @@ fn style_node_actions_top_center(element : @dom.Element) -> Unit {
   set_style(element, "right", "auto")
   set_style(element, "bottom", "auto")
   set_style(element, "transform", "translate(-50%, -50%)")
+}
+
+///|
+fn style_node_actions_bottom_center(element : @dom.Element) -> Unit {
+  set_style(element, "bottom", "0")
+  set_style(element, "left", "50%")
+  set_style(element, "right", "auto")
+  set_style(element, "top", "auto")
+  set_style(element, "transform", "translate(-50%, 50%)")
 }
 
 ///|

@@ -1066,9 +1066,9 @@ fn build_branch_row_dom(
     is_root,
     tone_index,
     if direction == "left" {
-      "node-actions--right-mid"
-    } else {
       "node-actions--left-mid"
+    } else {
+      "node-actions--right-mid"
     },
   )
   if direction == "left" {
@@ -1193,7 +1193,7 @@ fn build_vertical_tree_dom(
       parent_index,
       is_root,
       tone_index,
-      "node-actions--top-center",
+      "node-actions--bottom-center",
     ),
   )
   append_child(
@@ -1271,7 +1271,7 @@ fn build_single_right_tree_dom(
       parent_index,
       is_root,
       tone_index,
-      "node-actions--left-mid",
+      "node-actions--right-mid",
     ),
   )
   append_child(tree, head)
