@@ -13,6 +13,7 @@ fn mount_app_shell() -> Unit {
     Some(app) => {
       clear_element(app)
       append_child(app, build_app_shell())
+      localize_layout_select_labels()
     }
     None => ()
   }
@@ -69,6 +70,30 @@ fn set_select_muted(id : String, muted : Bool) -> Unit {
       toggle_class(control, "tool-select--muted", muted)
       sync_custom_select_by_id(id)
       apply_theme_to_element(control)
+    }
+    None => ()
+  }
+}
+
+///|
+fn localize_layout_select_labels() -> Unit {
+  set_select_option_text("layout-select", "mindmap", "思维图")
+  set_select_option_text("layout-select", "logic", "逻辑图")
+  set_select_option_text("layout-select", "tree", "树状图")
+  sync_custom_select_by_id("layout-select")
+}
+
+///|
+fn set_select_option_text(id : String, value : String, text : String) -> Unit {
+  match get_element_by_id(id) {
+    Some(control) => {
+      let select = @dom.HTMLSelectElement::cast_from_element(control)
+      for child in select.children() {
+        let option = @dom.HTMLOptionElement::cast_from_element(child)
+        if option.value == value {
+          option.setTextContent(text)
+        }
+      }
     }
     None => ()
   }

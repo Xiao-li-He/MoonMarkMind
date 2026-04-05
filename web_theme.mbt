@@ -117,6 +117,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "tool-select-option") {
     style_tool_select_option(element)
   }
+  if has_class_name(element, "tool-select-option--selected") {
+    style_tool_select_option_selected(element)
+  }
   if has_class_name(element, "tool-select-trigger__label") {
     style_tool_select_trigger_label(element)
   }
@@ -921,6 +924,18 @@ fn style_tool_select_option(element : @dom.Element) -> Unit {
   set_style(element, "color", "#23384d")
   set_style(element, "text-align", "left")
   set_style(element, "cursor", "pointer")
+  set_style(element, "box-shadow", "none")
+}
+
+///|
+fn style_tool_select_option_selected(element : @dom.Element) -> Unit {
+  set_style(
+    element,
+    "background",
+    "linear-gradient(180deg, rgba(222, 236, 248, 0.98), rgba(210, 228, 244, 0.94))",
+  )
+  set_style(element, "color", "#17324f")
+  set_style(element, "box-shadow", "inset 0 0 0 1px rgba(137, 173, 206, 0.62)")
 }
 
 ///|

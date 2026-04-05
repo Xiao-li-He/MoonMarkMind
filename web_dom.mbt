@@ -1443,7 +1443,7 @@ fn sync_custom_select(select : @dom.HTMLSelectElement) -> Unit {
               .unwrap_or("")
             toggle_class(
               option_button,
-              "is-selected",
+              "tool-select-option--selected",
               option_value == current_value,
             )
           }
