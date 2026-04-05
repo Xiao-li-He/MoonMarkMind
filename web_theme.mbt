@@ -945,9 +945,7 @@ fn style_tool_select_option(element : @dom.Element) -> Unit {
 ///|
 fn style_tool_select_option_selected(element : @dom.Element) -> Unit {
   set_style(
-    element,
-    "background",
-    "linear-gradient(180deg, rgba(222, 236, 248, 0.98), rgba(210, 228, 244, 0.94))",
+    element, "background", "linear-gradient(180deg, rgba(222, 236, 248, 0.98), rgba(210, 228, 244, 0.94))",
   )
   set_style(element, "color", "#17324f")
   set_style(element, "box-shadow", "inset 0 0 0 1px rgba(137, 173, 206, 0.62)")
@@ -1443,16 +1441,21 @@ fn style_mindmap_surface(element : @dom.Element) -> Unit {
 
 ///|
 fn style_mindmap(element : @dom.Element) -> Unit {
-  set_style(element, "--pan-x", "0px")
-  set_style(element, "--pan-y", "0px")
-  set_style(element, "--zoom", "1")
   set_style(element, "position", "relative")
   set_style(element, "height", "100%")
   set_style(element, "min-height", "0")
   set_style(element, "min-width", "0")
   set_style(element, "padding", "6px 2px 2px")
   set_style(element, "overflow", "hidden")
-  set_style(element, "cursor", "grab")
+  set_style(
+    element,
+    "cursor",
+    if has_class_name(element, "is-panning") {
+      "grabbing"
+    } else {
+      "grab"
+    },
+  )
 }
 
 ///|

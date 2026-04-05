@@ -119,6 +119,26 @@ fn mindmap_schedule_connectors(
 }
 
 ///|
+fn mouse_delta_exceeds_pan_threshold(
+  start_x : Int,
+  start_y : Int,
+  next_x : Int,
+  next_y : Int,
+) -> Bool {
+  let delta_x = if next_x >= start_x {
+    next_x - start_x
+  } else {
+    start_x - next_x
+  }
+  let delta_y = if next_y >= start_y {
+    next_y - start_y
+  } else {
+    start_y - next_y
+  }
+  delta_x >= 4 || delta_y >= 4
+}
+
+///|
 fn mindmap_can_pan(target : @dom.Element) -> Bool {
   match
     target.closest(
@@ -261,6 +281,8 @@ fn bind_mindmap_ui(
       let recenter_view = get_element("#recenter-view")
       let connector_frame = @ref.Ref(0)
       let panning = @ref.Ref(false)
+      let pan_moved = @ref.Ref(false)
+      let suppress_click = @ref.Ref(false)
       let start_x = @ref.Ref(0)
       let start_y = @ref.Ref(0)
       let start_pan_x = @ref.Ref(0)
@@ -268,16 +290,24 @@ fn bind_mindmap_ui(
 
       mindmap
       .as_event_target()
-      .on("click", fn(raw) { click_callback(raw.cast()) })
+      .on("click", fn(raw) {
+        let event : @dom.MouseEvent = raw.cast()
+        if suppress_click.val {
+          suppress_click.val = false
+          event.preventDefault()
+          event.stopPropagation()
+          return
+        }
+        click_callback(event)
+      })
       mindmap
       .as_event_target()
       .on("dblclick", fn(raw) {
         let event : @dom.MouseEvent = raw.cast()
-        if mindmap_can_pan(event.target()) {
+        if suppress_click.val || mindmap_can_pan(event.target()) {
+          suppress_click.val = false
           event.preventDefault()
-          mindmap_recenter_pan(
-            mindmap, zoom_value, zoom_edit, connector_frame, window,
-          )
+          event.stopPropagation()
           return
         }
         dblclick_callback(event)
@@ -329,6 +359,8 @@ fn bind_mindmap_ui(
           return
         }
         panning.val = true
+        pan_moved.val = false
+        suppress_click.val = false
         start_x.val = event.clientX.to_int()
         start_y.val = event.clientY.to_int()
         start_pan_x.val = @strconv.parse_int(
@@ -353,6 +385,14 @@ fn bind_mindmap_ui(
           return
         }
         let event : @dom.MouseEvent = raw.cast()
+        if mouse_delta_exceeds_pan_threshold(
+            start_x.val,
+            start_y.val,
+            event.clientX.to_int(),
+            event.clientY.to_int(),
+          ) {
+          pan_moved.val = true
+        }
         let next_pan_x = start_pan_x.val + event.clientX.to_int() - start_x.val
         let next_pan_y = start_pan_y.val + event.clientY.to_int() - start_y.val
         mindmap.setAttribute("data-pan-x", next_pan_x.to_string())
@@ -366,6 +406,9 @@ fn bind_mindmap_ui(
           return
         }
         panning.val = false
+        if pan_moved.val {
+          suppress_click.val = true
+        }
         toggle_class(mindmap, "is-panning", false)
         mindmap_clear_body_user_select()
         mindmap_schedule_connectors(connector_frame, window)

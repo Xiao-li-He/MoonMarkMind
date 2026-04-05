@@ -593,7 +593,14 @@ fn build_zoom_controls() -> @dom.Element {
       compact=true,
     ),
   )
-  append_child(strip, build_text_span("span", "zoom-value", "100%"))
+  append_child(
+    strip,
+    {
+      let value = build_text_span("span", "zoom-value", "100%")
+      value.setAttribute("id", "zoom-value")
+      value
+    },
+  )
   let edit = create_element("input", "zoom-edit")
   edit.setAttribute("id", "zoom-edit")
   edit.setAttribute("type", "text")

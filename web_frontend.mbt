@@ -173,7 +173,8 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
     return
   }
   cancel_pending_click_selection()
-  if action == "" && has_selected_nodes() {
+  let cleared_selection = action == "" && has_selected_nodes()
+  if cleared_selection {
     clear_selected_nodes()
   }
   match action {
@@ -196,7 +197,7 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
       toggle_hidden_node(node_index)
       render_ui()
     }
-    _ => if action == "" { render_ui() }
+    _ => if cleared_selection { render_ui() }
   }
 }
 
@@ -1189,11 +1190,7 @@ fn build_vertical_tree_dom(
   append_child(
     tree,
     build_node_card_dom(
-      node,
-      parent_index,
-      is_root,
-      tone_index,
-      "node-actions--bottom-center",
+      node, parent_index, is_root, tone_index, "node-actions--bottom-center",
     ),
   )
   append_child(
@@ -1267,11 +1264,7 @@ fn build_single_right_tree_dom(
   append_child(
     head,
     build_node_card_dom(
-      node,
-      parent_index,
-      is_root,
-      tone_index,
-      "node-actions--right-mid",
+      node, parent_index, is_root, tone_index, "node-actions--right-mid",
     ),
   )
   append_child(tree, head)
