@@ -10,7 +10,7 @@ test "parse headings from markdown" {
 test "export outline json" {
   inspect(
     outline_json(sample_markdown()),
-    content="{\"flat_index\":0,\"level\":1,\"title\":\"MoonMarkMind Demo\",\"synthetic\":false,\"children\":[{\"flat_index\":1,\"level\":2,\"title\":\"Parser\",\"synthetic\":false,\"children\":[{\"flat_index\":2,\"level\":3,\"title\":\"Heading extraction\",\"synthetic\":false,\"children\":[]},{\"flat_index\":3,\"level\":3,\"title\":\"Level mapping\",\"synthetic\":false,\"children\":[]}]},{\"flat_index\":4,\"level\":2,\"title\":\"Renderer\",\"synthetic\":false,\"children\":[{\"flat_index\":5,\"level\":3,\"title\":\"Tree preview\",\"synthetic\":false,\"children\":[]},{\"flat_index\":6,\"level\":3,\"title\":\"Round-trip preview\",\"synthetic\":false,\"children\":[]}]}]}",
+    content="{\"flat_index\":0,\"source_line\":0,\"level\":1,\"type\":\"heading\",\"title\":\"MoonMarkMind Demo\",\"synthetic\":false,\"children\":[{\"flat_index\":1,\"source_line\":1,\"level\":2,\"type\":\"heading\",\"title\":\"Parser\",\"synthetic\":false,\"children\":[{\"flat_index\":2,\"source_line\":2,\"level\":3,\"type\":\"heading\",\"title\":\"Heading extraction\",\"synthetic\":false,\"children\":[]},{\"flat_index\":3,\"source_line\":3,\"level\":3,\"type\":\"heading\",\"title\":\"Level mapping\",\"synthetic\":false,\"children\":[]}]},{\"flat_index\":4,\"source_line\":4,\"level\":2,\"type\":\"heading\",\"title\":\"Renderer\",\"synthetic\":false,\"children\":[{\"flat_index\":5,\"source_line\":5,\"level\":3,\"type\":\"heading\",\"title\":\"Tree preview\",\"synthetic\":false,\"children\":[]},{\"flat_index\":6,\"source_line\":6,\"level\":3,\"type\":\"heading\",\"title\":\"Round-trip preview\",\"synthetic\":false,\"children\":[]}]}]}",
   )
 }
 
@@ -89,6 +89,47 @@ test "export structural outline json" {
   let markdown = "# Root\n- A\n  - B\n## C\n1. D\n   1. E"
   inspect(
     outline_json(markdown),
-    content="{\"flat_index\":0,\"level\":1,\"title\":\"Root\",\"synthetic\":false,\"children\":[{\"flat_index\":1,\"level\":2,\"title\":\"A\",\"synthetic\":false,\"children\":[{\"flat_index\":2,\"level\":3,\"title\":\"B\",\"synthetic\":false,\"children\":[]}]},{\"flat_index\":3,\"level\":2,\"title\":\"C\",\"synthetic\":false,\"children\":[{\"flat_index\":4,\"level\":3,\"title\":\"D\",\"synthetic\":false,\"children\":[{\"flat_index\":5,\"level\":4,\"title\":\"E\",\"synthetic\":false,\"children\":[]}]}]}]}",
+    content="{\"flat_index\":0,\"source_line\":0,\"level\":1,\"type\":\"heading\",\"title\":\"Root\",\"synthetic\":false,\"children\":[{\"flat_index\":1,\"source_line\":1,\"level\":2,\"type\":\"list_item\",\"title\":\"A\",\"synthetic\":false,\"children\":[{\"flat_index\":2,\"source_line\":2,\"level\":3,\"type\":\"list_item\",\"title\":\"B\",\"synthetic\":false,\"children\":[]}]},{\"flat_index\":3,\"source_line\":3,\"level\":2,\"type\":\"heading\",\"title\":\"C\",\"synthetic\":false,\"children\":[{\"flat_index\":4,\"source_line\":4,\"level\":3,\"type\":\"list_item\",\"title\":\"D\",\"synthetic\":false,\"children\":[{\"flat_index\":5,\"source_line\":5,\"level\":4,\"type\":\"list_item\",\"title\":\"E\",\"synthetic\":false,\"children\":[]}]}]}]}",
+  )
+}
+
+///|
+test "indent heading nests subtree under previous sibling" {
+  let markdown = "# Root\n## Alpha\n## Beta\n### Beta child\n## Gamma"
+  inspect(
+    indent_heading(markdown, 2),
+    content="# Root\n## Alpha\n### Beta\n#### Beta child\n## Gamma",
+  )
+}
+
+///|
+test "promote heading lifts subtree one level" {
+  let markdown = "# Root\n## Alpha\n### Beta\n#### Beta child\n## Gamma"
+  inspect(
+    promote_heading(markdown, 2),
+    content="# Root\n## Alpha\n## Beta\n### Beta child\n## Gamma",
+  )
+}
+
+///|
+test "move heading can reparent across branches" {
+  let markdown = "# Root\n## Alpha\n### Alpha child\n## Beta\n### Beta child"
+  inspect(
+    move_heading(markdown, 1, 4, false),
+    content="# Root\n## Beta\n### Alpha\n#### Alpha child\n### Beta child",
+  )
+}
+
+///|
+test "indent and promote keep structure round trippable" {
+  let markdown = "# Root\n## Alpha\n## Beta\n## Gamma"
+  let indented = indent_heading(markdown, 2)
+  inspect(
+    outline_json(indented),
+    content="{\"flat_index\":0,\"source_line\":0,\"level\":1,\"type\":\"heading\",\"title\":\"Root\",\"synthetic\":false,\"children\":[{\"flat_index\":1,\"source_line\":1,\"level\":2,\"type\":\"heading\",\"title\":\"Alpha\",\"synthetic\":false,\"children\":[{\"flat_index\":2,\"source_line\":2,\"level\":3,\"type\":\"heading\",\"title\":\"Beta\",\"synthetic\":false,\"children\":[]}]},{\"flat_index\":3,\"source_line\":3,\"level\":2,\"type\":\"heading\",\"title\":\"Gamma\",\"synthetic\":false,\"children\":[]}]}",
+  )
+  inspect(
+    promote_heading(indented, 2),
+    content="# Root\n## Alpha\n## Beta\n## Gamma",
   )
 }

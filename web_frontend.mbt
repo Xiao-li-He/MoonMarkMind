@@ -210,6 +210,8 @@ fn on_toolbar_action(action : String) -> Unit {
     "edit-node" => start_edit_selected()
     "move-up" => handle_move_selected(false)
     "move-down" => handle_move_selected(true)
+    "indent-node" => handle_relevel_selected(true)
+    "promote-node" => handle_relevel_selected(false)
     "toggle-node" => {
       toggle_collapsed(app_state.selected_node)
       sync_detail_customized()
@@ -484,6 +486,19 @@ fn handle_move_selected(move_down : Bool) -> Unit {
 }
 
 ///|
+fn handle_relevel_selected(indent : Bool) -> Unit {
+  if app_state.selected_node < 0 {
+    return
+  }
+  let next_markdown = if indent {
+    indent_heading(app_state.markdown, app_state.selected_node)
+  } else {
+    promote_heading(app_state.markdown, app_state.selected_node)
+  }
+  apply_markdown_change(next_markdown, false)
+}
+
+///|
 fn handle_undo() -> Unit {
   if app_state.undo_stack.length() == 0 {
     return
@@ -660,6 +675,11 @@ fn render_ui() -> Unit {
     set_toolbar_action_enabled("edit-node", can_toolbar_action("edit-node"))
     set_toolbar_action_enabled("move-up", can_toolbar_action("move-up"))
     set_toolbar_action_enabled("move-down", can_toolbar_action("move-down"))
+    set_toolbar_action_enabled("indent-node", can_toolbar_action("indent-node"))
+    set_toolbar_action_enabled(
+      "promote-node",
+      can_toolbar_action("promote-node"),
+    )
     set_toolbar_action_enabled("toggle-node", can_toolbar_action("toggle-node"))
     set_toolbar_action_enabled("insert-node", can_toolbar_action("insert-node"))
   }
@@ -857,6 +877,14 @@ fn can_toolbar_action(action : String) -> Bool {
     "edit-node" => selected_node_exists()
     "move-up" => can_move_selected(false)
     "move-down" => can_move_selected(true)
+    "indent-node" =>
+      selected_node_exists() &&
+      indent_heading(app_state.markdown, app_state.selected_node) !=
+      app_state.markdown
+    "promote-node" =>
+      selected_node_exists() &&
+      promote_heading(app_state.markdown, app_state.selected_node) !=
+      app_state.markdown
     "toggle-node" => selected_has_children()
     "insert-node" => can_add_sibling_selected()
     _ => false

@@ -59,7 +59,12 @@ pub fn move_heading(
   }
   let from_end = subtree_end(nodes, from_flat_index)
   let to_end = subtree_end(nodes, to_flat_index)
-  let moved = slice_nodes(nodes, from_flat_index, from_end)
+  let source_level = nodes[from_flat_index].level
+  let target_level = nodes[to_flat_index].level
+  let moved = relevel_subtree(
+    slice_nodes(nodes, from_flat_index, from_end),
+    target_level - source_level,
+  )
   let remaining = concat_nodes(
     slice_nodes(nodes, 0, from_flat_index),
     slice_nodes(nodes, from_end, nodes.length()),
@@ -75,6 +80,35 @@ pub fn move_heading(
     slice_nodes(remaining, insert_at, remaining.length()),
   )
   render_markdown_nodes(rebuilt)
+}
+
+///|
+pub fn indent_heading(markdown : String, flat_index : Int) -> String {
+  let nodes = parse_markdown_nodes(markdown)
+  if flat_index <= 0 || flat_index >= nodes.length() {
+    return markdown
+  }
+  let previous_sibling = previous_sibling_index(nodes, flat_index)
+  if previous_sibling < 0 {
+    return markdown
+  }
+  let current_level = nodes[flat_index].level
+  let next_level = nodes[previous_sibling].level + 1
+  render_markdown_nodes(
+    apply_level_delta_to_subtree(nodes, flat_index, next_level - current_level),
+  )
+}
+
+///|
+pub fn promote_heading(markdown : String, flat_index : Int) -> String {
+  let nodes = parse_markdown_nodes(markdown)
+  if flat_index < 0 || flat_index >= nodes.length() {
+    return markdown
+  }
+  if parent_index(nodes, flat_index) < 0 {
+    return markdown
+  }
+  render_markdown_nodes(apply_level_delta_to_subtree(nodes, flat_index, -1))
 }
 
 ///|
@@ -106,27 +140,14 @@ pub fn add_child_heading(
   }
   let parent = nodes[parent_flat_index]
   let child_level = parent.level + 1
-  let child_kind = match parent.kind {
-    MarkdownNodeKind::Heading =>
-      if child_level <= 6 {
-        MarkdownNodeKind::Heading
-      } else {
-        MarkdownNodeKind::ListItem
-      }
-    MarkdownNodeKind::ListItem => MarkdownNodeKind::ListItem
-  }
   let insert_at = subtree_end(nodes, parent_flat_index)
   let rebuilt = concat_nodes(
     concat_nodes(slice_nodes(nodes, 0, insert_at), [
       MarkdownNode::{
-        kind: child_kind,
+        kind: normalized_node_kind(parent.kind, child_level),
         level: child_level,
         title: next_title,
-        marker: if child_kind is MarkdownNodeKind::ListItem {
-          "-"
-        } else {
-          ""
-        },
+        marker: normalized_marker(parent.marker, child_level),
         body: [],
         source_line: -1,
       },
@@ -285,14 +306,22 @@ fn render_node_json_from_outline(node : OutlineNode) -> String {
     "flat_index",
     value=node.flat_index.to_string(),
   )
+  let source_line_field = json_field(
+    "source_line",
+    value=node.source_line.to_string(),
+  )
   let level_field = json_field("level", value=node.level.to_string())
+  let type_field = json_field(
+    "type",
+    value=json_string(node_kind_name(node.kind)),
+  )
   let title_field = json_field("title", value=json_string(node.title))
   let synthetic_field = json_field(
     "synthetic",
     value=node.synthetic.to_string(),
   )
   let children_field = render_outline_children_json(node.children)
-  "{\{flat_index_field},\{level_field},\{title_field},\{synthetic_field},\"children\":\{children_field}}"
+  "{\{flat_index_field},\{source_line_field},\{level_field},\{type_field},\{title_field},\{synthetic_field},\"children\":\{children_field}}"
 }
 
 ///|
@@ -308,10 +337,12 @@ fn render_outline_children_json(children : Array[OutlineNode]) -> String {
 ///|
 fn document_json(title : String, children_json~ : String) -> String {
   let flat_index_field = json_field("flat_index", value="-1")
+  let source_line_field = json_field("source_line", value="-1")
   let level_field = json_field("level", value="1")
+  let type_field = json_field("type", value=json_string("document"))
   let title_field = json_field("title", value=json_string(title))
   let synthetic_field = json_field("synthetic", value="true")
-  "{\{flat_index_field},\{level_field},\{title_field},\{synthetic_field},\"children\":\{children_json}}"
+  "{\{flat_index_field},\{source_line_field},\{level_field},\{type_field},\{title_field},\{synthetic_field},\"children\":\{children_json}}"
 }
 
 ///|
@@ -329,7 +360,8 @@ fn can_move_heading(
   if from_flat_index == to_flat_index {
     return false
   }
-  parent_index(nodes, from_flat_index) == parent_index(nodes, to_flat_index)
+  let from_end = subtree_end(nodes, from_flat_index)
+  to_flat_index < from_flat_index || to_flat_index >= from_end
 }
 
 ///|
@@ -359,6 +391,100 @@ fn parent_index(nodes : Array[MarkdownNode], index : Int) -> Int {
     cursor -= 1
   }
   -1
+}
+
+///|
+fn previous_sibling_index(nodes : Array[MarkdownNode], index : Int) -> Int {
+  let level = nodes[index].level
+  let parent = parent_index(nodes, index)
+  let mut cursor = index - 1
+  while cursor >= 0 {
+    if nodes[cursor].level < level {
+      return -1
+    }
+    if nodes[cursor].level == level && parent_index(nodes, cursor) == parent {
+      return cursor
+    }
+    cursor -= 1
+  }
+  -1
+}
+
+///|
+fn apply_level_delta_to_subtree(
+  nodes : Array[MarkdownNode],
+  flat_index : Int,
+  delta : Int,
+) -> Array[MarkdownNode] {
+  let end_index = subtree_end(nodes, flat_index)
+  let rebuilt = []
+  for index in 0..<nodes.length() {
+    if index >= flat_index && index < end_index {
+      rebuilt.push(relevel_node(nodes[index], delta))
+    } else {
+      rebuilt.push(nodes[index])
+    }
+  }
+  rebuilt
+}
+
+///|
+fn relevel_subtree(
+  nodes : Array[MarkdownNode],
+  delta : Int,
+) -> Array[MarkdownNode] {
+  let rebuilt = []
+  for node in nodes {
+    rebuilt.push(relevel_node(node, delta))
+  }
+  rebuilt
+}
+
+///|
+fn relevel_node(node : MarkdownNode, delta : Int) -> MarkdownNode {
+  let next_level = node.level + delta
+  let kind = normalized_node_kind(node.kind, next_level)
+  MarkdownNode::{
+    kind,
+    level: next_level,
+    title: node.title,
+    marker: normalized_marker(node.marker, next_level),
+    body: node.body,
+    source_line: node.source_line,
+  }
+}
+
+///|
+fn normalized_node_kind(
+  kind : MarkdownNodeKind,
+  level : Int,
+) -> MarkdownNodeKind {
+  if level > 6 {
+    MarkdownNodeKind::ListItem
+  } else {
+    kind
+  }
+}
+
+///|
+fn normalized_marker(marker : String, level : Int) -> String {
+  if level > 6 {
+    if marker.length() == 0 {
+      "-"
+    } else {
+      marker
+    }
+  } else {
+    marker
+  }
+}
+
+///|
+fn node_kind_name(kind : MarkdownNodeKind) -> String {
+  match kind {
+    MarkdownNodeKind::Heading => "heading"
+    MarkdownNodeKind::ListItem => "list_item"
+  }
 }
 
 ///|

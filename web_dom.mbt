@@ -601,7 +601,12 @@ fn sync_input_measure_mirror_style(
     "box-sizing",
     input_style.get_property_value("box-sizing"),
   )
+  mirror_style.set_property("position", "absolute")
+  mirror_style.set_property("top", "0")
+  mirror_style.set_property("left", "0")
   mirror_style.set_property("width", "\{max_int(1, mirror_width)}px")
+  mirror_style.set_property("height", "0")
+  mirror_style.set_property("min-height", "0")
   mirror_style.set_property(
     "padding",
     "\{padding_top}px \{padding_right}px \{padding_bottom}px \{padding_left}px",
@@ -751,8 +756,8 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
     None => return ""
   }
   let mirror = to_text_area(mirror_element)
-  let content_width = input.clientWidth()
-  let fallback_width = element_rect(input.as_element()).width.round().to_int()
+  let input_rect = element_rect(input.as_element())
+  let fallback_width = input_rect.width.round().to_int()
   let padding_left = parse_int_or_default(
     style.get_property_value("padding-left"),
     0,
@@ -765,45 +770,26 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
     style.get_property_value("padding-bottom"),
     0,
   )
-  let mirror_width = if content_width > 0 {
-    content_width
-  } else {
-    fallback_width
-  }
+  let mirror_width = fallback_width
   sync_input_measure_mirror_style(
     mirror_element, style, mirror_width, padding_top, padding_right, padding_bottom,
     padding_left,
   )
-  mirror.value = ""
   let lines = input.value.split("\n".view())
   let heights : Array[Int] = []
   let tops : Array[Int] = []
   let vertical_padding = padding_top + padding_bottom
   let mut current_top = padding_top
-  let mut previous_total_height = vertical_padding
-  let mut measured_value = ""
-  for index, line in lines {
-    if index > 0 {
-      measured_value = measured_value + "\n"
-    }
-    measured_value = measured_value + line.to_string()
-    mirror.value = measured_value
+  for line in lines {
+    let raw_line = line.to_string()
+    mirror.value = if raw_line.length() > 0 { raw_line } else { " " }
     let total_height = text_area_scroll_height(mirror)
-    let content_height = if total_height > vertical_padding {
+    let extra_content_height = if total_height > vertical_padding {
       total_height - vertical_padding
     } else {
       0
     }
-    let previous_content_height = if previous_total_height > vertical_padding {
-      previous_total_height - vertical_padding
-    } else {
-      0
-    }
-    let measured_height = if index == 0 {
-      content_height
-    } else {
-      content_height - previous_content_height
-    }
+    let measured_height = resolved_line_height + extra_content_height
     let height = if measured_height > resolved_line_height {
       measured_height
     } else {
@@ -812,7 +798,6 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
     tops.push(current_top)
     heights.push(height)
     current_top += height
-    previous_total_height = total_height
   }
   mirror.value = ""
   "\{serialize_int_list(heights)}|\{serialize_int_list(tops)}|\{resolved_line_height}|\{padding_top}"
@@ -1617,7 +1602,7 @@ fn bind_static_ui(
     if event.key == "Enter" {
       action = "new-branch"
     } else if event.key == "Tab" {
-      action = "new-child"
+      action = if event.shiftKey { "promote-node" } else { "indent-node" }
     } else if event.key == "Delete" || event.key == "Backspace" {
       action = "delete-node"
     } else if event.key == " " || event.code == "Space" {
