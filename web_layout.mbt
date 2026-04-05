@@ -208,19 +208,19 @@ fn build_topbar() -> @dom.Element {
       class_name="tool-select",
       options=[
         SelectOption::{
-          value: "horizontal",
+          value: "mindmap",
           label: "横向",
           hidden: false,
           selected: true,
         },
         SelectOption::{
-          value: "single-right",
+          value: "logic",
           label: "单右",
           hidden: false,
           selected: false,
         },
         SelectOption::{
-          value: "vertical",
+          value: "tree",
           label: "纵向",
           hidden: false,
           selected: false,

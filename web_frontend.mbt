@@ -38,7 +38,7 @@ let app_state : AppState = AppState::{
   selected_nodes: [],
   selection_anchor_node: -2,
   editing_node: -2,
-  layout_mode: "horizontal",
+  layout_mode: "mindmap",
   style_mode: "line",
   detail_level: "all",
   detail_customized: false,
@@ -49,6 +49,9 @@ let app_state : AppState = AppState::{
   drag_source_parent: -2,
   sample_variant: rules_sample_default_id(),
 }
+
+///|
+let pending_click_timer : @ref.Ref[Int] = @ref.Ref(0)
 
 ///|
 pub fn start_web_app() -> Unit {
@@ -161,15 +164,16 @@ fn on_splitter_change(percent : Int) -> Unit {
 fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
   let action = event_action_from_point(event)
   let node_index = event_node_index_from_point(event)
-  if node_index >= 0 {
-    if event_shift_key(event) {
-      select_node_range(node_index, true)
-    } else if event_multi_select_key(event) {
-      toggle_node_selection(node_index, true)
-    } else if !is_single_selected_node(node_index) {
-      select_single_node(node_index, true)
-    }
-  } else if action == "" && has_selected_nodes() {
+  if action == "" && node_index >= 0 {
+    schedule_node_click_selection(
+      node_index,
+      event_shift_key(event),
+      event_multi_select_key(event),
+    )
+    return
+  }
+  cancel_pending_click_selection()
+  if action == "" && has_selected_nodes() {
     clear_selected_nodes()
   }
   match action {
@@ -224,6 +228,7 @@ fn on_toolbar_action(action : String) -> Unit {
 
 ///|
 fn on_mindmap_dblclick(event : @dom.MouseEvent) -> Unit {
+  cancel_pending_click_selection()
   if event_editor_index_from_target(event.target()) >= 0 {
     return
   }
@@ -239,6 +244,38 @@ fn on_mindmap_dblclick(event : @dom.MouseEvent) -> Unit {
   select_single_node(node_index, true)
   app_state.editing_node = node_index
   render_ui()
+}
+
+///|
+fn schedule_node_click_selection(
+  node_index : Int,
+  shift_key : Bool,
+  multi_select_key : Bool,
+) -> Unit {
+  cancel_pending_click_selection()
+  pending_click_timer.val = @dom.window().setTimeout(
+    fn() {
+      pending_click_timer.val = 0
+      if shift_key {
+        select_node_range(node_index, true)
+      } else if multi_select_key {
+        toggle_node_selection(node_index, true)
+      } else if !is_single_selected_node(node_index) {
+        select_single_node(node_index, true)
+      }
+      render_ui()
+    },
+    180,
+  )
+}
+
+///|
+fn cancel_pending_click_selection() -> Unit {
+  if pending_click_timer.val == 0 {
+    return
+  }
+  @dom.window().clearTimeout(pending_click_timer.val)
+  pending_click_timer.val = 0
 }
 
 ///|
@@ -904,9 +941,8 @@ fn build_mindmap_dom() -> @dom.Element {
   let content = create_element("div", "mindmap-content")
   let stage_class = render_stage_class()
   let stage = match app_state.layout_mode {
-    "vertical" => build_vertical_mindmap_dom(app_state.root, stage_class)
-    "single-right" =>
-      build_single_right_mindmap_dom(app_state.root, stage_class)
+    "tree" => build_vertical_mindmap_dom(app_state.root, stage_class)
+    "logic" => build_single_right_mindmap_dom(app_state.root, stage_class)
     _ => build_horizontal_mindmap_dom(app_state.root, stage_class)
   }
   append_child(content, stage)
@@ -1818,9 +1854,12 @@ fn remove_int(values : Array[Int], target : Int) -> Array[Int] {
 ///|
 fn normalize_layout_mode(mode : String) -> String {
   match mode {
-    "vertical" => "vertical"
-    "single-right" => "single-right"
-    _ => "horizontal"
+    "horizontal" => "mindmap"
+    "vertical" => "tree"
+    "single-right" => "logic"
+    "logic" => "logic"
+    "tree" => "tree"
+    _ => "mindmap"
   }
 }
 

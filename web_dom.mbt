@@ -56,122 +56,52 @@ fn render_mindmap_connectors() -> Unit {
               let top = ((stage_rect.top - content_rect.top) / safe_zoom)
                 .round()
                 .to_int()
-              let _ = if stage_has_vertical_layout(stage_element) {
-                false
-              } else {
-                let svg_paths : Array[@dom.Element] = []
-                for node in nodes {
-                  let parent_index = parse_int_or_default(
-                    node.getAttribute("data-parent-index").unwrap_or("-1"),
-                    -1,
-                  )
-                  if parent_index < 0 {
-                    continue
-                  }
-                  match find_node_by_index(nodes, parent_index) {
-                    Some(parent) => {
-                      let parent_rect = element_rect(parent)
-                      let node_rect = element_rect(node)
-                      let parent_center_x = stage_local_x(
-                        rect_center_x(parent_rect),
-                        stage_left,
-                        safe_zoom,
-                      )
-                      let parent_center_y = stage_local_y(
-                        rect_center_y(parent_rect),
-                        stage_top,
-                        safe_zoom,
-                      )
-                      let node_center_x = stage_local_x(
-                        rect_center_x(node_rect),
-                        stage_left,
-                        safe_zoom,
-                      )
-                      let node_center_y = stage_local_y(
-                        rect_center_y(node_rect),
-                        stage_top,
-                        safe_zoom,
-                      )
-                      let direction = if node_center_x >= parent_center_x {
-                        1
-                      } else {
-                        -1
-                      }
-                      let start_x = stage_local_x(
-                        if direction > 0 {
-                          parent_rect.right
-                        } else {
-                          parent_rect.left
-                        },
-                        stage_left,
-                        safe_zoom,
-                      )
-                      let end_x = stage_local_x(
-                        if direction > 0 {
-                          node_rect.left
-                        } else {
-                          node_rect.right
-                        },
-                        stage_left,
-                        safe_zoom,
-                      )
-                      let span = abs_double(end_x - start_x)
-                      let pull = min_double(30.0, max_double(12.0, span * 0.26))
-                      let settle = min_double(
-                        40.0,
-                        max_double(14.0, span * 0.38),
-                      )
-                      let mid_y = parent_center_y +
-                        (node_center_y - parent_center_y) * 0.2
-                      let stroke_width = if parse_int_or_default(
-                          node.getAttribute("data-depth").unwrap_or("0"),
-                          0,
-                        ) ==
-                        1 {
-                        2.8
-                      } else {
-                        2.0
-                      }
-                      let path = create_svg_element("path", "")
-                      path.setAttribute(
-                        "d",
-                        "M \{double_to_svg_number(start_x)} \{double_to_svg_number(parent_center_y)} C \{double_to_svg_number(start_x + direction.to_double() * pull)} \{double_to_svg_number(mid_y)}, \{double_to_svg_number(end_x - direction.to_double() * settle)} \{double_to_svg_number(node_center_y)}, \{double_to_svg_number(end_x)} \{double_to_svg_number(node_center_y)}",
-                      )
-                      path.setAttribute("fill", "none")
-                      path.setAttribute("stroke", "#94b6db")
-                      path.setAttribute("stroke-opacity", "0.9")
-                      path.setAttribute(
-                        "stroke-width",
-                        double_to_svg_number(stroke_width),
-                      )
-                      path.setAttribute("stroke-linecap", "round")
-                      path.setAttribute("stroke-linejoin", "round")
-                      path.setAttribute("vector-effect", "non-scaling-stroke")
-                      svg_paths.push(path)
-                    }
-                    None => ()
-                  }
-                }
-                let svg = ensure_mindmap_connector_svg(stage_element)
-                clear_element(svg)
-                svg.setAttribute("width", width.to_string())
-                svg.setAttribute("height", height.to_string())
-                svg.setAttribute("viewBox", "0 0 \{width} \{height}")
-                let style = @dom.css_style_from_val(
-                  svg.as_any()._get("style").cast(),
+              let svg_paths : Array[@dom.Element] = []
+              let layout = stage_layout_kind(stage_element)
+              for node in nodes {
+                let parent_index = parse_int_or_default(
+                  node.getAttribute("data-parent-index").unwrap_or("-1"),
+                  -1,
                 )
-                style.set_property("left", "0px")
-                style.set_property("top", "0px")
-                style.set_property("width", "\{width}px")
-                style.set_property("height", "\{height}px")
-                style.set_property("z-index", "0")
-                style.set_property("pointer-events", "none")
-                style.set_property("position", "absolute")
-                style.set_property("overflow", "visible")
-                for path in svg_paths {
-                  append_child(svg, path)
+                if parent_index < 0 {
+                  continue
                 }
-                svg_paths.length() > 0
+                match find_node_by_index(nodes, parent_index) {
+                  Some(parent) =>
+                    match
+                      connector_geometry(
+                        layout,
+                        element_rect(parent),
+                        element_rect(node),
+                        stage_left,
+                        stage_top,
+                        safe_zoom,
+                      ) {
+                      Some(path_data) =>
+                        svg_paths.push(build_connector_path(node, path_data))
+                      None => ()
+                    }
+                  None => ()
+                }
+              }
+              let svg = ensure_mindmap_connector_svg(stage_element)
+              clear_element(svg)
+              svg.setAttribute("width", width.to_string())
+              svg.setAttribute("height", height.to_string())
+              svg.setAttribute("viewBox", "0 0 \{width} \{height}")
+              let style = @dom.css_style_from_val(
+                svg.as_any()._get("style").cast(),
+              )
+              style.set_property("left", "0px")
+              style.set_property("top", "0px")
+              style.set_property("width", "\{width}px")
+              style.set_property("height", "\{height}px")
+              style.set_property("z-index", "0")
+              style.set_property("pointer-events", "none")
+              style.set_property("position", "absolute")
+              style.set_property("overflow", "visible")
+              for path in svg_paths {
+                append_child(svg, path)
               }
               ignore(
                 render_mindmap_connector_controls(
@@ -230,9 +160,166 @@ fn ensure_mindmap_connector_svg(stage : @dom.Element) -> @dom.Element {
 }
 
 ///|
-fn stage_has_vertical_layout(stage : @dom.Element) -> Bool {
-  has_class_name(stage, "mindmap-stage--vertical") ||
-  has_class_name(stage, "mindmap-stage--single-right")
+priv enum StageLayoutKind {
+  Mindmap
+  Logic
+  Tree
+}
+
+///|
+priv struct ConnectorPathData {
+  start_x : Double
+  start_y : Double
+  control1_x : Double
+  control1_y : Double
+  control2_x : Double
+  control2_y : Double
+  end_x : Double
+  end_y : Double
+}
+
+///|
+fn stage_layout_kind(stage : @dom.Element) -> StageLayoutKind {
+  if has_class_name(stage, "mindmap-stage--vertical") {
+    StageLayoutKind::Tree
+  } else if has_class_name(stage, "mindmap-stage--single-right") {
+    StageLayoutKind::Logic
+  } else {
+    StageLayoutKind::Mindmap
+  }
+}
+
+///|
+fn connector_geometry(
+  layout : StageLayoutKind,
+  parent_rect : @dom.DOMRect,
+  node_rect : @dom.DOMRect,
+  stage_left : Double,
+  stage_top : Double,
+  safe_zoom : Double,
+) -> ConnectorPathData? {
+  let parent_center_x = stage_local_x(
+    rect_center_x(parent_rect),
+    stage_left,
+    safe_zoom,
+  )
+  let parent_center_y = stage_local_y(
+    rect_center_y(parent_rect),
+    stage_top,
+    safe_zoom,
+  )
+  let node_center_x = stage_local_x(
+    rect_center_x(node_rect),
+    stage_left,
+    safe_zoom,
+  )
+  let node_center_y = stage_local_y(
+    rect_center_y(node_rect),
+    stage_top,
+    safe_zoom,
+  )
+  match layout {
+    StageLayoutKind::Tree => {
+      let start_x = parent_center_x
+      let start_y = stage_local_y(parent_rect.bottom, stage_top, safe_zoom)
+      let end_x = node_center_x
+      let end_y = stage_local_y(node_rect.top, stage_top, safe_zoom)
+      let span_y = abs_double(end_y - start_y)
+      let bend = min_double(44.0, max_double(16.0, span_y * 0.4))
+      Some(ConnectorPathData::{
+        start_x,
+        start_y,
+        control1_x: start_x,
+        control1_y: start_y + bend,
+        control2_x: end_x,
+        control2_y: end_y - bend,
+        end_x,
+        end_y,
+      })
+    }
+    StageLayoutKind::Logic => {
+      let start_x = stage_local_x(parent_rect.right, stage_left, safe_zoom)
+      let start_y = parent_center_y
+      let end_x = stage_local_x(node_rect.left, stage_left, safe_zoom)
+      let end_y = node_center_y
+      let span_x = abs_double(end_x - start_x)
+      let bend = min_double(42.0, max_double(14.0, span_x * 0.35))
+      Some(ConnectorPathData::{
+        start_x,
+        start_y,
+        control1_x: start_x + bend,
+        control1_y: start_y,
+        control2_x: end_x - bend,
+        control2_y: end_y,
+        end_x,
+        end_y,
+      })
+    }
+    StageLayoutKind::Mindmap => {
+      let direction = if node_center_x >= parent_center_x { 1.0 } else { -1.0 }
+      let start_x = stage_local_x(
+        if direction > 0.0 {
+          parent_rect.right
+        } else {
+          parent_rect.left
+        },
+        stage_left,
+        safe_zoom,
+      )
+      let end_x = stage_local_x(
+        if direction > 0.0 {
+          node_rect.left
+        } else {
+          node_rect.right
+        },
+        stage_left,
+        safe_zoom,
+      )
+      let span = abs_double(end_x - start_x)
+      let pull = min_double(30.0, max_double(12.0, span * 0.26))
+      let settle = min_double(40.0, max_double(14.0, span * 0.38))
+      let mid_y = parent_center_y + (node_center_y - parent_center_y) * 0.2
+      Some(ConnectorPathData::{
+        start_x,
+        start_y: parent_center_y,
+        control1_x: start_x + direction * pull,
+        control1_y: mid_y,
+        control2_x: end_x - direction * settle,
+        control2_y: node_center_y,
+        end_x,
+        end_y: node_center_y,
+      })
+    }
+  }
+}
+
+///|
+fn build_connector_path(
+  node : @dom.Element,
+  path_data : ConnectorPathData,
+) -> @dom.Element {
+  let stroke_width = if parse_int_or_default(
+      node.getAttribute("data-depth").unwrap_or("0"),
+      0,
+    ) ==
+    1 {
+    2.8
+  } else {
+    2.0
+  }
+  let path = create_svg_element("path", "")
+  path.setAttribute(
+    "d",
+    "M \{double_to_svg_number(path_data.start_x)} \{double_to_svg_number(path_data.start_y)} C \{double_to_svg_number(path_data.control1_x)} \{double_to_svg_number(path_data.control1_y)}, \{double_to_svg_number(path_data.control2_x)} \{double_to_svg_number(path_data.control2_y)}, \{double_to_svg_number(path_data.end_x)} \{double_to_svg_number(path_data.end_y)}",
+  )
+  path.setAttribute("fill", "none")
+  path.setAttribute("stroke", "var(--mindmap-connector-color, #94b6db)")
+  path.setAttribute("stroke-opacity", "0.9")
+  path.setAttribute("stroke-width", double_to_svg_number(stroke_width))
+  path.setAttribute("stroke-linecap", "round")
+  path.setAttribute("stroke-linejoin", "round")
+  path.setAttribute("vector-effect", "non-scaling-stroke")
+  path
 }
 
 ///|
@@ -1877,10 +1964,14 @@ fn set_mindmap_dom(value : @dom.Element) -> Unit {
 ///|
 fn focus_editor(node_index : Int) -> Unit {
   match get_element("[data-editor-for=\"\{node_index}\"]") {
-    Some(editor) => {
-      let textarea = to_text_area(editor)
-      textarea.focus()
-    }
+    Some(editor) =>
+      if editor.tagName() == "TEXTAREA" {
+        let textarea = to_text_area(editor)
+        textarea.focus()
+      } else if editor.tagName() == "INPUT" {
+        let input = @dom.HTMLInputElement::cast_from_element(editor)
+        input.focus()
+      }
     None => ()
   }
 }
