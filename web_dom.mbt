@@ -525,23 +525,12 @@ fn text_area_scroll_height(input : @dom.HTMLTextAreaElement) -> Int {
 
 ///|
 fn resolve_input_line_height(style : @dom.CSSStyleDeclaration) -> Int {
-  let font_size = parse_double_or_default(
-    style.get_property_value("font-size"),
-    16.0,
-  )
-  let line_height_raw = style.get_property_value("line-height")
-  if line_height_raw.length() > 0 {
-    let next_line_height = parse_double_or_default(
-      line_height_raw,
-      font_size * 1.75,
-    )
-    if next_line_height.is_nan() || next_line_height <= 0.0 {
-      (font_size * 1.75).round().to_int()
-    } else {
-      next_line_height.round().to_int()
-    }
-  } else {
+  let font_size = parse_css_pixels(style, "font-size", 16.0)
+  let line_height = parse_css_pixels(style, "line-height", font_size * 1.75)
+  if line_height <= 0.0 {
     (font_size * 1.75).round().to_int()
+  } else {
+    line_height.round().to_int()
   }
 }
 
@@ -788,10 +777,7 @@ fn input_line_metrics_fallback(
     @dom.window().getComputedStyle(input.as_element()),
   )
   let line_height = resolve_input_line_height(style)
-  let padding_top = parse_int_or_default(
-    style.get_property_value("padding-top"),
-    0,
-  )
+  let padding_top = parse_css_pixels(style, "padding-top", 0.0).round().to_int()
   InputLineMetrics::{
     heights: [line_height],
     tops: [padding_top],
@@ -834,29 +820,19 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
     @dom.window().getComputedStyle(input.as_element()),
   )
   let resolved_line_height = resolve_input_line_height(style)
-  let padding_top = parse_int_or_default(
-    style.get_property_value("padding-top"),
-    0,
-  )
+  let padding_top = parse_css_pixels(style, "padding-top", 0.0).round().to_int()
   let mirror_element = match get_element("#input-measure-mirror") {
     Some(mirror) => mirror
     None => return ""
   }
   let mirror = to_text_area(mirror_element)
-  let input_rect = element_rect(input.as_element())
-  let fallback_width = input_rect.width.round().to_int()
-  let padding_left = parse_int_or_default(
-    style.get_property_value("padding-left"),
+  let fallback_width = parse_int_or_default(
+    input.as_any()._get("clientWidth").to_string(),
     0,
   )
-  let padding_right = parse_int_or_default(
-    style.get_property_value("padding-right"),
-    0,
-  )
-  let padding_bottom = parse_int_or_default(
-    style.get_property_value("padding-bottom"),
-    0,
-  )
+  let padding_left = parse_css_pixels(style, "padding-left", 0.0).round().to_int()
+  let padding_right = parse_css_pixels(style, "padding-right", 0.0).round().to_int()
+  let padding_bottom = parse_css_pixels(style, "padding-bottom", 0.0).round().to_int()
   let mirror_width = fallback_width
   sync_input_measure_mirror_style(
     mirror_element, style, mirror_width, padding_top, padding_right, padding_bottom,
@@ -871,14 +847,8 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
     let raw_line = line.to_string()
     mirror.value = if raw_line.length() > 0 { raw_line } else { " " }
     let total_height = text_area_scroll_height(mirror)
-    let extra_content_height = if total_height > vertical_padding {
+    let height = if total_height > vertical_padding {
       total_height - vertical_padding
-    } else {
-      0
-    }
-    let measured_height = resolved_line_height + extra_content_height
-    let height = if measured_height > resolved_line_height {
-      measured_height
     } else {
       resolved_line_height
     }
