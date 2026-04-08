@@ -12,7 +12,6 @@ priv struct AppState {
   mut selected_nodes : Array[Int]
   mut selection_anchor_node : Int
   mut editing_node : Int
-  mut previous_editing_node : Int
   mut layout_mode : String
   mut style_mode : String
   mut detail_level : String
@@ -39,7 +38,6 @@ let app_state : AppState = AppState::{
   selected_nodes: [],
   selection_anchor_node: -2,
   editing_node: -2,
-  previous_editing_node: -2,
   layout_mode: "mindmap",
   style_mode: "line",
   detail_level: "all",
@@ -310,7 +308,12 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
     return
   }
   let node_index = event_keyboard_node_index(event)
-  if node_index < 0 {
+  let target_node_index = if app_state.selected_node >= 0 {
+    app_state.selected_node
+  } else {
+    node_index
+  }
+  if target_node_index < 0 {
     return
   }
   match event_key(event) {
@@ -318,18 +321,22 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
       event.preventDefault()
       event.stopPropagation()
       if can_add_sibling_selected() {
-        handle_add_sibling(node_index, true)
+        handle_add_sibling(target_node_index, true)
       }
     }
     "Tab" => {
       event.preventDefault()
       event.stopPropagation()
-      handle_add_child(node_index)
+      if event.shiftKey {
+        handle_relevel_selected(false)
+      } else {
+        handle_add_child(target_node_index)
+      }
     }
     "Delete" => {
       event.preventDefault()
       event.stopPropagation()
-      handle_delete(node_index)
+      handle_delete(target_node_index)
     }
     _ => ()
   }

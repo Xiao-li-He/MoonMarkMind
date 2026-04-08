@@ -1632,7 +1632,7 @@ fn bind_static_ui(
     if event.key == "Enter" {
       action = "new-branch"
     } else if event.key == "Tab" {
-      action = if event.shiftKey { "promote-node" } else { "indent-node" }
+      action = if event.shiftKey { "promote-node" } else { "new-child" }
     } else if event.key == "Delete" || event.key == "Backspace" {
       action = "delete-node"
     } else if event.key == " " || event.code == "Space" {
