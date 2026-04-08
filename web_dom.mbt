@@ -830,9 +830,15 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
     input.as_any()._get("clientWidth").to_string(),
     0,
   )
-  let padding_left = parse_css_pixels(style, "padding-left", 0.0).round().to_int()
-  let padding_right = parse_css_pixels(style, "padding-right", 0.0).round().to_int()
-  let padding_bottom = parse_css_pixels(style, "padding-bottom", 0.0).round().to_int()
+  let padding_left = parse_css_pixels(style, "padding-left", 0.0)
+    .round()
+    .to_int()
+  let padding_right = parse_css_pixels(style, "padding-right", 0.0)
+    .round()
+    .to_int()
+  let padding_bottom = parse_css_pixels(style, "padding-bottom", 0.0)
+    .round()
+    .to_int()
   let mirror_width = fallback_width
   sync_input_measure_mirror_style(
     mirror_element, style, mirror_width, padding_top, padding_right, padding_bottom,
@@ -1248,42 +1254,9 @@ fn reveal_input_line(line_index : Int) -> Unit {
       }
       let next_top = if target_top > 0 { target_top } else { 0 }
       reveal_input_line_after_paint(next_top)
-      select_input_line(input, line_index)
     }
     None => ()
   }
-}
-
-///|
-fn select_input_line(
-  input : @dom.HTMLTextAreaElement,
-  line_index : Int,
-) -> Unit {
-  set_input_selection_range_by_line(input, line_index)
-  sync_editor_chrome()
-}
-
-///|
-fn set_input_selection_range_by_line(
-  input : @dom.HTMLTextAreaElement,
-  line_index : Int,
-) -> Unit {
-  let lines = input.value.split("\n".view()).to_array()
-  if line_index < 0 || line_index >= lines.length() {
-    return
-  }
-  let mut start = 0
-  for index in 0..<line_index {
-    start += lines[index].length() + 1
-  }
-  let end = start + lines[line_index].length()
-  input.focus()
-  let box = input.as_any()
-  box._set("__selection_start", @core.any(start))
-  box._set("__selection_end", @core.any(end))
-  let start_any = box._get("__selection_start")
-  let end_any = box._get("__selection_end")
-  input.as_any()._call("setSelectionRange", [start_any, end_any]) |> ignore
 }
 
 ///|

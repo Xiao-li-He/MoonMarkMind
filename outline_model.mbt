@@ -474,12 +474,10 @@ fn normalized_marker(marker : String, level : Int) -> String {
     } else {
       marker
     }
+  } else if marker.length() == 0 {
+    "-"
   } else {
-    if marker.length() == 0 {
-      "-"
-    } else {
-      marker
-    }
+    marker
   }
 }
 
