@@ -35,7 +35,7 @@ pub fn rename_heading(
         kind: node.kind,
         level: node.level,
         title: next_title,
-        marker: node.marker,
+        marker: normalized_marker(node.marker, node.level),
         body: node.body,
         source_line: node.source_line,
       })
@@ -184,7 +184,7 @@ pub fn add_sibling_heading(
         kind: node.kind,
         level: node.level,
         title: next_title,
-        marker: node.marker,
+        marker: normalized_marker(node.marker, node.level),
         body: [],
         source_line: -1,
       },
@@ -475,7 +475,11 @@ fn normalized_marker(marker : String, level : Int) -> String {
       marker
     }
   } else {
-    marker
+    if marker.length() == 0 {
+      "-"
+    } else {
+      marker
+    }
   }
 }
 

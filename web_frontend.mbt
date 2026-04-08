@@ -307,7 +307,19 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
     "Enter" => {
       event.preventDefault()
       event.stopPropagation()
-      handle_add_sibling(node_index, true)
+      if can_add_sibling_selected() {
+        handle_add_sibling(node_index, true)
+      }
+    }
+    "Tab" => {
+      event.preventDefault()
+      event.stopPropagation()
+      handle_add_child(node_index)
+    }
+    "Delete" => {
+      event.preventDefault()
+      event.stopPropagation()
+      handle_delete(node_index)
     }
     _ => ()
   }

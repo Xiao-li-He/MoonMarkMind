@@ -123,7 +123,13 @@ fn parse_list_line(line : StringView) -> (Int, String, String)? {
     if start + 1 >= line.length() || line[start + 1] != ' ' {
       return None
     }
-    return Some((indent, "\{marker}", view_tail_to_string(line, start + 2)))
+    let marker_str = match marker {
+      '-' => "-"
+      '*' => "*"
+      '+' => "+"
+      _ => "-"
+    }
+    return Some((indent, marker_str, view_tail_to_string(line, start + 2)))
   }
   if marker < '0' || marker > '9' {
     return None

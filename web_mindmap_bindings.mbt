@@ -304,12 +304,12 @@ fn bind_mindmap_ui(
       .as_event_target()
       .on("dblclick", fn(raw) {
         let event : @dom.MouseEvent = raw.cast()
-        if suppress_click.val || mindmap_can_pan(event.target()) {
-          suppress_click.val = false
+        if mindmap_can_pan(event.target()) {
           event.preventDefault()
           event.stopPropagation()
           return
         }
+        suppress_click.val = false
         dblclick_callback(event)
       })
       mindmap

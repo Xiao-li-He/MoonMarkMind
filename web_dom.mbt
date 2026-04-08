@@ -1933,17 +1933,28 @@ fn set_mindmap_dom(value : @dom.Element) -> Unit {
 
 ///|
 fn focus_editor(node_index : Int) -> Unit {
-  match get_element("[data-editor-for=\"\{node_index}\"]") {
-    Some(editor) =>
-      if editor.tagName() == "TEXTAREA" {
-        let textarea = to_text_area(editor)
-        textarea.focus()
-      } else if editor.tagName() == "INPUT" {
-        let input = @dom.HTMLInputElement::cast_from_element(editor)
-        input.focus()
-      }
-    None => ()
-  }
+  let window = @dom.window()
+  ignore(
+    window.requestAnimationFrame(fn(_) {
+      ignore(
+        window.requestAnimationFrame(fn(_) {
+          match get_element("[data-editor-for=\"\{node_index}\"]") {
+            Some(editor) =>
+              if editor.tagName() == "TEXTAREA" {
+                let textarea = to_text_area(editor)
+                textarea.focus()
+                textarea.as_any()._call("select", []) |> ignore
+              } else if editor.tagName() == "INPUT" {
+                let input = @dom.HTMLInputElement::cast_from_element(editor)
+                input.focus()
+                input.as_any()._call("select", []) |> ignore
+              }
+            None => ()
+          }
+        }),
+      )
+    }),
+  )
 }
 
 ///|
