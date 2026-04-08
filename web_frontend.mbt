@@ -54,6 +54,12 @@ let app_state : AppState = AppState::{
 let canceled_editor_node : @ref.Ref[Int] = @ref.Ref(-1)
 
 ///|
+let editor_snapshot_node : @ref.Ref[Int] = @ref.Ref(-1)
+
+///|
+let editor_snapshot_markdown : @ref.Ref[String] = @ref.Ref("")
+
+///|
 pub fn start_web_app() -> Unit {
   if app_state.started {
     render_ui()
@@ -68,6 +74,7 @@ pub fn start_web_app() -> Unit {
   bind_splitter_ui(on_splitter_change)
   bind_mindmap_ui(
     on_mindmap_click, on_mindmap_dblclick, on_mindmap_keydown, on_mindmap_focusout,
+    on_mindmap_editor_input,
     on_mindmap_dragstart, on_mindmap_dragend, on_mindmap_dragover, on_mindmap_drop,
   )
   bind_input_listener(on_input_change, on_input_selected_headings_change)
@@ -162,6 +169,9 @@ fn on_splitter_change(percent : Int) -> Unit {
 
 ///|
 fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
+  if event_editor_index_from_target(event.target()) >= 0 {
+    return
+  }
   let action = event_action_from_point(event)
   let node_index = event_node_index_from_point(event)
   if action == "" && node_index >= 0 {
@@ -174,10 +184,10 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
       }
       event.stopPropagation()
       select_single_node(node_index, true)
-      app_state.editing_node = node_index
-      render_ui()
+      begin_edit_node(node_index)
       return
     }
+    clear_editing_session()
     app_state.editing_node = -2
     if event_shift_key(event) {
       select_node_range(node_index, true)
@@ -191,6 +201,7 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
   }
   let cleared_selection = action == "" && has_selected_nodes()
   if cleared_selection {
+    clear_editing_session()
     app_state.editing_node = -2
     clear_selected_nodes()
   }
@@ -263,8 +274,7 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
       }
       "Escape" => {
         canceled_editor_node.val = editor_index
-        app_state.editing_node = -2
-        render_ui()
+        cancel_editor(editor_index)
       }
       _ => ()
     }
@@ -316,6 +326,15 @@ fn on_mindmap_focusout(event : @dom.FocusEvent) -> Unit {
     return
   }
   save_editor(node_index, event_editor_value_from_target(event.target()))
+}
+
+///|
+fn on_mindmap_editor_input(event : @dom.Event) -> Unit {
+  let node_index = event_editor_index_from_target(event.target())
+  if node_index < 0 {
+    return
+  }
+  sync_editor_draft(node_index, event_editor_value_from_target(event.target()))
 }
 
 ///|
@@ -388,7 +407,8 @@ fn handle_add_child(node_index : Int) -> Unit {
   expand_node(node_index)
   if target_index >= 0 {
     select_single_node(target_index, false)
-    app_state.editing_node = target_index
+    begin_edit_node(target_index)
+    return
   }
   sync_detail_customized()
   render_ui()
@@ -408,7 +428,8 @@ fn handle_add_sibling(node_index : Int, place_after : Bool) -> Unit {
   apply_markdown_change(next_markdown, false)
   if target_index >= 0 {
     select_single_node(target_index, false)
-    app_state.editing_node = target_index
+    begin_edit_node(target_index)
+    return
   }
   render_ui()
 }
@@ -420,6 +441,7 @@ fn handle_delete(node_index : Int) -> Unit {
   }
   shrink_root_split_after_delete(node_index)
   let next_markdown = delete_heading(app_state.markdown, node_index)
+  clear_editing_session()
   clear_selected_nodes()
   app_state.editing_node = -2
   apply_markdown_change(next_markdown, false)
@@ -493,6 +515,7 @@ fn default_root_split_count(root : OutlineNode) -> Int {
 fn save_editor(node_index : Int, title : String) -> Unit {
   let next_markdown = rename_heading(app_state.markdown, node_index, title)
   select_single_node(node_index, false)
+  clear_editing_session()
   app_state.editing_node = -2
   apply_markdown_change(next_markdown, false)
 }
@@ -502,8 +525,39 @@ fn start_edit_selected() -> Unit {
   if app_state.selected_node < 0 {
     return
   }
-  app_state.editing_node = app_state.selected_node
+  begin_edit_node(app_state.selected_node)
+}
+
+///|
+fn begin_edit_node(node_index : Int) -> Unit {
+  editor_snapshot_node.val = node_index
+  editor_snapshot_markdown.val = app_state.markdown
+  app_state.editing_node = node_index
   render_ui()
+}
+
+///|
+fn clear_editing_session() -> Unit {
+  editor_snapshot_node.val = -1
+  editor_snapshot_markdown.val = ""
+}
+
+///|
+fn cancel_editor(node_index : Int) -> Unit {
+  if editor_snapshot_node.val == node_index {
+    app_state.markdown = editor_snapshot_markdown.val
+    set_input_value(editor_snapshot_markdown.val)
+  }
+  clear_editing_session()
+  app_state.editing_node = -2
+  render_ui()
+}
+
+///|
+fn sync_editor_draft(node_index : Int, title : String) -> Unit {
+  let next_markdown = rename_heading(app_state.markdown, node_index, title)
+  app_state.markdown = next_markdown
+  set_input_value(next_markdown)
 }
 
 ///|
@@ -647,6 +701,7 @@ fn normalize_rules_sample_variant(sample_variant : String) -> String {
 
 ///|
 fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
+  clear_editing_session()
   if reset_ui {
     app_state.editing_node = -2
     clear_selected_nodes()

@@ -265,6 +265,7 @@ fn bind_mindmap_ui(
   dblclick_callback : (@dom.MouseEvent) -> Unit,
   keydown_callback : (@dom.KeyboardEvent) -> Unit,
   focusout_callback : (@dom.FocusEvent) -> Unit,
+  input_callback : (@dom.Event) -> Unit,
   dragstart_callback : (@dom.DragEvent) -> Unit,
   dragend_callback : (@dom.DragEvent) -> Unit,
   dragover_callback : (@dom.DragEvent) -> Unit,
@@ -318,6 +319,9 @@ fn bind_mindmap_ui(
       mindmap
       .as_event_target()
       .on("focusout", fn(raw) { focusout_callback(raw.cast()) })
+      mindmap
+      .as_event_target()
+      .on("input", fn(raw) { input_callback(raw.cast()) })
       mindmap
       .as_event_target()
       .on(
