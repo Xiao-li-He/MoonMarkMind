@@ -1447,6 +1447,7 @@ fn style_mindmap(element : @dom.Element) -> Unit {
   set_style(element, "min-width", "0")
   set_style(element, "padding", "6px 2px 2px")
   set_style(element, "overflow", "hidden")
+  set_style(element, "outline", "none")
   set_style(
     element,
     "cursor",

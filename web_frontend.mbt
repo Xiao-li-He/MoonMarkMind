@@ -307,6 +307,21 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
   } else {
     node_index
   }
+  let command_key = event.ctrlKey || event.metaKey
+  if command_key &&
+    !event.shiftKey &&
+    (event_key(event) == "z" || event_key(event) == "Z") {
+    event.preventDefault()
+    event.stopPropagation()
+    handle_undo()
+    return
+  }
+  if command_key && (event_key(event) == "y" || event_key(event) == "Y") {
+    event.preventDefault()
+    event.stopPropagation()
+    handle_redo()
+    return
+  }
   if target_node_index < 0 {
     return
   }

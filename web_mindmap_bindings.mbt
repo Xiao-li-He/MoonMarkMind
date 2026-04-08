@@ -273,6 +273,7 @@ fn bind_mindmap_ui(
 ) -> Unit {
   match get_element("#mindmap") {
     Some(mindmap) => {
+      mindmap.setAttribute("tabindex", "0")
       let window = @dom.window()
       let zoom_in = get_element("#zoom-in")
       let zoom_out = get_element("#zoom-out")
@@ -293,6 +294,7 @@ fn bind_mindmap_ui(
       .as_event_target()
       .on("click", fn(raw) {
         let event : @dom.MouseEvent = raw.cast()
+        focus_mindmap_container(mindmap, event.target())
         if suppress_click.val {
           suppress_click.val = false
           event.preventDefault()
@@ -359,6 +361,7 @@ fn bind_mindmap_ui(
       .as_event_target()
       .on("mousedown", fn(raw) {
         let event : @dom.MouseEvent = raw.cast()
+        focus_mindmap_container(mindmap, event.target())
         if !mindmap_can_pan(event.target()) {
           return
         }
@@ -558,5 +561,13 @@ fn bind_mindmap_ui(
       )
     }
     None => ()
+  }
+}
+
+///|
+fn focus_mindmap_container(mindmap : @dom.Element, target : @dom.Element) -> Unit {
+  match target.closest("input, textarea, select, button") {
+    Some(_) => ()
+    None => mindmap.as_any()._call("focus", []) |> ignore
   }
 }
