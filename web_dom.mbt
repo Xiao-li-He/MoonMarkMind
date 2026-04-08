@@ -2277,6 +2277,13 @@ fn event_shift_key(event : @dom.MouseEvent) -> Bool {
 }
 
 ///|
+fn event_click_count(event : @dom.MouseEvent) -> Int {
+  @strconv.parse_int(event.as_any()._get("detail").to_string()) catch {
+    _ => 1
+  }
+}
+
+///|
 fn event_drag_source_index_from_target(target : @dom.Element) -> Int {
   match target.closest("[data-drag-index]") {
     Some(node) =>

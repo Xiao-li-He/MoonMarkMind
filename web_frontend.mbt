@@ -51,10 +51,7 @@ let app_state : AppState = AppState::{
 }
 
 ///|
-let pending_click_timer : @ref.Ref[Int] = @ref.Ref(0)
-
-///|
-let pending_click_node : @ref.Ref[Int] = @ref.Ref(-1)
+let canceled_editor_node : @ref.Ref[Int] = @ref.Ref(-1)
 
 ///|
 pub fn start_web_app() -> Unit {
@@ -168,11 +165,9 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
   let action = event_action_from_point(event)
   let node_index = event_node_index_from_point(event)
   if action == "" && node_index >= 0 {
-    if pending_click_timer.val != 0 &&
-      pending_click_node.val == node_index &&
+    if event_click_count(event) >= 2 &&
       !event_shift_key(event) &&
       !event_multi_select_key(event) {
-      cancel_pending_click_selection()
       match find_node(app_state.root, node_index) {
         Some(node) => if node.synthetic { return }
         None => return
@@ -183,16 +178,20 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
       render_ui()
       return
     }
-    schedule_node_click_selection(
-      node_index,
-      event_shift_key(event),
-      event_multi_select_key(event),
-    )
+    app_state.editing_node = -2
+    if event_shift_key(event) {
+      select_node_range(node_index, true)
+    } else if event_multi_select_key(event) {
+      toggle_node_selection(node_index, true)
+    } else if !is_single_selected_node(node_index) {
+      select_single_node(node_index, true)
+    }
+    render_ui()
     return
   }
-  cancel_pending_click_selection()
   let cleared_selection = action == "" && has_selected_nodes()
   if cleared_selection {
+    app_state.editing_node = -2
     clear_selected_nodes()
   }
   match action {
@@ -247,44 +246,7 @@ fn on_toolbar_action(action : String) -> Unit {
 
 ///|
 fn on_mindmap_dblclick(event : @dom.MouseEvent) -> Unit {
-  cancel_pending_click_selection()
   event.stopPropagation()
-}
-
-///|
-fn schedule_node_click_selection(
-  node_index : Int,
-  shift_key : Bool,
-  multi_select_key : Bool,
-) -> Unit {
-  cancel_pending_click_selection()
-  pending_click_node.val = node_index
-  pending_click_timer.val = @dom.window().setTimeout(
-    fn() {
-      pending_click_timer.val = 0
-      pending_click_node.val = -1
-      app_state.editing_node = -2
-      if shift_key {
-        select_node_range(node_index, true)
-      } else if multi_select_key {
-        toggle_node_selection(node_index, true)
-      } else if !is_single_selected_node(node_index) {
-        select_single_node(node_index, true)
-      }
-      render_ui()
-    },
-    180,
-  )
-}
-
-///|
-fn cancel_pending_click_selection() -> Unit {
-  pending_click_node.val = -1
-  if pending_click_timer.val == 0 {
-    return
-  }
-  @dom.window().clearTimeout(pending_click_timer.val)
-  pending_click_timer.val = 0
 }
 
 ///|
@@ -300,6 +262,7 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
         )
       }
       "Escape" => {
+        canceled_editor_node.val = editor_index
         app_state.editing_node = -2
         render_ui()
       }
@@ -346,6 +309,10 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
 fn on_mindmap_focusout(event : @dom.FocusEvent) -> Unit {
   let node_index = event_editor_index_from_target(event.target())
   if node_index < 0 {
+    return
+  }
+  if canceled_editor_node.val == node_index {
+    canceled_editor_node.val = -1
     return
   }
   save_editor(node_index, event_editor_value_from_target(event.target()))
