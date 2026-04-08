@@ -60,6 +60,15 @@ let editor_snapshot_node : @ref.Ref[Int] = @ref.Ref(-1)
 let editor_snapshot_markdown : @ref.Ref[String] = @ref.Ref("")
 
 ///|
+let editor_draft_markdown : @ref.Ref[String] = @ref.Ref("")
+
+///|
+let editor_undo_stack : @ref.Ref[Array[String]] = @ref.Ref([])
+
+///|
+let editor_redo_stack : @ref.Ref[Array[String]] = @ref.Ref([])
+
+///|
 pub fn start_web_app() -> Unit {
   if app_state.started {
     render_ui()
@@ -74,8 +83,8 @@ pub fn start_web_app() -> Unit {
   bind_splitter_ui(on_splitter_change)
   bind_mindmap_ui(
     on_mindmap_click, on_mindmap_dblclick, on_mindmap_keydown, on_mindmap_focusout,
-    on_mindmap_editor_input,
-    on_mindmap_dragstart, on_mindmap_dragend, on_mindmap_dragover, on_mindmap_drop,
+    on_mindmap_editor_input, on_mindmap_dragstart, on_mindmap_dragend, on_mindmap_dragover,
+    on_mindmap_drop,
   )
   bind_input_listener(on_input_change, on_input_selected_headings_change)
   load_rules_sample(rules_sample_default_id(), true)
@@ -264,19 +273,31 @@ fn on_mindmap_dblclick(event : @dom.MouseEvent) -> Unit {
 fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
   let editor_index = event_editor_index_from_target(event.target())
   if editor_index >= 0 {
-    match event_key(event) {
-      "Enter" => {
-        event.preventDefault()
-        save_editor(
-          editor_index,
-          event_editor_value_from_target(event.target()),
-        )
+    let command_key = event.ctrlKey || event.metaKey
+    if command_key &&
+      !event.shiftKey &&
+      (event_key(event) == "z" || event_key(event) == "Z") {
+      event.preventDefault()
+      editor_undo(editor_index)
+    } else if command_key &&
+      (event_key(event) == "y" || event_key(event) == "Y") {
+      event.preventDefault()
+      editor_redo(editor_index)
+    } else {
+      match event_key(event) {
+        "Enter" => {
+          event.preventDefault()
+          save_editor(
+            editor_index,
+            event_editor_value_from_target(event.target()),
+          )
+        }
+        "Escape" => {
+          canceled_editor_node.val = editor_index
+          cancel_editor(editor_index)
+        }
+        _ => ()
       }
-      "Escape" => {
-        canceled_editor_node.val = editor_index
-        cancel_editor(editor_index)
-      }
-      _ => ()
     }
     return
   }
@@ -513,11 +534,22 @@ fn default_root_split_count(root : OutlineNode) -> Int {
 
 ///|
 fn save_editor(node_index : Int, title : String) -> Unit {
-  let next_markdown = rename_heading(app_state.markdown, node_index, title)
+  let next_markdown = rename_heading(
+    editor_draft_markdown.val,
+    node_index,
+    title,
+  )
+  if next_markdown != editor_draft_markdown.val {
+    apply_editor_draft_markdown(next_markdown)
+  }
+  if editor_snapshot_markdown.val != app_state.markdown {
+    app_state.undo_stack.push(editor_snapshot_markdown.val)
+    app_state.redo_stack = []
+  }
   select_single_node(node_index, false)
   clear_editing_session()
   app_state.editing_node = -2
-  apply_markdown_change(next_markdown, false)
+  render_ui()
 }
 
 ///|
@@ -532,6 +564,9 @@ fn start_edit_selected() -> Unit {
 fn begin_edit_node(node_index : Int) -> Unit {
   editor_snapshot_node.val = node_index
   editor_snapshot_markdown.val = app_state.markdown
+  editor_draft_markdown.val = app_state.markdown
+  editor_undo_stack.val = []
+  editor_redo_stack.val = []
   app_state.editing_node = node_index
   render_ui()
 }
@@ -540,13 +575,15 @@ fn begin_edit_node(node_index : Int) -> Unit {
 fn clear_editing_session() -> Unit {
   editor_snapshot_node.val = -1
   editor_snapshot_markdown.val = ""
+  editor_draft_markdown.val = ""
+  editor_undo_stack.val = []
+  editor_redo_stack.val = []
 }
 
 ///|
 fn cancel_editor(node_index : Int) -> Unit {
   if editor_snapshot_node.val == node_index {
-    app_state.markdown = editor_snapshot_markdown.val
-    set_input_value(editor_snapshot_markdown.val)
+    apply_editor_draft_markdown(editor_snapshot_markdown.val)
   }
   clear_editing_session()
   app_state.editing_node = -2
@@ -555,9 +592,81 @@ fn cancel_editor(node_index : Int) -> Unit {
 
 ///|
 fn sync_editor_draft(node_index : Int, title : String) -> Unit {
-  let next_markdown = rename_heading(app_state.markdown, node_index, title)
-  app_state.markdown = next_markdown
-  set_input_value(next_markdown)
+  let current_markdown = editor_draft_markdown.val
+  let next_markdown = rename_heading(current_markdown, node_index, title)
+  if next_markdown == current_markdown {
+    return
+  }
+  let next_undo = slice_strings(
+    editor_undo_stack.val,
+    0,
+    editor_undo_stack.val.length(),
+  )
+  next_undo.push(current_markdown)
+  editor_undo_stack.val = next_undo
+  editor_redo_stack.val = []
+  apply_editor_draft_markdown(next_markdown)
+}
+
+///|
+fn editor_undo(node_index : Int) -> Unit {
+  if app_state.editing_node != node_index || editor_undo_stack.val.length() == 0 {
+    return
+  }
+  let last_index = editor_undo_stack.val.length() - 1
+  let previous = editor_undo_stack.val[last_index]
+  let next_redo = slice_strings(
+    editor_redo_stack.val,
+    0,
+    editor_redo_stack.val.length(),
+  )
+  next_redo.push(editor_draft_markdown.val)
+  editor_redo_stack.val = next_redo
+  editor_undo_stack.val = slice_strings(editor_undo_stack.val, 0, last_index)
+  apply_editor_draft_markdown(previous)
+  sync_editor_input_value(node_index)
+}
+
+///|
+fn editor_redo(node_index : Int) -> Unit {
+  if app_state.editing_node != node_index || editor_redo_stack.val.length() == 0 {
+    return
+  }
+  let last_index = editor_redo_stack.val.length() - 1
+  let next_markdown = editor_redo_stack.val[last_index]
+  let next_undo = slice_strings(
+    editor_undo_stack.val,
+    0,
+    editor_undo_stack.val.length(),
+  )
+  next_undo.push(editor_draft_markdown.val)
+  editor_undo_stack.val = next_undo
+  editor_redo_stack.val = slice_strings(editor_redo_stack.val, 0, last_index)
+  apply_editor_draft_markdown(next_markdown)
+  sync_editor_input_value(node_index)
+}
+
+///|
+fn apply_editor_draft_markdown(markdown : String) -> Unit {
+  editor_draft_markdown.val = markdown
+  apply_markdown_state(markdown, false, true)
+}
+
+///|
+fn sync_editor_input_value(node_index : Int) -> Unit {
+  if !app_state.started {
+    return
+  }
+  match get_element("[data-editor-for=\"\{node_index}\"]") {
+    Some(element) => {
+      let title = match find_node(app_state.root, node_index) {
+        Some(node) => node.title
+        None => ""
+      }
+      @dom.HTMLInputElement::cast_from_element(element).value = title
+    }
+    None => ()
+  }
 }
 
 ///|
@@ -614,7 +723,7 @@ fn handle_redo() -> Unit {
 fn apply_markdown_change(markdown : String, reset_ui : Bool) -> Unit {
   if markdown == app_state.markdown {
     if reset_ui {
-      load_markdown(markdown, true)
+      apply_markdown_state(markdown, true, false)
     }
     return
   }
@@ -622,7 +731,7 @@ fn apply_markdown_change(markdown : String, reset_ui : Bool) -> Unit {
     app_state.undo_stack.push(app_state.markdown)
   }
   app_state.redo_stack = []
-  load_markdown(markdown, reset_ui)
+  apply_markdown_state(markdown, reset_ui, false)
 }
 
 ///|
@@ -701,7 +810,18 @@ fn normalize_rules_sample_variant(sample_variant : String) -> String {
 
 ///|
 fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
-  clear_editing_session()
+  apply_markdown_state(markdown, reset_ui, false)
+}
+
+///|
+fn apply_markdown_state(
+  markdown : String,
+  reset_ui : Bool,
+  preserve_editing_session : Bool,
+) -> Unit {
+  if !preserve_editing_session {
+    clear_editing_session()
+  }
   if reset_ui {
     app_state.editing_node = -2
     clear_selected_nodes()
@@ -721,11 +841,13 @@ fn load_markdown(markdown : String, reset_ui : Bool) -> Unit {
       app_state.root_split_count = default_root_split_count(app_state.root)
     }
   }
-  if get_input_value() != markdown {
+  if app_state.started && get_input_value() != markdown {
     set_input_value(markdown)
   }
   sync_detail_customized()
-  render_ui()
+  if !preserve_editing_session && app_state.started {
+    render_ui()
+  }
 }
 
 ///|
@@ -744,6 +866,9 @@ fn current_document_name() -> String {
 
 ///|
 fn render_ui() -> Unit {
+  if !app_state.started {
+    return
+  }
   set_select_value("sample-select", app_state.sample_variant)
   set_select_value("layout-select", app_state.layout_mode)
   set_select_value("style-select", app_state.style_mode)
