@@ -65,6 +65,13 @@ pub fn move_heading(
     slice_nodes(nodes, from_flat_index, from_end),
     target_level - source_level,
   )
+  let target_node = nodes[to_flat_index]
+  let normalized_moved = normalize_moved_root_kind(
+    moved,
+    target_node.kind,
+    target_node.marker,
+    target_level,
+  )
   let remaining = concat_nodes(
     slice_nodes(nodes, 0, from_flat_index),
     slice_nodes(nodes, from_end, nodes.length()),
@@ -76,7 +83,7 @@ pub fn move_heading(
     raw_insert_at
   }
   let rebuilt = concat_nodes(
-    concat_nodes(slice_nodes(remaining, 0, insert_at), moved),
+    concat_nodes(slice_nodes(remaining, 0, insert_at), normalized_moved),
     slice_nodes(remaining, insert_at, remaining.length()),
   )
   render_markdown_nodes(rebuilt)
@@ -84,27 +91,12 @@ pub fn move_heading(
 
 ///|
 pub fn move_heading_prev(markdown : String, flat_index : Int) -> String {
-  let nodes = parse_markdown_nodes(markdown)
-  if flat_index <= 0 || flat_index >= nodes.length() {
-    return markdown
-  }
-  if would_move_before_document_root(nodes, flat_index, flat_index - 1) {
-    return markdown
-  }
-  move_heading(markdown, flat_index, flat_index - 1, false)
+  move_heading_among_siblings(markdown, flat_index, false)
 }
 
 ///|
 pub fn move_heading_next(markdown : String, flat_index : Int) -> String {
-  let nodes = parse_markdown_nodes(markdown)
-  if flat_index < 0 || flat_index >= nodes.length() {
-    return markdown
-  }
-  let next_index = subtree_end(nodes, flat_index)
-  if next_index >= nodes.length() {
-    return markdown
-  }
-  move_heading(markdown, flat_index, next_index, true)
+  move_heading_among_siblings(markdown, flat_index, true)
 }
 
 ///|
@@ -113,13 +105,14 @@ pub fn move_heading_prev_with_selection(
   flat_index : Int,
 ) -> (String, Int) {
   let nodes = parse_markdown_nodes(markdown)
-  if flat_index <= 0 || flat_index >= nodes.length() {
+  if flat_index < 0 || flat_index >= nodes.length() {
     return (markdown, flat_index)
   }
-  if would_move_before_document_root(nodes, flat_index, flat_index - 1) {
+  let previous = movable_previous_sibling_index(nodes, flat_index)
+  if previous < 0 {
     return (markdown, flat_index)
   }
-  (move_heading(markdown, flat_index, flat_index - 1, false), flat_index - 1)
+  (move_heading(markdown, flat_index, previous, false), previous)
 }
 
 ///|
@@ -131,16 +124,13 @@ pub fn move_heading_next_with_selection(
   if flat_index < 0 || flat_index >= nodes.length() {
     return (markdown, flat_index)
   }
-  let next_index = subtree_end(nodes, flat_index)
-  if next_index >= nodes.length() {
+  let next = movable_next_sibling_index(nodes, flat_index)
+  if next < 0 {
     return (markdown, flat_index)
   }
-  let moved_length = next_index - flat_index
-  let target_end = subtree_end(nodes, next_index)
-  (
-    move_heading(markdown, flat_index, next_index, true),
-    target_end - moved_length,
-  )
+  let moved_length = subtree_end(nodes, flat_index) - flat_index
+  let target_end = subtree_end(nodes, next)
+  (move_heading(markdown, flat_index, next, true), target_end - moved_length)
 }
 
 ///|
@@ -279,7 +269,7 @@ pub fn move_heading_among_siblings(
   if flat_index < 0 || flat_index >= nodes.length() {
     return markdown
   }
-  let siblings = sibling_indices(nodes, flat_index)
+  let siblings = movable_sibling_indices(nodes, flat_index)
   let mut current = -1
   for index in 0..<siblings.length() {
     if siblings[index] == flat_index {
@@ -442,6 +432,39 @@ fn sibling_indices(nodes : Array[MarkdownNode], flat_index : Int) -> Array[Int] 
 }
 
 ///|
+fn same_kind_sibling_indices(
+  nodes : Array[MarkdownNode],
+  flat_index : Int,
+) -> Array[Int] {
+  let node = nodes[flat_index]
+  let parent = parent_index(nodes, flat_index)
+  let siblings = []
+  for index in 0..<nodes.length() {
+    if index == flat_index {
+      siblings.push(index)
+    } else if nodes[index].level == node.level &&
+      node_kind_name(nodes[index].kind) == node_kind_name(node.kind) &&
+      parent_index(nodes, index) == parent {
+      siblings.push(index)
+    }
+  }
+  siblings
+}
+
+///|
+fn movable_sibling_indices(
+  nodes : Array[MarkdownNode],
+  flat_index : Int,
+) -> Array[Int] {
+  let same_kind = same_kind_sibling_indices(nodes, flat_index)
+  if same_kind.length() > 1 {
+    same_kind
+  } else {
+    sibling_indices(nodes, flat_index)
+  }
+}
+
+///|
 fn parent_index(nodes : Array[MarkdownNode], index : Int) -> Int {
   let level = nodes[index].level
   let mut cursor = index - 1
@@ -469,6 +492,78 @@ fn previous_sibling_index(nodes : Array[MarkdownNode], index : Int) -> Int {
     cursor -= 1
   }
   -1
+}
+
+///|
+fn next_sibling_index(nodes : Array[MarkdownNode], index : Int) -> Int {
+  let siblings = sibling_indices(nodes, index)
+  let mut seen_self = false
+  for sibling in siblings {
+    if seen_self {
+      return sibling
+    }
+    if sibling == index {
+      seen_self = true
+    }
+  }
+  -1
+}
+
+///|
+fn previous_same_kind_sibling_index(
+  nodes : Array[MarkdownNode],
+  index : Int,
+) -> Int {
+  let siblings = same_kind_sibling_indices(nodes, index)
+  let mut previous = -1
+  for sibling in siblings {
+    if sibling == index {
+      return previous
+    }
+    previous = sibling
+  }
+  -1
+}
+
+///|
+fn movable_previous_sibling_index(
+  nodes : Array[MarkdownNode],
+  index : Int,
+) -> Int {
+  let previous_same_kind = previous_same_kind_sibling_index(nodes, index)
+  if previous_same_kind >= 0 {
+    previous_same_kind
+  } else {
+    previous_sibling_index(nodes, index)
+  }
+}
+
+///|
+fn next_same_kind_sibling_index(
+  nodes : Array[MarkdownNode],
+  index : Int,
+) -> Int {
+  let siblings = same_kind_sibling_indices(nodes, index)
+  let mut seen_self = false
+  for sibling in siblings {
+    if seen_self {
+      return sibling
+    }
+    if sibling == index {
+      seen_self = true
+    }
+  }
+  -1
+}
+
+///|
+fn movable_next_sibling_index(nodes : Array[MarkdownNode], index : Int) -> Int {
+  let next_same_kind = next_same_kind_sibling_index(nodes, index)
+  if next_same_kind >= 0 {
+    next_same_kind
+  } else {
+    next_sibling_index(nodes, index)
+  }
 }
 
 ///|
@@ -516,17 +611,32 @@ fn relevel_node(node : MarkdownNode, delta : Int) -> MarkdownNode {
 }
 
 ///|
-fn would_move_before_document_root(
-  nodes : Array[MarkdownNode],
-  from_flat_index : Int,
-  to_flat_index : Int,
-) -> Bool {
-  if nodes.length() == 0 {
-    return false
+fn normalize_moved_root_kind(
+  moved : Array[MarkdownNode],
+  target_kind : MarkdownNodeKind,
+  target_marker : String,
+  target_level : Int,
+) -> Array[MarkdownNode] {
+  if moved.length() == 0 {
+    return moved
   }
-  let document_root_level = nodes[0].level
-  nodes[from_flat_index].level > document_root_level &&
-  nodes[to_flat_index].level == document_root_level
+  let root = moved[0]
+  let next_root = MarkdownNode::{
+    kind: target_kind,
+    level: target_level,
+    title: root.title,
+    marker: match target_kind {
+      MarkdownNodeKind::Heading => ""
+      MarkdownNodeKind::ListItem => target_marker
+    },
+    body: root.body,
+    source_line: root.source_line,
+  }
+  let rebuilt = [next_root]
+  for index in 1..<moved.length() {
+    rebuilt.push(moved[index])
+  }
+  rebuilt
 }
 
 ///|
