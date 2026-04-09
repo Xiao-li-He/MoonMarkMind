@@ -722,6 +722,7 @@ fn build_toolbar_button(
   button.setAttribute("data-toolbar-action", action)
   button.setAttribute("data-tip", tip)
   button.setAttribute("aria-label", tip)
+  button.setAttribute("title", tip)
   append_child(button, build_tool_icon(toolbar_icon_key(action), false))
   button
 }
@@ -736,6 +737,7 @@ fn build_aux_button(
   button.setAttribute("type", "button")
   button.setAttribute("data-tip", tip)
   button.setAttribute("aria-label", tip)
+  button.setAttribute("title", tip)
   append_child(button, build_tool_icon(aux_icon_key(id, label), false))
   if id.length() > 0 {
     button.setAttribute("id", id)
@@ -755,6 +757,7 @@ fn build_button(
   button.setAttribute("id", id)
   button.setAttribute("data-tip", tip)
   button.setAttribute("aria-label", tip)
+  button.setAttribute("title", tip)
   button.setTextContent(label)
   button
 }
@@ -772,6 +775,7 @@ fn build_icon_button(
   button.setAttribute("type", "button")
   button.setAttribute("data-tip", tip)
   button.setAttribute("aria-label", tip)
+  button.setAttribute("title", tip)
   let icon_key = if icon.length() == 0 {
     default_icon_key(tip, label)
   } else {

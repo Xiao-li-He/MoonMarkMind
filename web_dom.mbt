@@ -1366,20 +1366,7 @@ fn sync_custom_select(select : @dom.HTMLSelectElement) -> Unit {
           } else {
             selected_text
           }
-          match custom.querySelector(".tool-select-trigger") {
-            Some(trigger) => {
-              match trigger.querySelector(".tool-select-trigger__label") {
-                Some(label) => label.setTextContent(next_text)
-                None => trigger.setTextContent(next_text)
-              }
-              toggle_class(
-                trigger,
-                "tool-select--muted",
-                has_class_name(select.as_element(), "tool-select--muted"),
-              )
-            }
-            None => ()
-          }
+          sync_custom_select_trigger(custom, select, next_text)
           for option_button in custom.querySelectorAll(".tool-select-option") {
             let option_value = option_button
               .getAttribute("data-value")
@@ -1402,6 +1389,45 @@ fn sync_custom_select(select : @dom.HTMLSelectElement) -> Unit {
 }
 
 ///|
+fn sync_custom_select_trigger(
+  custom : @dom.Element,
+  select : @dom.HTMLSelectElement,
+  next_text : String,
+) -> Unit {
+  match custom.querySelector(".tool-select-trigger") {
+    Some(trigger) => {
+      match trigger.querySelector(".tool-select-trigger__label") {
+        Some(label) => label.setTextContent(next_text)
+        None => trigger.setTextContent(next_text)
+      }
+      toggle_class(
+        trigger,
+        "tool-select--muted",
+        has_class_name(select.as_element(), "tool-select--muted"),
+      )
+      let prefix = match select.parentElement() {
+        Some(parent) =>
+          match parent.querySelector(".tool-select-label") {
+            Some(label) => label.textContent()
+            None => ""
+          }
+        None => ""
+      }
+      let tip = if prefix.length() == 0 {
+        next_text
+      } else if next_text.length() == 0 {
+        prefix
+      } else {
+        "\{prefix}：\{next_text}"
+      }
+      trigger.setAttribute("title", tip)
+      trigger.setAttribute("aria-label", tip)
+    }
+    None => ()
+  }
+}
+
+///|
 fn init_custom_select(id : String) -> Unit {
   match get_element_by_id(id) {
     Some(control) => {
@@ -1419,6 +1445,7 @@ fn init_custom_select(id : String) -> Unit {
       let trigger_label = create_element("span", "tool-select-trigger__label")
       let trigger_arrow = create_element("span", "tool-select-trigger__arrow")
       trigger_arrow.setTextContent("▾")
+      trigger.setAttribute("title", select.value)
       trigger.as_node().appendChild(trigger_label.as_node()) |> ignore
       trigger.as_node().appendChild(trigger_arrow.as_node()) |> ignore
       let menu = create_element("div", "tool-select-menu")

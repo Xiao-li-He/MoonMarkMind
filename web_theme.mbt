@@ -72,6 +72,7 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
     has_class_name(element, "zoom-chip") {
     style_button_shell(element)
   }
+  sync_hover_tip(element)
   if has_class_name(element, "tool-button") {
     set_style(element, "min-width", "80px")
   }
@@ -438,6 +439,17 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   }
   if has_class_name(element, "zoom-edit") {
     style_zoom_edit(element)
+  }
+}
+
+///|
+fn sync_hover_tip(element : @dom.Element) -> Unit {
+  let tip = element.getAttribute("data-tip").unwrap_or("")
+  if tip.length() == 0 {
+    return
+  }
+  if element.getAttribute("title").unwrap_or("") != tip {
+    element.setAttribute("title", tip)
   }
 }
 
