@@ -260,6 +260,14 @@ fn mindmap_recenter_pan(
 }
 
 ///|
+fn focus_mindmap() -> Unit {
+  match get_element("#mindmap") {
+    Some(mindmap) => @dom.HTMLElement::cast_from_element(mindmap).focus()
+    None => ()
+  }
+}
+
+///|
 fn bind_mindmap_ui(
   click_callback : (@dom.MouseEvent) -> Unit,
   dblclick_callback : (@dom.MouseEvent) -> Unit,

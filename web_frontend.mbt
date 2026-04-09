@@ -206,6 +206,7 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
     } else if !is_single_selected_node(node_index) {
       select_single_node(node_index, true)
     }
+    focus_mindmap()
     render_ui()
     return
   }
@@ -228,14 +229,20 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
       event.stopPropagation()
       toggle_collapsed(node_index)
       sync_detail_customized()
+      focus_mindmap()
       render_ui()
     }
     "toggle-hide" => {
       event.stopPropagation()
       toggle_hidden_node(node_index)
+      focus_mindmap()
       render_ui()
     }
-    _ => if cleared_selection { render_ui() }
+    _ =>
+      if cleared_selection {
+        focus_mindmap()
+        render_ui()
+      }
   }
 }
 
@@ -312,6 +319,34 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
     return
   }
   match event_key(event) {
+    "ArrowLeft" => {
+      event.preventDefault()
+      event.stopPropagation()
+      if handle_tree_navigation("ArrowLeft", target_node_index) {
+        render_ui()
+      }
+    }
+    "ArrowRight" => {
+      event.preventDefault()
+      event.stopPropagation()
+      if handle_tree_navigation("ArrowRight", target_node_index) {
+        render_ui()
+      }
+    }
+    "ArrowUp" => {
+      event.preventDefault()
+      event.stopPropagation()
+      if handle_tree_navigation("ArrowUp", target_node_index) {
+        render_ui()
+      }
+    }
+    "ArrowDown" => {
+      event.preventDefault()
+      event.stopPropagation()
+      if handle_tree_navigation("ArrowDown", target_node_index) {
+        render_ui()
+      }
+    }
     "Enter" => {
       event.preventDefault()
       event.stopPropagation()
@@ -467,6 +502,99 @@ fn handle_delete(node_index : Int) -> Unit {
   clear_selected_nodes()
   app_state.editing_node = -2
   apply_markdown_change(next_markdown, false)
+}
+
+///|
+fn handle_tree_navigation(
+  direction : String,
+  fallback_node_index : Int,
+) -> Bool {
+  let current_index = if app_state.selected_node >= 0 {
+    app_state.selected_node
+  } else {
+    fallback_node_index
+  }
+  if current_index < 0 {
+    return false
+  }
+  match direction {
+    "ArrowLeft" =>
+      match locate_tree_context(app_state.root, current_index) {
+        Some((parent_index, _, _)) =>
+          if parent_index >= 0 {
+            select_single_node(parent_index, false)
+            true
+          } else {
+            false
+          }
+        None => false
+      }
+    "ArrowRight" =>
+      match find_node(app_state.root, current_index) {
+        Some(node) => {
+          if node.children.length() == 0 {
+            return false
+          }
+          if is_collapsed(current_index) {
+            expand_node(current_index)
+            sync_detail_customized()
+          }
+          select_single_node(node.children[0].flat_index, false)
+          true
+        }
+        None => false
+      }
+    "ArrowUp" => move_to_tree_sibling(current_index, false)
+    "ArrowDown" => move_to_tree_sibling(current_index, true)
+    _ => false
+  }
+}
+
+///|
+fn move_to_tree_sibling(node_index : Int, move_next : Bool) -> Bool {
+  match locate_tree_context(app_state.root, node_index) {
+    Some((_, siblings, sibling_index)) => {
+      if siblings.length() == 0 {
+        return false
+      }
+      if move_next {
+        let next_index = (sibling_index + 1) % siblings.length()
+        select_single_node(siblings[next_index].flat_index, false)
+        true
+      } else {
+        let prev_index = if sibling_index == 0 {
+          siblings.length() - 1
+        } else {
+          sibling_index - 1
+        }
+        select_single_node(siblings[prev_index].flat_index, false)
+        true
+      }
+    }
+    None => false
+  }
+}
+
+///|
+fn locate_tree_context(
+  node : OutlineNode,
+  target : Int,
+) -> (Int, Array[OutlineNode], Int)? {
+  if node.flat_index == target {
+    return Some((-1, [], -1))
+  }
+  let mut child_index = 0
+  for child in node.children {
+    if child.flat_index == target {
+      return Some((node.flat_index, node.children, child_index))
+    }
+    match locate_tree_context(child, target) {
+      Some(context) => return Some(context)
+      None => ()
+    }
+    child_index += 1
+  }
+  None
 }
 
 ///|

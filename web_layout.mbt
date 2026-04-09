@@ -582,6 +582,7 @@ fn build_mindmap_panel() -> @dom.Element {
   let surface = create_element("div", "mindmap-surface")
   let mindmap = create_element("div", "mindmap")
   mindmap.setAttribute("id", "mindmap")
+  mindmap.setAttribute("tabindex", "0")
   mindmap.setAttribute("data-pan-x", "0")
   mindmap.setAttribute("data-pan-y", "0")
   mindmap.setAttribute("data-zoom", "1")
