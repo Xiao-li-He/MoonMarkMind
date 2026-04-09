@@ -83,6 +83,67 @@ pub fn move_heading(
 }
 
 ///|
+pub fn move_heading_prev(markdown : String, flat_index : Int) -> String {
+  let nodes = parse_markdown_nodes(markdown)
+  if flat_index <= 0 || flat_index >= nodes.length() {
+    return markdown
+  }
+  if would_move_before_document_root(nodes, flat_index, flat_index - 1) {
+    return markdown
+  }
+  move_heading(markdown, flat_index, flat_index - 1, false)
+}
+
+///|
+pub fn move_heading_next(markdown : String, flat_index : Int) -> String {
+  let nodes = parse_markdown_nodes(markdown)
+  if flat_index < 0 || flat_index >= nodes.length() {
+    return markdown
+  }
+  let next_index = subtree_end(nodes, flat_index)
+  if next_index >= nodes.length() {
+    return markdown
+  }
+  move_heading(markdown, flat_index, next_index, true)
+}
+
+///|
+pub fn move_heading_prev_with_selection(
+  markdown : String,
+  flat_index : Int,
+) -> (String, Int) {
+  let nodes = parse_markdown_nodes(markdown)
+  if flat_index <= 0 || flat_index >= nodes.length() {
+    return (markdown, flat_index)
+  }
+  if would_move_before_document_root(nodes, flat_index, flat_index - 1) {
+    return (markdown, flat_index)
+  }
+  (move_heading(markdown, flat_index, flat_index - 1, false), flat_index - 1)
+}
+
+///|
+pub fn move_heading_next_with_selection(
+  markdown : String,
+  flat_index : Int,
+) -> (String, Int) {
+  let nodes = parse_markdown_nodes(markdown)
+  if flat_index < 0 || flat_index >= nodes.length() {
+    return (markdown, flat_index)
+  }
+  let next_index = subtree_end(nodes, flat_index)
+  if next_index >= nodes.length() {
+    return (markdown, flat_index)
+  }
+  let moved_length = next_index - flat_index
+  let target_end = subtree_end(nodes, next_index)
+  (
+    move_heading(markdown, flat_index, next_index, true),
+    target_end - moved_length,
+  )
+}
+
+///|
 pub fn indent_heading(markdown : String, flat_index : Int) -> String {
   let nodes = parse_markdown_nodes(markdown)
   if flat_index <= 0 || flat_index >= nodes.length() {
@@ -452,6 +513,20 @@ fn relevel_node(node : MarkdownNode, delta : Int) -> MarkdownNode {
     body: node.body,
     source_line: node.source_line,
   }
+}
+
+///|
+fn would_move_before_document_root(
+  nodes : Array[MarkdownNode],
+  from_flat_index : Int,
+  to_flat_index : Int,
+) -> Bool {
+  if nodes.length() == 0 {
+    return false
+  }
+  let document_root_level = nodes[0].level
+  nodes[from_flat_index].level > document_root_level &&
+  nodes[to_flat_index].level == document_root_level
 }
 
 ///|

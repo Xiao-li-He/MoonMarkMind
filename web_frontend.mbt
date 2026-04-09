@@ -803,12 +803,22 @@ fn handle_move_selected(move_down : Bool) -> Unit {
   if app_state.selected_node < 0 {
     return
   }
-  let next_markdown = move_heading_among_siblings(
-    app_state.markdown,
-    app_state.selected_node,
-    move_down,
-  )
+  let (next_markdown, next_selected_node) = if move_down {
+    move_heading_next_with_selection(
+      app_state.markdown,
+      app_state.selected_node,
+    )
+  } else {
+    move_heading_prev_with_selection(
+      app_state.markdown,
+      app_state.selected_node,
+    )
+  }
   apply_markdown_change(next_markdown, false)
+  if next_selected_node >= 0 {
+    select_single_node(next_selected_node, false)
+    render_ui()
+  }
 }
 
 ///|
@@ -905,12 +915,12 @@ fn can_move_selected(move_down : Bool) -> Bool {
   if app_state.selected_node < 0 {
     return false
   }
-  move_heading_among_siblings(
-    app_state.markdown,
-    app_state.selected_node,
-    move_down,
-  ) !=
-  app_state.markdown
+  let next_markdown = if move_down {
+    move_heading_next(app_state.markdown, app_state.selected_node)
+  } else {
+    move_heading_prev(app_state.markdown, app_state.selected_node)
+  }
+  next_markdown != app_state.markdown
 }
 
 ///|

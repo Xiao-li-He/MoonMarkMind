@@ -148,3 +148,37 @@ test "tree navigation right expands collapsed node and selects first child" {
   assert_eq(app_state.selected_node, 2)
   assert_eq(is_collapsed(1), false)
 }
+
+///|
+test "move heading prev and next across levels" {
+  let markdown = "# Root\n## Alpha\n### Alpha child\n## Beta\n## Gamma"
+
+  let moved_up = move_heading_prev(markdown, 3)
+  assert_eq(moved_up, "# Root\n## Alpha\n### Beta\n### Alpha child\n## Gamma")
+
+  let moved_down = move_heading_next(markdown, 1)
+  assert_eq(moved_down, "# Root\n## Beta\n## Alpha\n### Alpha child\n## Gamma")
+}
+
+///|
+test "moving selected node keeps it selected" {
+  reset_navigation_test_state()
+  select_single_node(1, false)
+
+  handle_move_selected(true)
+
+  assert_eq(app_state.selected_node, 2)
+  assert_eq(title_at(app_state.selected_node), "Parent")
+}
+
+///|
+test "move heading prev stops before document root" {
+  let markdown = "# Root\n## Child"
+
+  let moved = move_heading_prev(markdown, 1)
+  assert_eq(moved, markdown)
+
+  let moved_with_selection = move_heading_prev_with_selection(markdown, 1)
+  assert_eq(moved_with_selection.0, markdown)
+  assert_eq(moved_with_selection.1, 1)
+}
