@@ -143,7 +143,7 @@ fn set_editor_document_name(value : String) -> Unit {
   match get_element(".editor-chrome__badge") {
     Some(badge) => {
       badge.setTextContent(value)
-      badge.setAttribute("title", value)
+      badge.setAttribute("data-tip", value)
     }
     None => ()
   }
@@ -158,7 +158,21 @@ fn build_app_shell() -> @dom.Element {
   append_child(workspace, build_workspace_divider())
   append_child(workspace, build_mindmap_panel())
   append_child(shell, workspace)
+  append_child(shell, build_tooltip_layer())
   shell
+}
+
+///|
+fn build_tooltip_layer() -> @dom.Element {
+  let layer = create_element("div", "tooltip-layer")
+  layer.setAttribute("id", "tooltip-layer")
+  layer.setAttribute("aria-hidden", "true")
+  let tip = create_element("div", "tooltip")
+  tip.setAttribute("id", "tooltip")
+  tip.setAttribute("role", "tooltip")
+  append_child(tip, build_text_span("span", "tooltip__text", ""))
+  append_child(layer, tip)
+  layer
 }
 
 ///|
@@ -533,7 +547,7 @@ fn build_editor_chrome(filename~ : String) -> @dom.Element {
   append_child(chrome, actions)
 
   let badge = build_text_span("span", "editor-chrome__badge", filename)
-  badge.setAttribute("title", filename)
+  badge.setAttribute("data-tip", filename)
   append_child(chrome, badge)
   chrome
 }
@@ -722,7 +736,6 @@ fn build_toolbar_button(
   button.setAttribute("data-toolbar-action", action)
   button.setAttribute("data-tip", tip)
   button.setAttribute("aria-label", tip)
-  button.setAttribute("title", tip)
   append_child(button, build_tool_icon(toolbar_icon_key(action), false))
   button
 }
@@ -737,7 +750,6 @@ fn build_aux_button(
   button.setAttribute("type", "button")
   button.setAttribute("data-tip", tip)
   button.setAttribute("aria-label", tip)
-  button.setAttribute("title", tip)
   append_child(button, build_tool_icon(aux_icon_key(id, label), false))
   if id.length() > 0 {
     button.setAttribute("id", id)
@@ -757,7 +769,6 @@ fn build_button(
   button.setAttribute("id", id)
   button.setAttribute("data-tip", tip)
   button.setAttribute("aria-label", tip)
-  button.setAttribute("title", tip)
   button.setTextContent(label)
   button
 }
@@ -775,7 +786,6 @@ fn build_icon_button(
   button.setAttribute("type", "button")
   button.setAttribute("data-tip", tip)
   button.setAttribute("aria-label", tip)
-  button.setAttribute("title", tip)
   let icon_key = if icon.length() == 0 {
     default_icon_key(tip, label)
   } else {

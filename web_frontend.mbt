@@ -80,6 +80,7 @@ pub fn start_web_app() -> Unit {
     on_new_click, on_sample_select_change, on_upload_click, on_download_markdown_click,
     on_layout_change, on_style_change, on_detail_change, on_export_change, on_toolbar_action,
   )
+  bind_tooltip_ui()
   bind_splitter_ui(on_splitter_change)
   bind_mindmap_ui(
     on_mindmap_click, on_mindmap_dblclick, on_mindmap_keydown, on_mindmap_focusout,
@@ -1565,9 +1566,9 @@ fn build_node_actions_dom(
   let hidden_count = count_hidden_descendants(node)
   let label = if collapsed { hidden_count.to_string() } else { "" }
   let title = if collapsed {
-    "Expand node (\{hidden_count} hidden)"
+    "展开节点，隐藏 \{hidden_count} 个子节点"
   } else {
-    "Collapse node"
+    "折叠节点"
   }
   let expanded = (!collapsed).to_string()
   let state_class = if collapsed { " node-action--collapsed" } else { "" }
@@ -1578,7 +1579,7 @@ fn build_node_actions_dom(
   )
   button.setAttribute("type", "button")
   button.setAttribute("data-action", "toggle")
-  button.setAttribute("title", title)
+  button.setAttribute("data-tip", title)
   button.setAttribute("aria-label", title)
   button.setAttribute("aria-expanded", expanded)
   button.setTextContent(label)
@@ -1595,6 +1596,7 @@ fn build_hidden_marker_dom(
   marker.setAttribute("type", "button")
   marker.setAttribute("data-action", "toggle-hide")
   marker.setAttribute("data-node-index", node.flat_index.to_string())
+  marker.setAttribute("data-tip", "展开折叠节点")
   apply_node_visual_attrs(marker, node, tone_index)
   marker.setTextContent(count_subtree_nodes(node).to_string())
   marker
@@ -1900,7 +1902,7 @@ fn render_node_visual_attrs(node : OutlineNode, tone_index : Int) -> String {
 fn render_hidden_marker(node : OutlineNode, tone_index : Int) -> String {
   let attrs = render_node_visual_attrs(node, tone_index)
   let count = count_subtree_nodes(node)
-  "<button type=\"button\" class=\"node collapsed-node\" data-action=\"toggle-hide\" data-node-index=\"\{node.flat_index}\"\{attrs}>\{count}</button>"
+  "<button type=\"button\" class=\"node collapsed-node\" data-action=\"toggle-hide\" data-node-index=\"\{node.flat_index}\" data-tip=\"展开折叠节点\"\{attrs}>\{count}</button>"
 }
 
 ///|
@@ -1949,13 +1951,13 @@ fn render_node_actions(
   let hidden_count = count_hidden_descendants(node)
   let label = if collapsed { hidden_count.to_string() } else { "" }
   let title = if collapsed {
-    "Expand node (\{hidden_count} hidden)"
+    "展开节点，隐藏 \{hidden_count} 个子节点"
   } else {
-    "Collapse node"
+    "折叠节点"
   }
   let expanded = (!collapsed).to_string()
   let state_class = if collapsed { " node-action--collapsed" } else { "" }
-  "<div class=\"node-actions\"><button type=\"button\" class=\"node-action node-action--toggle\{state_class}\" data-action=\"toggle\" title=\"\{title}\" aria-label=\"\{title}\" aria-expanded=\"\{expanded}\">\{label}</button></div>"
+  "<div class=\"node-actions\"><button type=\"button\" class=\"node-action node-action--toggle\{state_class}\" data-action=\"toggle\" data-tip=\"\{title}\" aria-label=\"\{title}\" aria-expanded=\"\{expanded}\">\{label}</button></div>"
 }
 
 ///|

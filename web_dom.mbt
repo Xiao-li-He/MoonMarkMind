@@ -14,6 +14,124 @@ fn to_text_area(element : @dom.Element) -> @dom.HTMLTextAreaElement {
 }
 
 ///|
+let tooltip_visible : @ref.Ref[Bool] = @ref.Ref(false)
+
+///|
+let tooltip_text : @ref.Ref[String] = @ref.Ref("")
+
+///|
+fn bind_tooltip_ui() -> Unit {
+  match get_element("#tooltip-layer") {
+    Some(layer) =>
+      match layer.querySelector("#tooltip") {
+        Some(tooltip) =>
+          match tooltip.querySelector(".tooltip__text") {
+            Some(text) => {
+              let window = @dom.window()
+              let sync_tooltip = fn(event : @dom.MouseEvent) {
+                let target = event.target()
+                match target.closest("[data-tip]") {
+                  Some(control) => {
+                    let tip = control.getAttribute("data-tip").unwrap_or("")
+                    if tip.length() == 0 {
+                      hide_tooltip(layer, tooltip)
+                      return
+                    }
+                    show_tooltip(layer, tooltip, text, control, tip)
+                  }
+                  None => hide_tooltip(layer, tooltip)
+                }
+              }
+              @dom.document()
+              .as_event_target()
+              .on("mouseover", fn(raw) { sync_tooltip(raw.cast()) })
+              @dom.document()
+              .as_event_target()
+              .on("mousemove", fn(raw) { sync_tooltip(raw.cast()) })
+              @dom.document()
+              .as_event_target()
+              .on("mouseleave", fn(_) { hide_tooltip(layer, tooltip) })
+              window
+              .as_event_target()
+              .on("blur", fn(_) { hide_tooltip(layer, tooltip) })
+              window
+              .as_event_target()
+              .on("scroll", fn(_) { hide_tooltip(layer, tooltip) })
+            }
+            None => ()
+          }
+        None => ()
+      }
+    None => ()
+  }
+}
+
+///|
+fn show_tooltip(
+  layer : @dom.Element,
+  tooltip : @dom.Element,
+  text : @dom.Element,
+  control : @dom.Element,
+  tip : String,
+) -> Unit {
+  if tooltip_visible.val && tooltip_text.val == tip {
+    position_tooltip(tooltip, control)
+    return
+  }
+  tooltip_visible.val = true
+  tooltip_text.val = tip
+  text.setTextContent(tip)
+  layer.setAttribute("aria-hidden", "false")
+  let style = @dom.css_style_from_val(tooltip.as_any()._get("style").cast())
+  style.set_property("opacity", "1")
+  style.set_property("visibility", "visible")
+  style.set_property("transform", "translateX(-50%)")
+  position_tooltip(tooltip, control)
+}
+
+///|
+fn hide_tooltip(layer : @dom.Element, tooltip : @dom.Element) -> Unit {
+  if !tooltip_visible.val {
+    return
+  }
+  tooltip_visible.val = false
+  tooltip_text.val = ""
+  layer.setAttribute("aria-hidden", "true")
+  let style = @dom.css_style_from_val(tooltip.as_any()._get("style").cast())
+  style.set_property("opacity", "0")
+  style.set_property("visibility", "hidden")
+  style.set_property("transform", "translate(-9999px, -9999px)")
+}
+
+///|
+fn position_tooltip(tooltip : @dom.Element, control : @dom.Element) -> Unit {
+  let rect = element_rect(control)
+  let viewport_width = @dom.window().innerWidth().to_double()
+  let viewport_height = @dom.window().innerHeight().to_double()
+  let center_x = rect.left + rect.width / 2.0
+  let next_left = clamp_double(center_x, 12.0, viewport_width - 12.0)
+  let next_top = clamp_double(rect.bottom + 4.0, 12.0, viewport_height - 12.0)
+  let style = @dom.css_style_from_val(tooltip.as_any()._get("style").cast())
+  style.set_property("left", "\{next_left}px")
+  style.set_property("top", "\{next_top}px")
+}
+
+///|
+fn clamp_double(
+  value : Double,
+  min_value : Double,
+  max_value : Double,
+) -> Double {
+  if value < min_value {
+    min_value
+  } else if value > max_value {
+    max_value
+  } else {
+    value
+  }
+}
+
+///|
 fn render_mindmap_connectors() -> Unit {
   match get_element("#mindmap") {
     Some(mindmap) =>
@@ -1420,7 +1538,7 @@ fn sync_custom_select_trigger(
       } else {
         "\{prefix}：\{next_text}"
       }
-      trigger.setAttribute("title", tip)
+      trigger.setAttribute("data-tip", tip)
       trigger.setAttribute("aria-label", tip)
     }
     None => ()
@@ -1445,7 +1563,6 @@ fn init_custom_select(id : String) -> Unit {
       let trigger_label = create_element("span", "tool-select-trigger__label")
       let trigger_arrow = create_element("span", "tool-select-trigger__arrow")
       trigger_arrow.setTextContent("▾")
-      trigger.setAttribute("title", select.value)
       trigger.as_node().appendChild(trigger_label.as_node()) |> ignore
       trigger.as_node().appendChild(trigger_arrow.as_node()) |> ignore
       let menu = create_element("div", "tool-select-menu")
