@@ -1900,9 +1900,7 @@ fn render_node_visual_attrs(node : OutlineNode, tone_index : Int) -> String {
 
 ///|
 fn render_hidden_marker(node : OutlineNode, tone_index : Int) -> String {
-  let attrs = render_node_visual_attrs(node, tone_index)
-  let count = count_subtree_nodes(node)
-  "<button type=\"button\" class=\"node collapsed-node\" data-action=\"toggle-hide\" data-node-index=\"\{node.flat_index}\" data-tip=\"展开折叠节点\"\{attrs}>\{count}</button>"
+  build_hidden_marker_dom(node, tone_index).outerHTML()
 }
 
 ///|
