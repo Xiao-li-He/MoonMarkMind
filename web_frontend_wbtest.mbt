@@ -200,6 +200,18 @@ test "move heading prev stops before document root" {
 }
 
 ///|
+test "heading can promote one level when moving up" {
+  let markdown = "# Root\n## Section A\n### Sub A1\n#### Sub A1-1"
+  let outline = build_outline(markdown)
+  let sub_index = outline_flat_index_by_title(outline, "Sub A1-1")
+  assert_eq(sub_index >= 0, true)
+
+  let moved = move_heading_prev(markdown, sub_index)
+  assert_eq(moved.contains("### Sub A1-1"), true)
+  assert_eq(moved.contains("#### Sub A1-1"), false)
+}
+
+///|
 test "moving list item stays within list siblings" {
   let markdown = "# Root\n## Parent\n- list a\n- list b\n- list c"
   let outline = build_outline(markdown)
@@ -214,25 +226,15 @@ test "moving list item stays within list siblings" {
 }
 
 ///|
-test "boundary list item promotes to parent level" {
-  let markdown = "# Root\n## Parent\n- list a\n- list b\n- list c"
+test "list item does not cross into heading sibling" {
+  let markdown = "# Root\n## Parent\n- list a\n### Head A\n### Head B"
   let outline = build_outline(markdown)
   let list_a_index = outline_flat_index_by_title(outline, "list a")
   assert_eq(list_a_index >= 0, true)
 
   let moved_up = move_heading_prev(markdown, list_a_index)
-  assert_eq(moved_up, "# Root\n## Parent\n- list b\n- list c\n## list a")
-}
+  assert_eq(moved_up, markdown)
 
-///|
-test "same level list item can move down into heading sibling" {
-  let markdown = "# Root\n\n## Section A\n\n- list intro\n- sibling order\n### Sub A1\n#### Sub A1-1\n##### Sub A1-1-1\n###### Sub A1-1-1-1\n\nmore text\n\n- deep list a\n  - deep list b\n    - deep list c"
-  let outline = build_outline(markdown)
-  let list_index = outline_flat_index_by_title(outline, "sibling order")
-  assert_eq(list_index >= 0, true)
-
-  let moved = move_heading_next(markdown, list_index)
-  assert_eq(moved.contains("### sibling order"), true)
-  assert_eq(moved.contains("- sibling order"), false)
-  assert_eq(moved.contains("### Sub A1"), true)
+  let moved_down = move_heading_next(markdown, list_a_index)
+  assert_eq(moved_down, markdown)
 }
