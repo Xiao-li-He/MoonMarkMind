@@ -76,7 +76,6 @@ test "node editor commit adds single global undo entry" {
 test "node editor cancel restores original markdown without global history" {
   reset_frontend_test_state()
   begin_edit_node(1)
-
   sync_editor_draft(1, "Alpha1")
   sync_editor_draft(1, "Alpha12")
   cancel_editor(1)

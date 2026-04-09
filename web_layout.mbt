@@ -851,8 +851,11 @@ fn build_tool_svg(icon_key : String, compact : Bool) -> @dom.Element {
       append_child(svg, build_svg_path("M12 18V6M7.5 11.5L12 7L16.5 11.5"))
     "down" =>
       append_child(svg, build_svg_path("M12 6V18M7.5 12.5L12 17L16.5 12.5"))
-    "toggle" =>
-      append_child(svg, build_svg_path("M6.5 12H17.5M12 7.5L17.5 12L12 16.5"))
+    "toggle" => {
+      append_child(svg, build_svg_path("M6 7H18"))
+      append_child(svg, build_svg_path("M8 12H16"))
+      append_child(svg, build_svg_path("M10 17H14"))
+    }
     "insert" => {
       append_child(svg, build_svg_path("M12 5.5V18.5M5.5 12H18.5"))
       append_child(svg, build_svg_circle(12.0, 12.0, 8.5, false))
