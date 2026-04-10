@@ -945,14 +945,8 @@ fn build_tool_svg(icon_key : String, compact : Bool) -> @dom.Element {
       )
       append_child(svg, build_svg_circle(12.0, 12.0, 8.5, false))
     }
-    "zoom-in" => {
-      append_child(svg, build_svg_path("M12 5.5V18.5M5.5 12H18.5"))
-      append_child(svg, build_svg_circle(12.0, 12.0, 8.5, false))
-    }
-    "zoom-out" => {
-      append_child(svg, build_svg_path("M5.5 12H18.5"))
-      append_child(svg, build_svg_circle(12.0, 12.0, 8.5, false))
-    }
+    "zoom-in" => append_child(svg, build_svg_path("M12 5.5V18.5M5.5 12H18.5"))
+    "zoom-out" => append_child(svg, build_svg_path("M5.5 12H18.5"))
     _ => append_child(svg, build_svg_path("M6 12H18"))
   }
   svg
