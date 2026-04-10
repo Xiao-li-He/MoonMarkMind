@@ -74,5 +74,14 @@ test "current mindmap render cycle helper reflects the stored cycle" {
   let previous = mindmap_render_cycle.val
   mindmap_render_cycle.val = 9
   assert_eq(current_mindmap_render_cycle(), 9)
+  assert_eq(mindmap_render_cycle_matches(9), true)
+  assert_eq(mindmap_render_cycle_matches(8), false)
   mindmap_render_cycle.val = previous
+}
+
+///|
+test "hover line stays hidden when editor is inactive" {
+  assert_eq(should_show_input_hover_line(3, true), true)
+  assert_eq(should_show_input_hover_line(3, false), false)
+  assert_eq(should_show_input_hover_line(-1, true), false)
 }

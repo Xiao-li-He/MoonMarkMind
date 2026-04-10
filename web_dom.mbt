@@ -575,7 +575,7 @@ fn schedule_render_mindmap_connectors() -> Unit {
     window.requestAnimationFrame(fn(_) {
       ignore(
         window.requestAnimationFrame(fn(_) {
-          if expected_cycle != current_mindmap_render_cycle() {
+          if !mindmap_render_cycle_matches(expected_cycle) {
             return
           }
           render_mindmap_connectors()
@@ -594,6 +594,11 @@ let mindmap_render_cycle : @ref.Ref[Int] = @ref.Ref(0)
 ///|
 fn current_mindmap_render_cycle() -> Int {
   mindmap_render_cycle.val
+}
+
+///|
+fn mindmap_render_cycle_matches(expected_cycle : Int) -> Bool {
+  expected_cycle == mindmap_render_cycle.val
 }
 
 ///|
@@ -1361,28 +1366,27 @@ fn sync_input_hover_line(
   scroll_top : Int,
 ) -> Unit {
   let line_index = input_hover_line_index.val
+  let visible = should_show_input_hover_line(
+    line_index,
+    input_active_element_is_input(_input),
+  )
   match get_element("#input-hover-line") {
     Some(hover_line) =>
-      set_line_layer(
-        hover_line,
-        line_index,
-        line_index >= 0,
-        metrics,
-        scroll_top,
-      )
+      set_line_layer(hover_line, line_index, visible, metrics, scroll_top)
     None => ()
   }
   match get_element("#input-hover-gutter-line") {
     Some(hover_gutter_line) =>
       set_line_layer(
-        hover_gutter_line,
-        line_index,
-        line_index >= 0,
-        metrics,
-        scroll_top,
+        hover_gutter_line, line_index, visible, metrics, scroll_top,
       )
     None => ()
   }
+}
+
+///|
+fn should_show_input_hover_line(line_index : Int, is_active : Bool) -> Bool {
+  line_index >= 0 && is_active
 }
 
 ///|
@@ -2240,7 +2244,12 @@ fn bind_input_listener(
       input.as_event_target().on("keyup", fn(_) { sync_selection_state() })
       input.as_event_target().on("select", fn(_) { sync_selection_state() })
       input.as_event_target().on("focus", fn(_) { sync_selection_state() })
-      input.as_event_target().on("blur", fn(_) { sync_editor_chrome() })
+      input
+      .as_event_target()
+      .on("blur", fn(_) {
+        input_hover_line_index.val = -1
+        sync_editor_chrome()
+      })
       @dom.document()
       .as_event_target()
       .on("selectionchange", fn(_) {

@@ -112,8 +112,12 @@ fn mindmap_schedule_connectors(
   if frame.val != 0 {
     window.cancelAnimationFrame(frame.val)
   }
+  let expected_cycle = current_mindmap_render_cycle()
   frame.val = window.requestAnimationFrame(fn(_) {
     frame.val = 0
+    if !mindmap_render_cycle_matches(expected_cycle) {
+      return
+    }
     render_mindmap_connectors()
   })
 }
