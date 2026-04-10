@@ -461,8 +461,8 @@ fn apply_tool_select_custom_theme(custom : @dom.Element, muted : Bool) -> Unit {
       style_tool_select_trigger(trigger)
       let trigger_style = style_of(trigger)
       if is_insert {
-        trigger_style.set_property("width", "40px")
-        trigger_style.set_property("min-width", "40px")
+        trigger_style.set_property("width", "47px")
+        trigger_style.set_property("min-width", "47px")
         trigger_style.set_property("height", "40px")
         trigger_style.set_property("padding", "0 6px")
         trigger_style.set_property("justify-content", "space-between")
@@ -478,8 +478,17 @@ fn apply_tool_select_custom_theme(custom : @dom.Element, muted : Bool) -> Unit {
       )
       if disabled {
         trigger_style.set_property("cursor", "not-allowed")
-        trigger_style.set_property("opacity", "0.72")
-        trigger_style.set_property("pointer-events", "none")
+        trigger_style.set_property("opacity", "0.56")
+        trigger_style.set_property(
+          "background", "linear-gradient(180deg, rgba(250, 252, 255, 0.9), rgba(236, 243, 250, 0.84))",
+        )
+        trigger_style.set_property("border-color", "rgba(194, 207, 221, 0.9)")
+        trigger_style.set_property(
+          "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 4px 10px rgba(141, 159, 180, 0.05)",
+        )
+        trigger_style.set_property("color", "rgba(140, 160, 182, 0.96)")
+        trigger_style.set_property("filter", "grayscale(0.3) saturate(0.82)")
+        trigger_style.set_property("pointer-events", "auto")
       } else {
         trigger_style.set_property("cursor", "pointer")
         trigger_style.set_property("opacity", "1")
@@ -956,7 +965,10 @@ fn style_tool_select_custom(element : @dom.Element) -> Unit {
     None => ()
   }
   match element.querySelector(".tool-select-menu") {
-    Some(menu) =>
+    Some(menu) => {
+      if has_class_name(element, "tool-select-custom--insert") {
+        set_style(menu, "min-width", "112px")
+      }
       if open {
         set_style(menu, "opacity", "1")
         set_style(menu, "visibility", "visible")
@@ -966,6 +978,7 @@ fn style_tool_select_custom(element : @dom.Element) -> Unit {
         set_style(menu, "visibility", "hidden")
         set_style(menu, "transform", "translateY(-6px)")
       }
+    }
     None => ()
   }
 }
@@ -1047,6 +1060,7 @@ fn style_tool_select_option(element : @dom.Element) -> Unit {
   set_style(element, "background", "transparent")
   set_style(element, "color", "#23384d")
   set_style(element, "text-align", "left")
+  set_style(element, "white-space", "nowrap")
   set_style(element, "cursor", "pointer")
   set_style(element, "box-shadow", "none")
 }
@@ -1500,7 +1514,7 @@ fn style_mindmap_zoom(element : @dom.Element) -> Unit {
 fn style_mindmap_toolbar_actions(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "flex-wrap", "nowrap")
-  set_style(element, "gap", "10px")
+  set_style(element, "gap", "9px")
   set_style(element, "flex", "0 0 auto")
   set_style(element, "min-width", "max-content")
 }
