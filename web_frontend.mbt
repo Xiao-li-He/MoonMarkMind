@@ -80,6 +80,7 @@ pub fn start_web_app() -> Unit {
     on_new_click, on_sample_select_change, on_upload_click, on_download_markdown_click,
     on_layout_change, on_style_change, on_detail_change, on_export_change, on_toolbar_action,
   )
+  bind_tooltip_ui()
   bind_splitter_ui(on_splitter_change)
   bind_mindmap_ui(
     on_mindmap_click, on_mindmap_dblclick, on_mindmap_keydown, on_mindmap_focusout,
@@ -205,6 +206,7 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
     } else if !is_single_selected_node(node_index) {
       select_single_node(node_index, true)
     }
+    focus_mindmap()
     render_ui()
     return
   }
@@ -227,14 +229,20 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
       event.stopPropagation()
       toggle_collapsed(node_index)
       sync_detail_customized()
+      focus_mindmap()
       render_ui()
     }
     "toggle-hide" => {
       event.stopPropagation()
       toggle_hidden_node(node_index)
+      focus_mindmap()
       render_ui()
     }
-    _ => if cleared_selection { render_ui() }
+    _ =>
+      if cleared_selection {
+        focus_mindmap()
+        render_ui()
+      }
   }
 }
 
@@ -326,6 +334,34 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
     return
   }
   match event_key(event) {
+    "ArrowLeft" => {
+      event.preventDefault()
+      event.stopPropagation()
+      if handle_tree_navigation("ArrowLeft", target_node_index) {
+        render_ui()
+      }
+    }
+    "ArrowRight" => {
+      event.preventDefault()
+      event.stopPropagation()
+      if handle_tree_navigation("ArrowRight", target_node_index) {
+        render_ui()
+      }
+    }
+    "ArrowUp" => {
+      event.preventDefault()
+      event.stopPropagation()
+      if handle_tree_navigation("ArrowUp", target_node_index) {
+        render_ui()
+      }
+    }
+    "ArrowDown" => {
+      event.preventDefault()
+      event.stopPropagation()
+      if handle_tree_navigation("ArrowDown", target_node_index) {
+        render_ui()
+      }
+    }
     "Enter" => {
       event.preventDefault()
       event.stopPropagation()
@@ -481,6 +517,99 @@ fn handle_delete(node_index : Int) -> Unit {
   clear_selected_nodes()
   app_state.editing_node = -2
   apply_markdown_change(next_markdown, false)
+}
+
+///|
+fn handle_tree_navigation(
+  direction : String,
+  fallback_node_index : Int,
+) -> Bool {
+  let current_index = if app_state.selected_node >= 0 {
+    app_state.selected_node
+  } else {
+    fallback_node_index
+  }
+  if current_index < 0 {
+    return false
+  }
+  match direction {
+    "ArrowLeft" =>
+      match locate_tree_context(app_state.root, current_index) {
+        Some((parent_index, _, _)) =>
+          if parent_index >= 0 {
+            select_single_node(parent_index, false)
+            true
+          } else {
+            false
+          }
+        None => false
+      }
+    "ArrowRight" =>
+      match find_node(app_state.root, current_index) {
+        Some(node) => {
+          if node.children.length() == 0 {
+            return false
+          }
+          if is_collapsed(current_index) {
+            expand_node(current_index)
+            sync_detail_customized()
+          }
+          select_single_node(node.children[0].flat_index, false)
+          true
+        }
+        None => false
+      }
+    "ArrowUp" => move_to_tree_sibling(current_index, false)
+    "ArrowDown" => move_to_tree_sibling(current_index, true)
+    _ => false
+  }
+}
+
+///|
+fn move_to_tree_sibling(node_index : Int, move_next : Bool) -> Bool {
+  match locate_tree_context(app_state.root, node_index) {
+    Some((_, siblings, sibling_index)) => {
+      if siblings.length() == 0 {
+        return false
+      }
+      if move_next {
+        let next_index = (sibling_index + 1) % siblings.length()
+        select_single_node(siblings[next_index].flat_index, false)
+        true
+      } else {
+        let prev_index = if sibling_index == 0 {
+          siblings.length() - 1
+        } else {
+          sibling_index - 1
+        }
+        select_single_node(siblings[prev_index].flat_index, false)
+        true
+      }
+    }
+    None => false
+  }
+}
+
+///|
+fn locate_tree_context(
+  node : OutlineNode,
+  target : Int,
+) -> (Int, Array[OutlineNode], Int)? {
+  if node.flat_index == target {
+    return Some((-1, [], -1))
+  }
+  let mut child_index = 0
+  for child in node.children {
+    if child.flat_index == target {
+      return Some((node.flat_index, node.children, child_index))
+    }
+    match locate_tree_context(child, target) {
+      Some(context) => return Some(context)
+      None => ()
+    }
+    child_index += 1
+  }
+  None
 }
 
 ///|
@@ -689,12 +818,22 @@ fn handle_move_selected(move_down : Bool) -> Unit {
   if app_state.selected_node < 0 {
     return
   }
-  let next_markdown = move_heading_among_siblings(
-    app_state.markdown,
-    app_state.selected_node,
-    move_down,
-  )
+  let (next_markdown, next_selected_node) = if move_down {
+    move_heading_next_with_selection(
+      app_state.markdown,
+      app_state.selected_node,
+    )
+  } else {
+    move_heading_prev_with_selection(
+      app_state.markdown,
+      app_state.selected_node,
+    )
+  }
   apply_markdown_change(next_markdown, false)
+  if next_selected_node >= 0 {
+    select_single_node(next_selected_node, false)
+    render_ui()
+  }
 }
 
 ///|
@@ -791,12 +930,12 @@ fn can_move_selected(move_down : Bool) -> Bool {
   if app_state.selected_node < 0 {
     return false
   }
-  move_heading_among_siblings(
-    app_state.markdown,
-    app_state.selected_node,
-    move_down,
-  ) !=
-  app_state.markdown
+  let next_markdown = if move_down {
+    move_heading_next(app_state.markdown, app_state.selected_node)
+  } else {
+    move_heading_prev(app_state.markdown, app_state.selected_node)
+  }
+  next_markdown != app_state.markdown
 }
 
 ///|
@@ -1580,9 +1719,9 @@ fn build_node_actions_dom(
   let hidden_count = count_hidden_descendants(node)
   let label = if collapsed { hidden_count.to_string() } else { "" }
   let title = if collapsed {
-    "Expand node (\{hidden_count} hidden)"
+    "展开节点，隐藏 \{hidden_count} 个子节点"
   } else {
-    "Collapse node"
+    "折叠节点"
   }
   let expanded = (!collapsed).to_string()
   let state_class = if collapsed { " node-action--collapsed" } else { "" }
@@ -1593,7 +1732,7 @@ fn build_node_actions_dom(
   )
   button.setAttribute("type", "button")
   button.setAttribute("data-action", "toggle")
-  button.setAttribute("title", title)
+  button.setAttribute("data-tip", title)
   button.setAttribute("aria-label", title)
   button.setAttribute("aria-expanded", expanded)
   button.setTextContent(label)
@@ -1610,6 +1749,7 @@ fn build_hidden_marker_dom(
   marker.setAttribute("type", "button")
   marker.setAttribute("data-action", "toggle-hide")
   marker.setAttribute("data-node-index", node.flat_index.to_string())
+  marker.setAttribute("data-tip", "展开折叠节点")
   apply_node_visual_attrs(marker, node, tone_index)
   marker.setTextContent(count_subtree_nodes(node).to_string())
   marker
@@ -1913,9 +2053,7 @@ fn render_node_visual_attrs(node : OutlineNode, tone_index : Int) -> String {
 
 ///|
 fn render_hidden_marker(node : OutlineNode, tone_index : Int) -> String {
-  let attrs = render_node_visual_attrs(node, tone_index)
-  let count = count_subtree_nodes(node)
-  "<button type=\"button\" class=\"node collapsed-node\" data-action=\"toggle-hide\" data-node-index=\"\{node.flat_index}\"\{attrs}>\{count}</button>"
+  build_hidden_marker_dom(node, tone_index).outerHTML()
 }
 
 ///|
@@ -1964,13 +2102,13 @@ fn render_node_actions(
   let hidden_count = count_hidden_descendants(node)
   let label = if collapsed { hidden_count.to_string() } else { "" }
   let title = if collapsed {
-    "Expand node (\{hidden_count} hidden)"
+    "展开节点，隐藏 \{hidden_count} 个子节点"
   } else {
-    "Collapse node"
+    "折叠节点"
   }
   let expanded = (!collapsed).to_string()
   let state_class = if collapsed { " node-action--collapsed" } else { "" }
-  "<div class=\"node-actions\"><button type=\"button\" class=\"node-action node-action--toggle\{state_class}\" data-action=\"toggle\" title=\"\{title}\" aria-label=\"\{title}\" aria-expanded=\"\{expanded}\">\{label}</button></div>"
+  "<div class=\"node-actions\"><button type=\"button\" class=\"node-action node-action--toggle\{state_class}\" data-action=\"toggle\" data-tip=\"\{title}\" aria-label=\"\{title}\" aria-expanded=\"\{expanded}\">\{label}</button></div>"
 }
 
 ///|

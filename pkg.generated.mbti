@@ -14,6 +14,14 @@ pub fn move_heading(String, Int, Int, Bool) -> String
 
 pub fn move_heading_among_siblings(String, Int, Bool) -> String
 
+pub fn move_heading_next(String, Int) -> String
+
+pub fn move_heading_next_with_selection(String, Int) -> (String, Int)
+
+pub fn move_heading_prev(String, Int) -> String
+
+pub fn move_heading_prev_with_selection(String, Int) -> (String, Int)
+
 pub fn outline_json(String) -> String
 
 pub fn parse_headings(String) -> Array[(Int, String)]

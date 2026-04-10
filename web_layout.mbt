@@ -143,7 +143,7 @@ fn set_editor_document_name(value : String) -> Unit {
   match get_element(".editor-chrome__badge") {
     Some(badge) => {
       badge.setTextContent(value)
-      badge.setAttribute("title", value)
+      badge.setAttribute("data-tip", value)
     }
     None => ()
   }
@@ -158,7 +158,21 @@ fn build_app_shell() -> @dom.Element {
   append_child(workspace, build_workspace_divider())
   append_child(workspace, build_mindmap_panel())
   append_child(shell, workspace)
+  append_child(shell, build_tooltip_layer())
   shell
+}
+
+///|
+fn build_tooltip_layer() -> @dom.Element {
+  let layer = create_element("div", "tooltip-layer")
+  layer.setAttribute("id", "tooltip-layer")
+  layer.setAttribute("aria-hidden", "true")
+  let tip = create_element("div", "tooltip")
+  tip.setAttribute("id", "tooltip")
+  tip.setAttribute("role", "tooltip")
+  append_child(tip, build_text_span("span", "tooltip__text", ""))
+  append_child(layer, tip)
+  layer
 }
 
 ///|
@@ -533,7 +547,7 @@ fn build_editor_chrome(filename~ : String) -> @dom.Element {
   append_child(chrome, actions)
 
   let badge = build_text_span("span", "editor-chrome__badge", filename)
-  badge.setAttribute("title", filename)
+  badge.setAttribute("data-tip", filename)
   append_child(chrome, badge)
   chrome
 }
@@ -568,6 +582,7 @@ fn build_mindmap_panel() -> @dom.Element {
   let surface = create_element("div", "mindmap-surface")
   let mindmap = create_element("div", "mindmap")
   mindmap.setAttribute("id", "mindmap")
+  mindmap.setAttribute("tabindex", "0")
   mindmap.setAttribute("data-pan-x", "0")
   mindmap.setAttribute("data-pan-y", "0")
   mindmap.setAttribute("data-zoom", "1")
@@ -837,8 +852,11 @@ fn build_tool_svg(icon_key : String, compact : Bool) -> @dom.Element {
       append_child(svg, build_svg_path("M12 18V6M7.5 11.5L12 7L16.5 11.5"))
     "down" =>
       append_child(svg, build_svg_path("M12 6V18M7.5 12.5L12 17L16.5 12.5"))
-    "toggle" =>
-      append_child(svg, build_svg_path("M6.5 12H17.5M12 7.5L17.5 12L12 16.5"))
+    "toggle" => {
+      append_child(svg, build_svg_path("M6 7H18"))
+      append_child(svg, build_svg_path("M8 12H16"))
+      append_child(svg, build_svg_path("M10 17H14"))
+    }
     "insert" => {
       append_child(svg, build_svg_path("M12 5.5V18.5M5.5 12H18.5"))
       append_child(svg, build_svg_circle(12.0, 12.0, 8.5, false))

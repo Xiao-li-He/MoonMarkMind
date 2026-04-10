@@ -439,6 +439,15 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "zoom-edit") {
     style_zoom_edit(element)
   }
+  if has_class_name(element, "tooltip-layer") {
+    style_tooltip_layer(element)
+  }
+  if has_class_name(element, "tooltip") {
+    style_tooltip(element)
+  }
+  if has_class_name(element, "tooltip__text") {
+    style_tooltip_text(element)
+  }
 }
 
 ///|
@@ -2139,6 +2148,43 @@ fn style_zoom_edit(element : @dom.Element) -> Unit {
   set_style(element, "font-variant-numeric", "tabular-nums")
   set_style(element, "outline", "none")
   set_style(element, "caret-color", "#5c88a8")
+}
+
+///|
+fn style_tooltip_layer(element : @dom.Element) -> Unit {
+  set_style(element, "position", "fixed")
+  set_style(element, "inset", "0")
+  set_style(element, "pointer-events", "none")
+  set_style(element, "z-index", "9999")
+}
+
+///|
+fn style_tooltip(element : @dom.Element) -> Unit {
+  set_style(element, "position", "fixed")
+  set_style(element, "left", "0")
+  set_style(element, "top", "0")
+  set_style(element, "max-width", "320px")
+  set_style(element, "padding", "8px 10px")
+  set_style(element, "border-radius", "10px")
+  set_style(element, "background", "rgba(27, 39, 53, 0.95)")
+  set_style(element, "color", "#f6fbff")
+  set_style(element, "box-shadow", "0 12px 28px rgba(26, 39, 56, 0.22)")
+  set_style(element, "backdrop-filter", "blur(10px)")
+  set_style(element, "opacity", "0")
+  set_style(element, "visibility", "hidden")
+  set_style(element, "transform", "translate(-9999px, -9999px)")
+  set_style(element, "transition", "none")
+  set_style(element, "pointer-events", "none")
+}
+
+///|
+fn style_tooltip_text(element : @dom.Element) -> Unit {
+  set_style(element, "display", "block")
+  set_style(element, "font-size", "12px")
+  set_style(element, "line-height", "1.45")
+  set_style(element, "font-weight", "500")
+  set_style(element, "white-space", "pre-wrap")
+  set_style(element, "word-break", "break-word")
 }
 
 ///|
