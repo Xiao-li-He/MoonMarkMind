@@ -738,6 +738,16 @@ fn style_mindmap_tool(element : @dom.Element) -> Unit {
     set_style(element, "filter", "grayscale(0.3) saturate(0.82)")
   } else {
     set_style(element, "cursor", "pointer")
+    set_style(element, "opacity", "1")
+    set_style(element, "filter", "none")
+    set_style(element, "border-color", "rgba(214, 225, 237, 0.76)")
+    set_style(
+      element, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(245, 249, 253, 0.42))",
+    )
+    set_style(
+      element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.82), 0 10px 24px rgba(120, 139, 164, 0.08)",
+    )
+    set_style(element, "color", "#5c88a8")
   }
 }
 
@@ -765,11 +775,28 @@ fn style_mindmap_aux_button(element : @dom.Element) -> Unit {
   set_style(element, "white-space", "nowrap")
   if is_control_disabled(element) {
     set_style(element, "cursor", "not-allowed")
-    set_style(element, "opacity", "0.72")
-    set_style(element, "background", "rgba(247, 249, 252, 0.58)")
-    set_style(element, "box-shadow", "none")
+    set_style(element, "opacity", "0.56")
+    set_style(
+      element, "background", "linear-gradient(180deg, rgba(250, 252, 255, 0.9), rgba(236, 243, 250, 0.84))",
+    )
+    set_style(element, "border-color", "rgba(194, 207, 221, 0.9)")
+    set_style(
+      element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 4px 10px rgba(141, 159, 180, 0.05)",
+    )
+    set_style(element, "color", "rgba(140, 160, 182, 0.96)")
+    set_style(element, "filter", "grayscale(0.3) saturate(0.82)")
   } else {
     set_style(element, "cursor", "default")
+    set_style(element, "opacity", "1")
+    set_style(element, "filter", "none")
+    set_style(element, "border-color", "rgba(214, 225, 237, 0.76)")
+    set_style(
+      element, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(245, 249, 253, 0.42))",
+    )
+    set_style(
+      element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.82), 0 10px 24px rgba(120, 139, 164, 0.08)",
+    )
+    set_style(element, "color", "#5c88a8")
   }
 }
 
@@ -844,6 +871,8 @@ fn style_tool_select(element : @dom.Element) -> Unit {
     set_style(element, "cursor", "not-allowed")
     set_style(element, "opacity", "0.72")
     set_style(element, "color", "rgba(146, 164, 184, 1)")
+  } else {
+    set_style(element, "opacity", "1")
   }
 }
 
