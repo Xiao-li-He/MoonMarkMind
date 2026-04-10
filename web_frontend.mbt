@@ -1279,6 +1279,10 @@ fn insert_node_body_template(kind : String) -> Unit {
   } else {
     ["$$", "x = 1", "$$"]
   }
+  let template_body = normalize_markdown_body_lines(body_lines)
+  if template_body.length() == 0 {
+    return
+  }
   let nodes = parse_markdown_nodes(app_state.markdown)
   if app_state.selected_node >= nodes.length() {
     return
@@ -1288,7 +1292,7 @@ fn insert_node_body_template(kind : String) -> Unit {
     let node = nodes[index]
     if index == app_state.selected_node {
       let next_body = slice_strings(node.body, 0, node.body.length())
-      for line in body_lines {
+      for line in template_body {
         next_body.push(line)
       }
       updated.push(MarkdownNode::{
@@ -1747,7 +1751,7 @@ fn build_node_body_dom(node : OutlineNode) -> @dom.Element? {
     return None
   }
   let body = create_element("div", "node-body")
-  body.setTextContent(node.body.join("\n"))
+  body.setTextContent(node.body.join("\n\n"))
   Some(body)
 }
 
@@ -2130,7 +2134,7 @@ fn render_node_body(node : OutlineNode) -> String {
   if node.body.length() == 0 {
     return ""
   }
-  let body = escape_html(node.body.join("\n"))
+  let body = escape_html(node.body.join("\n\n"))
   "<div class=\"node-body\">\{body}</div>"
 }
 

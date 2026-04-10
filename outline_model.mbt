@@ -412,7 +412,7 @@ fn render_markdown_nodes(nodes : Array[MarkdownNode]) -> String {
 
 ///|
 fn render_markdown_body(body : Array[String]) -> String {
-  body.join("\n")
+  body.join("\n\n")
 }
 
 ///|

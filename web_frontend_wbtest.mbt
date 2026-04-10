@@ -238,3 +238,60 @@ test "list item does not cross into heading sibling" {
   let moved_down = move_heading_next(markdown, list_a_index)
   assert_eq(moved_down, markdown)
 }
+
+///|
+test "markdown body ignores blank-only lines" {
+  let markdown = "# Root\n  \n\t\nFirst line\nSecond line\n\nThird line\n## Child"
+  let nodes = parse_markdown_nodes(markdown)
+
+  assert_eq(nodes.length(), 2)
+  assert_eq(nodes[0].body.length(), 2)
+  assert_eq(nodes[0].body[0], "First line\nSecond line")
+  assert_eq(nodes[0].body[1], "Third line")
+  assert_eq(
+    render_markdown_nodes(nodes),
+    "# Root\nFirst line\nSecond line\n\nThird line\n## Child",
+  )
+}
+
+///|
+test "node body preview keeps paragraph spacing" {
+  let node = OutlineNode::{
+    flat_index: 0,
+    source_line: 0,
+    level: 1,
+    title: "Root",
+    marker: "",
+    body: ["First line\nSecond line", "Third line"],
+    kind: MarkdownNodeKind::Heading,
+    synthetic: false,
+    children: [],
+  }
+
+  assert_eq(
+    render_node_body(node),
+    "<div class=\"node-body\">First line\nSecond line\n\nThird line</div>",
+  )
+}
+
+///|
+test "normalize markdown body lines collapses blank separators" {
+  let normalized = normalize_markdown_body_lines([
+    "  ", "First line", "Second line", "\t", "Third line", "", "", "Fourth line",
+  ])
+
+  assert_eq(normalized.length(), 3)
+  assert_eq(normalized[0], "First line\nSecond line")
+  assert_eq(normalized[1], "Third line")
+  assert_eq(normalized[2], "Fourth line")
+}
+
+///|
+test "insert body template appends a markdown paragraph block" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+
+  insert_node_body_template("formula")
+
+  assert_eq(app_state.markdown, "# Root\n## Alpha\n$$\nx = 1\n$$\n## Beta")
+}

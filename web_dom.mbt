@@ -32,6 +32,10 @@ fn bind_tooltip_ui() -> Unit {
                 let target = event.target()
                 match target.closest("[data-tip]") {
                   Some(control) => {
+                    if !is_tooltip_allowed(control) {
+                      hide_tooltip(layer, tooltip)
+                      return
+                    }
                     let tip = control.getAttribute("data-tip").unwrap_or("")
                     if tip.length() == 0 {
                       hide_tooltip(layer, tooltip)
@@ -90,6 +94,11 @@ fn show_tooltip(
 }
 
 ///|
+fn is_tooltip_allowed(control : @dom.Element) -> Bool {
+  control.closest(".editor-chrome, .mindmap-toolbar") is Some(_)
+}
+
+///|
 fn hide_tooltip(layer : @dom.Element, tooltip : @dom.Element) -> Unit {
   if !tooltip_visible.val {
     return
@@ -109,8 +118,8 @@ fn position_tooltip(tooltip : @dom.Element, control : @dom.Element) -> Unit {
   let viewport_width = @dom.window().innerWidth().to_double()
   let viewport_height = @dom.window().innerHeight().to_double()
   let center_x = rect.left + rect.width / 2.0
-  let next_left = clamp_double(center_x, 12.0, viewport_width - 12.0)
-  let next_top = clamp_double(rect.bottom + 4.0, 12.0, viewport_height - 12.0)
+  let next_left = clamp_double(center_x - 12.0, 12.0, viewport_width - 40.0)
+  let next_top = clamp_double(rect.bottom - 2.0, 12.0, viewport_height - 20.0)
   let style = @dom.css_style_from_val(tooltip.as_any()._get("style").cast())
   style.set_property("left", "\{next_left}px")
   style.set_property("top", "\{next_top}px")
@@ -1646,6 +1655,16 @@ fn init_custom_select(id : String) -> Unit {
         let next_open = !has_class_name(custom, "is-open")
         close_custom_selects(Some(custom))
         toggle_class(custom, "is-open", next_open)
+        if has_class_name(select.as_element(), "tool-select--insert") {
+          trigger.setAttribute(
+            "data-tip",
+            if next_open {
+              ""
+            } else {
+              "插入"
+            },
+          )
+        }
         trigger.setAttribute(
           "aria-expanded",
           if next_open {

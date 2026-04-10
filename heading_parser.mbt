@@ -37,14 +37,21 @@ pub fn parse_headings(markdown : String) -> Array[(Int, String)] {
 fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
   let nodes = []
   let mut stack : Array[ParseContext] = []
+  let mut body_lines : Array[String] = []
+  let mut current_node : MarkdownNode? = None
   let lines = markdown.split("\n").to_array()
   for line_index in 0..<lines.length() {
     let line = lines[line_index]
     match parse_heading_line(line) {
       Some(heading) => {
+        match current_node {
+          Some(node) => nodes.push(attach_markdown_body(node, body_lines))
+          None => ()
+        }
+        body_lines = []
         let (level, title) = heading
         stack = pop_contexts_while_level_at_least(stack, level)
-        nodes.push(MarkdownNode::{
+        current_node = Some(MarkdownNode::{
           kind: MarkdownNodeKind::Heading,
           level,
           title,
@@ -61,6 +68,11 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
       None =>
         match parse_list_line(line) {
           Some(list_item) => {
+            match current_node {
+              Some(node) => nodes.push(attach_markdown_body(node, body_lines))
+              None => ()
+            }
+            body_lines = []
             let (indent, marker, title) = list_item
             stack = pop_list_contexts_while_indent_at_least(stack, indent)
             let parent_level = if stack.length() == 0 {
@@ -69,7 +81,7 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
               stack[stack.length() - 1].level
             }
             let level = parent_level + 1
-            nodes.push(MarkdownNode::{
+            current_node = Some(MarkdownNode::{
               kind: MarkdownNodeKind::ListItem,
               level,
               title,
@@ -84,11 +96,16 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
             })
           }
           None =>
-            if nodes.length() > 0 {
-              nodes[nodes.length() - 1].body.push(line.to_string())
+            match current_node {
+              Some(_) => body_lines.push(line.to_string())
+              None => ()
             }
         }
     }
+  }
+  match current_node {
+    Some(node) => nodes.push(attach_markdown_body(node, body_lines))
+    None => ()
   }
   nodes
 }
@@ -182,6 +199,46 @@ fn view_tail_to_string(line : StringView, start : Int) -> String {
 ///|
 fn view_slice_to_string(line : StringView, start : Int, end_ : Int) -> String {
   line[start:end_].to_string()
+}
+
+///|
+fn attach_markdown_body(
+  node : MarkdownNode,
+  body_lines : Array[String],
+) -> MarkdownNode {
+  MarkdownNode::{
+    kind: node.kind,
+    level: node.level,
+    title: node.title,
+    marker: node.marker,
+    body: normalize_markdown_body_lines(body_lines),
+    source_line: node.source_line,
+  }
+}
+
+///|
+fn normalize_markdown_body_lines(lines : Array[String]) -> Array[String] {
+  let normalized = []
+  let mut paragraph_lines = []
+  for line in lines {
+    if is_blank_markdown_line(line) {
+      if paragraph_lines.length() > 0 {
+        normalized.push(paragraph_lines.join("\n"))
+        paragraph_lines = []
+      }
+    } else {
+      paragraph_lines.push(line)
+    }
+  }
+  if paragraph_lines.length() > 0 {
+    normalized.push(paragraph_lines.join("\n"))
+  }
+  normalized
+}
+
+///|
+fn is_blank_markdown_line(line : String) -> Bool {
+  line.trim().length() == 0
 }
 
 ///|

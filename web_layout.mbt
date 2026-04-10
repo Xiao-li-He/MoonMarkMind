@@ -156,10 +156,7 @@ fn set_aux_action_enabled(id : String, enabled : Bool) -> Unit {
 ///|
 fn set_editor_document_name(value : String) -> Unit {
   match get_element(".editor-chrome__badge") {
-    Some(badge) => {
-      badge.setTextContent(value)
-      badge.setAttribute("data-tip", value)
-    }
+    Some(badge) => badge.setTextContent(value)
     None => ()
   }
 }
@@ -564,7 +561,6 @@ fn build_editor_chrome(filename~ : String) -> @dom.Element {
   append_child(chrome, actions)
 
   let badge = build_text_span("span", "editor-chrome__badge", filename)
-  badge.setAttribute("data-tip", filename)
   append_child(chrome, badge)
   chrome
 }
