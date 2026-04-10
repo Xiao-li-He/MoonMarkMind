@@ -68,3 +68,11 @@ test "active span bounds cover full wrapped line range" {
     None => fail("expected active span bounds")
   }
 }
+
+///|
+test "current mindmap render cycle helper reflects the stored cycle" {
+  let previous = mindmap_render_cycle.val
+  mindmap_render_cycle.val = 9
+  assert_eq(current_mindmap_render_cycle(), 9)
+  mindmap_render_cycle.val = previous
+}

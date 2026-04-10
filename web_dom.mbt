@@ -570,10 +570,16 @@ fn sync_editor_chrome() -> Unit {
 ///|
 fn schedule_render_mindmap_connectors() -> Unit {
   let window = @dom.window()
+  let expected_cycle = current_mindmap_render_cycle()
   ignore(
     window.requestAnimationFrame(fn(_) {
       ignore(
-        window.requestAnimationFrame(fn(_) { render_mindmap_connectors() }),
+        window.requestAnimationFrame(fn(_) {
+          if expected_cycle != current_mindmap_render_cycle() {
+            return
+          }
+          render_mindmap_connectors()
+        }),
       )
     }),
   )
@@ -583,15 +589,36 @@ fn schedule_render_mindmap_connectors() -> Unit {
 let contour_layout_frame : @ref.Ref[Int] = @ref.Ref(0)
 
 ///|
+let mindmap_render_cycle : @ref.Ref[Int] = @ref.Ref(0)
+
+///|
+fn current_mindmap_render_cycle() -> Int {
+  mindmap_render_cycle.val
+}
+
+///|
 fn schedule_contour_layout() -> Unit {
   let window = @dom.window()
+  mindmap_render_cycle.val += 1
+  let expected_cycle = mindmap_render_cycle.val
   if contour_layout_frame.val != 0 {
     window.cancelAnimationFrame(contour_layout_frame.val)
   }
   contour_layout_frame.val = window.requestAnimationFrame(fn(_) {
     contour_layout_frame.val = 0
+    if expected_cycle != mindmap_render_cycle.val {
+      return
+    }
     apply_contour_layout()
-    schedule_render_mindmap_connectors()
+    ignore(
+      window.requestAnimationFrame(fn(_) {
+        if expected_cycle != mindmap_render_cycle.val {
+          return
+        }
+        apply_contour_layout()
+        schedule_render_mindmap_connectors()
+      }),
+    )
   })
 }
 
