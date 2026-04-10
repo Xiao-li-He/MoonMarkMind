@@ -604,6 +604,7 @@ fn apply_contour_layout() -> Unit {
           apply_contour_min_heights(stage)
           if has_class_name(stage, "mindmap-stage--radial") {
             apply_mindmap_root_packing(stage)
+            apply_mindmap_single_child_alignment(stage)
           }
         }
         None => ()
@@ -643,6 +644,67 @@ fn apply_contour_min_heights(stage : @dom.Element) -> Unit {
 fn apply_mindmap_root_packing(stage : @dom.Element) -> Unit {
   apply_root_column_packing(stage.querySelector(".branch-column--left"), 24)
   apply_root_column_packing(stage.querySelector(".branch-column--right"), 24)
+}
+
+///|
+fn apply_mindmap_single_child_alignment(stage : @dom.Element) -> Unit {
+  align_single_child_chain(stage, app_state.root)
+}
+
+///|
+fn align_single_child_chain(stage : @dom.Element, node : OutlineNode) -> Unit {
+  if !should_render_children(node) {
+    return
+  }
+  let chain_length = single_child_chain_length(node)
+  if chain_length > 1 {
+    let child = node.children[0]
+    match find_stage_card(stage, node.flat_index) {
+      Some(parent_card) =>
+        match find_stage_branch(stage, child.flat_index) {
+          Some(child_branch) =>
+            match find_stage_card(stage, child.flat_index) {
+              Some(child_card) => {
+                let parent_center_y = rect_center_y(element_rect(parent_card))
+                let child_center_y = rect_center_y(element_rect(child_card))
+                let delta = parent_center_y - child_center_y
+                if abs_double(delta) >= 0.5 {
+                  let style = @dom.css_style_from_val(
+                    child_branch.as_any()._get("style").cast(),
+                  )
+                  let base_transform = if has_class_name(
+                      child_branch, "branch-item--root",
+                    ) {
+                    "translateY(-50%) "
+                  } else {
+                    ""
+                  }
+                  style.set_property(
+                    "transform",
+                    "\{base_transform}translateY(\{delta}px)",
+                  )
+                }
+              }
+              None => ()
+            }
+          None => ()
+        }
+      None => ()
+    }
+  }
+  for child in node.children {
+    align_single_child_chain(stage, child)
+  }
+}
+
+///|
+fn find_stage_card(stage : @dom.Element, node_index : Int) -> @dom.Element? {
+  stage.querySelector(".node[data-node-index=\"\{node_index}\"]")
+}
+
+///|
+fn find_stage_branch(stage : @dom.Element, node_index : Int) -> @dom.Element? {
+  stage.querySelector(".branch-item[data-node-index=\"\{node_index}\"]")
 }
 
 ///|

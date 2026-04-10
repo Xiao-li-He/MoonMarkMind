@@ -86,6 +86,21 @@ test "contour pack positions keeps single and paired children centered" {
 }
 
 ///|
+test "single child chain length follows recursive single-child nodes" {
+  load_markdown("# Root\n## Alpha\n### Beta\n#### Gamma\n## Delta", true)
+  match find_node(app_state.root, 1) {
+    Some(alpha) => {
+      assert_eq(single_child_chain_length(alpha), 3)
+      match find_node(app_state.root, 2) {
+        Some(beta) => assert_eq(single_child_chain_length(beta), 2)
+        None => fail("missing beta node")
+      }
+    }
+    None => fail("missing alpha node")
+  }
+}
+
+///|
 test "contour subtree span grows with nested children and notes" {
   load_markdown(
     "# Root\n## Alpha\nAlpha note line one\n\nAlpha note line two\n### Child A\n#### Grandchild\n## Beta",

@@ -2540,6 +2540,15 @@ fn contour_max_int(left : Int, right : Int) -> Int {
 }
 
 ///|
+fn single_child_chain_length(node : OutlineNode) -> Int {
+  if !should_render_children(node) || node.children.length() != 1 {
+    1
+  } else {
+    1 + single_child_chain_length(node.children[0])
+  }
+}
+
+///|
 fn render_drop_slot(
   node_index : Int,
   parent_index : Int,
