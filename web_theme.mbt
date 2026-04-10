@@ -2010,6 +2010,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
 fn style_node_body(element : @dom.Element) -> Unit {
   set_style(element, "display", "block")
   set_style(element, "margin-top", "0")
+  set_style(element, "margin-left", "auto")
+  set_style(element, "margin-right", "auto")
   set_style(element, "padding", "8px 10px")
   set_style(element, "border-radius", "12px")
   set_style(element, "background", "rgba(247, 250, 253, 0.84)")
@@ -2028,7 +2030,7 @@ fn style_node_body(element : @dom.Element) -> Unit {
 fn style_node_note_rail(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
-  set_style(element, "align-items", "flex-start")
+  set_style(element, "align-items", "center")
   set_style(element, "gap", "6px")
   set_style(element, "margin-top", "8px")
   set_style(element, "width", "100%")
