@@ -151,7 +151,7 @@ fn on_input_selected_headings_change(serialized : String) -> Unit {
     return
   }
   apply_selected_nodes(next_selected_nodes, false)
-  render_ui()
+  sync_selection_ui()
 }
 
 ///|
@@ -202,7 +202,7 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
       clear_editing_session()
       app_state.editing_node = -2
       clear_selected_nodes()
-      render_ui()
+      sync_selection_ui()
     }
     focus_mindmap()
     return
@@ -232,7 +232,7 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
       select_single_node(node_index, true)
     }
     focus_mindmap()
-    render_ui()
+    sync_selection_ui()
     return
   }
   let cleared_selection = action == "" && has_selected_nodes()
@@ -270,7 +270,7 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
     _ =>
       if cleared_selection {
         focus_mindmap()
-        render_ui()
+        sync_selection_ui()
       }
   }
 }
@@ -1242,23 +1242,7 @@ fn render_ui() -> Unit {
   }
   set_select_value("detail-select", detail_select_value)
   set_select_muted("detail-select", app_state.detail_customized)
-  let has_selection = has_selected_nodes()
-  set_toolbar_selection_enabled(has_selection)
-  set_select_disabled("insert-select", !has_selection)
-  if has_selection {
-    set_toolbar_action_enabled("new-branch", can_toolbar_action("new-branch"))
-    set_toolbar_action_enabled("new-child", can_toolbar_action("new-child"))
-    set_toolbar_action_enabled("delete-node", can_toolbar_action("delete-node"))
-    set_toolbar_action_enabled("edit-node", can_toolbar_action("edit-node"))
-    set_toolbar_action_enabled("move-up", can_toolbar_action("move-up"))
-    set_toolbar_action_enabled("move-down", can_toolbar_action("move-down"))
-    set_toolbar_action_enabled("indent-node", can_toolbar_action("indent-node"))
-    set_toolbar_action_enabled(
-      "promote-node",
-      can_toolbar_action("promote-node"),
-    )
-    set_toolbar_action_enabled("toggle-node", can_toolbar_action("toggle-node"))
-  }
+  sync_selection_toolbar()
   set_aux_action_enabled("undo-action", app_state.undo_stack.length() > 0)
   set_aux_action_enabled("redo-action", app_state.redo_stack.length() > 0)
   set_mindmap_dom(build_mindmap_dom())
@@ -1276,6 +1260,59 @@ fn render_ui() -> Unit {
     reveal_input_line(primary_linked_line)
   }
   app_state.reveal_selected_line = false
+}
+
+///|
+fn sync_selection_ui() -> Unit {
+  if !app_state.started {
+    return
+  }
+  sync_selection_toolbar()
+  sync_mindmap_selected_nodes()
+  let linked_lines = selected_markdown_lines()
+  set_input_linked_lines(ints_to_csv(linked_lines))
+  let primary_linked_line = selected_markdown_line()
+  if app_state.reveal_selected_line && primary_linked_line >= 0 {
+    reveal_input_line(primary_linked_line)
+  }
+  app_state.reveal_selected_line = false
+}
+
+///|
+fn sync_selection_toolbar() -> Unit {
+  let has_selection = has_selected_nodes()
+  set_toolbar_selection_enabled(has_selection)
+  set_select_disabled("insert-select", !has_selection)
+  if has_selection {
+    set_toolbar_action_enabled("new-branch", can_toolbar_action("new-branch"))
+    set_toolbar_action_enabled("new-child", can_toolbar_action("new-child"))
+    set_toolbar_action_enabled("delete-node", can_toolbar_action("delete-node"))
+    set_toolbar_action_enabled("edit-node", can_toolbar_action("edit-node"))
+    set_toolbar_action_enabled("move-up", can_toolbar_action("move-up"))
+    set_toolbar_action_enabled("move-down", can_toolbar_action("move-down"))
+    set_toolbar_action_enabled("indent-node", can_toolbar_action("indent-node"))
+    set_toolbar_action_enabled(
+      "promote-node",
+      can_toolbar_action("promote-node"),
+    )
+    set_toolbar_action_enabled("toggle-node", can_toolbar_action("toggle-node"))
+  }
+}
+
+///|
+fn sync_mindmap_selected_nodes() -> Unit {
+  match get_element("#mindmap") {
+    Some(mindmap) => {
+      for node in mindmap.querySelectorAll(".node[data-node-index]") {
+        let node_index = parse_int_or_default(
+          node.getAttribute("data-node-index").unwrap_or("-1"),
+          -1,
+        )
+        toggle_class(node, "is-selected", is_selected_node(node_index))
+      }
+    }
+    None => ()
+  }
 }
 
 ///|
