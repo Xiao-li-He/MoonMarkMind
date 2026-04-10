@@ -2574,12 +2574,18 @@ fn event_action_from_point(event : @dom.MouseEvent) -> String {
 
 ///|
 fn event_interaction_target(event : @dom.MouseEvent) -> @dom.Element {
+  let target = event.target()
   match
-    event
-    .target()
-    .closest("[data-node-index], [data-action], [data-editor-for]") {
-    Some(target) => target
-    None => event_target_from_point(event)
+    target.closest(
+      ".node, [data-action], [data-editor-for], [data-note-editor-for]",
+    ) {
+    Some(interactive) => interactive
+    None =>
+      if event_target_is_blank_stage_area(target) {
+        target
+      } else {
+        event_target_from_point(event)
+      }
   }
 }
 
@@ -2587,7 +2593,9 @@ fn event_interaction_target(event : @dom.MouseEvent) -> @dom.Element {
 fn event_target_from_point(event : @dom.MouseEvent) -> @dom.Element {
   for element in @dom.document().elementsFromPoint(event.clientX, event.clientY) {
     match
-      element.closest("[data-node-index], [data-action], [data-editor-for]") {
+      element.closest(
+        ".node, [data-action], [data-editor-for], [data-note-editor-for]",
+      ) {
       Some(target) => return target
       None => ()
     }
@@ -2599,8 +2607,20 @@ fn event_target_from_point(event : @dom.MouseEvent) -> @dom.Element {
 }
 
 ///|
+fn event_target_is_blank_stage_area(target : @dom.Element) -> Bool {
+  match target.closest(".mindmap-stage, .mindmap-content, #mindmap") {
+    Some(_) =>
+      target.closest(
+        "[data-node-index], [data-action], [data-editor-for], [data-note-editor-for], [data-drop-target], [data-drop-parent]",
+      )
+      is None
+    None => false
+  }
+}
+
+///|
 fn event_node_index_from_target(target : @dom.Element) -> Int {
-  match target.closest("[data-node-index]") {
+  match target.closest(".node") {
     Some(node) =>
       @strconv.parse_int(node.getAttribute("data-node-index").unwrap_or("-1")) catch {
         _ => -1

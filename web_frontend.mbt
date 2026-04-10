@@ -197,6 +197,16 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
     event_note_editor_index_from_target(event.target()) >= 0 {
     return
   }
+  if is_blank_mindmap_click_target(event.target()) {
+    if has_selected_nodes() {
+      clear_editing_session()
+      app_state.editing_node = -2
+      clear_selected_nodes()
+      render_ui()
+    }
+    focus_mindmap()
+    return
+  }
   let action = event_action_from_point(event)
   let node_index = event_node_index_from_point(event)
   if action == "" && node_index >= 0 {
@@ -262,6 +272,18 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
         focus_mindmap()
         render_ui()
       }
+  }
+}
+
+///|
+fn is_blank_mindmap_click_target(target : @dom.Element) -> Bool {
+  match target.closest(".mindmap, .mindmap-content, .mindmap-stage") {
+    Some(_) =>
+      target.closest(
+        "[data-node-index], [data-action], [data-editor-for], [data-note-editor-for], [data-drop-target], [data-drop-parent]",
+      )
+      is None
+    None => false
   }
 }
 
