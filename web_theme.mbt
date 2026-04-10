@@ -636,10 +636,10 @@ fn style_workspace(element : @dom.Element) -> Unit {
     None => set_style(element, "--left-pane-percent", "33%")
   }
   set_style(element, "--mindmap-toolbar-actions-width", "390px")
-  set_style(element, "--mindmap-toolbar-min-width", "412px")
+  set_style(element, "--mindmap-toolbar-min-width", "430px")
   set_style(element, "display", "grid")
   set_style(
-    element, "grid-template-columns", "minmax(300px, var(--left-pane-percent)) 14px minmax(var(--mindmap-toolbar-min-width), 1fr)",
+    element, "grid-template-columns", "minmax(330px, var(--left-pane-percent)) 14px minmax(var(--mindmap-toolbar-min-width), 1fr)",
   )
   set_style(element, "height", "100%")
   set_style(element, "min-height", "0")
@@ -1482,7 +1482,7 @@ fn style_mindmap_toolbar(element : @dom.Element) -> Unit {
   set_style(element, "justify-content", "space-between")
   set_style(element, "column-gap", "8px")
   set_style(element, "row-gap", "10px")
-  set_style(element, "padding", "0 2px 4px")
+  set_style(element, "padding", "0 0 4px")
   set_style(element, "position", "relative")
   set_style(element, "z-index", "3")
   set_style(element, "min-width", "0")
