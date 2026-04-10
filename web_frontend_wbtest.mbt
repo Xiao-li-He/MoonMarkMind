@@ -267,10 +267,11 @@ test "node body preview keeps paragraph spacing" {
     synthetic: false,
     children: [],
   }
+  app_state.editing_note_node = 0
 
   assert_eq(
     render_node_body(node),
-    "<div class=\"node-body\">First line\nSecond line\n\nThird line</div>",
+    "<div class=\"node-note-rail\"><button type=\"button\" class=\"node-action node-action--note\" data-action=\"toggle-note\" data-tip=\"Note\" aria-label=\"Note\">N</button><div class=\"node-body\"><textarea class=\"node-note-editor\" data-note-editor-for=\"0\" rows=\"4\">First line\nSecond line\n\nThird line</textarea></div></div>",
   )
 }
 
@@ -294,4 +295,51 @@ test "insert body template appends a markdown paragraph block" {
   insert_node_body_template("formula")
 
   assert_eq(app_state.markdown, "# Root\n## Alpha\n$$\nx = 1\n$$\n## Beta")
+}
+
+///|
+test "insert note opens editor and commits heading markdown body" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+
+  handle_insert_note()
+  assert_eq(app_state.editing_note_node, 1)
+
+  sync_note_editor_draft(1, "Alpha note")
+  assert_eq(app_state.markdown, "# Root\n## Alpha\nAlpha note\n## Beta")
+
+  save_note_editor(1, "Alpha note")
+  assert_eq(app_state.editing_note_node, -2)
+  assert_eq(app_state.undo_stack.length(), 1)
+}
+
+///|
+test "insert note on list node preserves markdown indentation" {
+  load_markdown("# Root\n## Parent\n- item\n## Next", true)
+  let outline = build_outline(app_state.markdown)
+  let list_index = outline_flat_index_by_title(outline, "item")
+  assert_eq(list_index >= 0, true)
+
+  select_single_node(list_index, false)
+  handle_insert_note()
+  sync_note_editor_draft(list_index, "List note")
+  save_note_editor(list_index, "List note")
+
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Parent\n- item\n  List note\n## Next",
+  )
+}
+
+///|
+test "direct markdown edit roundtrips note bodies for heading and list nodes" {
+  let markdown = "# Root\n## Alpha\nAlpha note\n## Parent\n- item\n  List note\n## Next"
+  let nodes = parse_markdown_nodes(markdown)
+
+  assert_eq(nodes.length(), 5)
+  assert_eq(nodes[1].body.length(), 1)
+  assert_eq(nodes[1].body[0], "Alpha note")
+  assert_eq(nodes[3].body.length(), 1)
+  assert_eq(nodes[3].body[0], "List note")
+  assert_eq(render_markdown_nodes(nodes), markdown)
 }

@@ -375,6 +375,12 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "node-body") {
     style_node_body(element)
   }
+  if has_class_name(element, "node-note-rail") {
+    style_node_note_rail(element)
+  }
+  if has_class_name(element, "node-note-editor") {
+    style_node_note_editor(element)
+  }
   if has_class_name(element, "node-editor") {
     style_node_editor(element)
   }
@@ -2003,7 +2009,7 @@ fn style_node_title(element : @dom.Element) -> Unit {
 ///|
 fn style_node_body(element : @dom.Element) -> Unit {
   set_style(element, "display", "block")
-  set_style(element, "margin-top", "8px")
+  set_style(element, "margin-top", "0")
   set_style(element, "padding", "8px 10px")
   set_style(element, "border-radius", "12px")
   set_style(element, "background", "rgba(247, 250, 253, 0.84)")
@@ -2016,6 +2022,34 @@ fn style_node_body(element : @dom.Element) -> Unit {
   set_style(element, "max-height", "120px")
   set_style(element, "overflow", "auto")
   set_style(element, "font-weight", "500")
+}
+
+///|
+fn style_node_note_rail(element : @dom.Element) -> Unit {
+  set_style(element, "display", "flex")
+  set_style(element, "flex-direction", "column")
+  set_style(element, "align-items", "flex-start")
+  set_style(element, "gap", "6px")
+  set_style(element, "margin-top", "8px")
+  set_style(element, "width", "100%")
+  set_style(element, "position", "relative")
+  set_style(element, "z-index", "1")
+}
+
+///|
+fn style_node_note_editor(element : @dom.Element) -> Unit {
+  set_style(element, "width", "100%")
+  set_style(element, "min-height", "72px")
+  set_style(element, "box-sizing", "border-box")
+  set_style(element, "padding", "0")
+  set_style(element, "margin", "0")
+  set_style(element, "border", "0")
+  set_style(element, "background", "transparent")
+  set_style(element, "resize", "vertical")
+  set_style(element, "color", "inherit")
+  set_style(element, "font", "inherit")
+  set_style(element, "line-height", "1.5")
+  set_style(element, "outline", "none")
 }
 
 ///|

@@ -97,7 +97,12 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
           }
           None =>
             match current_node {
-              Some(_) => body_lines.push(line.to_string())
+              Some(node) =>
+                match node.kind {
+                  MarkdownNodeKind::ListItem =>
+                    body_lines.push(line.trim_start().to_string())
+                  _ => body_lines.push(line.to_string())
+                }
               None => ()
             }
         }

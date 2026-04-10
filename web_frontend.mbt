@@ -12,6 +12,7 @@ priv struct AppState {
   mut selected_nodes : Array[Int]
   mut selection_anchor_node : Int
   mut editing_node : Int
+  mut editing_note_node : Int
   mut layout_mode : String
   mut style_mode : String
   mut detail_level : String
@@ -38,6 +39,7 @@ let app_state : AppState = AppState::{
   selected_nodes: [],
   selection_anchor_node: -2,
   editing_node: -2,
+  editing_note_node: -2,
   layout_mode: "mindmap",
   style_mode: "line",
   detail_level: "all",
@@ -54,6 +56,9 @@ let app_state : AppState = AppState::{
 let canceled_editor_node : @ref.Ref[Int] = @ref.Ref(-1)
 
 ///|
+let canceled_note_editor_node : @ref.Ref[Int] = @ref.Ref(-1)
+
+///|
 let editor_snapshot_node : @ref.Ref[Int] = @ref.Ref(-1)
 
 ///|
@@ -67,6 +72,15 @@ let editor_undo_stack : @ref.Ref[Array[String]] = @ref.Ref([])
 
 ///|
 let editor_redo_stack : @ref.Ref[Array[String]] = @ref.Ref([])
+
+///|
+let note_editor_snapshot_node : @ref.Ref[Int] = @ref.Ref(-1)
+
+///|
+let note_editor_snapshot_markdown : @ref.Ref[String] = @ref.Ref("")
+
+///|
+let note_editor_draft_markdown : @ref.Ref[String] = @ref.Ref("")
 
 ///|
 pub fn start_web_app() -> Unit {
@@ -179,7 +193,8 @@ fn on_splitter_change(percent : Int) -> Unit {
 
 ///|
 fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
-  if event_editor_index_from_target(event.target()) >= 0 {
+  if event_editor_index_from_target(event.target()) >= 0 ||
+    event_note_editor_index_from_target(event.target()) >= 0 {
     return
   }
   let action = event_action_from_point(event)
@@ -194,7 +209,7 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
       }
       event.stopPropagation()
       select_single_node(node_index, true)
-      begin_edit_node(node_index)
+      begin_note_edit_node(node_index)
       return
     }
     clear_editing_session()
@@ -238,6 +253,10 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
       focus_mindmap()
       render_ui()
     }
+    "toggle-note" => {
+      event.stopPropagation()
+      toggle_note_editor(node_index)
+    }
     _ =>
       if cleared_selection {
         focus_mindmap()
@@ -267,7 +286,7 @@ fn on_toolbar_action(action : String) -> Unit {
       sync_detail_customized()
       render_ui()
     }
-    "insert-note" => insert_node_body_template("note")
+    "insert-note" => handle_insert_note()
     "insert-link" => insert_node_body_template("link")
     "insert-image" => insert_node_body_template("image")
     "insert-formula" => insert_node_body_template("formula")
@@ -277,11 +296,44 @@ fn on_toolbar_action(action : String) -> Unit {
 
 ///|
 fn on_mindmap_dblclick(event : @dom.MouseEvent) -> Unit {
-  event.stopPropagation()
+  let node_index = event_node_index_from_point(event)
+  if node_index < 0 {
+    event.stopPropagation()
+    return
+  }
+  match find_node(app_state.root, node_index) {
+    Some(node) => {
+      if node.synthetic {
+        event.stopPropagation()
+        return
+      }
+      event.stopPropagation()
+      select_single_node(node_index, true)
+      begin_note_edit_node(node_index)
+    }
+    None => event.stopPropagation()
+  }
 }
 
 ///|
 fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
+  let note_editor_index = event_note_editor_index_from_target(event.target())
+  if note_editor_index >= 0 {
+    let command_key = event.ctrlKey || event.metaKey
+    if command_key &&
+      (event_key(event) == "Enter" || event_key(event) == "enter") {
+      event.preventDefault()
+      save_note_editor(
+        note_editor_index,
+        event_note_editor_value_from_target(event.target()),
+      )
+    } else if event_key(event) == "Escape" {
+      event.preventDefault()
+      canceled_note_editor_node.val = note_editor_index
+      cancel_note_editor(note_editor_index)
+    }
+    return
+  }
   let editor_index = event_editor_index_from_target(event.target())
   if editor_index >= 0 {
     let command_key = event.ctrlKey || event.metaKey
@@ -392,6 +444,18 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
 
 ///|
 fn on_mindmap_focusout(event : @dom.FocusEvent) -> Unit {
+  let note_editor_index = event_note_editor_index_from_target(event.target())
+  if note_editor_index >= 0 {
+    if canceled_note_editor_node.val == note_editor_index {
+      canceled_note_editor_node.val = -1
+      return
+    }
+    save_note_editor(
+      note_editor_index,
+      event_note_editor_value_from_target(event.target()),
+    )
+    return
+  }
   let node_index = event_editor_index_from_target(event.target())
   if node_index < 0 {
     return
@@ -405,6 +469,14 @@ fn on_mindmap_focusout(event : @dom.FocusEvent) -> Unit {
 
 ///|
 fn on_mindmap_editor_input(event : @dom.Event) -> Unit {
+  let note_editor_index = event_note_editor_index_from_target(event.target())
+  if note_editor_index >= 0 {
+    sync_note_editor_draft(
+      note_editor_index,
+      event_note_editor_value_from_target(event.target()),
+    )
+    return
+  }
   let node_index = event_editor_index_from_target(event.target())
   if node_index < 0 {
     return
@@ -700,6 +772,22 @@ fn save_editor(node_index : Int, title : String) -> Unit {
 }
 
 ///|
+fn handle_insert_note() -> Unit {
+  if app_state.selected_node < 0 {
+    return
+  }
+  match find_node(app_state.root, app_state.selected_node) {
+    Some(node) => {
+      if node.synthetic {
+        return
+      }
+      begin_note_edit_node(app_state.selected_node)
+    }
+    None => ()
+  }
+}
+
+///|
 fn start_edit_selected() -> Unit {
   if app_state.selected_node < 0 {
     return
@@ -709,6 +797,7 @@ fn start_edit_selected() -> Unit {
 
 ///|
 fn begin_edit_node(node_index : Int) -> Unit {
+  clear_note_editing_session()
   editor_snapshot_node.val = node_index
   editor_snapshot_markdown.val = app_state.markdown
   editor_draft_markdown.val = app_state.markdown
@@ -719,12 +808,31 @@ fn begin_edit_node(node_index : Int) -> Unit {
 }
 
 ///|
+fn begin_note_edit_node(node_index : Int) -> Unit {
+  clear_editing_session()
+  note_editor_snapshot_node.val = node_index
+  note_editor_snapshot_markdown.val = app_state.markdown
+  note_editor_draft_markdown.val = app_state.markdown
+  app_state.editing_note_node = node_index
+  render_ui()
+}
+
+///|
 fn clear_editing_session() -> Unit {
   editor_snapshot_node.val = -1
   editor_snapshot_markdown.val = ""
   editor_draft_markdown.val = ""
   editor_undo_stack.val = []
   editor_redo_stack.val = []
+  clear_note_editing_session()
+}
+
+///|
+fn clear_note_editing_session() -> Unit {
+  note_editor_snapshot_node.val = -1
+  note_editor_snapshot_markdown.val = ""
+  note_editor_draft_markdown.val = ""
+  app_state.editing_note_node = -2
 }
 
 ///|
@@ -734,6 +842,36 @@ fn cancel_editor(node_index : Int) -> Unit {
   }
   clear_editing_session()
   app_state.editing_node = -2
+  render_ui()
+}
+
+///|
+fn cancel_note_editor(node_index : Int) -> Unit {
+  if note_editor_snapshot_node.val == node_index {
+    apply_note_editor_draft_markdown(note_editor_snapshot_markdown.val)
+  }
+  clear_note_editing_session()
+  render_ui()
+}
+
+///|
+fn sync_note_editor_draft(node_index : Int, body_text : String) -> Unit {
+  let current_markdown = note_editor_draft_markdown.val
+  let next_markdown = update_node_body(current_markdown, node_index, body_text)
+  if next_markdown == current_markdown {
+    return
+  }
+  apply_note_editor_draft_markdown(next_markdown)
+}
+
+///|
+fn save_note_editor(node_index : Int, body_text : String) -> Unit {
+  sync_note_editor_draft(node_index, body_text)
+  if note_editor_snapshot_markdown.val != app_state.markdown {
+    app_state.undo_stack.push(note_editor_snapshot_markdown.val)
+    app_state.redo_stack = []
+  }
+  clear_note_editing_session()
   render_ui()
 }
 
@@ -753,6 +891,23 @@ fn sync_editor_draft(node_index : Int, title : String) -> Unit {
   editor_undo_stack.val = next_undo
   editor_redo_stack.val = []
   apply_editor_draft_markdown(next_markdown)
+}
+
+///|
+fn toggle_note_editor(node_index : Int) -> Unit {
+  if node_index < 0 {
+    return
+  }
+  if app_state.editing_note_node == node_index {
+    canceled_note_editor_node.val = node_index
+    match find_node(app_state.root, node_index) {
+      Some(node) => save_note_editor(node_index, node.body.join("\n\n"))
+      None => ()
+    }
+    return
+  }
+  select_single_node(node_index, true)
+  begin_note_edit_node(node_index)
 }
 
 ///|
@@ -796,6 +951,12 @@ fn editor_redo(node_index : Int) -> Unit {
 ///|
 fn apply_editor_draft_markdown(markdown : String) -> Unit {
   editor_draft_markdown.val = markdown
+  apply_markdown_state(markdown, false, true)
+}
+
+///|
+fn apply_note_editor_draft_markdown(markdown : String) -> Unit {
+  note_editor_draft_markdown.val = markdown
   apply_markdown_state(markdown, false, true)
 }
 
@@ -1060,6 +1221,9 @@ fn render_ui() -> Unit {
   if app_state.editing_node >= 0 &&
     (app_state.editing_node == app_state.selected_node || !has_selected_nodes()) {
     focus_editor(app_state.editing_node)
+  }
+  if app_state.editing_note_node >= 0 {
+    focus_note_editor(app_state.editing_note_node)
   }
   let linked_lines = selected_markdown_lines()
   set_input_linked_lines(ints_to_csv(linked_lines))
@@ -1717,8 +1881,8 @@ fn build_node_card_dom(
   apply_node_visual_attrs(card, node, tone_index)
   apply_drag_attrs(card, node, parent_index, is_draggable)
   append_child(card, build_node_title_dom(node, is_editing))
-  match build_node_body_dom(node) {
-    Some(body) => append_child(card, body)
+  match build_node_note_dom(node) {
+    Some(note) => append_child(card, note)
     None => ()
   }
   if has_children && !is_center {
@@ -1747,12 +1911,38 @@ fn build_node_title_dom(node : OutlineNode, is_editing : Bool) -> @dom.Element {
 
 ///|
 fn build_node_body_dom(node : OutlineNode) -> @dom.Element? {
-  if node.body.length() == 0 {
+  if app_state.editing_note_node != node.flat_index {
     return None
   }
   let body = create_element("div", "node-body")
-  body.setTextContent(node.body.join("\n\n"))
+  let textarea = create_element("textarea", "node-note-editor")
+  textarea.setAttribute("data-note-editor-for", node.flat_index.to_string())
+  textarea.setAttribute("rows", "4")
+  @dom.HTMLTextAreaElement::cast_from_element(textarea).value = node.body.join(
+    "\n\n",
+  )
+  append_child(body, textarea)
   Some(body)
+}
+
+///|
+fn build_node_note_dom(node : OutlineNode) -> @dom.Element? {
+  if !node_has_note(node) {
+    return None
+  }
+  let rail = create_element("div", "node-note-rail")
+  let button = create_element("button", "node-action node-action--note")
+  button.setAttribute("type", "button")
+  button.setAttribute("data-action", "toggle-note")
+  button.setAttribute("data-tip", "Note")
+  button.setAttribute("aria-label", "Note")
+  button.setTextContent("N")
+  append_child(rail, button)
+  match build_node_body_dom(node) {
+    Some(body) => append_child(rail, body)
+    None => ()
+  }
+  Some(rail)
 }
 
 ///|
@@ -1766,17 +1956,17 @@ fn build_node_actions_dom(
   if is_center || node.children.length() == 0 {
     return None
   }
+  let actions = create_element("div", "node-actions \{action_anchor}")
   let collapsed = is_collapsed(node.flat_index)
   let hidden_count = count_hidden_descendants(node)
   let label = if collapsed { hidden_count.to_string() } else { "" }
   let title = if collapsed {
-    "展开节点，隐藏 \{hidden_count} 个子节点"
+    "\{hidden_count} hidden children"
   } else {
-    "折叠节点"
+    "Collapse"
   }
   let expanded = (!collapsed).to_string()
   let state_class = if collapsed { " node-action--collapsed" } else { "" }
-  let actions = create_element("div", "node-actions \{action_anchor}")
   let button = create_element(
     "button",
     "node-action node-action--toggle\{state_class}",
@@ -2085,11 +2275,13 @@ fn render_node_card(
   }
   let class_name = classes.join(" ")
   let title_html = render_node_title(node, is_editing)
-  let body_html = render_node_body(node)
-  let action_html = render_node_actions(node, has_children, editable, is_center)
+  let note_html = render_node_note(node)
+  let action_html = render_node_actions_with_note(
+    node, has_children, editable, is_center,
+  )
   let drag_attrs = render_drag_attrs(node, parent_index, is_draggable)
   let visual_attrs = render_node_visual_attrs(node, tone_index)
-  "<div class=\"\{class_name}\" data-level=\"\{node.level}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{visual_attrs}\{drag_attrs}>\{title_html}\{body_html}\{action_html}</div>"
+  "<div class=\"\{class_name}\" data-level=\"\{node.level}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{visual_attrs}\{drag_attrs}>\{title_html}\{note_html}\{action_html}</div>"
 }
 
 ///|
@@ -2130,36 +2322,52 @@ fn render_node_title(node : OutlineNode, is_editing : Bool) -> String {
 }
 
 ///|
-fn render_node_body(node : OutlineNode) -> String {
-  if node.body.length() == 0 {
-    return ""
-  }
-  let body = escape_html(node.body.join("\n\n"))
-  "<div class=\"node-body\">\{body}</div>"
+fn render_node_note(node : OutlineNode) -> String {
+  render_node_body(node)
 }
 
 ///|
-fn render_node_actions(
+fn render_node_body(node : OutlineNode) -> String {
+  if !node_has_note(node) {
+    return ""
+  }
+  let note_button = "<button type=\"button\" class=\"node-action node-action--note\" data-action=\"toggle-note\" data-tip=\"Note\" aria-label=\"Note\">N</button>"
+  let body = if app_state.editing_note_node == node.flat_index {
+    let value = escape_html(node.body.join("\n\n"))
+    "<div class=\"node-body\"><textarea class=\"node-note-editor\" data-note-editor-for=\"\{node.flat_index}\" rows=\"4\">\{value}</textarea></div>"
+  } else {
+    ""
+  }
+  "<div class=\"node-note-rail\">\{note_button}\{body}</div>"
+}
+
+///|
+fn render_node_actions_with_note(
   node : OutlineNode,
   has_children : Bool,
   editable : Bool,
   is_center : Bool,
 ) -> String {
   let _ = editable
-  if !has_children || is_center {
+  if is_center || !has_children {
     return ""
   }
   let collapsed = is_collapsed(node.flat_index)
   let hidden_count = count_hidden_descendants(node)
   let label = if collapsed { hidden_count.to_string() } else { "" }
   let title = if collapsed {
-    "展开节点，隐藏 \{hidden_count} 个子节点"
+    "\{hidden_count} hidden children"
   } else {
-    "折叠节点"
+    "Collapse"
   }
   let expanded = (!collapsed).to_string()
   let state_class = if collapsed { " node-action--collapsed" } else { "" }
   "<div class=\"node-actions\"><button type=\"button\" class=\"node-action node-action--toggle\{state_class}\" data-action=\"toggle\" data-tip=\"\{title}\" aria-label=\"\{title}\" aria-expanded=\"\{expanded}\">\{label}</button></div>"
+}
+
+///|
+fn node_has_note(node : OutlineNode) -> Bool {
+  node.body.length() > 0 || app_state.editing_note_node == node.flat_index
 }
 
 ///|

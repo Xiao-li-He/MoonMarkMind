@@ -47,6 +47,38 @@ pub fn rename_heading(
 }
 
 ///|
+fn update_node_body(
+  markdown : String,
+  flat_index : Int,
+  body_text : String,
+) -> String {
+  let nodes = parse_markdown_nodes(markdown)
+  if flat_index < 0 || flat_index >= nodes.length() {
+    return markdown
+  }
+  let body_lines = normalize_markdown_body_lines(
+    body_text.split("\n").map(fn(line) { line.to_string() }).to_array(),
+  )
+  let updated = []
+  for i in 0..<nodes.length() {
+    let node = nodes[i]
+    if i == flat_index {
+      updated.push(MarkdownNode::{
+        kind: node.kind,
+        level: node.level,
+        title: node.title,
+        marker: node.marker,
+        body: body_lines,
+        source_line: node.source_line,
+      })
+    } else {
+      updated.push(node)
+    }
+  }
+  render_markdown_nodes(updated)
+}
+
+///|
 pub fn move_heading(
   markdown : String,
   from_flat_index : Int,
@@ -387,7 +419,11 @@ fn render_outline_node_markdown(
     MarkdownNodeKind::ListItem =>
       "\{repeat_spaces(list_indent * 2)}\{node.marker} \{node.title}"
   }
-  let body = render_markdown_body(node.body)
+  let body_prefix = match node.kind {
+    MarkdownNodeKind::Heading => ""
+    MarkdownNodeKind::ListItem => repeat_spaces((list_indent + 1) * 2)
+  }
+  let body = render_markdown_body(node.body, body_prefix)
   let child_indent = match node.kind {
     MarkdownNodeKind::Heading => 0
     MarkdownNodeKind::ListItem => list_indent + 1
@@ -411,8 +447,25 @@ fn render_markdown_nodes(nodes : Array[MarkdownNode]) -> String {
 }
 
 ///|
-fn render_markdown_body(body : Array[String]) -> String {
-  body.join("\n\n")
+fn render_markdown_body(body : Array[String], prefix : String) -> String {
+  let rendered = []
+  for block in body {
+    rendered.push(indent_markdown_block(block, prefix))
+  }
+  rendered.join("\n\n")
+}
+
+///|
+fn indent_markdown_block(block : String, prefix : String) -> String {
+  if prefix.length() == 0 {
+    return block
+  }
+  let lines = block.split("\n").to_array()
+  let indented = []
+  for line in lines {
+    indented.push("\{prefix}\{line}")
+  }
+  indented.join("\n")
 }
 
 ///|

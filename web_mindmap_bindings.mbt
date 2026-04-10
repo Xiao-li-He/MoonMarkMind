@@ -142,7 +142,7 @@ fn mouse_delta_exceeds_pan_threshold(
 fn mindmap_can_pan(target : @dom.Element) -> Bool {
   match
     target.closest(
-      ".node, .node-action, .node-editor, [data-action], [data-editor-for], button, input",
+      ".node, .node-action, .node-note-rail, .node-editor, .node-note-editor, [data-action], [data-editor-for], [data-note-editor-for], button, input, textarea",
     ) {
     Some(_) => false
     None => true

@@ -2153,6 +2153,28 @@ fn focus_editor(node_index : Int) -> Unit {
 }
 
 ///|
+fn focus_note_editor(node_index : Int) -> Unit {
+  let window = @dom.window()
+  ignore(
+    window.requestAnimationFrame(fn(_) {
+      ignore(
+        window.requestAnimationFrame(fn(_) {
+          match get_element("[data-note-editor-for=\"\{node_index}\"]") {
+            Some(editor) =>
+              if editor.tagName() == "TEXTAREA" {
+                let textarea = to_text_area(editor)
+                textarea.focus()
+                textarea.as_any()._call("select", []) |> ignore
+              }
+            None => ()
+          }
+        }),
+      )
+    }),
+  )
+}
+
+///|
 fn pick_markdown_file(callback : (String, String) -> Unit) -> Unit {
   let input = create_element("input", "")
   let file_input = @dom.HTMLInputElement::cast_from_element(input)
@@ -2473,6 +2495,19 @@ fn event_editor_index_from_target(target : @dom.Element) -> Int {
 }
 
 ///|
+fn event_note_editor_index_from_target(target : @dom.Element) -> Int {
+  match target.closest("[data-note-editor-for]") {
+    Some(node) =>
+      @strconv.parse_int(
+        node.getAttribute("data-note-editor-for").unwrap_or("-1"),
+      ) catch {
+        _ => -1
+      }
+    None => -1
+  }
+}
+
+///|
 fn event_editor_value_from_target(target : @dom.Element) -> String {
   if target.tagName() == "TEXTAREA" {
     to_text_area(target).value
@@ -2481,6 +2516,11 @@ fn event_editor_value_from_target(target : @dom.Element) -> String {
   } else {
     target.textContent()
   }
+}
+
+///|
+fn event_note_editor_value_from_target(target : @dom.Element) -> String {
+  event_editor_value_from_target(target)
 }
 
 ///|
