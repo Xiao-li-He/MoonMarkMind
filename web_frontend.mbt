@@ -748,7 +748,29 @@ fn root_child_index(node_index : Int) -> Int {
 
 ///|
 fn default_root_split_count(root : OutlineNode) -> Int {
-  (root.children.length() + 1) / 2
+  let child_count = root.children.length()
+  if child_count <= 1 {
+    return child_count
+  }
+  let total_weight = root_branch_total_span(root, 0, child_count)
+  let target_weight = total_weight / 2
+  let mut split = 0
+  let mut accumulated = 0
+  while split < child_count {
+    let next_weight = root_branch_span(root.children[split])
+    if split > 0 && accumulated + next_weight > target_weight {
+      break
+    }
+    accumulated += next_weight
+    split += 1
+  }
+  if split <= 0 {
+    1
+  } else if split >= child_count {
+    child_count - 1
+  } else {
+    split
+  }
 }
 
 ///|
@@ -2060,11 +2082,21 @@ fn apply_root_weight_style(
 ) -> Unit {
   let safe_total = if total_weight > 0 { total_weight } else { 1 }
   let safe_weight = if weight > 0 { weight } else { 1 }
-  let center_bp = (offset * 1000 + safe_weight * 500) / safe_total
-  let whole = center_bp / 10
-  let frac = center_bp % 10
   let style = @dom.css_style_from_val(element.as_any()._get("style").cast())
-  style.set_property("top", "\{whole}.\{frac}%")
+  style.set_property(
+    "top",
+    format_percentage_from_basis_points(
+      (offset * 10000 + safe_weight * 5000) / safe_total,
+    ),
+  )
+}
+
+///|
+fn format_percentage_from_basis_points(value : Int) -> String {
+  let whole = value / 100
+  let frac = value % 100
+  let frac_text = if frac < 10 { "0\{frac}" } else { frac.to_string() }
+  "\{whole}.\{frac_text}%"
 }
 
 ///|
@@ -2095,7 +2127,7 @@ fn root_branch_total_span(center : OutlineNode, start : Int, stop : Int) -> Int 
 
 ///|
 fn root_branch_span(node : OutlineNode) -> Int {
-  count_subtree_nodes(node) * 2 + node.children.length() * 6 + 10
+  count_subtree_nodes(node) * 4 + node.children.length() * 12 + 20
 }
 
 ///|

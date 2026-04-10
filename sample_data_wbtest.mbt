@@ -3,20 +3,24 @@ test "rules markdown keeps body blocks visible" {
   let rendered = render_markdown_nodes(
     parse_markdown_nodes(rules_test_markdown()),
   )
-  guard rendered.contains("这是根节点的说明文本") else {
-    fail("missing intro paragraph")
+  guard rendered.contains("示例1 基本使用") else {
+    fail("missing intro heading")
   }
-  guard rendered.contains("```ts") else { fail("missing code block") }
-  guard rendered.contains("> 这是引用块文本") else {
-    fail("missing blockquote")
+  guard rendered.contains("###### 标题5级分支") else {
+    fail("missing deepest heading")
   }
-  guard rendered.contains("1. 有序列表 B1") else {
+  guard rendered.contains("- 6级分支及之后用列表") else {
+    fail("missing list branch")
+  }
+  guard rendered.contains("1. 有序列表也可以 子分支1.3") else {
     fail("missing ordered list marker")
   }
-  guard rendered.contains("标题下面直接接列表") else {
-    fail("missing bullet list content")
+  guard rendered.contains(
+    "  3. 层级仅由其父节点和缩进结构决定 子分支1.4.1",
+  ) else {
+    fail("missing nested ordered list content")
   }
-  guard rendered.contains("![图片测试](https://example.com/image.png)") else {
-    fail("missing image markdown")
+  guard rendered.contains("  * 符号- * + 都可以 子分支1.1.1") else {
+    fail("missing mixed bullet content")
   }
 }

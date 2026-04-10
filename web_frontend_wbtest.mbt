@@ -276,6 +276,19 @@ test "node body preview keeps paragraph spacing" {
 }
 
 ///|
+test "root branch split balances dense siblings by subtree weight" {
+  let markdown = "# Root\n## Dense\n### A\n### B\n### C\n## Light1\n## Light2\n## Light3"
+  let outline = build_outline(markdown)
+
+  assert_eq(default_root_split_count(outline), 1)
+}
+
+///|
+test "root branch weight style keeps hundredth precision" {
+  assert_eq(format_percentage_from_basis_points(1666), "16.66%")
+}
+
+///|
 test "normalize markdown body lines collapses blank separators" {
   let normalized = normalize_markdown_body_lines([
     "  ", "First line", "Second line", "\t", "Third line", "", "", "Fourth line",

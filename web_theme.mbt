@@ -1618,11 +1618,11 @@ fn style_mindmap_stage_radial(element : @dom.Element) -> Unit {
   set_style(
     element, "grid-template-columns", "minmax(280px, 1fr) auto minmax(280px, 1fr)",
   )
-  set_style(element, "gap", "44px")
+  set_style(element, "gap", "60px")
   set_style(element, "align-items", "center")
-  set_style(element, "min-width", "980px")
-  set_style(element, "min-height", "940px")
-  set_style(element, "padding", "44px 24px 40px")
+  set_style(element, "min-width", "1120px")
+  set_style(element, "min-height", "1040px")
+  set_style(element, "padding", "56px 32px 48px")
 }
 
 ///|
@@ -1694,9 +1694,9 @@ fn style_branch_column(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
-  set_style(element, "gap", "26px")
-  set_style(element, "min-height", "460px")
-  set_style(element, "padding-top", "26px")
+  set_style(element, "gap", "34px")
+  set_style(element, "min-height", "540px")
+  set_style(element, "padding-top", "34px")
 }
 
 ///|
@@ -1720,8 +1720,8 @@ fn style_center_wrap(element : @dom.Element) -> Unit {
   set_style(element, "align-items", "center")
   set_style(element, "justify-content", "center")
   set_style(element, "height", "100%")
-  set_style(element, "min-width", "220px")
-  set_style(element, "padding", "0 20px")
+  set_style(element, "min-width", "260px")
+  set_style(element, "padding", "0 28px")
 }
 
 ///|
@@ -1729,7 +1729,7 @@ fn style_branch_item(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
-  set_style(element, "gap", "8px")
+  set_style(element, "gap", "12px")
 }
 
 ///|
@@ -1753,7 +1753,7 @@ fn style_branch_item_right(element : @dom.Element) -> Unit {
 fn style_branch_item_row(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "align-items", "flex-start")
-  set_style(element, "gap", "34px")
+  set_style(element, "gap", "42px")
 }
 
 ///|
@@ -1768,20 +1768,20 @@ fn style_branch_item_head(element : @dom.Element) -> Unit {
 fn style_branch_children(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
-  set_style(element, "gap", "18px")
+  set_style(element, "gap", "26px")
   set_style(element, "position", "relative")
 }
 
 ///|
 fn style_branch_children_left(element : @dom.Element) -> Unit {
   set_style(element, "align-items", "flex-end")
-  set_style(element, "margin-right", "18px")
+  set_style(element, "margin-right", "28px")
 }
 
 ///|
 fn style_branch_children_right(element : @dom.Element) -> Unit {
   set_style(element, "align-items", "flex-start")
-  set_style(element, "margin-left", "18px")
+  set_style(element, "margin-left", "28px")
 }
 
 ///|
