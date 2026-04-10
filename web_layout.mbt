@@ -76,6 +76,21 @@ fn set_select_muted(id : String, muted : Bool) -> Unit {
 }
 
 ///|
+fn set_select_disabled(id : String, disabled : Bool) -> Unit {
+  match get_element_by_id(id) {
+    Some(control) => {
+      let disabled_text = disabled.to_string()
+      control.setAttribute("data-disabled", disabled_text)
+      control.setAttribute("aria-disabled", disabled_text)
+      toggle_class(control, "tool-select--disabled", disabled)
+      sync_custom_select_by_id(id)
+      apply_theme_to_element(control)
+    }
+    None => ()
+  }
+}
+
+///|
 fn localize_layout_select_labels() -> Unit {
   set_select_option_text("layout-select", "mindmap", "思维图")
   set_select_option_text("layout-select", "logic", "逻辑图")
@@ -382,7 +397,9 @@ fn build_select_control(
   options~ : Array[SelectOption],
 ) -> @dom.Element {
   let label_el = create_element("label", "tool-select-wrap")
-  append_child(label_el, build_text_span("span", "tool-select-label", label))
+  if label.length() > 0 {
+    append_child(label_el, build_text_span("span", "tool-select-label", label))
+  }
   let select = create_element("select", class_name)
   select.setAttribute("id", id)
   for option in options {
@@ -695,7 +712,43 @@ fn build_primary_toolbar() -> @dom.Element {
   )
   append_child(
     toolbar,
-    build_toolbar_button(action="insert-node", tip="插入节点", label="+"),
+    build_select_control(
+      id="insert-select",
+      label="",
+      class_name="tool-select tool-select--insert",
+      options=[
+        SelectOption::{
+          value: "",
+          label: "插入",
+          hidden: true,
+          selected: true,
+        },
+        SelectOption::{
+          value: "insert-note",
+          label: "笔记",
+          hidden: false,
+          selected: false,
+        },
+        SelectOption::{
+          value: "insert-link",
+          label: "链接",
+          hidden: false,
+          selected: false,
+        },
+        SelectOption::{
+          value: "insert-image",
+          label: "图片",
+          hidden: false,
+          selected: false,
+        },
+        SelectOption::{
+          value: "insert-formula",
+          label: "公式",
+          hidden: false,
+          selected: false,
+        },
+      ],
+    ),
   )
   toolbar
 }
@@ -857,10 +910,7 @@ fn build_tool_svg(icon_key : String, compact : Bool) -> @dom.Element {
       append_child(svg, build_svg_path("M8 12H16"))
       append_child(svg, build_svg_path("M10 17H14"))
     }
-    "insert" => {
-      append_child(svg, build_svg_path("M12 5.5V18.5M5.5 12H18.5"))
-      append_child(svg, build_svg_circle(12.0, 12.0, 8.5, false))
-    }
+    "insert" => append_child(svg, build_svg_path("M12 5.5V18.5M5.5 12H18.5"))
     "document" => {
       append_child(svg, build_svg_path("M8 4H14.2L18 7.8V20H8V4Z"))
       append_child(svg, build_svg_path("M14.2 4V8H18"))
@@ -957,7 +1007,10 @@ fn toolbar_icon_key(action : String) -> String {
     "move-up" => "up"
     "move-down" => "down"
     "toggle-node" => "toggle"
-    "insert-node" => "insert"
+    "insert-note" => "insert"
+    "insert-link" => "insert"
+    "insert-image" => "insert"
+    "insert-formula" => "insert"
     _ => "branch"
   }
 }

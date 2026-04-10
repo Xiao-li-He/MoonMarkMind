@@ -453,19 +453,38 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
 ///|
 fn apply_tool_select_custom_theme(custom : @dom.Element, muted : Bool) -> Unit {
   style_tool_select_custom(custom)
-  let open = has_class_name(custom, "is-open")
+  let disabled = is_control_disabled(custom)
+  let open = has_class_name(custom, "is-open") && !disabled
+  let is_insert = has_class_name(custom, "tool-select-custom--insert")
   match custom.querySelector(".tool-select-trigger") {
     Some(trigger) => {
       style_tool_select_trigger(trigger)
       let trigger_style = style_of(trigger)
+      if is_insert {
+        trigger_style.set_property("width", "40px")
+        trigger_style.set_property("min-width", "40px")
+        trigger_style.set_property("height", "40px")
+        trigger_style.set_property("padding", "0 6px")
+        trigger_style.set_property("justify-content", "space-between")
+        trigger_style.set_property("gap", "0")
+      }
       trigger_style.set_property(
         "color",
-        if muted {
+        if muted || disabled {
           "#92a4b8"
         } else {
-          "#23384d"
+          "#5c88a8"
         },
       )
+      if disabled {
+        trigger_style.set_property("cursor", "not-allowed")
+        trigger_style.set_property("opacity", "0.72")
+        trigger_style.set_property("pointer-events", "none")
+      } else {
+        trigger_style.set_property("cursor", "pointer")
+        trigger_style.set_property("opacity", "1")
+        trigger_style.set_property("pointer-events", "auto")
+      }
       if open {
         trigger_style.set_property("border-color", "rgba(192, 208, 226, 0.96)")
         trigger_style.set_property(
@@ -478,24 +497,59 @@ fn apply_tool_select_custom_theme(custom : @dom.Element, muted : Bool) -> Unit {
       match trigger.querySelector(".tool-select-trigger__arrow") {
         Some(arrow) => {
           let arrow_style = style_of(arrow)
-          arrow_style.set_property(
-            "transform",
-            if open {
-              "translateY(-48%) rotate(180deg)"
-            } else {
-              "translateY(-52%) rotate(0deg)"
-            },
-          )
+          if is_insert {
+            arrow_style.set_property("position", "static")
+            arrow_style.set_property("right", "auto")
+            arrow_style.set_property("top", "auto")
+            arrow_style.set_property(
+              "transform",
+              if open {
+                "rotate(180deg)"
+              } else {
+                "rotate(0deg)"
+              },
+            )
+          } else {
+            arrow_style.set_property(
+              "transform",
+              if open {
+                "translateY(-48%) rotate(180deg)"
+              } else {
+                "translateY(-52%) rotate(0deg)"
+              },
+            )
+          }
           arrow_style.set_property(
             "color",
-            if muted {
+            if muted || disabled {
               "rgba(146, 164, 184, 1)"
             } else {
-              "rgba(86, 116, 147, 0.88)"
+              "#5c88a8"
             },
           )
+          arrow_style.set_property("pointer-events", "none")
         }
         None => ()
+      }
+      if is_insert {
+        match trigger.querySelector(".tool-select-trigger__label") {
+          Some(label) => {
+            let label_style = style_of(label)
+            label_style.set_property("flex", "0 0 auto")
+            label_style.set_property("min-width", "0")
+            label_style.set_property("text-align", "left")
+            label_style.set_property("display", "none")
+          }
+          None => ()
+        }
+        match trigger.querySelector(".tool-icon") {
+          Some(icon) => {
+            let icon_style = style_of(icon)
+            icon_style.set_property("pointer-events", "none")
+            icon_style.set_property("flex", "0 0 auto")
+          }
+          None => ()
+        }
       }
     }
     None => ()
@@ -643,6 +697,8 @@ fn style_icon_button(element : @dom.Element, size : String) -> Unit {
 fn is_control_disabled(element : @dom.Element) -> Bool {
   has_class_name(element, "mindmap-tool--disabled") ||
   has_class_name(element, "mindmap-aux-button--disabled") ||
+  has_class_name(element, "tool-select--disabled") ||
+  has_class_name(element, "tool-select-custom--disabled") ||
   element.getAttribute("data-disabled").unwrap_or("") == "true"
 }
 
@@ -664,15 +720,22 @@ fn style_mindmap_tool(element : @dom.Element) -> Unit {
   set_style(
     element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.82), 0 10px 24px rgba(120, 139, 164, 0.08)",
   )
-  set_style(element, "color", "var(--teal)")
+  set_style(element, "color", "#5c88a8")
   set_style(element, "font-size", "14px")
   set_style(element, "line-height", "1")
   set_style(element, "white-space", "nowrap")
   if is_control_disabled(element) {
     set_style(element, "cursor", "not-allowed")
-    set_style(element, "opacity", "0.72")
-    set_style(element, "background", "rgba(247, 249, 252, 0.58)")
-    set_style(element, "box-shadow", "none")
+    set_style(element, "opacity", "0.56")
+    set_style(
+      element, "background", "linear-gradient(180deg, rgba(250, 252, 255, 0.9), rgba(236, 243, 250, 0.84))",
+    )
+    set_style(element, "border-color", "rgba(194, 207, 221, 0.9)")
+    set_style(
+      element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 4px 10px rgba(141, 159, 180, 0.05)",
+    )
+    set_style(element, "color", "rgba(140, 160, 182, 0.96)")
+    set_style(element, "filter", "grayscale(0.3) saturate(0.82)")
   } else {
     set_style(element, "cursor", "pointer")
   }
@@ -696,7 +759,7 @@ fn style_mindmap_aux_button(element : @dom.Element) -> Unit {
   set_style(
     element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.82), 0 10px 24px rgba(120, 139, 164, 0.08)",
   )
-  set_style(element, "color", "var(--teal)")
+  set_style(element, "color", "#5c88a8")
   set_style(element, "font-size", "14px")
   set_style(element, "line-height", "1")
   set_style(element, "white-space", "nowrap")
@@ -721,7 +784,7 @@ fn style_zoom_chip(element : @dom.Element) -> Unit {
   set_style(element, "border", "0")
   set_style(element, "border-radius", "10px")
   set_style(element, "background", "rgba(220, 230, 239, 0.62)")
-  set_style(element, "color", "var(--teal)")
+  set_style(element, "color", "#5c88a8")
   set_style(element, "cursor", "pointer")
 }
 
@@ -752,7 +815,7 @@ fn style_tool_select_wrap(element : @dom.Element) -> Unit {
 ///|
 fn style_tool_select_label(element : @dom.Element) -> Unit {
   set_style(element, "font-size", "14px")
-  set_style(element, "color", "#7287a0")
+  set_style(element, "color", "#5c88a8")
 }
 
 ///|
@@ -768,13 +831,18 @@ fn style_tool_select(element : @dom.Element) -> Unit {
   set_style(
     element, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(245, 249, 253, 0.42))",
   )
-  set_style(element, "color", "#23384d")
+  set_style(element, "color", "#5c88a8")
   set_style(
     element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.88), 0 10px 24px rgba(120, 139, 164, 0.08)",
   )
   set_style(element, "cursor", "pointer")
   if has_class_name(element, "tool-select--muted") {
     set_style(element, "border-color", "rgba(214, 225, 237, 0.76)")
+    set_style(element, "color", "rgba(146, 164, 184, 1)")
+  }
+  if has_class_name(element, "tool-select--disabled") {
+    set_style(element, "cursor", "not-allowed")
+    set_style(element, "opacity", "0.72")
     set_style(element, "color", "rgba(146, 164, 184, 1)")
   }
 }
@@ -804,7 +872,7 @@ fn style_tool_select_custom(element : @dom.Element) -> Unit {
       set_style(
         trigger, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(245, 249, 253, 0.42))",
       )
-      set_style(trigger, "color", "#23384d")
+      set_style(trigger, "color", "#5c88a8")
       set_style(
         trigger, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.88), 0 10px 24px rgba(120, 139, 164, 0.08)",
       )
@@ -836,7 +904,7 @@ fn style_tool_select_custom(element : @dom.Element) -> Unit {
               "translateY(-52%) rotate(0deg)"
             },
           )
-          set_style(arrow, "color", "rgba(86, 116, 147, 0.88)")
+          set_style(arrow, "color", "#5c88a8")
           set_style(arrow, "font-size", "11px")
           set_style(arrow, "line-height", "1")
           set_style(arrow, "pointer-events", "none")
@@ -851,6 +919,9 @@ fn style_tool_select_custom(element : @dom.Element) -> Unit {
         set_style(
           trigger, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 12px 28px rgba(120, 139, 164, 0.12)",
         )
+      }
+      if !has_class_name(trigger, "tool-select--muted") {
+        set_style(trigger, "color", "#5c88a8")
       }
     }
     None => ()
@@ -885,7 +956,7 @@ fn style_tool_select_trigger(element : @dom.Element) -> Unit {
   set_style(
     element, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(245, 249, 253, 0.42))",
   )
-  set_style(element, "color", "#23384d")
+  set_style(element, "color", "#5c88a8")
   set_style(
     element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.88), 0 10px 24px rgba(120, 139, 164, 0.08)",
   )
@@ -909,7 +980,7 @@ fn style_tool_select_trigger_arrow(element : @dom.Element) -> Unit {
   set_style(element, "position", "absolute")
   set_style(element, "right", "12px")
   set_style(element, "top", "50%")
-  set_style(element, "color", "rgba(86, 116, 147, 0.88)")
+  set_style(element, "color", "#5c88a8")
   set_style(element, "font-size", "11px")
   set_style(element, "line-height", "1")
   set_style(element, "pointer-events", "none")

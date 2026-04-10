@@ -573,7 +573,10 @@ fn bind_mindmap_ui(
 }
 
 ///|
-fn focus_mindmap_container(mindmap : @dom.Element, target : @dom.Element) -> Unit {
+fn focus_mindmap_container(
+  mindmap : @dom.Element,
+  target : @dom.Element,
+) -> Unit {
   match target.closest("input, textarea, select, button") {
     Some(_) => ()
     None => mindmap.as_any()._call("focus", []) |> ignore

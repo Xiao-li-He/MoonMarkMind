@@ -267,7 +267,10 @@ fn on_toolbar_action(action : String) -> Unit {
       sync_detail_customized()
       render_ui()
     }
-    "insert-node" => handle_add_sibling(app_state.selected_node, false)
+    "insert-note" => insert_node_body_template("note")
+    "insert-link" => insert_node_body_template("link")
+    "insert-image" => insert_node_body_template("image")
+    "insert-formula" => insert_node_body_template("formula")
     _ => ()
   }
 }
@@ -1036,6 +1039,7 @@ fn render_ui() -> Unit {
   set_select_muted("detail-select", app_state.detail_customized)
   let has_selection = has_selected_nodes()
   set_toolbar_selection_enabled(has_selection)
+  set_select_disabled("insert-select", !has_selection)
   if has_selection {
     set_toolbar_action_enabled("new-branch", can_toolbar_action("new-branch"))
     set_toolbar_action_enabled("new-child", can_toolbar_action("new-child"))
@@ -1049,7 +1053,6 @@ fn render_ui() -> Unit {
       can_toolbar_action("promote-node"),
     )
     set_toolbar_action_enabled("toggle-node", can_toolbar_action("toggle-node"))
-    set_toolbar_action_enabled("insert-node", can_toolbar_action("insert-node"))
   }
   set_aux_action_enabled("undo-action", app_state.undo_stack.length() > 0)
   set_aux_action_enabled("redo-action", app_state.redo_stack.length() > 0)
@@ -1254,9 +1257,53 @@ fn can_toolbar_action(action : String) -> Bool {
       promote_heading(app_state.markdown, app_state.selected_node) !=
       app_state.markdown
     "toggle-node" => selected_has_children()
-    "insert-node" => can_add_sibling_selected()
+    "insert-note" => selected_node_exists()
+    "insert-link" => selected_node_exists()
+    "insert-image" => selected_node_exists()
+    "insert-formula" => selected_node_exists()
     _ => false
   }
+}
+
+///|
+fn insert_node_body_template(kind : String) -> Unit {
+  if app_state.selected_node < 0 {
+    return
+  }
+  let body_lines = if kind == "note" {
+    ["笔记："]
+  } else if kind == "link" {
+    ["[链接文字](https://example.com)"]
+  } else if kind == "image" {
+    ["![图片说明](image.png)"]
+  } else {
+    ["$$", "x = 1", "$$"]
+  }
+  let nodes = parse_markdown_nodes(app_state.markdown)
+  if app_state.selected_node >= nodes.length() {
+    return
+  }
+  let updated = []
+  for index in 0..<nodes.length() {
+    let node = nodes[index]
+    if index == app_state.selected_node {
+      let next_body = slice_strings(node.body, 0, node.body.length())
+      for line in body_lines {
+        next_body.push(line)
+      }
+      updated.push(MarkdownNode::{
+        kind: node.kind,
+        level: node.level,
+        title: node.title,
+        marker: node.marker,
+        body: next_body,
+        source_line: node.source_line,
+      })
+    } else {
+      updated.push(node)
+    }
+  }
+  apply_markdown_change(render_markdown_nodes(updated), false)
 }
 
 ///|

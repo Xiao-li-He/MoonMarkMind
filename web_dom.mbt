@@ -1457,6 +1457,12 @@ fn close_custom_selects(except : @dom.Element?) -> Unit {
 }
 
 ///|
+fn is_select_disabled(select : @dom.HTMLSelectElement) -> Bool {
+  has_class_name(select.as_element(), "tool-select--disabled") ||
+  select.getAttribute("data-disabled").unwrap_or("") == "true"
+}
+
+///|
 fn sync_custom_select(select : @dom.HTMLSelectElement) -> Unit {
   match select.parentElement() {
     Some(parent) =>
@@ -1514,24 +1520,49 @@ fn sync_custom_select_trigger(
 ) -> Unit {
   match custom.querySelector(".tool-select-trigger") {
     Some(trigger) => {
+      let is_insert = has_class_name(select.as_element(), "tool-select--insert")
       match trigger.querySelector(".tool-select-trigger__label") {
-        Some(label) => label.setTextContent(next_text)
-        None => trigger.setTextContent(next_text)
+        Some(label) =>
+          if is_insert {
+            label.setTextContent("")
+          } else {
+            label.setTextContent(next_text)
+          }
+        None => if !is_insert { trigger.setTextContent(next_text) }
       }
       toggle_class(
         trigger,
         "tool-select--muted",
         has_class_name(select.as_element(), "tool-select--muted"),
       )
-      let prefix = match select.parentElement() {
-        Some(parent) =>
-          match parent.querySelector(".tool-select-label") {
-            Some(label) => label.textContent()
-            None => ""
-          }
-        None => ""
+      let prefix = if is_insert {
+        "插入"
+      } else {
+        match select.parentElement() {
+          Some(parent) =>
+            match parent.querySelector(".tool-select-label") {
+              Some(label) => label.textContent()
+              None => ""
+            }
+          None => ""
+        }
       }
-      let tip = if prefix.length() == 0 {
+      let disabled = is_select_disabled(select)
+      toggle_class(trigger, "tool-select--disabled", disabled)
+      toggle_class(custom, "tool-select-custom--disabled", disabled)
+      trigger.setAttribute("data-disabled", disabled.to_string())
+      trigger.setAttribute("aria-disabled", disabled.to_string())
+      trigger.setAttribute("tabindex", if disabled { "-1" } else { "0" })
+      custom.setAttribute("data-disabled", disabled.to_string())
+      custom.setAttribute("aria-disabled", disabled.to_string())
+      if disabled {
+        toggle_class(custom, "is-open", false)
+        trigger.setAttribute("aria-expanded", "false")
+      }
+      let insert_prefix = if is_insert { "插入" } else { prefix }
+      let tip = if is_insert {
+        insert_prefix
+      } else if prefix.length() == 0 {
         next_text
       } else if next_text.length() == 0 {
         prefix
@@ -1556,10 +1587,19 @@ fn init_custom_select(id : String) -> Unit {
       select.setAttribute("data-custom-select-ready", "true")
       toggle_class(select.as_element(), "tool-select--native", true)
       let custom = create_element("div", "tool-select-custom")
+      if id == "insert-select" {
+        toggle_class(custom, "tool-select-custom--insert", true)
+      }
       let trigger = create_element("button", "tool-select-trigger")
       trigger.setAttribute("type", "button")
       trigger.setAttribute("aria-haspopup", "listbox")
       trigger.setAttribute("aria-expanded", "false")
+      if id == "insert-select" {
+        trigger.setAttribute("aria-label", "插入")
+      }
+      if id == "insert-select" {
+        append_child(trigger, build_tool_icon("insert", true))
+      }
       let trigger_label = create_element("span", "tool-select-trigger__label")
       let trigger_arrow = create_element("span", "tool-select-trigger__arrow")
       trigger_arrow.setTextContent("▾")
@@ -1583,6 +1623,9 @@ fn init_custom_select(id : String) -> Unit {
         .addEventListener("click", fn(raw) {
           let event : @dom.MouseEvent = raw.cast()
           event.preventDefault()
+          if is_select_disabled(select) {
+            return
+          }
           select.value = option_value
           sync_custom_select(select)
           toggle_class(custom, "is-open", false)
@@ -1597,6 +1640,9 @@ fn init_custom_select(id : String) -> Unit {
       .addEventListener("click", fn(raw) {
         let event : @dom.MouseEvent = raw.cast()
         event.preventDefault()
+        if is_select_disabled(select) {
+          return
+        }
         let next_open = !has_class_name(custom, "is-open")
         close_custom_selects(Some(custom))
         toggle_class(custom, "is-open", next_open)
@@ -1682,6 +1728,7 @@ fn bind_static_ui(
   init_custom_select("style-select")
   init_custom_select("detail-select")
   init_custom_select("export-select")
+  init_custom_select("insert-select")
   match get_element_by_id("layout-select") {
     Some(select) => {
       let select = @dom.HTMLSelectElement::cast_from_element(select)
@@ -1718,16 +1765,28 @@ fn bind_static_ui(
     }
     None => ()
   }
-  @dom.document()
-  .as_event_target()
-  .addEventListener("click", fn(raw) {
-    let event : @dom.MouseEvent = raw.cast()
-    match event.target().closest(".tool-select-custom") {
-      Some(_) => return
-      None => ()
+  match get_element_by_id("insert-select") {
+    Some(select) => {
+      let select = @dom.HTMLSelectElement::cast_from_element(select)
+      select
+      .as_event_target()
+      .addEventListener("change", fn(_) {
+        if is_select_disabled(select) {
+          select.value = ""
+          sync_custom_select(select)
+          return
+        }
+        let action = select.value
+        if action == "" {
+          return
+        }
+        select.value = ""
+        sync_custom_select(select)
+        toolbar_callback(action)
+      })
     }
-    close_custom_selects(None)
-  })
+    None => ()
+  }
   match get_element("#undo-action") {
     Some(button) =>
       button
