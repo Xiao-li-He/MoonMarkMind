@@ -2127,7 +2127,7 @@ fn root_branch_total_span(center : OutlineNode, start : Int, stop : Int) -> Int 
 
 ///|
 fn root_branch_span(node : OutlineNode) -> Int {
-  count_subtree_nodes(node) * 4 + node.children.length() * 12 + 20
+  contour_subtree_span(node)
 }
 
 ///|
@@ -2414,6 +2414,129 @@ fn count_hidden_descendants(node : OutlineNode) -> Int {
 ///|
 fn count_subtree_nodes(node : OutlineNode) -> Int {
   1 + count_hidden_descendants(node)
+}
+
+///|
+fn contour_subtree_span(node : OutlineNode) -> Int {
+  if is_hidden_node(node.flat_index) {
+    return 24
+  }
+  let own_height = contour_node_height(node)
+  if !should_render_children(node) {
+    return own_height
+  }
+  let mut total_children = 0
+  for child in node.children {
+    total_children += contour_subtree_span(child)
+  }
+  let child_count = node.children.length()
+  if child_count == 0 {
+    own_height
+  } else {
+    own_height + 22 + total_children + (child_count - 1) * 26
+  }
+}
+
+///|
+fn contour_node_height(node : OutlineNode) -> Int {
+  let is_center = node.flat_index == app_state.root.flat_index
+  let base_height = if is_center {
+    72
+  } else if node.level <= app_state.root.level + 1 {
+    60
+  } else {
+    54
+  }
+  let title_chars = if is_center {
+    15
+  } else if app_state.style_mode == "fill" {
+    18
+  } else {
+    20
+  }
+  let title_line_height = if is_center {
+    22
+  } else if node.level <= app_state.root.level + 1 {
+    20
+  } else {
+    19
+  }
+  let title_lines = contour_wrap_lines(node.title, title_chars)
+  let note_height = contour_note_height(node)
+  base_height + title_lines * title_line_height + note_height
+}
+
+///|
+fn contour_note_height(node : OutlineNode) -> Int {
+  if !node_has_note(node) {
+    return 0
+  }
+  let mut line_count = 0
+  let wrap_chars = if app_state.style_mode == "fill" { 22 } else { 20 }
+  for block in node.body {
+    let wrapped = contour_wrap_lines(block, wrap_chars)
+    line_count += if wrapped > 0 { wrapped } else { 1 }
+  }
+  if line_count == 0 && app_state.editing_note_node == node.flat_index {
+    line_count = 4
+  }
+  let line_height = if app_state.editing_note_node == node.flat_index {
+    18
+  } else {
+    17
+  }
+  let raw_height = line_count * line_height + 24
+  if raw_height > 120 {
+    120
+  } else {
+    raw_height
+  }
+}
+
+///|
+fn contour_wrap_lines(text : String, chars_per_line : Int) -> Int {
+  let safe_chars = if chars_per_line <= 1 { 1 } else { chars_per_line }
+  let length = text.length()
+  if length <= 0 {
+    1
+  } else {
+    (length + safe_chars - 1) / safe_chars
+  }
+}
+
+///|
+fn contour_pack_positions(
+  heights : Array[Int],
+  available_span : Int,
+  gap : Int,
+) -> Array[Int] {
+  let positions = []
+  if heights.length() == 0 {
+    return positions
+  }
+  let mut total = 0
+  for height in heights {
+    total += contour_max_int(1, height)
+  }
+  total += gap * (heights.length() - 1)
+  let mut cursor = 0
+  if available_span > total {
+    cursor = (available_span - total) / 2
+  }
+  for height in heights {
+    positions.push(cursor)
+    cursor += contour_max_int(1, height) + gap
+  }
+  positions
+}
+
+///|
+fn contour_max_int(left : Int, right : Int) -> Int {
+  if left > right {
+    left
+  } else {
+    right
+  }
 }
 
 ///|

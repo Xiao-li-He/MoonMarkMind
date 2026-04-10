@@ -580,6 +580,99 @@ fn schedule_render_mindmap_connectors() -> Unit {
 }
 
 ///|
+let contour_layout_frame : @ref.Ref[Int] = @ref.Ref(0)
+
+///|
+fn schedule_contour_layout() -> Unit {
+  let window = @dom.window()
+  if contour_layout_frame.val != 0 {
+    window.cancelAnimationFrame(contour_layout_frame.val)
+  }
+  contour_layout_frame.val = window.requestAnimationFrame(fn(_) {
+    contour_layout_frame.val = 0
+    apply_contour_layout()
+    schedule_render_mindmap_connectors()
+  })
+}
+
+///|
+fn apply_contour_layout() -> Unit {
+  match get_element("#mindmap") {
+    Some(mindmap) =>
+      match mindmap.querySelector(".mindmap-stage") {
+        Some(stage) => {
+          apply_contour_min_heights(stage)
+          if has_class_name(stage, "mindmap-stage--radial") {
+            apply_mindmap_root_packing(stage)
+          }
+        }
+        None => ()
+      }
+    None => ()
+  }
+}
+
+///|
+fn apply_contour_min_heights(stage : @dom.Element) -> Unit {
+  let nodes = stage.querySelectorAll("[data-node-index]")
+  for element in nodes {
+    if has_class_name(element, "node") {
+      continue
+    }
+    let node_index = parse_int_or_default(
+      element.getAttribute("data-node-index").unwrap_or("-1"),
+      -1,
+    )
+    if node_index < 0 {
+      continue
+    }
+    match find_node(app_state.root, node_index) {
+      Some(node) => {
+        let span = contour_subtree_span(node)
+        let style = @dom.css_style_from_val(
+          element.as_any()._get("style").cast(),
+        )
+        style.set_property("min-height", "\{span}px")
+      }
+      None => ()
+    }
+  }
+}
+
+///|
+fn apply_mindmap_root_packing(stage : @dom.Element) -> Unit {
+  apply_root_column_packing(stage.querySelector(".branch-column--left"), 24)
+  apply_root_column_packing(stage.querySelector(".branch-column--right"), 24)
+}
+
+///|
+fn apply_root_column_packing(column : @dom.Element?, gap : Int) -> Unit {
+  match column {
+    Some(root_column) => {
+      let branches = root_column.querySelectorAll(".branch-item--root")
+      if branches.length() == 0 {
+        return
+      }
+      let heights = []
+      for branch in branches {
+        let height = element_rect(branch).height.round().to_int()
+        heights.push(if height > 1 { height } else { 1 })
+      }
+      let available = root_column.clientHeight()
+      let positions = contour_pack_positions(heights, available, gap)
+      for index in 0..<branches.length() {
+        let branch = branches[index]
+        let style = @dom.css_style_from_val(
+          branch.as_any()._get("style").cast(),
+        )
+        style.set_property("top", "\{positions[index]}px")
+      }
+    }
+    None => ()
+  }
+}
+
+///|
 fn reveal_input_line_after_paint(target_top : Int) -> Unit {
   let window = @dom.window()
   let input = match get_element("#input") {
@@ -2123,7 +2216,7 @@ fn set_mindmap_dom(value : @dom.Element) -> Unit {
     }
     None => ()
   }
-  schedule_render_mindmap_connectors()
+  schedule_contour_layout()
 }
 
 ///|

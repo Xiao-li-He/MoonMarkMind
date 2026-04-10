@@ -1752,7 +1752,7 @@ fn style_branch_item_right(element : @dom.Element) -> Unit {
 ///|
 fn style_branch_item_row(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
-  set_style(element, "align-items", "flex-start")
+  set_style(element, "align-items", "center")
   set_style(element, "gap", "42px")
 }
 
@@ -1827,7 +1827,7 @@ fn style_single_right_tree(element : @dom.Element) -> Unit {
 ///|
 fn style_single_right_tree_node(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
-  set_style(element, "align-items", "flex-start")
+  set_style(element, "align-items", "center")
   set_style(element, "gap", "26px")
 }
 

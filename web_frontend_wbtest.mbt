@@ -71,6 +71,50 @@ fn outline_flat_index_by_title(node : OutlineNode, title : String) -> Int {
 }
 
 ///|
+test "contour pack positions centers siblings without overlap" {
+  let positions = contour_pack_positions([40, 60, 50], 220, 24)
+  assert_eq(positions.length(), 3)
+  assert_eq(positions[0], 11)
+  assert_eq(positions[1], 75)
+  assert_eq(positions[2], 159)
+}
+
+///|
+test "contour pack positions keeps single and paired children centered" {
+  assert_eq(contour_pack_positions([80], 120, 24), [20])
+  assert_eq(contour_pack_positions([40, 40], 140, 20), [20, 80])
+}
+
+///|
+test "contour subtree span grows with nested children and notes" {
+  load_markdown(
+    "# Root\n## Alpha\nAlpha note line one\n\nAlpha note line two\n### Child A\n#### Grandchild\n## Beta",
+    true,
+  )
+  match find_node(app_state.root, 1) {
+    Some(alpha) => {
+      let beta_index = outline_flat_index_by_title(app_state.root, "Beta")
+      match find_node(app_state.root, beta_index) {
+        Some(beta) => {
+          assert_true(contour_subtree_span(alpha) > contour_subtree_span(beta))
+          assert_true(contour_subtree_span(alpha) > 120)
+        }
+        None => fail("missing beta node")
+      }
+    }
+    None => fail("missing alpha node")
+  }
+}
+
+///|
+test "root split count follows contour balance rather than node count" {
+  load_markdown(
+    "# Root\n## Dense\n### A\n### B\n### C\n## Light1\n## Light2\n## Light3", true,
+  )
+  assert_eq(default_root_split_count(app_state.root), 1)
+}
+
+///|
 test "node editor undo stays local until commit" {
   reset_frontend_test_state()
   begin_edit_node(1)
