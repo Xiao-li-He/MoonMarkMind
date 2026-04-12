@@ -219,7 +219,7 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
       }
       event.stopPropagation()
       select_single_node(node_index, true)
-      begin_note_edit_node(node_index)
+      begin_edit_node(node_index)
       return
     }
     clear_editing_session()
@@ -331,7 +331,7 @@ fn on_mindmap_dblclick(event : @dom.MouseEvent) -> Unit {
       }
       event.stopPropagation()
       select_single_node(node_index, true)
-      begin_note_edit_node(node_index)
+      begin_edit_node(node_index)
     }
     None => event.stopPropagation()
   }

@@ -197,6 +197,16 @@ test "node editor cancel restores original markdown without global history" {
 }
 
 ///|
+test "double click intent edits node title instead of note body" {
+  reset_frontend_test_state()
+  select_single_node(1, true)
+  begin_edit_node(1)
+
+  assert_eq(app_state.editing_node, 1)
+  assert_eq(app_state.editing_note_node, -2)
+}
+
+///|
 test "tree navigation moves between parents children and siblings" {
   reset_navigation_test_state()
 
