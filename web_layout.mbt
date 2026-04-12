@@ -288,13 +288,13 @@ fn build_topbar() -> @dom.Element {
       options=[
         SelectOption::{
           value: "line",
-          label: "线条",
+          label: "填充",
           hidden: false,
           selected: true,
         },
         SelectOption::{
           value: "fill",
-          label: "填充",
+          label: "线条",
           hidden: false,
           selected: false,
         },
