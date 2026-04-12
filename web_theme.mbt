@@ -1694,9 +1694,9 @@ fn style_branch_column(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
-  set_style(element, "gap", "34px")
+  set_style(element, "gap", "20px")
   set_style(element, "min-height", "540px")
-  set_style(element, "padding-top", "34px")
+  set_style(element, "padding-top", "20px")
 }
 
 ///|
@@ -1721,7 +1721,7 @@ fn style_center_wrap(element : @dom.Element) -> Unit {
   set_style(element, "justify-content", "center")
   set_style(element, "height", "100%")
   set_style(element, "min-width", "260px")
-  set_style(element, "padding", "0 28px")
+  set_style(element, "padding", "0 16px")
 }
 
 ///|
@@ -1729,7 +1729,7 @@ fn style_branch_item(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
-  set_style(element, "gap", "12px")
+  set_style(element, "gap", "8px")
 }
 
 ///|
@@ -1753,7 +1753,7 @@ fn style_branch_item_right(element : @dom.Element) -> Unit {
 fn style_branch_item_row(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "align-items", "center")
-  set_style(element, "gap", "42px")
+  set_style(element, "gap", "24px")
 }
 
 ///|
@@ -1768,20 +1768,20 @@ fn style_branch_item_head(element : @dom.Element) -> Unit {
 fn style_branch_children(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
-  set_style(element, "gap", "26px")
+  set_style(element, "gap", "16px")
   set_style(element, "position", "relative")
 }
 
 ///|
 fn style_branch_children_left(element : @dom.Element) -> Unit {
   set_style(element, "align-items", "flex-end")
-  set_style(element, "margin-right", "28px")
+  set_style(element, "margin-right", "16px")
 }
 
 ///|
 fn style_branch_children_right(element : @dom.Element) -> Unit {
   set_style(element, "align-items", "flex-start")
-  set_style(element, "margin-left", "28px")
+  set_style(element, "margin-left", "16px")
 }
 
 ///|

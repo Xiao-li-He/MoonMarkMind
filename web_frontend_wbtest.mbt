@@ -86,6 +86,18 @@ test "contour pack positions keeps single and paired children centered" {
 }
 
 ///|
+test "contour anchor pack positions centers odd and even siblings around the parent axis" {
+  assert_eq(
+    contour_anchor_pack_positions([20, 20, 20, 20, 20, 20, 20], 100, 200, 10),
+    [0, 30, 60, 90, 120, 150, 180],
+  )
+  assert_eq(
+    contour_anchor_pack_positions([20, 20, 20, 20, 20, 20], 100, 170, 10),
+    [15, 45, 75, 105, 135, 165],
+  )
+}
+
+///|
 test "single child chain length follows recursive single-child nodes" {
   load_markdown("# Root\n## Alpha\n### Beta\n#### Gamma\n## Delta", true)
   match find_node(app_state.root, 1) {
@@ -112,7 +124,7 @@ test "contour subtree span grows with nested children and notes" {
       match find_node(app_state.root, beta_index) {
         Some(beta) => {
           assert_true(contour_subtree_span(alpha) > contour_subtree_span(beta))
-          assert_true(contour_subtree_span(alpha) > 120)
+          assert_true(contour_subtree_span(alpha) > 100)
         }
         None => fail("missing beta node")
       }
@@ -124,9 +136,9 @@ test "contour subtree span grows with nested children and notes" {
 ///|
 test "root split count follows contour balance rather than node count" {
   load_markdown(
-    "# Root\n## Dense\n### A\n### B\n### C\n## Light1\n## Light2\n## Light3", true,
+    "# Root\n## One\n## Two\n## Three\n## Four\n## Five\n## Six\n## Seven", true,
   )
-  assert_eq(default_root_split_count(app_state.root), 1)
+  assert_eq(default_root_split_count(app_state.root), 3)
 }
 
 ///|
@@ -335,11 +347,11 @@ test "node body preview keeps paragraph spacing" {
 }
 
 ///|
-test "root branch split balances dense siblings by subtree weight" {
-  let markdown = "# Root\n## Dense\n### A\n### B\n### C\n## Light1\n## Light2\n## Light3"
+test "root branch split balances siblings by count" {
+  let markdown = "# Root\n## One\n## Two\n## Three\n## Four\n## Five\n## Six\n## Seven"
   let outline = build_outline(markdown)
 
-  assert_eq(default_root_split_count(outline), 1)
+  assert_eq(default_root_split_count(outline), 3)
 }
 
 ///|

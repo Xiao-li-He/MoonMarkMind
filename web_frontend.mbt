@@ -774,18 +774,7 @@ fn default_root_split_count(root : OutlineNode) -> Int {
   if child_count <= 1 {
     return child_count
   }
-  let total_weight = root_branch_total_span(root, 0, child_count)
-  let target_weight = total_weight / 2
-  let mut split = 0
-  let mut accumulated = 0
-  while split < child_count {
-    let next_weight = root_branch_span(root.children[split])
-    if split > 0 && accumulated + next_weight > target_weight {
-      break
-    }
-    accumulated += next_weight
-    split += 1
-  }
+  let split = child_count / 2
   if split <= 0 {
     1
   } else if split >= child_count {
@@ -1302,7 +1291,7 @@ fn sync_selection_toolbar() -> Unit {
 ///|
 fn sync_mindmap_selected_nodes() -> Unit {
   match get_element("#mindmap") {
-    Some(mindmap) => {
+    Some(mindmap) =>
       for node in mindmap.querySelectorAll(".node[data-node-index]") {
         let node_index = parse_int_or_default(
           node.getAttribute("data-node-index").unwrap_or("-1"),
@@ -1310,7 +1299,6 @@ fn sync_mindmap_selected_nodes() -> Unit {
         )
         toggle_class(node, "is-selected", is_selected_node(node_index))
       }
-    }
     None => ()
   }
 }
@@ -2492,7 +2480,7 @@ fn contour_subtree_span(node : OutlineNode) -> Int {
   if child_count == 0 {
     own_height
   } else {
-    own_height + 22 + total_children + (child_count - 1) * 26
+    own_height + 18 + total_children + (child_count - 1) * 18
   }
 }
 
@@ -2587,6 +2575,34 @@ fn contour_pack_positions(
     cursor += contour_max_int(1, height) + gap
   }
   positions
+}
+
+///|
+fn contour_anchor_pack_positions(
+  heights : Array[Int],
+  anchor_center : Int,
+  available_span : Int,
+  gap : Int,
+) -> Array[Int] {
+  let positions = contour_pack_positions(heights, available_span, gap)
+  if positions.length() == 0 {
+    return positions
+  }
+  let mut total = 0
+  for height in heights {
+    total += contour_max_int(1, height)
+  }
+  total += gap * (heights.length() - 1)
+  let expected_start = anchor_center - total / 2
+  let shift = expected_start - positions[0]
+  if shift == 0 {
+    return positions
+  }
+  let adjusted = []
+  for position in positions {
+    adjusted.push(position + shift)
+  }
+  adjusted
 }
 
 ///|

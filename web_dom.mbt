@@ -674,8 +674,8 @@ fn apply_contour_min_heights(stage : @dom.Element) -> Unit {
 
 ///|
 fn apply_mindmap_root_packing(stage : @dom.Element) -> Unit {
-  apply_root_column_packing(stage.querySelector(".branch-column--left"), 24)
-  apply_root_column_packing(stage.querySelector(".branch-column--right"), 24)
+  apply_root_column_packing(stage.querySelector(".branch-column--left"), 16)
+  apply_root_column_packing(stage.querySelector(".branch-column--right"), 16)
 }
 
 ///|
@@ -753,7 +753,12 @@ fn apply_root_column_packing(column : @dom.Element?, gap : Int) -> Unit {
         heights.push(if height > 1 { height } else { 1 })
       }
       let available = root_column.clientHeight()
-      let positions = contour_pack_positions(heights, available, gap)
+      let positions = contour_anchor_pack_positions(
+        heights,
+        available / 2,
+        available,
+        gap,
+      )
       for index in 0..<branches.length() {
         let branch = branches[index]
         let style = @dom.css_style_from_val(
