@@ -1783,7 +1783,9 @@ fn auto_close_custom_select_on_leave(id : String) -> Bool {
   id == "layout-select" ||
   id == "style-select" ||
   id == "detail-select" ||
-  id == "export-select"
+  id == "export-select" ||
+  id == "insert-select" ||
+  id == "sample-select"
 }
 
 ///|
@@ -1934,6 +1936,7 @@ fn bind_static_ui(
       .addEventListener("click", fn(_) { new_callback() })
     None => ()
   }
+  init_custom_select("sample-select")
   match get_element_by_id("sample-select") {
     Some(select) => {
       let sample_select = @dom.HTMLSelectElement::cast_from_element(select)

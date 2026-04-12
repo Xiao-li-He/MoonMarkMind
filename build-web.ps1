@@ -14,6 +14,8 @@ if ([string]::IsNullOrWhiteSpace($root)) {
 }
 
 $webDir = Join-Path $root "web"
+$sampleSourceDir = Join-Path $root "samples"
+$sampleOutputDir = Join-Path $webDir "samples"
 $source = Join-Path $root "_build/js/release/build/cmd/main/main.js"
 $output = Join-Path $webDir "main.bundle.js"
 $apiName = "MoonMarkMind"
@@ -22,6 +24,13 @@ moon build --target js --release
 
 if (!(Test-Path $webDir)) {
   New-Item -ItemType Directory -Path $webDir | Out-Null
+}
+
+if (Test-Path $sampleSourceDir) {
+  if (!(Test-Path $sampleOutputDir)) {
+    New-Item -ItemType Directory -Path $sampleOutputDir | Out-Null
+  }
+  Copy-Item (Join-Path $sampleSourceDir "*.md") $sampleOutputDir -Force
 }
 
 function Find-LocalExportSymbol {

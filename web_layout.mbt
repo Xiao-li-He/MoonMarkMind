@@ -239,12 +239,6 @@ fn build_topbar() -> @dom.Element {
           hidden: false,
           selected: false,
         },
-        SelectOption::{
-          value: "full",
-          label: "完整规则",
-          hidden: false,
-          selected: false,
-        },
       ],
     ),
   )

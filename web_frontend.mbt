@@ -1145,7 +1145,12 @@ fn load_rules_sample(sample_variant : String, reset_ui : Bool) -> Unit {
   reset_history()
   app_state.document_name = "notes.md"
   app_state.sample_variant = normalized
-  load_markdown(rules_sample_markdown(normalized), reset_ui)
+  load_rules_sample_markdown(normalized, fn(markdown) {
+    if app_state.sample_variant != normalized {
+      return
+    }
+    load_markdown(markdown, reset_ui)
+  })
 }
 
 ///|
@@ -1154,7 +1159,6 @@ fn normalize_rules_sample_variant(sample_variant : String) -> String {
     "part2" => "part2"
     "part3" => "part3"
     "part4" => "part4"
-    "full" => "full"
     "custom" => "custom"
     _ => "part1"
   }
