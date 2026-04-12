@@ -37,6 +37,8 @@ pub fn rename_heading(
         title: next_title,
         marker: normalized_marker(node.marker, node.level),
         body: node.body,
+        body_blank_lines: node.body_blank_lines,
+        leading_blank_lines: node.leading_blank_lines,
         source_line: node.source_line,
       })
     } else {
@@ -56,7 +58,7 @@ fn update_node_body(
   if flat_index < 0 || flat_index >= nodes.length() {
     return markdown
   }
-  let body_lines = normalize_markdown_body_lines(
+  let body_lines = normalize_note_editor_body_lines(
     body_text.split("\n").map(fn(line) { line.to_string() }).to_array(),
   )
   let updated = []
@@ -69,6 +71,8 @@ fn update_node_body(
         title: node.title,
         marker: node.marker,
         body: body_lines,
+        body_blank_lines: default_body_blank_lines(body_lines),
+        leading_blank_lines: node.leading_blank_lines,
         source_line: node.source_line,
       })
     } else {
@@ -76,6 +80,17 @@ fn update_node_body(
     }
   }
   render_markdown_nodes(updated)
+}
+
+///|
+fn normalize_note_editor_body_lines(lines : Array[String]) -> Array[String] {
+  let normalized = []
+  for line in lines {
+    if !is_blank_markdown_line(line) {
+      normalized.push(line)
+    }
+  }
+  normalized
 }
 
 ///|
@@ -304,13 +319,15 @@ pub fn add_child_heading(
     return markdown
   }
   if parent_flat_index == -1 {
-    let rebuilt = concat_nodes(nodes, [
+    let rebuilt = insert_nodes_at(nodes, nodes.length(), [
       MarkdownNode::{
         kind: MarkdownNodeKind::Heading,
         level: 1,
         title: next_title,
         marker: "",
         body: [],
+        body_blank_lines: [],
+        leading_blank_lines: default_insert_leading_blank_lines(nodes),
         source_line: -1,
       },
     ])
@@ -322,19 +339,18 @@ pub fn add_child_heading(
   let parent = nodes[parent_flat_index]
   let child_level = parent.level + 1
   let insert_at = subtree_end(nodes, parent_flat_index)
-  let rebuilt = concat_nodes(
-    concat_nodes(slice_nodes(nodes, 0, insert_at), [
-      MarkdownNode::{
-        kind: normalized_node_kind(parent.kind, child_level),
-        level: child_level,
-        title: next_title,
-        marker: normalized_marker(parent.marker, child_level),
-        body: [],
-        source_line: -1,
-      },
-    ]),
-    slice_nodes(nodes, insert_at, nodes.length()),
-  )
+  let rebuilt = insert_nodes_at(nodes, insert_at, [
+    MarkdownNode::{
+      kind: normalized_node_kind(parent.kind, child_level),
+      level: child_level,
+      title: next_title,
+      marker: normalized_marker(parent.marker, child_level),
+      body: [],
+      body_blank_lines: [],
+      leading_blank_lines: 0,
+      source_line: -1,
+    },
+  ])
   render_markdown_nodes(rebuilt)
 }
 
@@ -359,19 +375,18 @@ pub fn add_sibling_heading(
   } else {
     flat_index
   }
-  let rebuilt = concat_nodes(
-    concat_nodes(slice_nodes(nodes, 0, insert_at), [
-      MarkdownNode::{
-        kind: node.kind,
-        level: node.level,
-        title: next_title,
-        marker: normalized_marker(node.marker, node.level),
-        body: [],
-        source_line: -1,
-      },
-    ]),
-    slice_nodes(nodes, insert_at, nodes.length()),
-  )
+  let rebuilt = insert_nodes_at(nodes, insert_at, [
+    MarkdownNode::{
+      kind: node.kind,
+      level: node.level,
+      title: next_title,
+      marker: normalized_marker(node.marker, node.level),
+      body: [],
+      body_blank_lines: [],
+      leading_blank_lines: 0,
+      source_line: -1,
+    },
+  ])
   render_markdown_nodes(rebuilt)
 }
 
@@ -390,69 +405,155 @@ pub fn delete_heading(markdown : String, flat_index : Int) -> String {
 }
 
 ///|
-fn render_outline_markdown(root : OutlineNode) -> String {
-  if root.synthetic {
-    return render_outline_children_markdown(root.children, 0)
-  }
-  render_outline_node_markdown(root, 0)
+fn render_markdown_nodes(nodes : Array[MarkdownNode]) -> String {
+  render_flat_markdown_nodes(nodes)
 }
 
 ///|
-fn render_outline_children_markdown(
-  children : Array[OutlineNode],
-  list_indent : Int,
-) -> String {
-  let rendered = []
-  for child in children {
-    rendered.push(render_outline_node_markdown(child, list_indent))
+fn render_flat_markdown_nodes(nodes : Array[MarkdownNode]) -> String {
+  let lines = []
+  for index in 0..<nodes.length() {
+    let node = nodes[index]
+    for _ in 0..<node.leading_blank_lines {
+      lines.push("")
+    }
+    lines.push(render_flat_markdown_node_line(nodes, index))
+    let body_prefix = match node.kind {
+      MarkdownNodeKind::Heading => ""
+      MarkdownNodeKind::ListItem =>
+        repeat_spaces((flat_list_indent(nodes, index) + 1) * 2)
+    }
+    append_rendered_body_lines(lines, node, body_prefix)
   }
-  rendered.join("\n")
+  lines.join("\n")
 }
 
 ///|
-fn render_outline_node_markdown(
-  node : OutlineNode,
-  list_indent : Int,
+fn render_flat_markdown_node_line(
+  nodes : Array[MarkdownNode],
+  index : Int,
 ) -> String {
-  let current = match node.kind {
+  let node = nodes[index]
+  match node.kind {
     MarkdownNodeKind::Heading => "\{repeat_hashes(node.level)} \{node.title}"
     MarkdownNodeKind::ListItem =>
-      "\{repeat_spaces(list_indent * 2)}\{node.marker} \{node.title}"
-  }
-  let body_prefix = match node.kind {
-    MarkdownNodeKind::Heading => ""
-    MarkdownNodeKind::ListItem => repeat_spaces((list_indent + 1) * 2)
-  }
-  let body = render_markdown_body(node.body, body_prefix)
-  let child_indent = match node.kind {
-    MarkdownNodeKind::Heading => 0
-    MarkdownNodeKind::ListItem => list_indent + 1
-  }
-  let children = render_outline_children_markdown(node.children, child_indent)
-  let with_body = if body.length() == 0 {
-    current
-  } else {
-    "\{current}\n\{body}"
-  }
-  if children.length() == 0 {
-    with_body
-  } else {
-    "\{with_body}\n\{children}"
+      "\{repeat_spaces(flat_list_indent(nodes, index) * 2)}\{node.marker} \{node.title}"
   }
 }
 
 ///|
-fn render_markdown_nodes(nodes : Array[MarkdownNode]) -> String {
-  render_outline_markdown(build_outline_from_nodes(nodes))
+fn flat_list_indent(nodes : Array[MarkdownNode], index : Int) -> Int {
+  let mut indent = 0
+  let mut cursor = parent_index(nodes, index)
+  while cursor >= 0 {
+    match nodes[cursor].kind {
+      MarkdownNodeKind::ListItem => indent += 1
+      MarkdownNodeKind::Heading => ()
+    }
+    cursor = parent_index(nodes, cursor)
+  }
+  indent
 }
 
 ///|
-fn render_markdown_body(body : Array[String], prefix : String) -> String {
-  let rendered = []
-  for block in body {
-    rendered.push(indent_markdown_block(block, prefix))
+fn append_rendered_body_lines(
+  lines : Array[String],
+  node : MarkdownNode,
+  prefix : String,
+) -> Unit {
+  for index in 0..<node.body.length() {
+    let blank_count = node.body_blank_lines
+      .get(index)
+      .unwrap_or(default_body_blank_line_count(index))
+    for _ in 0..<blank_count {
+      lines.push("")
+    }
+    for
+      line in indent_markdown_block(node.body[index], prefix)
+      .split("\n")
+      .to_array() {
+      lines.push(line.to_string())
+    }
   }
-  rendered.join("\n\n")
+}
+
+///|
+fn default_body_blank_lines(body : Array[String]) -> Array[Int] {
+  let blanks = []
+  for index in 0..<body.length() {
+    blanks.push(default_body_blank_line_count(index))
+  }
+  blanks
+}
+
+///|
+fn default_body_blank_line_count(index : Int) -> Int {
+  if index == 0 {
+    0
+  } else {
+    1
+  }
+}
+
+///|
+fn default_insert_leading_blank_lines(nodes : Array[MarkdownNode]) -> Int {
+  if nodes.length() == 0 {
+    0
+  } else {
+    1
+  }
+}
+
+///|
+fn insert_nodes_at(
+  nodes : Array[MarkdownNode],
+  insert_at : Int,
+  inserted : Array[MarkdownNode],
+) -> Array[MarkdownNode] {
+  if inserted.length() == 0 {
+    return nodes
+  }
+  if insert_at < 0 || insert_at > nodes.length() {
+    return nodes
+  }
+  let prefix = slice_nodes(nodes, 0, insert_at)
+  let suffix = slice_nodes(nodes, insert_at, nodes.length())
+  if suffix.length() == 0 {
+    return concat_nodes(prefix, inserted)
+  }
+  let adjusted_inserted = []
+  for index in 0..<inserted.length() {
+    let next_leading = if index == 0 {
+      suffix[0].leading_blank_lines
+    } else {
+      inserted[index].leading_blank_lines
+    }
+    adjusted_inserted.push(
+      with_leading_blank_lines(inserted[index], next_leading),
+    )
+  }
+  let adjusted_suffix = [with_leading_blank_lines(suffix[0], 0)]
+  for index in 1..<suffix.length() {
+    adjusted_suffix.push(suffix[index])
+  }
+  concat_nodes(concat_nodes(prefix, adjusted_inserted), adjusted_suffix)
+}
+
+///|
+fn with_leading_blank_lines(
+  node : MarkdownNode,
+  leading_blank_lines : Int,
+) -> MarkdownNode {
+  MarkdownNode::{
+    kind: node.kind,
+    level: node.level,
+    title: node.title,
+    marker: node.marker,
+    body: node.body,
+    body_blank_lines: node.body_blank_lines,
+    leading_blank_lines,
+    source_line: node.source_line,
+  }
 }
 
 ///|
@@ -470,6 +571,7 @@ fn indent_markdown_block(block : String, prefix : String) -> String {
 
 ///|
 fn render_node_json_from_outline(node : OutlineNode) -> String {
+  let _ = node.marker
   let flat_index_field = json_field(
     "flat_index",
     value=node.flat_index.to_string(),
@@ -706,6 +808,8 @@ fn relevel_node(node : MarkdownNode, delta : Int) -> MarkdownNode {
     title: node.title,
     marker: normalized_marker(node.marker, next_level),
     body: node.body,
+    body_blank_lines: node.body_blank_lines,
+    leading_blank_lines: node.leading_blank_lines,
     source_line: node.source_line,
   }
 }
@@ -730,6 +834,8 @@ fn normalize_moved_root_kind(
       MarkdownNodeKind::ListItem => target_marker
     },
     body: root.body,
+    body_blank_lines: root.body_blank_lines,
+    leading_blank_lines: root.leading_blank_lines,
     source_line: root.source_line,
   }
   let rebuilt = [next_root]

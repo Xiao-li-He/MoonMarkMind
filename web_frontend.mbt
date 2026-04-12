@@ -1539,6 +1539,8 @@ fn insert_node_body_template(kind : String) -> Unit {
         title: node.title,
         marker: node.marker,
         body: next_body,
+        body_blank_lines: default_body_blank_lines(next_body),
+        leading_blank_lines: node.leading_blank_lines,
         source_line: node.source_line,
       })
     } else {

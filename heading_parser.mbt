@@ -11,7 +11,16 @@ priv struct MarkdownNode {
   title : String
   marker : String
   body : Array[String]
+  body_blank_lines : Array[Int]
+  leading_blank_lines : Int
   source_line : Int
+}
+
+///|
+priv struct ParsedMarkdownBody {
+  blocks : Array[String]
+  blank_lines : Array[Int]
+  trailing_blank_lines : Int
 }
 
 ///|
@@ -39,13 +48,18 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
   let mut stack : Array[ParseContext] = []
   let mut body_lines : Array[String] = []
   let mut current_node : MarkdownNode? = None
+  let mut pending_leading_blank_lines = 0
   let lines = markdown.split("\n").to_array()
   for line_index in 0..<lines.length() {
     let line = lines[line_index]
     match parse_heading_line(line) {
       Some(heading) => {
         match current_node {
-          Some(node) => nodes.push(attach_markdown_body(node, body_lines))
+          Some(node) => {
+            let (attached, trailing) = attach_markdown_body(node, body_lines)
+            nodes.push(attached)
+            pending_leading_blank_lines = trailing
+          }
           None => ()
         }
         body_lines = []
@@ -57,8 +71,11 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
           title,
           marker: "",
           body: [],
+          body_blank_lines: [],
+          leading_blank_lines: pending_leading_blank_lines,
           source_line: line_index,
         })
+        pending_leading_blank_lines = 0
         stack.push(ParseContext::{
           kind: MarkdownNodeKind::Heading,
           level,
@@ -69,7 +86,13 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
         match parse_list_line(line) {
           Some(list_item) => {
             match current_node {
-              Some(node) => nodes.push(attach_markdown_body(node, body_lines))
+              Some(node) => {
+                let (attached, trailing) = attach_markdown_body(
+                  node, body_lines,
+                )
+                nodes.push(attached)
+                pending_leading_blank_lines = trailing
+              }
               None => ()
             }
             body_lines = []
@@ -87,8 +110,11 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
               title,
               marker,
               body: [],
+              body_blank_lines: [],
+              leading_blank_lines: pending_leading_blank_lines,
               source_line: line_index,
             })
+            pending_leading_blank_lines = 0
             stack.push(ParseContext::{
               kind: MarkdownNodeKind::ListItem,
               level,
@@ -103,13 +129,19 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
                     body_lines.push(line.trim_start().to_string())
                   _ => body_lines.push(line.to_string())
                 }
-              None => ()
+              None =>
+                if is_blank_markdown_line(line.to_string()) {
+                  pending_leading_blank_lines += 1
+                }
             }
         }
     }
   }
   match current_node {
-    Some(node) => nodes.push(attach_markdown_body(node, body_lines))
+    Some(node) => {
+      let (attached, _) = attach_markdown_body(node, body_lines)
+      nodes.push(attached)
+    }
     None => ()
   }
   nodes
@@ -210,35 +242,58 @@ fn view_slice_to_string(line : StringView, start : Int, end_ : Int) -> String {
 fn attach_markdown_body(
   node : MarkdownNode,
   body_lines : Array[String],
-) -> MarkdownNode {
-  MarkdownNode::{
-    kind: node.kind,
-    level: node.level,
-    title: node.title,
-    marker: node.marker,
-    body: normalize_markdown_body_lines(body_lines),
-    source_line: node.source_line,
-  }
+) -> (MarkdownNode, Int) {
+  let parsed = normalize_markdown_body(body_lines)
+  (
+    MarkdownNode::{
+      kind: node.kind,
+      level: node.level,
+      title: node.title,
+      marker: node.marker,
+      body: parsed.blocks,
+      body_blank_lines: parsed.blank_lines,
+      leading_blank_lines: node.leading_blank_lines,
+      source_line: node.source_line,
+    },
+    parsed.trailing_blank_lines,
+  )
 }
 
 ///|
 fn normalize_markdown_body_lines(lines : Array[String]) -> Array[String] {
-  let normalized = []
+  normalize_markdown_body(lines).blocks
+}
+
+///|
+fn normalize_markdown_body(lines : Array[String]) -> ParsedMarkdownBody {
+  let blocks = []
+  let blank_lines = []
   let mut paragraph_lines = []
+  let mut pending_blank_lines = 0
   for line in lines {
     if is_blank_markdown_line(line) {
       if paragraph_lines.length() > 0 {
-        normalized.push(paragraph_lines.join("\n"))
+        blocks.push(paragraph_lines.join("\n"))
         paragraph_lines = []
       }
+      pending_blank_lines += 1
     } else {
+      if paragraph_lines.length() == 0 {
+        blank_lines.push(pending_blank_lines)
+        pending_blank_lines = 0
+      }
       paragraph_lines.push(line)
     }
   }
   if paragraph_lines.length() > 0 {
-    normalized.push(paragraph_lines.join("\n"))
+    blocks.push(paragraph_lines.join("\n"))
+    pending_blank_lines = 0
   }
-  normalized
+  ParsedMarkdownBody::{
+    blocks,
+    blank_lines,
+    trailing_blank_lines: pending_blank_lines,
+  }
 }
 
 ///|

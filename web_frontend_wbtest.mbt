@@ -321,7 +321,7 @@ test "list item does not cross into heading sibling" {
 }
 
 ///|
-test "markdown body ignores blank-only lines" {
+test "markdown body preserves blank-only lines on render" {
   let markdown = "# Root\n  \n\t\nFirst line\nSecond line\n\nThird line\n## Child"
   let nodes = parse_markdown_nodes(markdown)
 
@@ -331,7 +331,37 @@ test "markdown body ignores blank-only lines" {
   assert_eq(nodes[0].body[1], "Third line")
   assert_eq(
     render_markdown_nodes(nodes),
-    "# Root\nFirst line\nSecond line\n\nThird line\n## Child",
+    "# Root\n\n\nFirst line\nSecond line\n\nThird line\n## Child",
+  )
+}
+
+///|
+test "rename heading preserves original blank lines" {
+  let markdown = "# Root\n\n\n## Alpha\n\nAlpha note\n\n\n## Beta"
+
+  assert_eq(
+    rename_heading(markdown, 1, "Renamed"),
+    "# Root\n\n\n## Renamed\n\nAlpha note\n\n\n## Beta",
+  )
+}
+
+///|
+test "new sibling text is inserted before next node spacing" {
+  let markdown = "# Root\n## Alpha\n\n\n## Beta"
+
+  assert_eq(
+    add_sibling_heading(markdown, 1, "New", true),
+    "# Root\n## Alpha\n\n\n## New\n## Beta",
+  )
+}
+
+///|
+test "moving heading carries surrounding blank lines with subtree" {
+  let markdown = "# Root\n\n## Alpha\n\nAlpha note\n\n### Child\n\nChild note\n\n\n## Beta"
+
+  assert_eq(
+    move_heading_next(markdown, 1),
+    "# Root\n\n\n## Beta\n\n## Alpha\n\nAlpha note\n\n### Child\n\nChild note",
   )
 }
 
@@ -405,6 +435,20 @@ test "insert note opens editor and commits heading markdown body" {
   save_note_editor(1, "Alpha note")
   assert_eq(app_state.editing_note_node, -2)
   assert_eq(app_state.undo_stack.length(), 1)
+}
+
+///|
+test "note editor newline becomes markdown blank separator" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+
+  handle_insert_note()
+  sync_note_editor_draft(1, "First line\nSecond line")
+
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Alpha\nFirst line\n\nSecond line\n## Beta",
+  )
 }
 
 ///|
