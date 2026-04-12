@@ -2071,7 +2071,12 @@ fn build_drop_slot_dom(
   parent_index : Int,
   position : String,
 ) -> @dom.Element {
-  let slot = create_element("div", "drop-slot")
+  let class_name = if app_state.layout_mode == "logic" {
+    "drop-slot drop-slot--single-right"
+  } else {
+    "drop-slot"
+  }
+  let slot = create_element("div", class_name)
   slot.setAttribute("data-drop-target", node_index.to_string())
   slot.setAttribute("data-drop-parent", parent_index.to_string())
   slot.setAttribute("data-drop-position", position)
@@ -2632,7 +2637,12 @@ fn render_drop_slot(
   if node_index < 0 {
     return ""
   }
-  "<div class=\"drop-slot\" data-drop-target=\"\{node_index}\" data-drop-parent=\"\{parent_index}\" data-drop-position=\"\{position}\"></div>"
+  let class_name = if app_state.layout_mode == "logic" {
+    "drop-slot drop-slot--single-right"
+  } else {
+    "drop-slot"
+  }
+  "<div class=\"\{class_name}\" data-drop-target=\"\{node_index}\" data-drop-parent=\"\{parent_index}\" data-drop-position=\"\{position}\"></div>"
 }
 
 ///|

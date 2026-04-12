@@ -363,9 +363,6 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "node--center") {
     style_node_center(element)
   }
-  if has_class_name(element, "node") {
-    style_single_right_node_dimensions(element)
-  }
   if has_class_name(element, "is-selected") {
     style_node_selected(element)
   }
@@ -425,6 +422,7 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   }
   if has_class_name(element, "drop-slot") {
     style_drop_slot(element)
+    style_single_right_drop_slot(element)
   }
   if has_class_name(element, "drop-before") {
     style_drop_before(element)
@@ -1828,7 +1826,7 @@ fn style_single_right_tree(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "row")
   set_style(element, "align-items", "center")
-  set_style(element, "gap", "92px")
+  set_style(element, "gap", "56px")
   set_style(element, "min-width", "0")
 }
 
@@ -1836,7 +1834,7 @@ fn style_single_right_tree(element : @dom.Element) -> Unit {
 fn style_single_right_tree_node(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "align-items", "center")
-  set_style(element, "gap", "36px")
+  set_style(element, "gap", "24px")
   set_style(element, "min-width", "0")
 }
 
@@ -1854,7 +1852,7 @@ fn style_single_right_tree_children(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "align-items", "flex-start")
-  set_style(element, "gap", "12px")
+  set_style(element, "gap", "16px")
   set_style(element, "padding-left", "0")
   set_style(element, "position", "relative")
   set_style(element, "flex", "0 0 auto")
@@ -1914,24 +1912,9 @@ fn style_node_center(element : @dom.Element) -> Unit {
 }
 
 ///|
-fn style_single_right_node_dimensions(element : @dom.Element) -> Unit {
-  match element.closest(".mindmap-stage--single-right") {
-    Some(_) => {
-      set_style(element, "box-sizing", "border-box")
-      set_style(element, "align-items", "flex-start")
-      set_style(element, "text-align", "left")
-      if has_class_name(element, "node--center") {
-        set_style(element, "width", "260px")
-        set_style(element, "min-width", "260px")
-        set_style(element, "max-width", "260px")
-      } else {
-        set_style(element, "width", "360px")
-        set_style(element, "min-width", "360px")
-        set_style(element, "max-width", "360px")
-      }
-    }
-    None => ()
-  }
+fn is_single_right_drop_slot(element : @dom.Element) -> Bool {
+  has_class_name(element, "drop-slot--single-right") ||
+  element.closest(".mindmap-stage--single-right") is Some(_)
 }
 
 ///|
@@ -2266,6 +2249,21 @@ fn style_mindmap_stage_svg_connectors(element : @dom.Element) -> Unit {
 fn style_drop_slot(element : @dom.Element) -> Unit {
   set_style(element, "width", "100%")
   set_style(element, "min-height", "12px")
+}
+
+///|
+fn style_single_right_drop_slot(element : @dom.Element) -> Unit {
+  match is_single_right_drop_slot(element) {
+    true => {
+      set_style(element, "width", "0")
+      set_style(element, "min-width", "0")
+      set_style(element, "min-height", "0")
+      set_style(element, "height", "0")
+      set_style(element, "overflow", "hidden")
+      set_style(element, "flex", "0 0 0")
+    }
+    false => ()
+  }
 }
 
 ///|
