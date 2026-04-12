@@ -40,7 +40,7 @@ let app_state : AppState = AppState::{
   selection_anchor_node: -2,
   editing_node: -2,
   editing_note_node: -2,
-  layout_mode: "mindmap",
+  layout_mode: "logic",
   style_mode: "line",
   detail_level: "all",
   detail_customized: false,
@@ -1203,6 +1203,9 @@ fn apply_markdown_state(
   sync_detail_customized()
   if !preserve_editing_session && app_state.started {
     render_ui()
+    if reset_ui {
+      schedule_mindmap_recenter_current_view()
+    }
   }
 }
 
