@@ -468,12 +468,7 @@ fn apply_tool_select_custom_theme(custom : @dom.Element, muted : Bool) -> Unit {
       style_tool_select_trigger(trigger)
       let trigger_style = style_of(trigger)
       if is_insert {
-        trigger_style.set_property("width", "47px")
-        trigger_style.set_property("min-width", "47px")
-        trigger_style.set_property("height", "40px")
-        trigger_style.set_property("padding", "0 6px")
-        trigger_style.set_property("justify-content", "space-between")
-        trigger_style.set_property("gap", "0")
+        style_insert_tool_select_trigger(trigger)
       }
       trigger_style.set_property(
         "color",
@@ -898,10 +893,84 @@ fn style_tool_select_native(element : @dom.Element) -> Unit {
 }
 
 ///|
+fn is_insert_tool_select_part(element : @dom.Element) -> Bool {
+  element.closest(".tool-select-custom--insert") is Some(_)
+}
+
+///|
+fn style_insert_tool_select_custom(element : @dom.Element) -> Unit {
+  set_style(element, "width", "47px")
+  set_style(element, "min-width", "47px")
+  set_style(element, "max-width", "47px")
+  set_style(element, "flex", "0 0 47px")
+}
+
+///|
+fn style_insert_tool_select_trigger(element : @dom.Element) -> Unit {
+  set_style(element, "width", "47px")
+  set_style(element, "min-width", "47px")
+  set_style(element, "max-width", "47px")
+  set_style(element, "flex", "0 0 47px")
+  set_style(element, "box-sizing", "border-box")
+  set_style(element, "height", "40px")
+  set_style(element, "padding", "0 6px")
+  set_style(element, "justify-content", "space-between")
+  set_style(element, "gap", "0")
+}
+
+///|
+fn style_insert_tool_select_trigger_label(element : @dom.Element) -> Unit {
+  set_style(element, "flex", "0 0 auto")
+  set_style(element, "min-width", "0")
+  set_style(element, "text-align", "left")
+  set_style(element, "display", "none")
+}
+
+///|
+fn style_insert_tool_select_trigger_arrow(
+  element : @dom.Element,
+  open : Bool,
+) -> Unit {
+  set_style(element, "position", "static")
+  set_style(element, "right", "auto")
+  set_style(element, "top", "auto")
+  set_style(
+    element,
+    "transform",
+    if open {
+      "rotate(180deg)"
+    } else {
+      "rotate(0deg)"
+    },
+  )
+}
+
+///|
+fn style_tool_select_trigger_disabled(element : @dom.Element) -> Unit {
+  set_style(element, "cursor", "not-allowed")
+  set_style(element, "opacity", "0.56")
+  set_style(
+    element, "background", "linear-gradient(180deg, rgba(250, 252, 255, 0.9), rgba(236, 243, 250, 0.84))",
+  )
+  set_style(element, "border-color", "rgba(194, 207, 221, 0.9)")
+  set_style(
+    element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 4px 10px rgba(141, 159, 180, 0.05)",
+  )
+  set_style(element, "color", "rgba(140, 160, 182, 0.96)")
+  set_style(element, "filter", "grayscale(0.3) saturate(0.82)")
+  set_style(element, "pointer-events", "auto")
+}
+
+///|
 fn style_tool_select_custom(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
   set_style(element, "display", "inline-flex")
   let open = has_class_name(element, "is-open")
+  let is_insert = has_class_name(element, "tool-select-custom--insert")
+  let disabled = is_control_disabled(element)
+  if is_insert {
+    style_insert_tool_select_custom(element)
+  }
   match element.querySelector(".tool-select-trigger") {
     Some(trigger) => {
       set_style(trigger, "position", "relative")
@@ -922,8 +991,14 @@ fn style_tool_select_custom(element : @dom.Element) -> Unit {
         trigger, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.88), 0 10px 24px rgba(120, 139, 164, 0.08)",
       )
       set_style(trigger, "cursor", "pointer")
+      if is_insert {
+        style_insert_tool_select_trigger(trigger)
+      }
       if has_class_name(trigger, "tool-select--muted") {
         set_style(trigger, "color", "rgba(146, 164, 184, 1)")
+      }
+      if disabled {
+        style_tool_select_trigger_disabled(trigger)
       }
       match trigger.querySelector(".tool-select-trigger__label") {
         Some(label) => {
@@ -932,6 +1007,9 @@ fn style_tool_select_custom(element : @dom.Element) -> Unit {
           set_style(label, "overflow", "hidden")
           set_style(label, "text-overflow", "ellipsis")
           set_style(label, "white-space", "nowrap")
+          if is_insert {
+            style_insert_tool_select_trigger_label(label)
+          }
         }
         None => ()
       }
@@ -953,6 +1031,9 @@ fn style_tool_select_custom(element : @dom.Element) -> Unit {
           set_style(arrow, "font-size", "11px")
           set_style(arrow, "line-height", "1")
           set_style(arrow, "pointer-events", "none")
+          if is_insert {
+            style_insert_tool_select_trigger_arrow(arrow, open)
+          }
         }
         None => ()
       }
@@ -965,7 +1046,7 @@ fn style_tool_select_custom(element : @dom.Element) -> Unit {
           trigger, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 12px 28px rgba(120, 139, 164, 0.12)",
         )
       }
-      if !has_class_name(trigger, "tool-select--muted") {
+      if !has_class_name(trigger, "tool-select--muted") && !disabled {
         set_style(trigger, "color", "#5c88a8")
       }
     }
@@ -1013,22 +1094,41 @@ fn style_tool_select_trigger(element : @dom.Element) -> Unit {
   if has_class_name(element, "tool-select--muted") {
     set_style(element, "color", "rgba(146, 164, 184, 1)")
   }
+  if is_control_disabled(element) {
+    style_tool_select_trigger_disabled(element)
+  }
+  if is_insert_tool_select_part(element) {
+    style_insert_tool_select_trigger(element)
+  }
 }
 
 ///|
 fn style_tool_select_trigger_label(element : @dom.Element) -> Unit {
-  set_style(element, "flex", "1")
-  set_style(element, "min-width", "0")
-  set_style(element, "overflow", "hidden")
-  set_style(element, "text-overflow", "ellipsis")
-  set_style(element, "white-space", "nowrap")
+  if is_insert_tool_select_part(element) {
+    style_insert_tool_select_trigger_label(element)
+  } else {
+    set_style(element, "flex", "1")
+    set_style(element, "min-width", "0")
+    set_style(element, "overflow", "hidden")
+    set_style(element, "text-overflow", "ellipsis")
+    set_style(element, "white-space", "nowrap")
+  }
 }
 
 ///|
 fn style_tool_select_trigger_arrow(element : @dom.Element) -> Unit {
-  set_style(element, "position", "absolute")
-  set_style(element, "right", "12px")
-  set_style(element, "top", "50%")
+  match element.closest(".tool-select-custom--insert") {
+    Some(custom) =>
+      style_insert_tool_select_trigger_arrow(
+        element,
+        has_class_name(custom, "is-open"),
+      )
+    None => {
+      set_style(element, "position", "absolute")
+      set_style(element, "right", "12px")
+      set_style(element, "top", "50%")
+    }
+  }
   set_style(element, "color", "#5c88a8")
   set_style(element, "font-size", "11px")
   set_style(element, "line-height", "1")
