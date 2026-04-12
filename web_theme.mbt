@@ -363,6 +363,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "node--center") {
     style_node_center(element)
   }
+  if has_class_name(element, "node") {
+    style_single_right_node_dimensions(element)
+  }
   if has_class_name(element, "is-selected") {
     style_node_selected(element)
   }
@@ -1663,10 +1666,13 @@ fn style_mindmap_stage_vertical(element : @dom.Element) -> Unit {
 ///|
 fn style_mindmap_stage_single_right(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
-  set_style(element, "flex-direction", "column")
-  set_style(element, "align-items", "flex-start")
-  set_style(element, "gap", "18px")
-  set_style(element, "min-width", "860px")
+  set_style(element, "flex-direction", "row")
+  set_style(element, "align-items", "center")
+  set_style(element, "justify-content", "flex-start")
+  set_style(element, "gap", "0")
+  set_style(element, "min-width", "820px")
+  set_style(element, "min-height", "720px")
+  set_style(element, "padding", "48px 32px 48px")
 }
 
 ///|
@@ -1820,15 +1826,18 @@ fn style_vertical_tree_child(element : @dom.Element) -> Unit {
 ///|
 fn style_single_right_tree(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
-  set_style(element, "flex-direction", "column")
-  set_style(element, "gap", "18px")
+  set_style(element, "flex-direction", "row")
+  set_style(element, "align-items", "center")
+  set_style(element, "gap", "92px")
+  set_style(element, "min-width", "0")
 }
 
 ///|
 fn style_single_right_tree_node(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "align-items", "center")
-  set_style(element, "gap", "26px")
+  set_style(element, "gap", "36px")
+  set_style(element, "min-width", "0")
 }
 
 ///|
@@ -1837,15 +1846,18 @@ fn style_single_right_tree_head(element : @dom.Element) -> Unit {
   set_style(element, "justify-content", "flex-start")
   set_style(element, "position", "relative")
   set_style(element, "flex-direction", "column")
+  set_style(element, "flex", "0 0 auto")
 }
 
 ///|
 fn style_single_right_tree_children(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
-  set_style(element, "gap", "18px")
-  set_style(element, "padding-left", "32px")
+  set_style(element, "align-items", "flex-start")
+  set_style(element, "gap", "12px")
+  set_style(element, "padding-left", "0")
   set_style(element, "position", "relative")
+  set_style(element, "flex", "0 0 auto")
 }
 
 ///|
@@ -1898,6 +1910,27 @@ fn style_node_center(element : @dom.Element) -> Unit {
     set_style(
       element, "box-shadow", "inset 0 1px 0 rgba(233, 242, 251, 0.18), 0 16px 34px rgba(110, 131, 156, 0.16)",
     )
+  }
+}
+
+///|
+fn style_single_right_node_dimensions(element : @dom.Element) -> Unit {
+  match element.closest(".mindmap-stage--single-right") {
+    Some(_) => {
+      set_style(element, "box-sizing", "border-box")
+      set_style(element, "align-items", "flex-start")
+      set_style(element, "text-align", "left")
+      if has_class_name(element, "node--center") {
+        set_style(element, "width", "260px")
+        set_style(element, "min-width", "260px")
+        set_style(element, "max-width", "260px")
+      } else {
+        set_style(element, "width", "360px")
+        set_style(element, "min-width", "360px")
+        set_style(element, "max-width", "360px")
+      }
+    }
+    None => ()
   }
 }
 

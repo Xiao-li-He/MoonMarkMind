@@ -370,7 +370,7 @@ fn connector_geometry(
       let end_x = stage_local_x(node_rect.left, stage_left, safe_zoom)
       let end_y = node_center_y
       let span_x = abs_double(end_x - start_x)
-      let bend = min_double(42.0, max_double(14.0, span_x * 0.35))
+      let bend = min_double(36.0, max_double(14.0, span_x * 0.28))
       Some(ConnectorPathData::{
         start_x,
         start_y,
@@ -633,7 +633,9 @@ fn apply_contour_layout() -> Unit {
     Some(mindmap) =>
       match mindmap.querySelector(".mindmap-stage") {
         Some(stage) => {
-          apply_contour_min_heights(stage)
+          if !has_class_name(stage, "mindmap-stage--single-right") {
+            apply_contour_min_heights(stage)
+          }
           if has_class_name(stage, "mindmap-stage--radial") {
             apply_mindmap_root_packing(stage)
             apply_mindmap_single_child_alignment(stage)
