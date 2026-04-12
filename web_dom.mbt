@@ -1779,6 +1779,14 @@ fn sync_custom_select_trigger(
 }
 
 ///|
+fn auto_close_custom_select_on_leave(id : String) -> Bool {
+  id == "layout-select" ||
+  id == "style-select" ||
+  id == "detail-select" ||
+  id == "export-select"
+}
+
+///|
 fn init_custom_select(id : String) -> Unit {
   match get_element_by_id(id) {
     Some(control) => {
@@ -1871,6 +1879,21 @@ fn init_custom_select(id : String) -> Unit {
           has_class_name(select.as_element(), "tool-select--muted"),
         )
       })
+      if auto_close_custom_select_on_leave(id) {
+        custom
+        .as_event_target()
+        .addEventListener("mouseleave", fn(_) {
+          if !has_class_name(custom, "is-open") {
+            return
+          }
+          toggle_class(custom, "is-open", false)
+          trigger.setAttribute("aria-expanded", "false")
+          apply_tool_select_custom_theme(
+            custom,
+            has_class_name(select.as_element(), "tool-select--muted"),
+          )
+        })
+      }
       custom.as_node().appendChild(trigger.as_node()) |> ignore
       custom.as_node().appendChild(menu.as_node()) |> ignore
       select.insertAdjacentElement("afterend", custom) |> ignore

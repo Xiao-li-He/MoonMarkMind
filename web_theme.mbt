@@ -1138,7 +1138,7 @@ fn style_tool_select_trigger_arrow(element : @dom.Element) -> Unit {
 ///|
 fn style_tool_select_menu(element : @dom.Element) -> Unit {
   set_style(element, "position", "absolute")
-  set_style(element, "top", "calc(100% + 6px)")
+  set_style(element, "top", "100%")
   set_style(element, "left", "0")
   set_style(element, "min-width", "100%")
   set_style(element, "padding", "6px")

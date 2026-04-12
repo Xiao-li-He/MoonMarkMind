@@ -225,6 +225,43 @@ fn mindmap_fit_to_view(
 }
 
 ///|
+fn mindmap_root_anchor_fraction(stage : @dom.Element) -> (Double, Double) {
+  if has_class_name(stage, "mindmap-stage--vertical") {
+    (0.5, 0.125)
+  } else if has_class_name(stage, "mindmap-stage--single-right") {
+    (0.125, 0.5)
+  } else {
+    (0.5, 0.5)
+  }
+}
+
+///|
+fn schedule_mindmap_recenter_current_view() -> Unit {
+  match get_element("#mindmap") {
+    Some(mindmap) => {
+      let window = @dom.window()
+      ignore(
+        window.requestAnimationFrame(fn(_) {
+          ignore(
+            window.requestAnimationFrame(fn(_) {
+              let frame = @ref.Ref(0)
+              mindmap_recenter_pan(
+                mindmap,
+                get_element("#zoom-value"),
+                get_element("#zoom-edit"),
+                frame,
+                window,
+              )
+            }),
+          )
+        }),
+      )
+    }
+    None => ()
+  }
+}
+
+///|
 fn mindmap_recenter_pan(
   mindmap : @dom.Element,
   zoom_value : @dom.Element?,
@@ -234,23 +271,41 @@ fn mindmap_recenter_pan(
 ) -> Unit {
   match mindmap.querySelector(".mindmap-stage") {
     Some(stage) => {
-      let viewport_width = mindmap.clientWidth().to_double()
-      let viewport_height = mindmap.clientHeight().to_double()
-      let stage_width = stage.clientWidth().to_double()
-      let stage_height = stage.clientHeight().to_double()
-      let mut next_pan_x = 0
-      let mut next_pan_y = 0
-      if has_class_name(stage, "mindmap-stage--vertical") {
-        next_pan_y = ((stage_height - viewport_height) / 2.0 + 48.0)
-          .round()
-          .to_int()
-      } else if has_class_name(stage, "mindmap-stage--single-right") {
-        next_pan_x = ((stage_width - viewport_width) / 2.0 + 56.0)
-          .round()
-          .to_int()
+      match stage.querySelector(".node[data-parent-index=\"-1\"]") {
+        Some(root) => {
+          let mindmap_rect = element_rect(mindmap)
+          let root_rect = element_rect(root)
+          let (anchor_x, anchor_y) = mindmap_root_anchor_fraction(stage)
+          let target_x = mindmap_rect.left + mindmap_rect.width * anchor_x
+          let target_y = mindmap_rect.top + mindmap_rect.height * anchor_y
+          let current_pan_x = parse_int_or_default(
+            mindmap.getAttribute("data-pan-x").unwrap_or("0"),
+            0,
+          )
+          let current_pan_y = parse_int_or_default(
+            mindmap.getAttribute("data-pan-y").unwrap_or("0"),
+            0,
+          )
+          let next_pan_x = current_pan_x.to_double() +
+            target_x -
+            rect_center_x(root_rect)
+          let next_pan_y = current_pan_y.to_double() +
+            target_y -
+            rect_center_y(root_rect)
+          mindmap.setAttribute(
+            "data-pan-x",
+            next_pan_x.round().to_int().to_string(),
+          )
+          mindmap.setAttribute(
+            "data-pan-y",
+            next_pan_y.round().to_int().to_string(),
+          )
+        }
+        None => {
+          mindmap.setAttribute("data-pan-x", "0")
+          mindmap.setAttribute("data-pan-y", "0")
+        }
       }
-      mindmap.setAttribute("data-pan-x", next_pan_x.to_string())
-      mindmap.setAttribute("data-pan-y", next_pan_y.to_string())
       mindmap_sync_view(mindmap, zoom_value, zoom_edit)
       mindmap_schedule_connectors(frame, window)
     }
@@ -322,6 +377,10 @@ fn bind_mindmap_ui(
         if mindmap_can_pan(event.target()) {
           event.preventDefault()
           event.stopPropagation()
+          suppress_click.val = false
+          mindmap_recenter_pan(
+            mindmap, zoom_value, zoom_edit, connector_frame, window,
+          )
           return
         }
         suppress_click.val = false
