@@ -633,7 +633,7 @@ fn apply_contour_layout() -> Unit {
     Some(mindmap) =>
       match mindmap.querySelector(".mindmap-stage") {
         Some(stage) => {
-          if !has_class_name(stage, "mindmap-stage--single-right") {
+          if has_class_name(stage, "mindmap-stage--radial") {
             apply_contour_min_heights(stage)
           }
           if has_class_name(stage, "mindmap-stage--radial") {

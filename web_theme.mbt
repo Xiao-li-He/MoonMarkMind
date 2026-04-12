@@ -1657,8 +1657,10 @@ fn style_mindmap_stage_vertical(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "align-items", "center")
-  set_style(element, "gap", "24px")
-  set_style(element, "min-width", "720px")
+  set_style(element, "gap", "18px")
+  set_style(element, "min-width", "960px")
+  set_style(element, "min-height", "720px")
+  set_style(element, "padding", "42px 32px 48px")
 }
 
 ///|
@@ -1793,7 +1795,7 @@ fn style_vertical_root(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "align-items", "center")
-  set_style(element, "min-width", "720px")
+  set_style(element, "min-width", "0")
 }
 
 ///|
@@ -1807,10 +1809,11 @@ fn style_vertical_tree(element : @dom.Element) -> Unit {
 ///|
 fn style_vertical_tree_children(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
-  set_style(element, "flex-direction", "column")
-  set_style(element, "align-items", "center")
+  set_style(element, "flex-direction", "row")
+  set_style(element, "align-items", "flex-start")
+  set_style(element, "justify-content", "center")
   set_style(element, "gap", "18px")
-  set_style(element, "padding-top", "26px")
+  set_style(element, "padding-top", "22px")
   set_style(element, "position", "relative")
 }
 
@@ -1818,6 +1821,7 @@ fn style_vertical_tree_children(element : @dom.Element) -> Unit {
 fn style_vertical_tree_child(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "justify-content", "center")
+  set_style(element, "align-items", "flex-start")
   set_style(element, "min-width", "0")
 }
 
