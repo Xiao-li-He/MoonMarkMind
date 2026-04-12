@@ -1654,7 +1654,7 @@ fn build_root_branch_node_dom(
 ) -> @dom.Element {
   let branch = create_element(
     "div",
-    "branch-item branch-item--\{direction} branch-item--root",
+    "branch-item branch-item--\{direction} branch-item--root single-right-tree__node single-right-tree__node--\{direction}",
   )
   branch.setAttribute("data-node-index", node.flat_index.to_string())
   branch.setAttribute("data-parent-index", parent_index.to_string())
@@ -1664,9 +1664,8 @@ fn build_root_branch_node_dom(
     branch,
     build_drop_slot_dom(node.flat_index, parent_index, "before"),
   )
-  append_child(
-    branch,
-    build_branch_row_dom(node, parent_index, false, direction, tone_index),
+  append_branch_logic_parts(
+    branch, node, parent_index, false, direction, tone_index,
   )
   append_child(
     branch,
@@ -1676,15 +1675,18 @@ fn build_root_branch_node_dom(
 }
 
 ///|
-fn build_branch_row_dom(
+fn append_branch_logic_parts(
+  branch : @dom.Element,
   node : OutlineNode,
   parent_index : Int,
   is_root : Bool,
   direction : String,
   tone_index : Int,
-) -> @dom.Element {
-  let row = create_element("div", "branch-item__row")
-  let head = create_element("div", "branch-item__head")
+) -> Unit {
+  let head = create_element(
+    "div",
+    "single-right-tree__head single-right-tree__head--\{direction}",
+  )
   let card = build_node_card_dom(
     node,
     parent_index,
@@ -1697,15 +1699,14 @@ fn build_branch_row_dom(
     },
   )
   if direction == "left" {
-    append_child(row, build_branch_children_dom(node, direction, tone_index))
     append_child(head, card)
-    append_child(row, head)
+    append_child(branch, build_branch_children_dom(node, direction, tone_index))
+    append_child(branch, head)
   } else {
     append_child(head, card)
-    append_child(row, head)
-    append_child(row, build_branch_children_dom(node, direction, tone_index))
+    append_child(branch, head)
+    append_child(branch, build_branch_children_dom(node, direction, tone_index))
   }
-  row
 }
 
 ///|
@@ -1715,7 +1716,10 @@ fn build_branch_node_dom(
   direction : String,
   tone_index : Int,
 ) -> @dom.Element {
-  let branch = create_element("div", "branch-item branch-item--\{direction}")
+  let branch = create_element(
+    "div",
+    "branch-item branch-item--\{direction} single-right-tree__node single-right-tree__node--\{direction}",
+  )
   branch.setAttribute("data-node-index", node.flat_index.to_string())
   branch.setAttribute("data-parent-index", parent_index.to_string())
   apply_node_visual_attrs(branch, node, tone_index)
@@ -1723,9 +1727,8 @@ fn build_branch_node_dom(
     branch,
     build_drop_slot_dom(node.flat_index, parent_index, "before"),
   )
-  append_child(
-    branch,
-    build_branch_row_dom(node, parent_index, false, direction, tone_index),
+  append_branch_logic_parts(
+    branch, node, parent_index, false, direction, tone_index,
   )
   append_child(
     branch,
@@ -1763,7 +1766,7 @@ fn build_branch_children_dom(
 ) -> @dom.Element {
   let children = create_element(
     "div",
-    "branch-children branch-children--\{direction}",
+    "single-right-tree__children single-right-tree__children--\{direction}",
   )
   apply_node_visual_attrs(children, node, tone_index)
   if !should_render_children(node) {
@@ -2215,12 +2218,12 @@ fn render_branch_node(
   let after_slot = render_drop_slot(node.flat_index, parent_index, "after")
   let children_html = render_branch_children(node, direction, tone_index)
   let branch_attrs = render_node_visual_attrs(node, tone_index)
-  let row_html = if direction == "left" {
-    "<div class=\"branch-item__row\">\{children_html}<div class=\"branch-item__head\">\{card}</div></div>"
+  let body = if direction == "left" {
+    "\{children_html}<div class=\"single-right-tree__head single-right-tree__head--left\">\{card}</div>"
   } else {
-    "<div class=\"branch-item__row\"><div class=\"branch-item__head\">\{card}</div>\{children_html}</div>"
+    "<div class=\"single-right-tree__head single-right-tree__head--right\">\{card}</div>\{children_html}"
   }
-  "<div class=\"branch-item branch-item--\{direction}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{branch_attrs}>\{before_slot}\{row_html}\{after_slot}</div>"
+  "<div class=\"branch-item branch-item--\{direction} single-right-tree__node single-right-tree__node--\{direction}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{branch_attrs}>\{before_slot}\{body}\{after_slot}</div>"
 }
 
 ///|
@@ -2244,7 +2247,7 @@ fn render_branch_children(
   }
   let body = child_parts.join("")
   let branch_attrs = render_node_visual_attrs(node, tone_index)
-  "<div class=\"branch-children branch-children--\{direction}\"\{branch_attrs}>\{body}</div>"
+  "<div class=\"single-right-tree__children single-right-tree__children--\{direction}\"\{branch_attrs}>\{body}</div>"
 }
 
 ///|
@@ -2495,7 +2498,7 @@ fn contour_subtree_span(node : OutlineNode) -> Int {
   if child_count == 0 {
     own_height
   } else {
-    own_height + 18 + total_children + (child_count - 1) * 18
+    own_height + 16 + total_children + (child_count - 1) * 16
   }
 }
 

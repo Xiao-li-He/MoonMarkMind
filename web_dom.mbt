@@ -654,6 +654,11 @@ fn apply_contour_min_heights(stage : @dom.Element) -> Unit {
     if has_class_name(element, "node") {
       continue
     }
+    if !has_class_name(element, "branch-item--root") {
+      let style = @dom.css_style_from_val(element.as_any()._get("style").cast())
+      style.set_property("min-height", "0")
+      continue
+    }
     let node_index = parse_int_or_default(
       element.getAttribute("data-node-index").unwrap_or("-1"),
       -1,

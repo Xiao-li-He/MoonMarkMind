@@ -345,11 +345,23 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "single-right-tree__node") {
     style_single_right_tree_node(element)
   }
+  if has_class_name(element, "single-right-tree__node--left") {
+    style_single_right_tree_node_left(element)
+  }
+  if has_class_name(element, "single-right-tree__node--right") {
+    style_single_right_tree_node_right(element)
+  }
   if has_class_name(element, "single-right-tree__head") {
     style_single_right_tree_head(element)
   }
   if has_class_name(element, "single-right-tree__children") {
     style_single_right_tree_children(element)
+  }
+  if has_class_name(element, "single-right-tree__children--left") {
+    style_single_right_tree_children_left(element)
+  }
+  if has_class_name(element, "single-right-tree__children--right") {
+    style_single_right_tree_children_right(element)
   }
   if has_class_name(element, "node") {
     style_node(element)
@@ -1937,9 +1949,20 @@ fn style_single_right_tree(element : @dom.Element) -> Unit {
 ///|
 fn style_single_right_tree_node(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
+  set_style(element, "flex-direction", "row")
   set_style(element, "align-items", "center")
   set_style(element, "gap", "24px")
   set_style(element, "min-width", "0")
+}
+
+///|
+fn style_single_right_tree_node_left(element : @dom.Element) -> Unit {
+  set_style(element, "justify-content", "flex-end")
+}
+
+///|
+fn style_single_right_tree_node_right(element : @dom.Element) -> Unit {
+  set_style(element, "justify-content", "flex-start")
 }
 
 ///|
@@ -1960,6 +1983,16 @@ fn style_single_right_tree_children(element : @dom.Element) -> Unit {
   set_style(element, "padding-left", "0")
   set_style(element, "position", "relative")
   set_style(element, "flex", "0 0 auto")
+}
+
+///|
+fn style_single_right_tree_children_left(element : @dom.Element) -> Unit {
+  set_style(element, "align-items", "flex-end")
+}
+
+///|
+fn style_single_right_tree_children_right(element : @dom.Element) -> Unit {
+  set_style(element, "align-items", "flex-start")
 }
 
 ///|
@@ -2018,7 +2051,8 @@ fn style_node_center(element : @dom.Element) -> Unit {
 ///|
 fn is_single_right_drop_slot(element : @dom.Element) -> Bool {
   has_class_name(element, "drop-slot--single-right") ||
-  element.closest(".mindmap-stage--single-right") is Some(_)
+  element.closest(".mindmap-stage--single-right, .single-right-tree__node")
+  is Some(_)
 }
 
 ///|
