@@ -234,20 +234,23 @@ fn mindmap_fit_to_view(
     Some(stage) => {
       let viewport_width = mindmap.clientWidth().to_double() - 24.0
       let viewport_height = mindmap.clientHeight().to_double() - 24.0
-      let stage_width = stage.clientWidth().to_double()
-      let stage_height = stage.clientHeight().to_double()
+      let current_zoom = mindmap_current_zoom(mindmap)
+      let (fit_width, fit_height) = mindmap_fit_content_size(
+        stage, current_zoom,
+      )
       if viewport_width <= 0.0 ||
         viewport_height <= 0.0 ||
-        stage_width <= 0.0 ||
-        stage_height <= 0.0 {
+        fit_width <= 0.0 ||
+        fit_height <= 0.0 {
         return
       }
-      let next_zoom = if viewport_width / stage_width <
-        viewport_height / stage_height {
-        viewport_width / stage_width
+      let fit_zoom = if viewport_width / fit_width <
+        viewport_height / fit_height {
+        viewport_width / fit_width
       } else {
-        viewport_height / stage_height
+        viewport_height / fit_height
       }
+      let next_zoom = min_double(1.0, fit_zoom)
       mindmap.setAttribute("data-pan-x", "0")
       mindmap.setAttribute("data-pan-y", "0")
       mindmap_apply_zoom(
@@ -259,6 +262,8 @@ fn mindmap_fit_to_view(
         next_zoom,
         preserve_root_anchor=false,
       )
+      mindmap_center_fit_content(mindmap, zoom_value, zoom_edit)
+      mindmap_schedule_connectors(frame, window)
     }
     None => {
       mindmap.setAttribute("data-pan-x", "0")
@@ -274,6 +279,99 @@ fn mindmap_fit_to_view(
       )
     }
   }
+}
+
+///|
+fn mindmap_fit_content_size(
+  stage : @dom.Element,
+  current_zoom : Double,
+) -> (Double, Double) {
+  let safe_zoom = if current_zoom.is_nan() || current_zoom <= 0.0 {
+    1.0
+  } else {
+    current_zoom
+  }
+  match mindmap_node_bounds(stage) {
+    Some((left, top, right, bottom)) => {
+      let _ = left
+      let _ = top
+      (
+        max_double(1.0, (right - left) / safe_zoom),
+        max_double(1.0, (bottom - top) / safe_zoom),
+      )
+    }
+    None => (stage.clientWidth().to_double(), stage.clientHeight().to_double())
+  }
+}
+
+///|
+fn mindmap_center_fit_content(
+  mindmap : @dom.Element,
+  zoom_value : @dom.Element?,
+  zoom_edit : @dom.Element?,
+) -> Unit {
+  match mindmap.querySelector(".mindmap-stage") {
+    Some(stage) =>
+      match mindmap_node_bounds(stage) {
+        Some((left, top, right, bottom)) => {
+          let mindmap_rect = element_rect(mindmap)
+          let target_x = rect_center_x(mindmap_rect)
+          let target_y = rect_center_y(mindmap_rect)
+          let content_x = (left + right) / 2.0
+          let content_y = (top + bottom) / 2.0
+          let current_pan_x = parse_int_or_default(
+            mindmap.getAttribute("data-pan-x").unwrap_or("0"),
+            0,
+          )
+          let current_pan_y = parse_int_or_default(
+            mindmap.getAttribute("data-pan-y").unwrap_or("0"),
+            0,
+          )
+          mindmap.setAttribute(
+            "data-pan-x",
+            (current_pan_x.to_double() + target_x - content_x)
+            .round()
+            .to_int()
+            .to_string(),
+          )
+          mindmap.setAttribute(
+            "data-pan-y",
+            (current_pan_y.to_double() + target_y - content_y)
+            .round()
+            .to_int()
+            .to_string(),
+          )
+          mindmap_sync_view(mindmap, zoom_value, zoom_edit)
+        }
+        None => ()
+      }
+    None => ()
+  }
+}
+
+///|
+fn mindmap_node_bounds(
+  stage : @dom.Element,
+) -> (Double, Double, Double, Double)? {
+  let nodes : Array[@dom.Element] = stage.querySelectorAll(
+    ".node[data-node-index]",
+  )
+  if nodes.length() == 0 {
+    return None
+  }
+  let first_rect = element_rect(nodes[0])
+  let mut left = first_rect.left
+  let mut top = first_rect.top
+  let mut right = first_rect.right
+  let mut bottom = first_rect.bottom
+  for index in 1..<nodes.length() {
+    let rect = element_rect(nodes[index])
+    left = min_double(left, rect.left)
+    top = min_double(top, rect.top)
+    right = max_double(right, rect.right)
+    bottom = max_double(bottom, rect.bottom)
+  }
+  Some((left, top, right, bottom))
 }
 
 ///|
