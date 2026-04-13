@@ -519,7 +519,7 @@ fn insert_nodes_at(
   let prefix = slice_nodes(nodes, 0, insert_at)
   let suffix = slice_nodes(nodes, insert_at, nodes.length())
   if suffix.length() == 0 {
-    return concat_nodes(prefix, inserted)
+    return concat_nodes(prefix, inserted_nodes_with_context(prefix, inserted))
   }
   let adjusted_inserted = []
   for index in 0..<inserted.length() {
@@ -529,14 +529,94 @@ fn insert_nodes_at(
       inserted[index].leading_blank_lines
     }
     adjusted_inserted.push(
-      with_leading_blank_lines(inserted[index], next_leading),
+      with_leading_blank_lines(
+        inserted[index],
+        inserted_leading_blank_lines(
+          prefix,
+          adjusted_inserted,
+          inserted[index],
+          next_leading,
+        ),
+      ),
     )
   }
-  let adjusted_suffix = [with_leading_blank_lines(suffix[0], 0)]
+  let adjusted_suffix = [
+    with_leading_blank_lines(
+      suffix[0],
+      suffix_leading_blank_lines(adjusted_inserted, suffix[0]),
+    ),
+  ]
   for index in 1..<suffix.length() {
     adjusted_suffix.push(suffix[index])
   }
   concat_nodes(concat_nodes(prefix, adjusted_inserted), adjusted_suffix)
+}
+
+///|
+fn suffix_leading_blank_lines(
+  inserted_before : Array[MarkdownNode],
+  suffix_node : MarkdownNode,
+) -> Int {
+  if inserted_before.length() == 0 {
+    return 0
+  }
+  let previous = inserted_before[inserted_before.length() - 1]
+  match (previous.kind, suffix_node.kind) {
+    (MarkdownNodeKind::ListItem, MarkdownNodeKind::Heading) => 1
+    _ => 0
+  }
+}
+
+///|
+fn inserted_nodes_with_context(
+  prefix : Array[MarkdownNode],
+  inserted : Array[MarkdownNode],
+) -> Array[MarkdownNode] {
+  let adjusted = []
+  for node in inserted {
+    adjusted.push(
+      with_leading_blank_lines(
+        node,
+        inserted_leading_blank_lines(
+          prefix,
+          adjusted,
+          node,
+          node.leading_blank_lines,
+        ),
+      ),
+    )
+  }
+  adjusted
+}
+
+///|
+fn inserted_leading_blank_lines(
+  prefix : Array[MarkdownNode],
+  inserted_before : Array[MarkdownNode],
+  node : MarkdownNode,
+  inherited : Int,
+) -> Int {
+  let previous = if inserted_before.length() > 0 {
+    Some(inserted_before[inserted_before.length() - 1])
+  } else if prefix.length() > 0 {
+    Some(prefix[prefix.length() - 1])
+  } else {
+    None
+  }
+  match previous {
+    Some(prev) =>
+      match (prev.kind, node.kind) {
+        (MarkdownNodeKind::ListItem, MarkdownNodeKind::Heading) =>
+          if inherited < 1 {
+            1
+          } else {
+            inherited
+          }
+        (MarkdownNodeKind::ListItem, MarkdownNodeKind::ListItem) => 0
+        _ => inherited
+      }
+    None => inherited
+  }
 }
 
 ///|

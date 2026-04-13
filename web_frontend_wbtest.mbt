@@ -476,6 +476,32 @@ test "new sibling text is inserted before next node spacing" {
 }
 
 ///|
+test "heading inserted after list sibling keeps list block separator" {
+  let markdown = "# Root\n## Parent\n- list item\n## Next"
+  let outline = build_outline(markdown)
+  let parent_index = outline_flat_index_by_title(outline, "Parent")
+  assert_eq(parent_index >= 0, true)
+
+  assert_eq(
+    add_child_heading(markdown, parent_index, "New heading"),
+    "# Root\n## Parent\n- list item\n\n### New heading\n## Next",
+  )
+}
+
+///|
+test "list inserted after list sibling stays in same list block" {
+  let markdown = "# Root\n## Parent\n- list item\n\n## Next"
+  let outline = build_outline(markdown)
+  let list_index = outline_flat_index_by_title(outline, "list item")
+  assert_eq(list_index >= 0, true)
+
+  assert_eq(
+    add_sibling_heading(markdown, list_index, "New item", true),
+    "# Root\n## Parent\n- list item\n- New item\n\n## Next",
+  )
+}
+
+///|
 test "moving heading carries surrounding blank lines with subtree" {
   let markdown = "# Root\n\n## Alpha\n\nAlpha note\n\n### Child\n\nChild note\n\n\n## Beta"
 
