@@ -209,7 +209,7 @@ fn build_markdown_block_dom(block : MarkdownBlock) -> @dom.Element {
       if lang.length() > 0 {
         pre.setAttribute("data-lang", lang)
       }
-      let code = create_element("code", "")
+      let code = create_element("code", "markdown-code-block__code")
       code.setTextContent(code_text)
       append_child(pre, code)
       pre
@@ -288,9 +288,12 @@ fn render_markdown_block_safe_html(block : MarkdownBlock) -> SafeHtml {
         class_name="markdown-code-block",
         attrs=lang_attr,
         children=[
-          safe_html_element("code", class_name="", attrs="", children=[
-            safe_html_text(code_text),
-          ]),
+          safe_html_element(
+            "code",
+            class_name="markdown-code-block__code",
+            attrs="",
+            children=[safe_html_text(code_text)],
+          ),
         ],
       )
     }

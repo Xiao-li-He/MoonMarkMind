@@ -414,6 +414,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "markdown-code-block") {
     style_markdown_code_block(element)
   }
+  if has_class_name(element, "markdown-code-block__code") {
+    style_markdown_code_block_code(element)
+  }
   if has_class_name(element, "markdown-task") {
     style_markdown_task(element)
   }
@@ -2208,6 +2211,10 @@ fn style_node_title(element : @dom.Element) -> Unit {
 ///|
 fn style_node_body(element : @dom.Element) -> Unit {
   set_style(element, "display", "block")
+  set_style(element, "width", "100%")
+  set_style(element, "max-width", "100%")
+  set_style(element, "min-width", "0")
+  set_style(element, "box-sizing", "border-box")
   set_style(element, "margin-top", "0")
   set_style(element, "margin-left", "auto")
   set_style(element, "margin-right", "auto")
@@ -2236,7 +2243,9 @@ fn style_markdown_blocks(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "gap", "6px")
+  set_style(element, "width", "100%")
   set_style(element, "max-width", "100%")
+  set_style(element, "min-width", "0")
 }
 
 ///|
@@ -2282,6 +2291,11 @@ fn style_markdown_link(element : @dom.Element) -> Unit {
 ///|
 fn style_markdown_code_block(element : @dom.Element) -> Unit {
   set_style(element, "margin", "0")
+  set_style(element, "display", "block")
+  set_style(element, "width", "100%")
+  set_style(element, "max-width", "100%")
+  set_style(element, "min-width", "0")
+  set_style(element, "box-sizing", "border-box")
   set_style(element, "padding", "8px")
   set_style(element, "border-radius", "8px")
   set_style(element, "background", "rgba(29, 45, 62, 0.92)")
@@ -2290,8 +2304,14 @@ fn style_markdown_code_block(element : @dom.Element) -> Unit {
   set_style(element, "font-size", "11px")
   set_style(element, "line-height", "1.45")
   set_style(element, "white-space", "pre")
-  set_style(element, "overflow", "auto")
-  set_style(element, "max-width", "100%")
+  set_style(element, "overflow-x", "auto")
+  set_style(element, "overflow-y", "hidden")
+}
+
+///|
+fn style_markdown_code_block_code(element : @dom.Element) -> Unit {
+  set_style(element, "display", "block")
+  set_style(element, "min-width", "max-content")
 }
 
 ///|
