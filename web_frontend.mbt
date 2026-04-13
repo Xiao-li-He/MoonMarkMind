@@ -324,6 +324,18 @@ fn on_mindmap_dblclick(event : @dom.MouseEvent) -> Unit {
     event.stopPropagation()
     return
   }
+  let target = event.target()
+  if event_note_preview_from_target(target) {
+    match target.closest("a") {
+      Some(_) => ()
+      None => {
+        event.stopPropagation()
+        select_single_node(node_index, true)
+        begin_note_edit_node(node_index)
+      }
+    }
+    return
+  }
   match find_node(app_state.root, node_index) {
     Some(node) => {
       if node.synthetic {
@@ -2053,25 +2065,33 @@ fn build_node_title_dom(node : OutlineNode, is_editing : Bool) -> @dom.Element {
     @dom.HTMLInputElement::cast_from_element(input).value = node.title
     input
   } else {
-    let title = create_element("strong", "")
-    title.setTextContent(node.title)
+    let title = create_element("strong", "node-title")
+    append_child(title, build_markdown_title_dom(node.title))
     title
   }
 }
 
 ///|
 fn build_node_body_dom(node : OutlineNode) -> @dom.Element? {
-  if app_state.editing_note_node != node.flat_index {
+  if !node_has_note(node) {
     return None
   }
   let body = create_element("div", "node-body")
-  let textarea = create_element("textarea", "node-note-editor")
-  textarea.setAttribute("data-note-editor-for", node.flat_index.to_string())
-  textarea.setAttribute("rows", "4")
-  @dom.HTMLTextAreaElement::cast_from_element(textarea).value = node.body.join(
-    "\n\n",
-  )
-  append_child(body, textarea)
+  if app_state.editing_note_node == node.flat_index {
+    let textarea = create_element("textarea", "node-note-editor")
+    textarea.setAttribute("data-note-editor-for", node.flat_index.to_string())
+    textarea.setAttribute("rows", "4")
+    @dom.HTMLTextAreaElement::cast_from_element(textarea).value = node.body.join(
+      "\n\n",
+    )
+    append_child(body, textarea)
+  } else {
+    body.setClassName("node-body node-body-preview")
+    apply_theme_to_element(body)
+    body.setAttribute("data-note-preview-for", node.flat_index.to_string())
+    body.setAttribute("data-tip", "Double-click to edit note")
+    append_child(body, build_markdown_blocks_dom(node.body))
+  }
   Some(body)
 }
 
@@ -2482,7 +2502,7 @@ fn render_node_title(node : OutlineNode, is_editing : Bool) -> String {
     let value = escape_html_attribute(node.title)
     return "<input class=\"node-editor\" data-editor-for=\"\{node.flat_index}\" type=\"text\" value=\"\{value}\" />"
   }
-  let title = escape_html(node.title)
+  let title = render_markdown_title_html(node.title)
   "<strong>\{title}</strong>"
 }
 
@@ -2501,7 +2521,7 @@ fn render_node_body(node : OutlineNode) -> String {
     let value = escape_html(node.body.join("\n\n"))
     "<div class=\"node-body\"><textarea class=\"node-note-editor\" data-note-editor-for=\"\{node.flat_index}\" rows=\"4\">\{value}</textarea></div>"
   } else {
-    ""
+    "<div class=\"node-body node-body-preview\" data-note-preview-for=\"\{node.flat_index}\" data-tip=\"Double-click to edit note\"><div class=\"markdown-blocks\">\{render_markdown_blocks_html(node.body)}</div></div>"
   }
   "<div class=\"node-note-rail\">\{note_button}\{body}</div>"
 }
@@ -3030,13 +3050,13 @@ fn find_node(node : OutlineNode, target : Int) -> OutlineNode? {
 ///|
 fn escape_html(source : String) -> String {
   source
-  .replace(old="&", new="&amp;")
-  .replace(old="<", new="&lt;")
-  .replace(old=">", new="&gt;")
-  .replace(old="\"", new="&quot;")
+  .replace_all(old="&", new="&amp;")
+  .replace_all(old="<", new="&lt;")
+  .replace_all(old=">", new="&gt;")
+  .replace_all(old="\"", new="&quot;")
 }
 
 ///|
 fn escape_html_attribute(source : String) -> String {
-  escape_html(source).replace(old="'", new="&#39;")
+  escape_html(source).replace_all(old="'", new="&#39;")
 }

@@ -2961,6 +2961,11 @@ fn event_note_editor_index_from_target(target : @dom.Element) -> Int {
 }
 
 ///|
+fn event_note_preview_from_target(target : @dom.Element) -> Bool {
+  target.closest("[data-note-preview-for]") is Some(_)
+}
+
+///|
 fn event_editor_value_from_target(target : @dom.Element) -> String {
   if target.tagName() == "TEXTAREA" {
     to_text_area(target).value

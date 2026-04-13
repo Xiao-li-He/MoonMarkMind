@@ -71,6 +71,86 @@ fn outline_flat_index_by_title(node : OutlineNode, title : String) -> Int {
 }
 
 ///|
+test "markdown inline renderer covers sample part two styles" {
+  let html = render_markdown_inline_html(
+    "[Link](https://example.com) **Bold** _Italic_ `Code` ~~Gone~~",
+  )
+  assert_eq(html.contains("class=\"markdown-link\""), true)
+  assert_eq(html.contains("href=\"https://example.com\""), true)
+  assert_eq(html.contains("class=\"markdown-strong\""), true)
+  assert_eq(html.contains("class=\"markdown-emphasis\""), true)
+  assert_eq(html.contains("class=\"markdown-inline-code\""), true)
+  assert_eq(html.contains("class=\"markdown-strike\""), true)
+}
+
+///|
+test "markdown inline renderer degrades unsafe links to text" {
+  let html = render_markdown_inline_html("[Bad](javascript:alert(1))")
+  assert_eq(html.contains("href="), false)
+  assert_eq(html.contains("Bad"), true)
+  assert_eq(html.contains("javascript:"), false)
+}
+
+///|
+test "markdown renderer escapes html and attributes" {
+  let html = render_markdown_blocks_html([
+    "[<img src=x onerror=alert(1)>](https://example.com/?q=\"x\")", "```html\n<script>alert(1)</script>\n```",
+  ])
+  assert_eq(html.contains("<script>alert(1)</script>"), false)
+  assert_eq(html.contains("<img src=x"), false)
+  assert_eq(html.contains("href=\"https://example.com/?q="), true)
+  assert_eq(html.contains("&lt;script&gt;alert(1)&lt;/script&gt;"), true)
+  assert_eq(html.contains("&lt;img src=x onerror=alert(1)&gt;"), true)
+}
+
+///|
+test "markdown title renderer turns task markers into disabled checks" {
+  let html = render_markdown_title_html("[x] Done")
+  assert_eq(html.contains("markdown-task--title"), true)
+  assert_eq(html.contains("checked=\"true\""), true)
+  assert_eq(html.contains("Done"), true)
+}
+
+///|
+test "markdown block renderer covers code task and table blocks" {
+  let html = render_markdown_blocks_html([
+    "```ts\nconst title = \"code block\";\n```", "- [ ] Todo\n- [x] Done", "| Feature | Status |\n|------|------|\n| Editor | ok |",
+  ])
+  assert_eq(html.contains("class=\"markdown-code-block\""), true)
+  assert_eq(html.contains("data-lang=\"ts\""), true)
+  assert_eq(html.contains("class=\"markdown-task\""), true)
+  assert_eq(html.contains("checked=\"true\""), true)
+  assert_eq(html.contains("class=\"markdown-table\""), true)
+  assert_eq(html.contains("<th>Feature</th>"), true)
+}
+
+///|
+test "sample part two nodes expose body preview html" {
+  load_markdown(
+    "# Root\n## Code\n```ts\nconst title = \"code block\";\n```\n## Table\n| A | B |\n|---|---|\n| 1 | 2 |",
+    true,
+  )
+  let code_index = outline_flat_index_by_title(app_state.root, "Code")
+  match find_node(app_state.root, code_index) {
+    Some(code_node) => {
+      assert_eq(node_has_note(code_node), true)
+      let html = render_node_body(code_node)
+      assert_eq(html.contains("node-body-preview"), true)
+      assert_eq(html.contains("markdown-code-block"), true)
+    }
+    None => fail("missing code node")
+  }
+  let table_index = outline_flat_index_by_title(app_state.root, "Table")
+  match find_node(app_state.root, table_index) {
+    Some(table_node) => {
+      let html = render_node_body(table_node)
+      assert_eq(html.contains("markdown-table"), true)
+    }
+    None => fail("missing table node")
+  }
+}
+
+///|
 test "contour pack positions centers siblings without overlap" {
   let positions = contour_pack_positions([40, 60, 50], 220, 24)
   assert_eq(positions.length(), 3)

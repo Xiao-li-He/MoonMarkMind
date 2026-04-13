@@ -387,6 +387,48 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "node-body") {
     style_node_body(element)
   }
+  if has_class_name(element, "node-body-preview") {
+    style_node_body_preview(element)
+  }
+  if has_class_name(element, "markdown-blocks") {
+    style_markdown_blocks(element)
+  }
+  if has_class_name(element, "markdown-paragraph") {
+    style_markdown_paragraph(element)
+  }
+  if has_class_name(element, "markdown-strong") {
+    style_markdown_strong(element)
+  }
+  if has_class_name(element, "markdown-emphasis") {
+    style_markdown_emphasis(element)
+  }
+  if has_class_name(element, "markdown-inline-code") {
+    style_markdown_inline_code(element)
+  }
+  if has_class_name(element, "markdown-strike") {
+    style_markdown_strike(element)
+  }
+  if has_class_name(element, "markdown-link") {
+    style_markdown_link(element)
+  }
+  if has_class_name(element, "markdown-code-block") {
+    style_markdown_code_block(element)
+  }
+  if has_class_name(element, "markdown-task") {
+    style_markdown_task(element)
+  }
+  if has_class_name(element, "markdown-task--title") {
+    style_markdown_task_title(element)
+  }
+  if has_class_name(element, "markdown-task__check") {
+    style_markdown_task_check(element)
+  }
+  if has_class_name(element, "markdown-table") {
+    style_markdown_table(element)
+  }
+  if tag == "TH" || tag == "TD" {
+    style_markdown_table_cell(element, tag == "TH")
+  }
   if has_class_name(element, "node-note-rail") {
     style_node_note_rail(element)
   }
@@ -2170,7 +2212,7 @@ fn style_node_body(element : @dom.Element) -> Unit {
   set_style(element, "margin-left", "auto")
   set_style(element, "margin-right", "auto")
   set_style(element, "padding", "8px 10px")
-  set_style(element, "border-radius", "12px")
+  set_style(element, "border-radius", "8px")
   set_style(element, "background", "rgba(247, 250, 253, 0.84)")
   set_style(element, "border", "1px solid rgba(214, 225, 237, 0.68)")
   set_style(element, "color", "rgba(92, 122, 153, 0.95)")
@@ -2181,6 +2223,118 @@ fn style_node_body(element : @dom.Element) -> Unit {
   set_style(element, "max-height", "120px")
   set_style(element, "overflow", "auto")
   set_style(element, "font-weight", "500")
+}
+
+///|
+fn style_node_body_preview(element : @dom.Element) -> Unit {
+  set_style(element, "cursor", "text")
+  set_style(element, "text-align", "left")
+}
+
+///|
+fn style_markdown_blocks(element : @dom.Element) -> Unit {
+  set_style(element, "display", "flex")
+  set_style(element, "flex-direction", "column")
+  set_style(element, "gap", "6px")
+  set_style(element, "max-width", "100%")
+}
+
+///|
+fn style_markdown_paragraph(element : @dom.Element) -> Unit {
+  set_style(element, "margin", "0")
+  set_style(element, "white-space", "pre-wrap")
+}
+
+///|
+fn style_markdown_strong(element : @dom.Element) -> Unit {
+  set_style(element, "font-weight", "800")
+}
+
+///|
+fn style_markdown_emphasis(element : @dom.Element) -> Unit {
+  set_style(element, "font-style", "italic")
+}
+
+///|
+fn style_markdown_inline_code(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-block")
+  set_style(element, "padding", "1px 4px")
+  set_style(element, "border-radius", "5px")
+  set_style(element, "background", "rgba(32, 57, 82, 0.1)")
+  set_style(element, "color", "#28415d")
+  set_style(element, "font-family", "\"Cascadia Mono\", Consolas, monospace")
+  set_style(element, "font-size", "0.92em")
+}
+
+///|
+fn style_markdown_strike(element : @dom.Element) -> Unit {
+  set_style(element, "text-decoration", "line-through")
+  set_style(element, "opacity", "0.74")
+}
+
+///|
+fn style_markdown_link(element : @dom.Element) -> Unit {
+  set_style(element, "color", "#2c70ce")
+  set_style(element, "text-decoration", "underline")
+  set_style(element, "text-underline-offset", "2px")
+}
+
+///|
+fn style_markdown_code_block(element : @dom.Element) -> Unit {
+  set_style(element, "margin", "0")
+  set_style(element, "padding", "8px")
+  set_style(element, "border-radius", "8px")
+  set_style(element, "background", "rgba(29, 45, 62, 0.92)")
+  set_style(element, "color", "#f6fbff")
+  set_style(element, "font-family", "\"Cascadia Mono\", Consolas, monospace")
+  set_style(element, "font-size", "11px")
+  set_style(element, "line-height", "1.45")
+  set_style(element, "white-space", "pre")
+  set_style(element, "overflow", "auto")
+  set_style(element, "max-width", "100%")
+}
+
+///|
+fn style_markdown_task(element : @dom.Element) -> Unit {
+  set_style(element, "display", "flex")
+  set_style(element, "align-items", "flex-start")
+  set_style(element, "gap", "6px")
+  set_style(element, "margin", "0")
+}
+
+///|
+fn style_markdown_task_title(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-flex")
+  set_style(element, "align-items", "center")
+}
+
+///|
+fn style_markdown_task_check(element : @dom.Element) -> Unit {
+  set_style(element, "width", "13px")
+  set_style(element, "height", "13px")
+  set_style(element, "margin", "2px 0 0 0")
+  set_style(element, "flex", "0 0 auto")
+}
+
+///|
+fn style_markdown_table(element : @dom.Element) -> Unit {
+  set_style(element, "width", "100%")
+  set_style(element, "border-collapse", "collapse")
+  set_style(element, "font-size", "11px")
+  set_style(element, "line-height", "1.35")
+  set_style(element, "overflow", "hidden")
+}
+
+///|
+fn style_markdown_table_cell(element : @dom.Element, is_header : Bool) -> Unit {
+  set_style(element, "padding", "3px 5px")
+  set_style(element, "border", "1px solid rgba(167, 190, 214, 0.5)")
+  set_style(element, "vertical-align", "top")
+  set_style(element, "word-break", "break-word")
+  if is_header {
+    set_style(element, "font-weight", "800")
+    set_style(element, "background", "rgba(214, 230, 245, 0.5)")
+  }
 }
 
 ///|
