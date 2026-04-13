@@ -92,6 +92,17 @@ test "markdown inline renderer degrades unsafe links to text" {
 }
 
 ///|
+test "markdown inline renderer renders latex math" {
+  let html = render_markdown_inline_html("Value $x^2 + \\alpha$")
+  assert_eq(
+    html.contains("class=\"markdown-math markdown-math--inline\""),
+    true,
+  )
+  assert_eq(html.contains("<sup>2</sup>"), true)
+  assert_eq(html.contains("α"), true)
+}
+
+///|
 test "markdown renderer escapes html and attributes" {
   let html = render_markdown_blocks_html([
     "[<img src=x onerror=alert(1)>](https://example.com/?q=\"x\")", "```html\n<script>alert(1)</script>\n```",
@@ -122,6 +133,16 @@ test "markdown block renderer covers code task and table blocks" {
   assert_eq(html.contains("checked=\"true\""), true)
   assert_eq(html.contains("class=\"markdown-table\""), true)
   assert_eq(html.contains("<th>Feature</th>"), true)
+}
+
+///|
+test "markdown block renderer renders latex math" {
+  let html = render_markdown_blocks_html(["$$\\frac{a_1}{b^2} + \\sqrt{x}$$"])
+  assert_eq(html.contains("class=\"markdown-math markdown-math--block\""), true)
+  assert_eq(html.contains("class=\"markdown-math-frac\""), true)
+  assert_eq(html.contains("<sub>1</sub>"), true)
+  assert_eq(html.contains("<sup>2</sup>"), true)
+  assert_eq(html.contains("markdown-math-sqrt__symbol"), true)
 }
 
 ///|

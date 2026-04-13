@@ -417,6 +417,33 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "markdown-code-block__code") {
     style_markdown_code_block_code(element)
   }
+  if has_class_name(element, "markdown-math") {
+    style_markdown_math(element)
+  }
+  if has_class_name(element, "markdown-math--inline") {
+    style_markdown_math_inline(element)
+  }
+  if has_class_name(element, "markdown-math--block") {
+    style_markdown_math_block(element)
+  }
+  if has_class_name(element, "markdown-math-frac") {
+    style_markdown_math_frac(element)
+  }
+  if has_class_name(element, "markdown-math-frac__num") {
+    style_markdown_math_frac_num(element)
+  }
+  if has_class_name(element, "markdown-math-frac__den") {
+    style_markdown_math_frac_den(element)
+  }
+  if has_class_name(element, "markdown-math-sqrt") {
+    style_markdown_math_sqrt(element)
+  }
+  if has_class_name(element, "markdown-math-sqrt__symbol") {
+    style_markdown_math_sqrt_symbol(element)
+  }
+  if has_class_name(element, "markdown-math-sqrt__radicand") {
+    style_markdown_math_sqrt_radicand(element)
+  }
   if has_class_name(element, "markdown-task") {
     style_markdown_task(element)
   }
@@ -2312,6 +2339,81 @@ fn style_markdown_code_block(element : @dom.Element) -> Unit {
 fn style_markdown_code_block_code(element : @dom.Element) -> Unit {
   set_style(element, "display", "block")
   set_style(element, "min-width", "max-content")
+}
+
+///|
+fn style_markdown_math(element : @dom.Element) -> Unit {
+  set_style(
+    element, "font-family", "\"Cambria Math\", \"Times New Roman\", serif",
+  )
+  set_style(element, "color", "#24384f")
+  set_style(element, "line-height", "1.35")
+  set_style(element, "max-width", "100%")
+  set_style(element, "box-sizing", "border-box")
+}
+
+///|
+fn style_markdown_math_inline(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-flex")
+  set_style(element, "align-items", "center")
+  set_style(element, "vertical-align", "middle")
+  set_style(element, "padding", "0 2px")
+}
+
+///|
+fn style_markdown_math_block(element : @dom.Element) -> Unit {
+  set_style(element, "display", "flex")
+  set_style(element, "justify-content", "center")
+  set_style(element, "width", "100%")
+  set_style(element, "padding", "6px 4px")
+  set_style(element, "text-align", "center")
+  set_style(element, "overflow-x", "auto")
+  set_style(element, "overflow-y", "hidden")
+  set_style(element, "font-size", "1.05em")
+}
+
+///|
+fn style_markdown_math_frac(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-flex")
+  set_style(element, "flex-direction", "column")
+  set_style(element, "align-items", "stretch")
+  set_style(element, "vertical-align", "middle")
+  set_style(element, "margin", "0 2px")
+  set_style(element, "line-height", "1.1")
+}
+
+///|
+fn style_markdown_math_frac_num(element : @dom.Element) -> Unit {
+  set_style(element, "border-bottom", "1px solid currentColor")
+  set_style(element, "padding", "0 4px 2px")
+  set_style(element, "text-align", "center")
+}
+
+///|
+fn style_markdown_math_frac_den(element : @dom.Element) -> Unit {
+  set_style(element, "padding", "2px 4px 0")
+  set_style(element, "text-align", "center")
+}
+
+///|
+fn style_markdown_math_sqrt(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-flex")
+  set_style(element, "align-items", "stretch")
+  set_style(element, "vertical-align", "middle")
+  set_style(element, "margin", "0 2px")
+}
+
+///|
+fn style_markdown_math_sqrt_symbol(element : @dom.Element) -> Unit {
+  set_style(element, "font-size", "1.2em")
+  set_style(element, "line-height", "1")
+  set_style(element, "padding-right", "1px")
+}
+
+///|
+fn style_markdown_math_sqrt_radicand(element : @dom.Element) -> Unit {
+  set_style(element, "border-top", "1px solid currentColor")
+  set_style(element, "padding", "0 2px")
 }
 
 ///|
