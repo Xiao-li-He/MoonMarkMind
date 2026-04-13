@@ -85,12 +85,62 @@ fn update_node_body(
 ///|
 fn normalize_note_editor_body_lines(lines : Array[String]) -> Array[String] {
   let normalized = []
-  for line in lines {
-    if !is_blank_markdown_line(line) {
+  let mut index = 0
+  while index < lines.length() {
+    let line = lines[index]
+    if is_blank_markdown_line(line) {
+      index += 1
+    } else if is_markdown_code_fence_line(line) {
+      let block = []
+      block.push(line)
+      index += 1
+      while index < lines.length() {
+        let next_line = lines[index]
+        block.push(next_line)
+        index += 1
+        if is_markdown_code_fence_line(next_line) {
+          break
+        }
+      }
+      normalized.push(block.join("\n"))
+    } else if starts_markdown_table_block(lines, index) {
+      let block = []
+      while index < lines.length() && is_markdown_table_row(lines[index]) {
+        block.push(lines[index])
+        index += 1
+      }
+      normalized.push(block.join("\n"))
+    } else if is_note_list_body_line(line) {
+      let block = []
+      while index < lines.length() && is_note_list_body_line(lines[index]) {
+        block.push(lines[index])
+        index += 1
+      }
+      normalized.push(block.join("\n"))
+    } else {
       normalized.push(line)
+      index += 1
     }
   }
   normalized
+}
+
+///|
+fn is_markdown_code_fence_line(line : String) -> Bool {
+  line.trim().to_string().has_prefix("```")
+}
+
+///|
+fn starts_markdown_table_block(lines : Array[String], index : Int) -> Bool {
+  index + 1 < lines.length() &&
+  is_markdown_table_row(lines[index]) &&
+  is_markdown_table_separator(lines[index + 1])
+}
+
+///|
+fn is_note_list_body_line(line : String) -> Bool {
+  let trimmed = line.trim_start().to_string()
+  parse_list_line(trimmed[:]) is Some(_)
 }
 
 ///|

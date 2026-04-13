@@ -598,6 +598,34 @@ test "note editor newline becomes markdown blank separator" {
 }
 
 ///|
+test "note editor preserves code block single newlines" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+
+  handle_insert_note()
+  sync_note_editor_draft(1, "```ts\nconst a = 1\nconst b = 2\n```")
+
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Alpha\n```ts\nconst a = 1\nconst b = 2\n```\n## Beta",
+  )
+}
+
+///|
+test "note editor preserves table single newlines" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+
+  handle_insert_note()
+  sync_note_editor_draft(1, "| A | B |\n|---|---|\n| 1 | 2 |")
+
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Alpha\n| A | B |\n|---|---|\n| 1 | 2 |\n## Beta",
+  )
+}
+
+///|
 test "insert note on list node preserves markdown indentation" {
   load_markdown("# Root\n## Parent\n- item\n## Next", true)
   let outline = build_outline(app_state.markdown)
