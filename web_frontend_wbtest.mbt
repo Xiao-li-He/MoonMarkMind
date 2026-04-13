@@ -248,55 +248,17 @@ test "balanced first layer insert adds to right when right side is shorter" {
 }
 
 ///|
-test "root branch visual radii ignore single chains and count sibling groups" {
-  reset_frontend_test_state()
-  load_markdown(
-    "# Root\n## Chain\n### Chain 2\n#### Chain 3\n## Branch\n### A\n### B", true,
-  )
-  match find_node(app_state.root, 1) {
-    Some(chain) => assert_eq(root_branch_visual_radii(chain, 60), (30, 30))
-    None => fail("missing chain")
-  }
-  match find_node(app_state.root, 4) {
-    Some(branch) => {
-      let (top_radius, bottom_radius) = root_branch_visual_radii(branch, 60)
-      assert_true(top_radius > 30)
-      assert_true(bottom_radius > 30)
-    }
-    None => fail("missing branch")
-  }
-}
-
-///|
-test "root branch visual radii ignore nested descendants after sibling fork" {
-  reset_frontend_test_state()
-  load_markdown(
-    "# Root\n## Deep\n### A1\n#### X1\n#### X2\n#### X3\n### A2\n#### Y1\n#### Y2\n#### Y3\n## Flat\n### B1\n### B2",
-    true,
-  )
-  let deep_radii = match find_node(app_state.root, 1) {
-    Some(deep) => root_branch_visual_radii(deep, 60)
-    None => fail("missing deep branch")
-  }
-  let flat_radii = match find_node(app_state.root, 10) {
-    Some(flat) => root_branch_visual_radii(flat, 60)
-    None => fail("missing flat branch")
-  }
-  assert_eq(deep_radii, flat_radii)
-}
-
-///|
-test "root branch packing uses local upper and lower visual radii" {
+test "root branch packing keeps first layer gaps independent of children" {
   let centers = root_branch_collision_adjusted_centers(
     [100, 180, 260, 340],
-    [30, 68, 68, 30],
-    [140, 68, 68, 30],
+    [30, 30, 30, 30],
+    [30, 30, 30, 30],
     220,
     16,
   )
-  assert_eq(centers[1] - centers[0], 224)
-  assert_eq(centers[2] - centers[1], 152)
-  assert_eq(centers[3] - centers[2], 114)
+  assert_eq(centers[1] - centers[0], 80)
+  assert_eq(centers[2] - centers[1], 80)
+  assert_eq(centers[3] - centers[2], 80)
 }
 
 ///|

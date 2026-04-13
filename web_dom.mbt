@@ -766,8 +766,8 @@ fn apply_root_column_packing(
       let branch_top_radii = []
       let branch_bottom_radii = []
       for branch in branches {
-        let (card_height, fallback_top_radius, fallback_bottom_radius) = match
-          branch.querySelector(".node[data-node-index]") {
+        let (card_height, fallback_top_radius, fallback_bottom_radius, card) = match
+          root_branch_head_card(branch) {
           Some(card) => {
             let card_rect = element_rect(card)
             let card_height = unscaled_length_to_int(
@@ -786,6 +786,7 @@ fn apply_root_column_packing(
               } else {
                 1
               },
+              card,
             )
           }
           None => {
@@ -794,15 +795,14 @@ fn apply_root_column_packing(
               branch_rect.height,
               safe_zoom,
             )
-            (branch_height, branch_height / 2, branch_height / 2)
+            (branch_height, branch_height / 2, branch_height / 2, branch)
           }
         }
         let safe_card_height = if card_height > 1 { card_height } else { 1 }
         card_heights.push(safe_card_height)
-        let (top_radius, bottom_radius) = match root_branch_node(branch) {
-          Some(node) => root_branch_visual_radii(node, safe_card_height)
-          None => (fallback_top_radius, fallback_bottom_radius)
-        }
+        let (top_radius, bottom_radius) = root_branch_dom_radii(
+          branch, card, fallback_top_radius, fallback_bottom_radius, safe_zoom,
+        )
         branch_top_radii.push(top_radius)
         branch_bottom_radii.push(bottom_radius)
       }
@@ -849,12 +849,41 @@ fn unscaled_length_to_int(value : Double, safe_zoom : Double) -> Int {
 }
 
 ///|
-fn root_branch_node(branch : @dom.Element) -> OutlineNode? {
-  let node_index = parse_int_or_default(
-    branch.getAttribute("data-node-index").unwrap_or("-1"),
-    -1,
-  )
-  find_node(app_state.root, node_index)
+fn root_branch_head_card(branch : @dom.Element) -> @dom.Element? {
+  for child in branch.children() {
+    if has_class_name(child, "single-right-tree__head") {
+      match child.querySelector(".node[data-node-index]") {
+        Some(card) => return Some(card)
+        None => ()
+      }
+    }
+  }
+  branch.querySelector(".node[data-node-index]")
+}
+
+///|
+fn root_branch_dom_radii(
+  branch : @dom.Element,
+  card : @dom.Element,
+  fallback_top_radius : Int,
+  fallback_bottom_radius : Int,
+  safe_zoom : Double,
+) -> (Int, Int) {
+  let card_center = rect_center_y(element_rect(card))
+  let mut top_radius = fallback_top_radius
+  let mut bottom_radius = fallback_bottom_radius
+  for node_card in branch.querySelectorAll(".node[data-node-index]") {
+    let rect = element_rect(node_card)
+    let top = unscaled_length_to_int(card_center - rect.top, safe_zoom)
+    let bottom = unscaled_length_to_int(rect.bottom - card_center, safe_zoom)
+    if top > top_radius {
+      top_radius = top
+    }
+    if bottom > bottom_radius {
+      bottom_radius = bottom
+    }
+  }
+  (top_radius, bottom_radius)
 }
 
 ///|
@@ -863,7 +892,7 @@ fn root_branch_top_for_card_center(
   target_center : Int,
   safe_zoom : Double,
 ) -> Int {
-  match branch.querySelector(".node[data-node-index]") {
+  match root_branch_head_card(branch) {
     Some(card) => {
       let branch_rect = element_rect(branch)
       let card_rect = element_rect(card)
@@ -873,62 +902,6 @@ fn root_branch_top_for_card_center(
     }
     None => target_center
   }
-}
-
-///|
-fn root_branch_visual_radii(
-  node : OutlineNode,
-  card_height : Int,
-) -> (Int, Int) {
-  let card_radius = if card_height > 1 { card_height / 2 } else { 1 }
-  root_branch_visual_radii_from_children(node, card_radius)
-}
-
-///|
-fn root_branch_visual_radii_from_children(
-  node : OutlineNode,
-  base_radius : Int,
-) -> (Int, Int) {
-  if !should_render_children(node) || node.children.length() == 0 {
-    return (base_radius, base_radius)
-  }
-  if node.children.length() == 1 {
-    return root_branch_visual_radii_from_children(node.children[0], base_radius)
-  }
-  let gap = 16
-  let heights = []
-  for child in node.children {
-    heights.push(contour_node_height(child))
-  }
-  let total = root_branch_visual_group_height(heights, gap)
-  let starts = contour_pack_positions(heights, total, gap)
-  let mut top_radius = base_radius
-  let mut bottom_radius = base_radius
-  for index in 0..<starts.length() {
-    let center_offset = starts[index] + heights[index] / 2 - total / 2
-    let child_radius = if heights[index] > 1 { heights[index] / 2 } else { 1 }
-    let child_top = child_radius - center_offset
-    let child_bottom = child_radius + center_offset
-    if child_top > top_radius {
-      top_radius = child_top
-    }
-    if child_bottom > bottom_radius {
-      bottom_radius = child_bottom
-    }
-  }
-  (top_radius, bottom_radius)
-}
-
-///|
-fn root_branch_visual_group_height(heights : Array[Int], gap : Int) -> Int {
-  if heights.length() == 0 {
-    return 0
-  }
-  let mut total = 0
-  for height in heights {
-    total += if height > 1 { height } else { 1 }
-  }
-  total + gap * (heights.length() - 1)
 }
 
 ///|
