@@ -225,13 +225,30 @@ fn mindmap_fit_to_view(
 }
 
 ///|
-fn mindmap_root_anchor_fraction(stage : @dom.Element) -> (Double, Double) {
+fn mindmap_recenter_target_point(
+  mindmap_rect : @dom.DOMRect,
+  stage : @dom.Element,
+) -> (Double, Double) {
   if has_class_name(stage, "mindmap-stage--vertical") {
-    (0.5, 0.125)
+    (rect_center_x(mindmap_rect), mindmap_rect.top + mindmap_rect.height * 0.1)
   } else if has_class_name(stage, "mindmap-stage--single-right") {
-    (0.125, 0.5)
+    (mindmap_rect.left + mindmap_rect.width * 0.1, rect_center_y(mindmap_rect))
   } else {
-    (0.5, 0.5)
+    (rect_center_x(mindmap_rect), rect_center_y(mindmap_rect))
+  }
+}
+
+///|
+fn mindmap_root_anchor_point(
+  root_rect : @dom.DOMRect,
+  stage : @dom.Element,
+) -> (Double, Double) {
+  if has_class_name(stage, "mindmap-stage--vertical") {
+    (rect_center_x(root_rect), root_rect.top)
+  } else if has_class_name(stage, "mindmap-stage--single-right") {
+    (root_rect.left, rect_center_y(root_rect))
+  } else {
+    (rect_center_x(root_rect), rect_center_y(root_rect))
   }
 }
 
@@ -275,9 +292,12 @@ fn mindmap_recenter_pan(
         Some(root) => {
           let mindmap_rect = element_rect(mindmap)
           let root_rect = element_rect(root)
-          let (anchor_x, anchor_y) = mindmap_root_anchor_fraction(stage)
-          let target_x = mindmap_rect.left + mindmap_rect.width * anchor_x
-          let target_y = mindmap_rect.top + mindmap_rect.height * anchor_y
+          let (target_x, target_y) = mindmap_recenter_target_point(
+            mindmap_rect, stage,
+          )
+          let (root_anchor_x, root_anchor_y) = mindmap_root_anchor_point(
+            root_rect, stage,
+          )
           let current_pan_x = parse_int_or_default(
             mindmap.getAttribute("data-pan-x").unwrap_or("0"),
             0,
@@ -286,12 +306,8 @@ fn mindmap_recenter_pan(
             mindmap.getAttribute("data-pan-y").unwrap_or("0"),
             0,
           )
-          let next_pan_x = current_pan_x.to_double() +
-            target_x -
-            rect_center_x(root_rect)
-          let next_pan_y = current_pan_y.to_double() +
-            target_y -
-            rect_center_y(root_rect)
+          let next_pan_x = current_pan_x.to_double() + target_x - root_anchor_x
+          let next_pan_y = current_pan_y.to_double() + target_y - root_anchor_y
           mindmap.setAttribute(
             "data-pan-x",
             next_pan_x.round().to_int().to_string(),
