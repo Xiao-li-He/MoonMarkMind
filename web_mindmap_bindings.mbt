@@ -123,6 +123,20 @@ fn mindmap_schedule_connectors(
 }
 
 ///|
+fn mindmap_set_timeout(
+  window : @dom.Window,
+  callback : () -> Unit,
+  delay : Int,
+) -> @core.Any {
+  window.as_any()._call("setTimeout", [@core.any(callback), @core.any(delay)])
+}
+
+///|
+fn mindmap_clear_timeout(window : @dom.Window, timeout_id : @core.Any) -> Unit {
+  window.as_any()._call("clearTimeout", [timeout_id]) |> ignore
+}
+
+///|
 fn mouse_delta_exceeds_pan_threshold(
   start_x : Int,
   start_y : Int,
@@ -536,6 +550,7 @@ fn bind_mindmap_ui(
       let start_y = @ref.Ref(0)
       let start_pan_x = @ref.Ref(0)
       let start_pan_y = @ref.Ref(0)
+      let fit_click_timer : @ref.Ref[@core.Any?] = @ref.Ref(None)
 
       mindmap
       .as_event_target()
@@ -775,14 +790,46 @@ fn bind_mindmap_ui(
         None => ()
       }
       match fit_view {
-        Some(control) =>
-          control
-          .as_event_target()
-          .on("click", fn(_) {
-            mindmap_fit_to_view(
-              mindmap, zoom_value, zoom_edit, connector_frame, window,
+        Some(control) => {
+          let target = control.as_event_target()
+          target.on("click", fn(raw) {
+            let event : @dom.MouseEvent = raw.cast()
+            if event_click_count(event) >= 2 {
+              return
+            }
+            match fit_click_timer.val {
+              Some(timeout_id) => mindmap_clear_timeout(window, timeout_id)
+              None => ()
+            }
+            fit_click_timer.val = Some(
+              mindmap_set_timeout(
+                window,
+                fn() {
+                  fit_click_timer.val = None
+                  mindmap_fit_to_view(
+                    mindmap, zoom_value, zoom_edit, connector_frame, window,
+                  )
+                },
+                220,
+              ),
             )
           })
+          target.on("dblclick", fn(raw) {
+            let event : @dom.MouseEvent = raw.cast()
+            event.preventDefault()
+            event.stopPropagation()
+            match fit_click_timer.val {
+              Some(timeout_id) => {
+                mindmap_clear_timeout(window, timeout_id)
+                fit_click_timer.val = None
+              }
+              None => ()
+            }
+            mindmap_apply_zoom(
+              mindmap, zoom_value, zoom_edit, connector_frame, window, 1.0,
+            )
+          })
+        }
         None => ()
       }
       match recenter_view {
