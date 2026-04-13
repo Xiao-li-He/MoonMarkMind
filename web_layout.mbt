@@ -737,6 +737,18 @@ fn build_primary_toolbar() -> @dom.Element {
           hidden: false,
           selected: false,
         },
+        SelectOption::{
+          value: "insert-code",
+          label: "代码",
+          hidden: false,
+          selected: false,
+        },
+        SelectOption::{
+          value: "insert-table",
+          label: "表格",
+          hidden: false,
+          selected: false,
+        },
       ],
     ),
   )
@@ -995,6 +1007,8 @@ fn toolbar_icon_key(action : String) -> String {
     "insert-link" => "insert"
     "insert-image" => "insert"
     "insert-formula" => "insert"
+    "insert-code" => "insert"
+    "insert-table" => "insert"
     _ => "branch"
   }
 }

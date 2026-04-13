@@ -313,6 +313,8 @@ fn on_toolbar_action(action : String) -> Unit {
     "insert-link" => insert_node_body_template("link")
     "insert-image" => insert_node_body_template("image")
     "insert-formula" => insert_node_body_template("formula")
+    "insert-code" => insert_node_body_template("code")
+    "insert-table" => insert_node_body_template("table")
     _ => ()
   }
 }
@@ -1582,6 +1584,8 @@ fn can_toolbar_action(action : String) -> Bool {
     "insert-link" => selected_node_exists()
     "insert-image" => selected_node_exists()
     "insert-formula" => selected_node_exists()
+    "insert-code" => selected_node_exists()
+    "insert-table" => selected_node_exists()
     _ => false
   }
 }
@@ -1597,8 +1601,14 @@ fn insert_node_body_template(kind : String) -> Unit {
     ["[链接文字](https://example.com)"]
   } else if kind == "image" {
     ["![图片说明](image.png)"]
-  } else {
+  } else if kind == "formula" {
     ["$$", "x = 1", "$$"]
+  } else if kind == "code" {
+    ["```ts", "const value = 1", "```"]
+  } else if kind == "table" {
+    ["| Column | Value |", "|---|---|", "| A | 1 |"]
+  } else {
+    []
   }
   let template_body = normalize_markdown_body_lines(body_lines)
   if template_body.length() == 0 {

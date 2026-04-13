@@ -589,6 +589,32 @@ test "insert body template appends a markdown paragraph block" {
 }
 
 ///|
+test "insert body template appends a markdown code block" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+
+  insert_node_body_template("code")
+
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Alpha\n```ts\nconst value = 1\n```\n## Beta",
+  )
+}
+
+///|
+test "insert body template appends a markdown table block" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+
+  insert_node_body_template("table")
+
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Alpha\n| Column | Value |\n|---|---|\n| A | 1 |\n## Beta",
+  )
+}
+
+///|
 test "insert note opens editor and commits heading markdown body" {
   reset_frontend_test_state()
   select_single_node(1, false)
