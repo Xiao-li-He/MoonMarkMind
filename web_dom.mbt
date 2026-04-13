@@ -681,8 +681,22 @@ fn apply_contour_min_heights(stage : @dom.Element) -> Unit {
 
 ///|
 fn apply_mindmap_root_packing(stage : @dom.Element) -> Unit {
-  apply_root_column_packing(stage.querySelector(".branch-column--left"), 16)
-  apply_root_column_packing(stage.querySelector(".branch-column--right"), 16)
+  let zoom = match get_element("#mindmap") {
+    Some(mindmap) =>
+      parse_float(mindmap.getAttribute("data-zoom").unwrap_or("1"))
+    None => 1.0
+  }
+  let safe_zoom = if zoom.is_nan() || zoom <= 0.0 { 1.0 } else { zoom }
+  apply_root_column_packing(
+    stage.querySelector(".branch-column--left"),
+    16,
+    safe_zoom,
+  )
+  apply_root_column_packing(
+    stage.querySelector(".branch-column--right"),
+    16,
+    safe_zoom,
+  )
 }
 
 ///|
@@ -747,7 +761,11 @@ fn find_stage_branch(stage : @dom.Element, node_index : Int) -> @dom.Element? {
 }
 
 ///|
-fn apply_root_column_packing(column : @dom.Element?, gap : Int) -> Unit {
+fn apply_root_column_packing(
+  column : @dom.Element?,
+  gap : Int,
+  safe_zoom : Double,
+) -> Unit {
   match column {
     Some(root_column) => {
       let branches = root_column.querySelectorAll(".branch-item--root")
@@ -765,13 +783,19 @@ fn apply_root_column_packing(column : @dom.Element?, gap : Int) -> Unit {
             let card_rect = element_rect(card)
             let card_center = rect_center_y(card_rect)
             (
-              card_rect.height.round().to_int(),
-              (card_center - branch_rect.top).round().to_int(),
-              (branch_rect.bottom - card_center).round().to_int(),
+              unscaled_length_to_int(card_rect.height, safe_zoom),
+              unscaled_length_to_int(card_center - branch_rect.top, safe_zoom),
+              unscaled_length_to_int(
+                branch_rect.bottom - card_center,
+                safe_zoom,
+              ),
             )
           }
           None => {
-            let branch_height = branch_rect.height.round().to_int()
+            let branch_height = unscaled_length_to_int(
+              branch_rect.height,
+              safe_zoom,
+            )
             (branch_height, branch_height / 2, branch_height / 2)
           }
         }
@@ -808,6 +832,16 @@ fn apply_root_column_packing(column : @dom.Element?, gap : Int) -> Unit {
       }
     }
     None => ()
+  }
+}
+
+///|
+fn unscaled_length_to_int(value : Double, safe_zoom : Double) -> Int {
+  let unscaled = value / safe_zoom
+  if unscaled < 1.0 {
+    1
+  } else {
+    unscaled.round().to_int()
   }
 }
 
