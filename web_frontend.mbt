@@ -571,8 +571,16 @@ fn on_mindmap_drop(event : @dom.DragEvent) -> Unit {
 ///|
 fn handle_add_child(node_index : Int) -> Unit {
   let title = "New node"
-  let target_index = target_index_after_add_child(node_index)
-  let next_markdown = add_child_heading(app_state.markdown, node_index, title)
+  let (next_markdown, target_index) = if should_balance_first_layer_insert(
+      node_index,
+    ) {
+    add_balanced_first_layer_heading(title)
+  } else {
+    (
+      add_child_heading(app_state.markdown, node_index, title),
+      target_index_after_add_child(node_index),
+    )
+  }
   apply_markdown_change(next_markdown, false)
   expand_node(node_index)
   if target_index >= 0 {
@@ -587,6 +595,17 @@ fn handle_add_child(node_index : Int) -> Unit {
 ///|
 fn handle_add_sibling(node_index : Int, place_after : Bool) -> Unit {
   let title = "New node"
+  if should_balance_first_layer_sibling_insert(node_index) {
+    let (next_markdown, target_index) = add_balanced_first_layer_heading(title)
+    apply_markdown_change(next_markdown, false)
+    if target_index >= 0 {
+      select_single_node(target_index, false)
+      begin_edit_node(target_index)
+      return
+    }
+    render_ui()
+    return
+  }
   let target_index = target_index_after_add_sibling(node_index, place_after)
   bump_root_split_after_insert(node_index)
   let next_markdown = add_sibling_heading(
@@ -602,6 +621,55 @@ fn handle_add_sibling(node_index : Int, place_after : Bool) -> Unit {
     return
   }
   render_ui()
+}
+
+///|
+fn should_balance_first_layer_insert(node_index : Int) -> Bool {
+  app_state.layout_mode == "mindmap" &&
+  !app_state.root.synthetic &&
+  node_index == app_state.root.flat_index
+}
+
+///|
+fn should_balance_first_layer_sibling_insert(node_index : Int) -> Bool {
+  app_state.layout_mode == "mindmap" && root_child_index(node_index) >= 0
+}
+
+///|
+fn add_balanced_first_layer_heading(title : String) -> (String, Int) {
+  let child_count = app_state.root.children.length()
+  let split = root_branch_left_count(app_state.root)
+  let left_total = root_branch_total_span(app_state.root, 0, split)
+  let right_total = root_branch_total_span(app_state.root, split, child_count)
+  let add_left = left_total <= right_total
+  let parent_index = if app_state.root.synthetic {
+    -1
+  } else {
+    app_state.root.flat_index
+  }
+  let appended_markdown = add_child_heading(
+    app_state.markdown,
+    parent_index,
+    title,
+  )
+  let appended_index = if app_state.root.synthetic {
+    count_hidden_descendants(app_state.root)
+  } else {
+    app_state.root.flat_index + count_subtree_nodes(app_state.root)
+  }
+  if !add_left {
+    app_state.root_split_count = split
+    return (appended_markdown, appended_index)
+  }
+  app_state.root_split_count = split + 1
+  if split >= child_count {
+    return (appended_markdown, appended_index)
+  }
+  let boundary_index = app_state.root.children[split].flat_index
+  (
+    move_heading(appended_markdown, appended_index, boundary_index, false),
+    boundary_index,
+  )
 }
 
 ///|

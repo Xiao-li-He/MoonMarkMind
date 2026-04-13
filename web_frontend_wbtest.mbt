@@ -142,6 +142,32 @@ test "root split count follows contour balance rather than node count" {
 }
 
 ///|
+test "balanced first layer insert adds to left when left side is shorter" {
+  reset_frontend_test_state()
+  app_state.layout_mode = "mindmap"
+  load_markdown("# Root\n## Light\n## Heavy\n### Child A\n### Child B", true)
+  let (next_markdown, target_index) = add_balanced_first_layer_heading(
+    "New node",
+  )
+  assert_eq(next_markdown.contains("## Light\n## New node\n## Heavy"), true)
+  assert_eq(app_state.root_split_count, 2)
+  assert_eq(target_index, 2)
+}
+
+///|
+test "balanced first layer insert adds to right when right side is shorter" {
+  reset_frontend_test_state()
+  app_state.layout_mode = "mindmap"
+  load_markdown("# Root\n## Heavy\n### Child A\n### Child B\n## Light", true)
+  let (next_markdown, target_index) = add_balanced_first_layer_heading(
+    "New node",
+  )
+  assert_eq(next_markdown.contains("## Light\n## New node"), true)
+  assert_eq(app_state.root_split_count, 1)
+  assert_eq(target_index, 5)
+}
+
+///|
 test "node editor undo stays local until commit" {
   reset_frontend_test_state()
   begin_edit_node(1)
