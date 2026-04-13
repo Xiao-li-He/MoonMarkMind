@@ -1857,7 +1857,7 @@ fn style_branch_item(element : @dom.Element) -> Unit {
 fn style_branch_item_root(element : @dom.Element) -> Unit {
   set_style(element, "position", "absolute")
   set_style(element, "top", "0")
-  set_style(element, "transform", "translateY(-50%)")
+  set_style(element, "transform", "none")
 }
 
 ///|
