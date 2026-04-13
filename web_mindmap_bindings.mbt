@@ -177,10 +177,48 @@ fn mindmap_apply_zoom(
   frame : @ref.Ref[Int],
   window : @dom.Window,
   next_zoom : Double,
+  preserve_root_anchor? : Bool = true,
 ) -> Unit {
+  let anchor_before = if preserve_root_anchor {
+    mindmap_current_root_anchor_point(mindmap)
+  } else {
+    None
+  }
   let clamped = mindmap_clamp_zoom(next_zoom)
   mindmap.setAttribute("data-zoom", clamped.to_string())
   mindmap_sync_view(mindmap, zoom_value, zoom_edit)
+  match anchor_before {
+    Some((before_x, before_y)) =>
+      match mindmap_current_root_anchor_point(mindmap) {
+        Some((after_x, after_y)) => {
+          let current_pan_x = parse_int_or_default(
+            mindmap.getAttribute("data-pan-x").unwrap_or("0"),
+            0,
+          )
+          let current_pan_y = parse_int_or_default(
+            mindmap.getAttribute("data-pan-y").unwrap_or("0"),
+            0,
+          )
+          mindmap.setAttribute(
+            "data-pan-x",
+            (current_pan_x.to_double() + before_x - after_x)
+            .round()
+            .to_int()
+            .to_string(),
+          )
+          mindmap.setAttribute(
+            "data-pan-y",
+            (current_pan_y.to_double() + before_y - after_y)
+            .round()
+            .to_int()
+            .to_string(),
+          )
+          mindmap_sync_view(mindmap, zoom_value, zoom_edit)
+        }
+        None => ()
+      }
+    None => ()
+  }
   mindmap_schedule_connectors(frame, window)
 }
 
@@ -213,13 +251,27 @@ fn mindmap_fit_to_view(
       mindmap.setAttribute("data-pan-x", "0")
       mindmap.setAttribute("data-pan-y", "0")
       mindmap_apply_zoom(
-        mindmap, zoom_value, zoom_edit, frame, window, next_zoom,
+        mindmap,
+        zoom_value,
+        zoom_edit,
+        frame,
+        window,
+        next_zoom,
+        preserve_root_anchor=false,
       )
     }
     None => {
       mindmap.setAttribute("data-pan-x", "0")
       mindmap.setAttribute("data-pan-y", "0")
-      mindmap_apply_zoom(mindmap, zoom_value, zoom_edit, frame, window, 1.0)
+      mindmap_apply_zoom(
+        mindmap,
+        zoom_value,
+        zoom_edit,
+        frame,
+        window,
+        1.0,
+        preserve_root_anchor=false,
+      )
     }
   }
 }
@@ -249,6 +301,20 @@ fn mindmap_root_anchor_point(
     (root_rect.left, rect_center_y(root_rect))
   } else {
     (rect_center_x(root_rect), rect_center_y(root_rect))
+  }
+}
+
+///|
+fn mindmap_current_root_anchor_point(
+  mindmap : @dom.Element,
+) -> (Double, Double)? {
+  match mindmap.querySelector(".mindmap-stage") {
+    Some(stage) =>
+      match stage.querySelector(".node[data-parent-index=\"-1\"]") {
+        Some(root) => Some(mindmap_root_anchor_point(element_rect(root), stage))
+        None => None
+      }
+    None => None
   }
 }
 
