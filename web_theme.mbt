@@ -1820,6 +1820,9 @@ fn style_branch_column(element : @dom.Element) -> Unit {
 ///|
 fn style_branch_column_root(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
+  set_style(element, "align-self", "stretch")
+  set_style(element, "height", "100%")
+  set_style(element, "min-height", "0")
 }
 
 ///|

@@ -754,16 +754,49 @@ fn apply_root_column_packing(column : @dom.Element?, gap : Int) -> Unit {
       if branches.length() == 0 {
         return
       }
-      let heights = []
+      let card_heights = []
+      let branch_top_radii = []
+      let branch_bottom_radii = []
       for branch in branches {
-        let height = element_rect(branch).height.round().to_int()
-        heights.push(if height > 1 { height } else { 1 })
+        let branch_rect = element_rect(branch)
+        let (card_height, top_radius, bottom_radius) = match
+          branch.querySelector(".node[data-node-index]") {
+          Some(card) => {
+            let card_rect = element_rect(card)
+            let card_center = rect_center_y(card_rect)
+            (
+              card_rect.height.round().to_int(),
+              (card_center - branch_rect.top).round().to_int(),
+              (branch_rect.bottom - card_center).round().to_int(),
+            )
+          }
+          None => {
+            let branch_height = branch_rect.height.round().to_int()
+            (branch_height, branch_height / 2, branch_height / 2)
+          }
+        }
+        let safe_card_height = if card_height > 1 { card_height } else { 1 }
+        card_heights.push(safe_card_height)
+        branch_top_radii.push(
+          root_branch_compact_radius(top_radius, safe_card_height),
+        )
+        branch_bottom_radii.push(
+          root_branch_compact_radius(bottom_radius, safe_card_height),
+        )
       }
       let available = root_column.clientHeight()
-      let positions = contour_anchor_pack_positions(
-        heights,
+      let starts = contour_anchor_pack_positions(
+        card_heights,
         available / 2,
         available,
+        gap,
+      )
+      let positions = root_branch_centers_from_starts(starts, card_heights)
+      let adjusted = root_branch_collision_adjusted_centers(
+        positions,
+        branch_top_radii,
+        branch_bottom_radii,
+        available / 2,
         gap,
       )
       for index in 0..<branches.length() {
@@ -771,10 +804,72 @@ fn apply_root_column_packing(column : @dom.Element?, gap : Int) -> Unit {
         let style = @dom.css_style_from_val(
           branch.as_any()._get("style").cast(),
         )
-        style.set_property("top", "\{positions[index]}px")
+        style.set_property("top", "\{adjusted[index]}px")
       }
     }
     None => ()
+  }
+}
+
+///|
+fn root_branch_compact_radius(radius : Int, card_height : Int) -> Int {
+  let safe_radius = if radius > 1 { radius } else { 1 }
+  let card_radius = if card_height > 1 { card_height / 2 } else { 1 }
+  if safe_radius <= card_radius {
+    safe_radius
+  } else {
+    card_radius + (safe_radius - card_radius) / 2
+  }
+}
+
+///|
+fn root_branch_centers_from_starts(
+  starts : Array[Int],
+  heights : Array[Int],
+) -> Array[Int] {
+  let centers = []
+  for index in 0..<starts.length() {
+    centers.push(starts[index] + heights[index] / 2)
+  }
+  centers
+}
+
+///|
+fn root_branch_collision_adjusted_centers(
+  centers : Array[Int],
+  top_radii : Array[Int],
+  bottom_radii : Array[Int],
+  anchor_center : Int,
+  gap : Int,
+) -> Array[Int] {
+  let adjusted = []
+  if centers.length() == 0 {
+    return adjusted
+  }
+  adjusted.push(centers[0])
+  for index in 1..<centers.length() {
+    let previous = adjusted[index - 1]
+    let min_center = previous + bottom_radii[index - 1] + top_radii[index] + gap
+    adjusted.push(
+      if centers[index] < min_center {
+        min_center
+      } else {
+        centers[index]
+      },
+    )
+  }
+  let first_top = adjusted[0] - top_radii[0]
+  let last_index = adjusted.length() - 1
+  let last_bottom = adjusted[last_index] + bottom_radii[last_index]
+  let shift = anchor_center - (first_top + last_bottom) / 2
+  if shift == 0 {
+    adjusted
+  } else {
+    let shifted = []
+    for center in adjusted {
+      shifted.push(center + shift)
+    }
+    shifted
   }
 }
 
