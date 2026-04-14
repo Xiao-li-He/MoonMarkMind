@@ -2640,11 +2640,365 @@ fn download_text(filename : String, content : String) -> Unit {
 
 ///|
 fn download_current_page_html(filename : String) -> Unit {
-  let html = @dom.document().documentElement().outerHTML()
-  download_link_from_data_url(
-    filename,
-    "data:text/html;charset=utf-8,\{@global.encodeURIComponent(html)}",
+  ignore(
+    @core.Promise::new(async fn(resolve, _reject) {
+      let bundle = fetch_current_bundle_text() catch { _ => "" }
+      let html = build_mindmap_export_html(bundle)
+      if html.length() > 0 {
+        download_link_from_data_url(
+          filename,
+          "data:text/html;charset=utf-8,\{@global.encodeURIComponent(html)}",
+        )
+      }
+      resolve(())
+    }),
   )
+}
+
+///|
+async fn fetch_current_bundle_text() -> String {
+  let response = @dom.window().fetch(current_bundle_src())
+  let text_promise : @core.Promise[String] = response
+    .as_any()
+    ._call("text", [])
+    .cast()
+  text_promise.wait()
+}
+
+///|
+fn build_mindmap_export_html(bundle : String) -> String {
+  let export_dom = build_mindmap_interactive_export_dom()
+  let script_tag = build_export_runtime_script(bundle)
+  (
+    $|<!doctype html>
+    $|<html>
+    $|<head>
+    $|  <meta charset="utf-8">
+    $|  <meta name="viewport" content="width=device-width, initial-scale=1">
+    $|  <title>MoonMarkMind Export</title>
+    $|</head>
+    $|<body>
+    $|\{export_dom.outerHTML()}
+    $|\{script_tag}
+    $|</body>
+    $|</html>
+  )
+}
+
+///|
+fn build_export_runtime_script(bundle : String) -> String {
+  if bundle.length() == 0 {
+    (
+      $|<script type="module" src="\{current_bundle_src()}"></script>
+    )
+  } else {
+    (
+      $|<script type="module">\{escape_inline_script(bundle)}</script>
+    )
+  }
+}
+
+///|
+fn escape_inline_script(script : String) -> String {
+  script
+  .replace_all(old="</script", new="<\\/script")
+  .replace_all(old="<!--", new="<\\!--")
+}
+
+///|
+fn build_mindmap_interactive_export_dom() -> @dom.Element {
+  let saved_collapsed = app_state.collapsed
+  let saved_hidden_nodes = app_state.hidden_nodes
+  let saved_selected_node = app_state.selected_node
+  let saved_selected_nodes = app_state.selected_nodes
+  let saved_editing_node = app_state.editing_node
+  let saved_editing_note_node = app_state.editing_note_node
+  app_state.collapsed = []
+  app_state.hidden_nodes = []
+  app_state.selected_node = -2
+  app_state.selected_nodes = []
+  app_state.editing_node = -2
+  app_state.editing_note_node = -2
+  let root = create_element("main", "mindmap-export")
+  root.setAttribute("id", "mindmap-export")
+  root.setAttribute("data-export-collapsed", ints_to_csv(saved_collapsed))
+  style_of(root).set_property("display", "inline-block")
+  style_of(root).set_property("padding", "48px")
+  style_of(root).set_property("background", "transparent")
+  let mindmap = create_element("div", "mindmap")
+  mindmap.setAttribute("id", "mindmap")
+  mindmap.setAttribute("data-pan-x", "0")
+  mindmap.setAttribute("data-pan-y", "0")
+  mindmap.setAttribute("data-zoom", "1")
+  style_of(mindmap).set_property("height", "auto")
+  style_of(mindmap).set_property("overflow", "visible")
+  append_child(mindmap, build_mindmap_dom())
+  apply_mindmap_export_layout(mindmap)
+  append_child(root, mindmap)
+  app_state.collapsed = saved_collapsed
+  app_state.hidden_nodes = saved_hidden_nodes
+  app_state.selected_node = saved_selected_node
+  app_state.selected_nodes = saved_selected_nodes
+  app_state.editing_node = saved_editing_node
+  app_state.editing_note_node = saved_editing_note_node
+  root
+}
+
+///|
+fn apply_mindmap_export_layout(mindmap : @dom.Element) -> Unit {
+  match mindmap.querySelector(".mindmap-content") {
+    Some(content) => {
+      let content_style = style_of(content)
+      content_style.set_property("position", "relative")
+      content_style.set_property("left", "auto")
+      content_style.set_property("top", "auto")
+      content_style.set_property("transform", "none")
+      content_style.set_property("display", "inline-block")
+    }
+    None => ()
+  }
+}
+
+///|
+fn current_bundle_src() -> String {
+  let location = @dom.window().location()
+  let origin = location._get("origin").to_string()
+  if origin == "null" || origin.length() == 0 {
+    "main.bundle.js"
+  } else {
+    "\{origin}/main.bundle.js"
+  }
+}
+
+///|
+let export_collapsed_nodes : @ref.Ref[Array[Int]] = @ref.Ref([])
+
+///|
+fn bind_export_mindmap_ui(export_root : @dom.Element) -> Unit {
+  apply_export_page_theme()
+  export_collapsed_nodes.val = parse_selection_indices(
+    export_root.getAttribute("data-export-collapsed").unwrap_or(""),
+  )
+  export_root
+  .as_event_target()
+  .on("click", fn(raw) {
+    let event : @dom.MouseEvent = raw.cast()
+    match event.target().closest("[data-action=\"toggle\"]") {
+      Some(button) =>
+        match button.closest(".node[data-node-index]") {
+          Some(card) => {
+            let node_index = parse_int_or_default(
+              card.getAttribute("data-node-index").unwrap_or("-1"),
+              -1,
+            )
+            if node_index >= 0 {
+              event.preventDefault()
+              event.stopPropagation()
+              if contains_int(export_collapsed_nodes.val, node_index) {
+                export_collapsed_nodes.val = remove_int(
+                  export_collapsed_nodes.val,
+                  node_index,
+                )
+              } else {
+                export_collapsed_nodes.val.push(node_index)
+              }
+              apply_export_collapsed_state(export_root)
+            }
+          }
+          None => ()
+        }
+      None => ()
+    }
+  })
+  @dom.window()
+  .as_event_target()
+  .on("resize", fn(_) { render_export_mindmap_connectors(export_root) })
+  apply_export_collapsed_state(export_root)
+  schedule_export_mindmap_connectors(export_root)
+}
+
+///|
+fn apply_export_page_theme() -> Unit {
+  let html_style = style_of(@dom.document().documentElement())
+  html_style.set_property("min-height", "100%")
+  html_style.set_property("background", "transparent")
+  match @dom.document().body() {
+    Some(body) => {
+      let body_style = style_of(body.as_element())
+      body_style.set_property("margin", "0")
+      body_style.set_property("min-height", "100%")
+      body_style.set_property("overflow", "auto")
+      body_style.set_property("background", "transparent")
+      body_style.set_property(
+        "font-family", "\"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+      )
+    }
+    None => ()
+  }
+}
+
+///|
+fn apply_export_collapsed_state(export_root : @dom.Element) -> Unit {
+  let cards : Array[@dom.Element] = export_root.querySelectorAll(
+    ".node[data-node-index]",
+  )
+  for card in cards {
+    let node_index = parse_int_or_default(
+      card.getAttribute("data-node-index").unwrap_or("-1"),
+      -1,
+    )
+    let parent_index = export_parent_index(card)
+    let container = export_node_container(card)
+    if parent_index >= 0 {
+      let hidden = export_hidden_by_collapsed(cards, node_index)
+      if hidden {
+        container.setAttribute("hidden", "")
+      } else {
+        container.removeAttribute("hidden")
+      }
+    }
+    match card.querySelector("[data-action=\"toggle\"]") {
+      Some(button) => {
+        let collapsed = contains_int(export_collapsed_nodes.val, node_index)
+        let hidden_count = card.getAttribute("data-hidden-count").unwrap_or("")
+        card.setAttribute("data-collapsed", collapsed.to_string())
+        button.setAttribute("aria-expanded", (!collapsed).to_string())
+        toggle_class(button, "node-action--collapsed", collapsed)
+        button.setTextContent(if collapsed { hidden_count } else { "" })
+      }
+      None => ()
+    }
+  }
+  schedule_export_mindmap_connectors(export_root)
+}
+
+///|
+fn schedule_export_mindmap_connectors(export_root : @dom.Element) -> Unit {
+  let window = @dom.window()
+  ignore(
+    window.requestAnimationFrame(fn(_) {
+      ignore(
+        window.requestAnimationFrame(fn(_) {
+          render_export_mindmap_connectors(export_root)
+        }),
+      )
+    }),
+  )
+}
+
+///|
+fn export_parent_index(card : @dom.Element) -> Int {
+  parse_int_or_default(
+    card.getAttribute("data-parent-index").unwrap_or("-1"),
+    -1,
+  )
+}
+
+///|
+fn export_node_container(card : @dom.Element) -> @dom.Element {
+  match card.closest(".branch-item, .vertical-tree, .single-right-tree__node") {
+    Some(container) => container
+    None => card
+  }
+}
+
+///|
+fn export_hidden_by_collapsed(
+  cards : Array[@dom.Element],
+  node_index : Int,
+) -> Bool {
+  for cursor = export_parent_of(cards, node_index); cursor >= 0; {
+    if contains_int(export_collapsed_nodes.val, cursor) {
+      return true
+    }
+    continue export_parent_of(cards, cursor)
+  } nobreak {
+    false
+  }
+}
+
+///|
+fn export_parent_of(cards : Array[@dom.Element], node_index : Int) -> Int {
+  for card in cards {
+    let current = parse_int_or_default(
+      card.getAttribute("data-node-index").unwrap_or("-1"),
+      -1,
+    )
+    if current == node_index {
+      return export_parent_index(card)
+    }
+  }
+  -1
+}
+
+///|
+fn render_export_mindmap_connectors(export_root : @dom.Element) -> Unit {
+  match export_root.querySelector(".mindmap-stage") {
+    Some(stage) => {
+      match stage.querySelector(".mindmap-connector-layer") {
+        Some(layer) => layer.remove()
+        None => ()
+      }
+      let nodes = export_visible_node_cards(export_root)
+      if nodes.length() <= 1 {
+        return
+      }
+      let stage_rect = element_rect(stage)
+      let width = max_double(1.0, stage_rect.width).ceil().to_int()
+      let height = max_double(1.0, stage_rect.height).ceil().to_int()
+      let svg = create_svg_element("svg", "mindmap-connector-layer")
+      svg.setAttribute("width", width.to_string())
+      svg.setAttribute("height", height.to_string())
+      svg.setAttribute("viewBox", "0 0 \{width} \{height}")
+      let svg_style = style_of(svg)
+      svg_style.set_property("position", "absolute")
+      svg_style.set_property("left", "0px")
+      svg_style.set_property("top", "0px")
+      svg_style.set_property("overflow", "visible")
+      svg_style.set_property("pointer-events", "none")
+      svg_style.set_property("z-index", "0")
+      let layout = stage_layout_kind(stage)
+      let color = export_connector_color(stage)
+      for node in nodes {
+        let parent_index = export_parent_index(node)
+        if parent_index < 0 {
+          continue
+        }
+        match find_node_by_index(nodes, parent_index) {
+          Some(parent) => {
+            let path_data = export_connector_geometry(
+              layout,
+              element_rect(parent),
+              element_rect(node),
+              stage_rect.left,
+              stage_rect.top,
+            )
+            append_child(
+              svg,
+              build_export_connector_path(node, path_data, color),
+            )
+          }
+          None => ()
+        }
+      }
+      stage.as_any()._call("prepend", [svg.as_any()]) |> ignore
+    }
+    None => ()
+  }
+}
+
+///|
+fn export_visible_node_cards(export_root : @dom.Element) -> Array[@dom.Element] {
+  let nodes : Array[@dom.Element] = export_root.querySelectorAll(
+    ".node[data-node-index]",
+  )
+  let visible : Array[@dom.Element] = []
+  for node in nodes {
+    if !export_node_container(node).hasAttribute("hidden") {
+      visible.push(node)
+    }
+  }
+  visible
 }
 
 ///|

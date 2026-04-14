@@ -84,6 +84,13 @@ let note_editor_draft_markdown : @ref.Ref[String] = @ref.Ref("")
 
 ///|
 pub fn start_web_app() -> Unit {
+  match get_element("#mindmap-export") {
+    Some(export_root) => {
+      bind_export_mindmap_ui(export_root)
+      return
+    }
+    None => ()
+  }
   if app_state.started {
     render_ui()
     return

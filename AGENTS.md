@@ -21,6 +21,8 @@ This is a [MoonBit](https://docs.moonbitlang.com) project.
 - Try to keep deprecated blocks in file called `deprecated.mbt` in each
   directory.
 
+- Only native MoonBit code is permitted; JavaScript, CSS, and HTML must not be introduced via injection.
+
 ## Tooling
 
 - `moon fmt` is used to format your code properly.

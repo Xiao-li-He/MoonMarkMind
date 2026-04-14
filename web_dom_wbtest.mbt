@@ -85,3 +85,11 @@ test "hover line stays hidden when editor is inactive" {
   assert_eq(should_show_input_hover_line(3, false), false)
   assert_eq(should_show_input_hover_line(-1, true), false)
 }
+
+///|
+test "export runtime script is inline safe" {
+  let script = build_export_runtime_script("console.log('</script><!--')")
+  assert_eq(script.contains("src="), false)
+  assert_eq(script.contains("<\\/script>"), true)
+  assert_eq(script.contains("<\\!--"), true)
+}
