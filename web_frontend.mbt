@@ -1339,6 +1339,7 @@ fn render_ui() -> Unit {
     reveal_input_line(primary_linked_line)
   }
   app_state.reveal_selected_line = false
+  schedule_mindmap_reveal_node(app_state.selected_node)
 }
 
 ///|
@@ -1355,6 +1356,7 @@ fn sync_selection_ui() -> Unit {
     reveal_input_line(primary_linked_line)
   }
   app_state.reveal_selected_line = false
+  schedule_mindmap_reveal_node(app_state.selected_node)
 }
 
 ///|

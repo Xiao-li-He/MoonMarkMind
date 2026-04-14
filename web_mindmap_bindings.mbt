@@ -457,6 +457,36 @@ fn schedule_mindmap_recenter_current_view() -> Unit {
 }
 
 ///|
+fn schedule_mindmap_reveal_node(node_index : Int) -> Unit {
+  if node_index < 0 {
+    return
+  }
+  match get_element("#mindmap") {
+    Some(mindmap) => {
+      let window = @dom.window()
+      ignore(
+        window.requestAnimationFrame(fn(_) {
+          ignore(
+            window.requestAnimationFrame(fn(_) {
+              let frame = @ref.Ref(0)
+              mindmap_reveal_node(
+                mindmap,
+                node_index,
+                get_element("#zoom-value"),
+                get_element("#zoom-edit"),
+                frame,
+                window,
+              )
+            }),
+          )
+        }),
+      )
+    }
+    None => ()
+  }
+}
+
+///|
 fn mindmap_recenter_pan(
   mindmap : @dom.Element,
   zoom_value : @dom.Element?,
@@ -509,6 +539,81 @@ fn mindmap_recenter_pan(
       mindmap_sync_view(mindmap, zoom_value, zoom_edit)
       mindmap_schedule_connectors(frame, window)
     }
+  }
+}
+
+///|
+fn mindmap_reveal_node(
+  mindmap : @dom.Element,
+  node_index : Int,
+  zoom_value : @dom.Element?,
+  zoom_edit : @dom.Element?,
+  frame : @ref.Ref[Int],
+  window : @dom.Window,
+) -> Unit {
+  match mindmap.querySelector(".node[data-node-index=\"\{node_index}\"]") {
+    Some(node) => {
+      let mindmap_rect = element_rect(mindmap)
+      let node_rect = element_rect(node)
+      let padding = 36.0
+      let delta_x = mindmap_reveal_delta_axis(
+        node_rect.left,
+        node_rect.right,
+        mindmap_rect.left,
+        mindmap_rect.right,
+        padding,
+      )
+      let delta_y = mindmap_reveal_delta_axis(
+        node_rect.top,
+        node_rect.bottom,
+        mindmap_rect.top,
+        mindmap_rect.bottom,
+        padding,
+      )
+      if abs_double(delta_x) < 0.5 && abs_double(delta_y) < 0.5 {
+        return
+      }
+      let current_pan_x = parse_int_or_default(
+        mindmap.getAttribute("data-pan-x").unwrap_or("0"),
+        0,
+      )
+      let current_pan_y = parse_int_or_default(
+        mindmap.getAttribute("data-pan-y").unwrap_or("0"),
+        0,
+      )
+      mindmap.setAttribute(
+        "data-pan-x",
+        (current_pan_x.to_double() + delta_x).round().to_int().to_string(),
+      )
+      mindmap.setAttribute(
+        "data-pan-y",
+        (current_pan_y.to_double() + delta_y).round().to_int().to_string(),
+      )
+      mindmap_sync_view(mindmap, zoom_value, zoom_edit)
+      mindmap_schedule_connectors(frame, window)
+    }
+    None => ()
+  }
+}
+
+///|
+fn mindmap_reveal_delta_axis(
+  node_start : Double,
+  node_end : Double,
+  viewport_start : Double,
+  viewport_end : Double,
+  padding : Double,
+) -> Double {
+  let node_size = node_end - node_start
+  let viewport_size = viewport_end - viewport_start
+  if node_size + padding * 2.0 > viewport_size {
+    (viewport_start + viewport_end) / 2.0 - (node_start + node_end) / 2.0
+  } else if node_start < viewport_start + padding {
+    viewport_start + padding - node_start
+  } else if node_end > viewport_end - padding {
+    viewport_end - padding - node_end
+  } else {
+    0.0
   }
 }
 
