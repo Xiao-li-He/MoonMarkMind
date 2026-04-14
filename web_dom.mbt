@@ -2850,12 +2850,10 @@ fn apply_export_collapsed_state(export_root : @dom.Element) -> Unit {
     let parent_index = export_parent_index(card)
     let container = export_node_container(card)
     if parent_index >= 0 {
-      let hidden = export_hidden_by_collapsed(cards, node_index)
-      if hidden {
-        container.setAttribute("hidden", "")
-      } else {
-        container.removeAttribute("hidden")
-      }
+      apply_export_hidden_state(
+        container,
+        export_hidden_by_collapsed(cards, node_index),
+      )
     }
     match card.querySelector("[data-action=\"toggle\"]") {
       Some(button) => {
@@ -2870,6 +2868,19 @@ fn apply_export_collapsed_state(export_root : @dom.Element) -> Unit {
     }
   }
   schedule_export_mindmap_connectors(export_root)
+}
+
+///|
+fn apply_export_hidden_state(container : @dom.Element, hidden : Bool) -> Unit {
+  let style = style_of(container)
+  if hidden {
+    container.setAttribute("hidden", "")
+    style.set_property_priority("display", "none", "important")
+  } else {
+    container.removeAttribute("hidden")
+    ignore(style.remove_property("display"))
+    apply_theme_to_element(container)
+  }
 }
 
 ///|
