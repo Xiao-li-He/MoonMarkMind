@@ -2648,21 +2648,6 @@ fn download_current_page_html(filename : String) -> Unit {
 }
 
 ///|
-fn export_dimension(
-  content_size : Double,
-  mindmap_size : Double,
-  minimum : Int,
-) -> Int {
-  if content_size > mindmap_size && content_size > minimum.to_double() {
-    content_size.ceil().to_int()
-  } else if mindmap_size > minimum.to_double() {
-    mindmap_size.ceil().to_int()
-  } else {
-    minimum
-  }
-}
-
-///|
 fn build_mindmap_export_svg() -> String {
   match build_mindmap_export_svg_element() {
     Some(svg) => svg.outerHTML()
@@ -2674,50 +2659,272 @@ fn build_mindmap_export_svg() -> String {
 fn build_mindmap_export_svg_element() -> @dom.Element? {
   match get_element("#mindmap") {
     Some(mindmap) => {
+      render_mindmap_connectors()
       let clone = @dom.Element::cast_from_node(mindmap.cloneNode(true))
-      let content_rect = match mindmap.querySelector(".mindmap-content") {
-        Some(content) => element_rect(content)
-        None => return None
-      }
-      let mindmap_rect = element_rect(mindmap)
-      let width = export_dimension(content_rect.width, mindmap_rect.width, 640)
-      let height = export_dimension(
-        content_rect.height,
-        mindmap_rect.height,
-        360,
-      )
+      normalize_export_connector_styles(clone)
+      let bounds = mindmap_export_bounds(mindmap)
       let pan_x = mindmap.getAttribute("data-pan-x").unwrap_or("0")
       let pan_y = mindmap.getAttribute("data-pan-y").unwrap_or("0")
       let zoom = mindmap.getAttribute("data-zoom").unwrap_or("1")
       let svg = create_svg_element("svg", "")
       svg.setAttribute("xmlns", "http://www.w3.org/2000/svg")
-      svg.setAttribute("width", width.to_string())
-      svg.setAttribute("height", height.to_string())
-      svg.setAttribute("viewBox", "0 0 \{width} \{height}")
+      svg.setAttribute("width", bounds.width.to_string())
+      svg.setAttribute("height", bounds.height.to_string())
+      svg.setAttribute("viewBox", "0 0 \{bounds.width} \{bounds.height}")
       let foreign_object = create_svg_element("foreignObject", "")
       foreign_object.setAttribute("width", "100%")
       foreign_object.setAttribute("height", "100%")
       let wrapper = create_element("div", "")
       wrapper.setAttribute("xmlns", "http://www.w3.org/1999/xhtml")
       let wrapper_style = style_of(wrapper)
-      wrapper_style.set_property("width", "\{width}px")
-      wrapper_style.set_property("height", "\{height}px")
-      wrapper_style.set_property("background", "#ffffff")
+      wrapper_style.set_property("width", "\{bounds.mindmap_width}px")
+      wrapper_style.set_property("height", "\{bounds.mindmap_height}px")
+      wrapper_style.set_property("background", "transparent")
+      wrapper_style.set_property(
+        "transform",
+        "translate(\{bounds.mindmap_x}px, \{bounds.mindmap_y}px)",
+      )
+      wrapper_style.set_property("overflow", "visible")
       let mindmap_style = style_of(clone)
-      mindmap_style.set_property("width", "\{width}px")
-      mindmap_style.set_property("height", "\{height}px")
-      mindmap_style.set_property("min-height", "\{height}px")
-      mindmap_style.set_property("overflow", "hidden")
-      mindmap_style.set_property("padding", "20px")
+      mindmap_style.set_property("width", "\{bounds.mindmap_width}px")
+      mindmap_style.set_property("height", "\{bounds.mindmap_height}px")
+      mindmap_style.set_property("min-height", "\{bounds.mindmap_height}px")
+      mindmap_style.set_property("overflow", "visible")
+      mindmap_style.set_property("background", "transparent")
       mindmap_style.set_property("--pan-x", "\{pan_x}px")
       mindmap_style.set_property("--pan-y", "\{pan_y}px")
       mindmap_style.set_property("--zoom", zoom)
       wrapper.as_node().appendChild(clone.as_node()) |> ignore
       foreign_object.as_node().appendChild(wrapper.as_node()) |> ignore
       svg.as_node().appendChild(foreign_object.as_node()) |> ignore
+      match
+        build_mindmap_export_connector_group(mindmap, bounds.left, bounds.top) {
+        Some(connectors) =>
+          svg.as_node().appendChild(connectors.as_node()) |> ignore
+        None => ()
+      }
       Some(svg)
     }
     None => None
+  }
+}
+
+///|
+priv struct MindmapExportBounds {
+  left : Double
+  top : Double
+  width : Int
+  height : Int
+  mindmap_x : Double
+  mindmap_y : Double
+  mindmap_width : Int
+  mindmap_height : Int
+}
+
+///|
+fn mindmap_export_bounds(mindmap : @dom.Element) -> MindmapExportBounds {
+  let margin = 48.0
+  let mindmap_rect = element_rect(mindmap)
+  let (content_left, content_top, content_right, content_bottom) = match
+    mindmap.querySelector(".mindmap-stage") {
+    Some(stage) =>
+      match mindmap_node_bounds(stage) {
+        Some(bounds) => bounds
+        None =>
+          (
+            mindmap_rect.left,
+            mindmap_rect.top,
+            mindmap_rect.right,
+            mindmap_rect.bottom,
+          )
+      }
+    None =>
+      (
+        mindmap_rect.left,
+        mindmap_rect.top,
+        mindmap_rect.right,
+        mindmap_rect.bottom,
+      )
+  }
+  let left = content_left - margin
+  let top = content_top - margin
+  let width = max_double(1.0, content_right - content_left + margin * 2.0)
+    .ceil()
+    .to_int()
+  let height = max_double(1.0, content_bottom - content_top + margin * 2.0)
+    .ceil()
+    .to_int()
+  MindmapExportBounds::{
+    left,
+    top,
+    width,
+    height,
+    mindmap_x: mindmap_rect.left - left,
+    mindmap_y: mindmap_rect.top - top,
+    mindmap_width: max_double(1.0, mindmap_rect.width).ceil().to_int(),
+    mindmap_height: max_double(1.0, mindmap_rect.height).ceil().to_int(),
+  }
+}
+
+///|
+fn normalize_export_connector_styles(mindmap : @dom.Element) -> Unit {
+  match mindmap.querySelector(".mindmap-stage") {
+    Some(stage) =>
+      match stage.querySelector(".mindmap-connector-layer") {
+        Some(layer) => layer.remove()
+        None => ()
+      }
+    None => ()
+  }
+}
+
+///|
+fn build_mindmap_export_connector_group(
+  mindmap : @dom.Element,
+  export_left : Double,
+  export_top : Double,
+) -> @dom.Element? {
+  match mindmap.querySelector(".mindmap-stage") {
+    Some(stage) => {
+      let nodes : Array[@dom.Element] = stage.querySelectorAll(
+        ".node[data-node-index]",
+      )
+      if nodes.length() <= 1 {
+        return None
+      }
+      let layout = stage_layout_kind(stage)
+      let color = export_connector_color(stage)
+      let group = create_svg_element("g", "mindmap-export-connectors")
+      group.setAttribute("fill", "none")
+      group.setAttribute("opacity", "0.92")
+      for node in nodes {
+        let parent_index = parse_int_or_default(
+          node.getAttribute("data-parent-index").unwrap_or("-1"),
+          -1,
+        )
+        if parent_index < 0 {
+          continue
+        }
+        match find_node_by_index(nodes, parent_index) {
+          Some(parent) => {
+            let path_data = export_connector_geometry(
+              layout,
+              element_rect(parent),
+              element_rect(node),
+              export_left,
+              export_top,
+            )
+            append_child(
+              group,
+              build_export_connector_path(node, path_data, color),
+            )
+          }
+          None => ()
+        }
+      }
+      Some(group)
+    }
+    None => None
+  }
+}
+
+///|
+fn export_connector_geometry(
+  layout : StageLayoutKind,
+  parent_rect : @dom.DOMRect,
+  node_rect : @dom.DOMRect,
+  export_left : Double,
+  export_top : Double,
+) -> ConnectorPathData {
+  let parent_center_x = rect_center_x(parent_rect) - export_left
+  let parent_center_y = rect_center_y(parent_rect) - export_top
+  let node_center_x = rect_center_x(node_rect) - export_left
+  let node_center_y = rect_center_y(node_rect) - export_top
+  match layout {
+    StageLayoutKind::Tree => {
+      let start_x = parent_center_x
+      let start_y = parent_rect.bottom - export_top
+      let end_x = node_center_x
+      let end_y = node_rect.top - export_top
+      let span_y = abs_double(end_y - start_y)
+      let bend = min_double(44.0, max_double(16.0, span_y * 0.4))
+      ConnectorPathData::{
+        start_x,
+        start_y,
+        control1_x: start_x,
+        control1_y: start_y + bend,
+        control2_x: end_x,
+        control2_y: end_y - bend,
+        end_x,
+        end_y,
+      }
+    }
+    StageLayoutKind::Logic => {
+      let start_x = parent_rect.right - export_left
+      let start_y = parent_center_y
+      let end_x = node_rect.left - export_left
+      let end_y = node_center_y
+      let span_x = abs_double(end_x - start_x)
+      let bend = min_double(36.0, max_double(14.0, span_x * 0.28))
+      ConnectorPathData::{
+        start_x,
+        start_y,
+        control1_x: start_x + bend,
+        control1_y: start_y,
+        control2_x: end_x - bend,
+        control2_y: end_y,
+        end_x,
+        end_y,
+      }
+    }
+    StageLayoutKind::Mindmap => {
+      let direction = if node_center_x >= parent_center_x { 1.0 } else { -1.0 }
+      let start_x = if direction > 0.0 {
+        parent_rect.right - export_left
+      } else {
+        parent_rect.left - export_left
+      }
+      let end_x = if direction > 0.0 {
+        node_rect.left - export_left
+      } else {
+        node_rect.right - export_left
+      }
+      let span = abs_double(end_x - start_x)
+      let pull = min_double(30.0, max_double(12.0, span * 0.26))
+      let settle = min_double(40.0, max_double(14.0, span * 0.38))
+      let mid_y = parent_center_y + (node_center_y - parent_center_y) * 0.2
+      ConnectorPathData::{
+        start_x,
+        start_y: parent_center_y,
+        control1_x: start_x + direction * pull,
+        control1_y: mid_y,
+        control2_x: end_x - direction * settle,
+        control2_y: node_center_y,
+        end_x,
+        end_y: node_center_y,
+      }
+    }
+  }
+}
+
+///|
+fn build_export_connector_path(
+  node : @dom.Element,
+  path_data : ConnectorPathData,
+  color : String,
+) -> @dom.Element {
+  let path = build_connector_path(node, path_data)
+  path.setAttribute("stroke", color)
+  path.setAttribute("stroke-opacity", "0.92")
+  path
+}
+
+///|
+fn export_connector_color(stage : @dom.Element) -> String {
+  if has_class_name(stage, "mindmap-stage--fill") {
+    "#7ca5d4"
+  } else {
+    "#94b6db"
   }
 }
 
@@ -2735,53 +2942,41 @@ fn download_mindmap_svg(filename : String) -> Unit {
 
 ///|
 fn download_mindmap_png(filename : String) -> Unit {
-  let svg = build_mindmap_export_svg()
-  if svg.length() == 0 {
-    return
+  let svg_element = match build_mindmap_export_svg_element() {
+    Some(svg) => svg
+    None => return
   }
+  let svg = svg_element.outerHTML()
   let image = create_element("img", "")
   let image_element = @dom.HTMLImageElement::cast_from_element(image)
   let export_url = "data:image/svg+xml;charset=utf-8,\{@global.encodeURIComponent(svg)}"
   image_element
   .as_event_target()
   .addEventListener("load", fn(_) {
-    match get_element("#mindmap") {
-      Some(mindmap) =>
-        match mindmap.querySelector(".mindmap-content") {
-          Some(content) => {
-            let canvas = create_element("canvas", "")
-            let canvas_element = @dom.HTMLCanvasElement::cast_from_element(
-              canvas,
-            )
-            let content_rect = element_rect(content)
-            let mindmap_rect = element_rect(mindmap)
-            let width = export_dimension(
-              content_rect.width,
-              mindmap_rect.width,
-              640,
-            )
-            let height = export_dimension(
-              content_rect.height,
-              mindmap_rect.height,
-              360,
-            )
-            canvas_element.width = width
-            canvas_element.height = height
-            let ctx : @canvas.CanvasRenderingContext2D = @core.identity(
-              canvas_element.getContext("2d"),
-            )
-            ctx.fillStyle = "#ffffff"
-            ctx.fillRect(0.0, 0.0, width.to_double(), height.to_double())
-            ctx.drawImage(image_element.as_any(), 0.0, 0.0)
-            download_link_from_data_url(
-              filename,
-              canvas_element.toDataURL(image_type="image/png"),
-            )
-          }
-          None => ()
-        }
-      None => ()
+    let width = parse_int_or_default(
+      svg_element.getAttribute("width").unwrap_or("0"),
+      0,
+    )
+    let height = parse_int_or_default(
+      svg_element.getAttribute("height").unwrap_or("0"),
+      0,
+    )
+    if width <= 0 || height <= 0 {
+      return
     }
+    let canvas = create_element("canvas", "")
+    let canvas_element = @dom.HTMLCanvasElement::cast_from_element(canvas)
+    canvas_element.width = width
+    canvas_element.height = height
+    let ctx : @canvas.CanvasRenderingContext2D = @core.identity(
+      canvas_element.getContext("2d"),
+    )
+    ctx.clearRect(0.0, 0.0, width.to_double(), height.to_double())
+    ctx.drawImage(image_element.as_any(), 0.0, 0.0)
+    download_link_from_data_url(
+      filename,
+      canvas_element.toDataURL(image_type="image/png"),
+    )
   })
   image_element.as_event_target().addEventListener("error", fn(_) { () })
   image_element.src = export_url
