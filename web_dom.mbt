@@ -3021,16 +3021,78 @@ fn build_mindmap_export_svg() -> String {
 }
 
 ///|
+priv struct MindmapExportViewState {
+  pan_x : String
+  pan_y : String
+  zoom : String
+  style_pan_x : String
+  style_pan_y : String
+  style_zoom : String
+}
+
+///|
+fn capture_mindmap_export_view_state(
+  mindmap : @dom.Element,
+) -> MindmapExportViewState {
+  let style = style_of(mindmap)
+  MindmapExportViewState::{
+    pan_x: mindmap.getAttribute("data-pan-x").unwrap_or("0"),
+    pan_y: mindmap.getAttribute("data-pan-y").unwrap_or("0"),
+    zoom: mindmap.getAttribute("data-zoom").unwrap_or("1"),
+    style_pan_x: style.get_property_value("--pan-x"),
+    style_pan_y: style.get_property_value("--pan-y"),
+    style_zoom: style.get_property_value("--zoom"),
+  }
+}
+
+///|
+fn apply_neutral_mindmap_export_view(mindmap : @dom.Element) -> Unit {
+  mindmap.setAttribute("data-pan-x", "0")
+  mindmap.setAttribute("data-pan-y", "0")
+  mindmap.setAttribute("data-zoom", "1")
+  let style = style_of(mindmap)
+  style.set_property("--pan-x", "0px")
+  style.set_property("--pan-y", "0px")
+  style.set_property("--zoom", "1")
+}
+
+///|
+fn restore_mindmap_export_view(
+  mindmap : @dom.Element,
+  state : MindmapExportViewState,
+) -> Unit {
+  mindmap.setAttribute("data-pan-x", state.pan_x)
+  mindmap.setAttribute("data-pan-y", state.pan_y)
+  mindmap.setAttribute("data-zoom", state.zoom)
+  let style = style_of(mindmap)
+  restore_export_style_property(style, "--pan-x", state.style_pan_x)
+  restore_export_style_property(style, "--pan-y", state.style_pan_y)
+  restore_export_style_property(style, "--zoom", state.style_zoom)
+}
+
+///|
+fn restore_export_style_property(
+  style : @dom.CSSStyleDeclaration,
+  name : String,
+  value : String,
+) -> Unit {
+  if value.length() == 0 {
+    ignore(style.remove_property(name))
+  } else {
+    style.set_property(name, value)
+  }
+}
+
+///|
 fn build_mindmap_export_svg_element() -> @dom.Element? {
   match get_element("#mindmap") {
     Some(mindmap) => {
+      let view_state = capture_mindmap_export_view_state(mindmap)
+      apply_neutral_mindmap_export_view(mindmap)
       render_mindmap_connectors()
       let clone = @dom.Element::cast_from_node(mindmap.cloneNode(true))
       normalize_export_connector_styles(clone)
       let bounds = mindmap_export_bounds(mindmap)
-      let pan_x = mindmap.getAttribute("data-pan-x").unwrap_or("0")
-      let pan_y = mindmap.getAttribute("data-pan-y").unwrap_or("0")
-      let zoom = mindmap.getAttribute("data-zoom").unwrap_or("1")
       let svg = create_svg_element("svg", "")
       svg.setAttribute("xmlns", "http://www.w3.org/2000/svg")
       svg.setAttribute("width", bounds.width.to_string())
@@ -3056,9 +3118,9 @@ fn build_mindmap_export_svg_element() -> @dom.Element? {
       mindmap_style.set_property("min-height", "\{bounds.mindmap_height}px")
       mindmap_style.set_property("overflow", "visible")
       mindmap_style.set_property("background", "transparent")
-      mindmap_style.set_property("--pan-x", "\{pan_x}px")
-      mindmap_style.set_property("--pan-y", "\{pan_y}px")
-      mindmap_style.set_property("--zoom", zoom)
+      mindmap_style.set_property("--pan-x", "0px")
+      mindmap_style.set_property("--pan-y", "0px")
+      mindmap_style.set_property("--zoom", "1")
       wrapper.as_node().appendChild(clone.as_node()) |> ignore
       foreign_object.as_node().appendChild(wrapper.as_node()) |> ignore
       svg.as_node().appendChild(foreign_object.as_node()) |> ignore
@@ -3068,6 +3130,8 @@ fn build_mindmap_export_svg_element() -> @dom.Element? {
           svg.as_node().appendChild(connectors.as_node()) |> ignore
         None => ()
       }
+      restore_mindmap_export_view(mindmap, view_state)
+      render_mindmap_connectors()
       Some(svg)
     }
     None => None
