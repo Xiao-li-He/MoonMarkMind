@@ -3315,6 +3315,22 @@ fn download_mindmap_png(filename : String) -> Unit {
     Some(svg) => svg
     None => return
   }
+  let width = parse_int_or_default(
+    svg_element.getAttribute("width").unwrap_or("0"),
+    0,
+  )
+  let height = parse_int_or_default(
+    svg_element.getAttribute("height").unwrap_or("0"),
+    0,
+  )
+  if width <= 0 || height <= 0 {
+    return
+  }
+  let scale = png_export_scale(width, height)
+  let output_width = (width.to_double() * scale).round().to_int()
+  let output_height = (height.to_double() * scale).round().to_int()
+  svg_element.setAttribute("width", output_width.to_string())
+  svg_element.setAttribute("height", output_height.to_string())
   let svg = serialize_xml_node(svg_element.as_node())
   let image = create_element("img", "")
   let image_element = @dom.HTMLImageElement::cast_from_element(image)
@@ -3322,26 +3338,21 @@ fn download_mindmap_png(filename : String) -> Unit {
   image_element
   .as_event_target()
   .addEventListener("load", fn(_) {
-    let width = parse_int_or_default(
-      svg_element.getAttribute("width").unwrap_or("0"),
-      0,
-    )
-    let height = parse_int_or_default(
-      svg_element.getAttribute("height").unwrap_or("0"),
-      0,
-    )
-    if width <= 0 || height <= 0 {
-      return
-    }
     let canvas = create_element("canvas", "")
     let canvas_element = @dom.HTMLCanvasElement::cast_from_element(canvas)
-    canvas_element.width = width
-    canvas_element.height = height
+    canvas_element.width = output_width
+    canvas_element.height = output_height
     let ctx : @canvas.CanvasRenderingContext2D = @core.identity(
       canvas_element.getContext("2d"),
     )
-    ctx.clearRect(0.0, 0.0, width.to_double(), height.to_double())
-    ctx.drawImage(image_element.as_any(), 0.0, 0.0)
+    ctx.clearRect(0.0, 0.0, output_width.to_double(), output_height.to_double())
+    ctx.drawImageScaled(
+      image_element.as_any(),
+      0.0,
+      0.0,
+      output_width.to_double(),
+      output_height.to_double(),
+    )
     download_link_from_data_url(
       filename,
       canvas_element.toDataURL(image_type="image/png"),
@@ -3349,6 +3360,29 @@ fn download_mindmap_png(filename : String) -> Unit {
   })
   image_element.as_event_target().addEventListener("error", fn(_) { () })
   image_element.src = export_url
+}
+
+///|
+fn png_export_scale(width : Int, height : Int) -> Double {
+  let raw_dpr = @dom.window().devicePixelRatio()
+  let preferred = if raw_dpr.is_nan() || raw_dpr < 2.0 {
+    2.0
+  } else if raw_dpr > 3.0 {
+    3.0
+  } else {
+    raw_dpr
+  }
+  let max_side = 8192.0
+  let max_side_scale = min_double(
+    max_side / width.to_double(),
+    max_side / height.to_double(),
+  )
+  let capped = min_double(preferred, max_side_scale)
+  if capped < 1.0 {
+    1.0
+  } else {
+    capped
+  }
 }
 
 ///|
