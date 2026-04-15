@@ -2656,6 +2656,10 @@ fn download_current_page_html(filename : String) -> Unit {
 }
 
 ///|
+extern "js" fn serialize_xml_node(node : @dom.Node) -> String =
+  #| (node) => new XMLSerializer().serializeToString(node)
+
+///|
 async fn fetch_current_bundle_text() -> String {
   let response = @dom.window().fetch(current_bundle_src())
   let text_promise : @core.Promise[String] = response
@@ -3015,7 +3019,7 @@ fn export_visible_node_cards(export_root : @dom.Element) -> Array[@dom.Element] 
 ///|
 fn build_mindmap_export_svg() -> String {
   match build_mindmap_export_svg_element() {
-    Some(svg) => svg.outerHTML()
+    Some(svg) => serialize_xml_node(svg.as_node())
     None => ""
   }
 }
@@ -3311,7 +3315,7 @@ fn download_mindmap_png(filename : String) -> Unit {
     Some(svg) => svg
     None => return
   }
-  let svg = svg_element.outerHTML()
+  let svg = serialize_xml_node(svg_element.as_node())
   let image = create_element("img", "")
   let image_element = @dom.HTMLImageElement::cast_from_element(image)
   let export_url = "data:image/svg+xml;charset=utf-8,\{@global.encodeURIComponent(svg)}"
