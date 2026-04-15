@@ -1,6 +1,7 @@
 param(
   [int]$Port = 8000,
-  [switch]$NoOpenBrowser
+  [switch]$NoOpenBrowser,
+  [switch]$NoServe
 )
 
 $ErrorActionPreference = "Stop"
@@ -97,6 +98,11 @@ $bridge = $bridge.
 
 Copy-Item $source $output -Force
 Add-Content $output $bridge -Encoding utf8
+
+if ($NoServe) {
+  Write-Output "Built web bundle: $output"
+  exit 0
+}
 
 function Get-PythonCommand {
   if (Get-Command python -ErrorAction SilentlyContinue) {

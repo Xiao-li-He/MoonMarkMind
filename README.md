@@ -1,5 +1,7 @@
 # MoonMarkMind
 
+[在线使用 MoonMarkMind](https://xiao-li-he.github.io/MoonMarkMind/)
+
 MoonMarkMind 是一个用 MoonBit 编写的 Markdown 脑图编辑 Demo。它负责把 Markdown 解析成结构树，并在浏览器里提供交互式编辑、预览和导出能力。
 
 ## 当前界面
