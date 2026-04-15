@@ -554,6 +554,20 @@ test "node body preview keeps paragraph spacing" {
 }
 
 ///|
+test "node visual hidden count excludes the current node" {
+  reset_navigation_test_state()
+  let parent_index = outline_flat_index_by_title(app_state.root, "Parent")
+  let parent = find_node(app_state.root, parent_index).unwrap()
+
+  assert_eq(count_hidden_descendants(parent), 2)
+  assert_eq(count_subtree_nodes(parent), 3)
+  assert_eq(
+    render_node_visual_attrs(parent, 0).contains("data-hidden-count=\"2\""),
+    true,
+  )
+}
+
+///|
 test "root branch split balances siblings by count" {
   let markdown = "# Root\n## One\n## Two\n## Three\n## Four\n## Five\n## Six\n## Seven"
   let outline = build_outline(markdown)

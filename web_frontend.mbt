@@ -2222,7 +2222,7 @@ fn apply_node_visual_attrs(
   )
   element.setAttribute(
     "data-hidden-count",
-    count_subtree_nodes(node).to_string(),
+    count_hidden_descendants(node).to_string(),
   )
   element.setAttribute(
     "data-hidden-node",
@@ -2493,7 +2493,7 @@ fn render_node_visual_attrs(node : OutlineNode, tone_index : Int) -> String {
   let has_children = node.children.length() > 0
   let child_count = node.children.length()
   let collapsed = is_collapsed(node.flat_index)
-  let hidden_count = count_subtree_nodes(node)
+  let hidden_count = count_hidden_descendants(node)
   let hidden_node = is_hidden_node(node.flat_index)
   " data-depth=\"\{relative_node_depth(node)}\" data-tone=\"\{tone_index}\" data-has-children=\"\{has_children}\" data-child-count=\"\{child_count}\" data-collapsed=\"\{collapsed}\" data-hidden-count=\"\{hidden_count}\" data-hidden-node=\"\{hidden_node}\""
 }
