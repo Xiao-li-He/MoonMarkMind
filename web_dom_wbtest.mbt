@@ -93,3 +93,23 @@ test "export runtime script is inline safe" {
   assert_eq(script.contains("<\\/script>"), true)
   assert_eq(script.contains("<\\!--"), true)
 }
+
+///|
+test "svg export void elements are xml self closing" {
+  let source = "<svg><foreignObject><div><input class=\"markdown-task__check\" type=\"checkbox\"><span>Done</span><br></div></foreignObject></svg>"
+  let fixed = close_svg_void_elements(source)
+
+  assert_eq(
+    fixed, "<svg><foreignObject><div><input class=\"markdown-task__check\" type=\"checkbox\" /><span>Done</span><br /></div></foreignObject></svg>",
+  )
+}
+
+///|
+test "svg export void element scanner preserves quoted greater-than signs" {
+  let source = "<svg><foreignObject><img alt=\"a > b\"><span>x</span></foreignObject></svg>"
+
+  assert_eq(
+    close_svg_void_elements(source),
+    "<svg><foreignObject><img alt=\"a > b\" /><span>x</span></foreignObject></svg>",
+  )
+}

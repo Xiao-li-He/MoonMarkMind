@@ -2656,10 +2656,6 @@ fn download_current_page_html(filename : String) -> Unit {
 }
 
 ///|
-extern "js" fn serialize_xml_node(node : @dom.Node) -> String =
-  #| (node) => new XMLSerializer().serializeToString(node)
-
-///|
 async fn fetch_current_bundle_text() -> String {
   let response = @dom.window().fetch(current_bundle_src())
   let text_promise : @core.Promise[String] = response
@@ -3019,7 +3015,7 @@ fn export_visible_node_cards(export_root : @dom.Element) -> Array[@dom.Element] 
 ///|
 fn build_mindmap_export_svg() -> String {
   match build_mindmap_export_svg_element() {
-    Some(svg) => serialize_xml_node(svg.as_node())
+    Some(svg) => serialize_svg_export_element(svg)
     None => ""
   }
 }
@@ -3331,7 +3327,7 @@ fn download_mindmap_png(filename : String) -> Unit {
   let output_height = (height.to_double() * scale).round().to_int()
   svg_element.setAttribute("width", output_width.to_string())
   svg_element.setAttribute("height", output_height.to_string())
-  let svg = serialize_xml_node(svg_element.as_node())
+  let svg = serialize_svg_export_element(svg_element)
   let image = create_element("img", "")
   let image_element = @dom.HTMLImageElement::cast_from_element(image)
   let export_url = "data:image/svg+xml;charset=utf-8,\{@global.encodeURIComponent(svg)}"
@@ -3383,6 +3379,103 @@ fn png_export_scale(width : Int, height : Int) -> Double {
   } else {
     capped
   }
+}
+
+///|
+fn serialize_svg_export_element(element : @dom.Element) -> String {
+  close_svg_void_elements(element.outerHTML())
+}
+
+///|
+fn close_svg_void_elements(source : String) -> String {
+  let parts : Array[String] = []
+  let mut cursor = 0
+  while cursor < source.length() {
+    match find_svg_void_tag_start(source, cursor) {
+      Some(start) => {
+        if start > cursor {
+          parts.push(source[cursor:start].to_string())
+        }
+        let end_ = find_tag_end(source, start)
+        if end_ < 0 {
+          parts.push(source[start:].to_string())
+          return parts.join("")
+        }
+        if end_ > start && source[end_ - 1] == '/' {
+          parts.push(source[start:end_ + 1].to_string())
+        } else {
+          parts.push(source[start:end_].to_string() + " />")
+        }
+        cursor = end_ + 1
+      }
+      None => {
+        parts.push(source[cursor:].to_string())
+        cursor = source.length()
+      }
+    }
+  }
+  parts.join("")
+}
+
+///|
+fn find_svg_void_tag_start(source : String, start : Int) -> Int? {
+  let mut cursor = start
+  while cursor < source.length() {
+    if match_svg_void_tag(source, cursor) is Some(_) {
+      return Some(cursor)
+    }
+    cursor += 1
+  }
+  None
+}
+
+///|
+fn match_svg_void_tag(source : String, start : Int) -> String? {
+  if start < 0 ||
+    start + 1 >= source.length() ||
+    source[start] != '<' ||
+    source[start + 1] == '/' {
+    return None
+  }
+  let tags = [
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param",
+    "source", "track", "wbr",
+  ]
+  for tag in tags {
+    let tag_start = start + 1
+    let tag_end = tag_start + tag.length()
+    if tag_end <= source.length() &&
+      source[tag_start:tag_end].to_string() == tag &&
+      (tag_end == source.length() || is_tag_name_boundary(source[tag_end])) {
+      return Some(tag)
+    }
+  }
+  None
+}
+
+///|
+fn is_tag_name_boundary(ch : UInt16) -> Bool {
+  ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' || ch == '/' || ch == '>'
+}
+
+///|
+fn find_tag_end(source : String, start : Int) -> Int {
+  let mut cursor = start
+  let mut quote : UInt16 = 0
+  while cursor < source.length() {
+    let ch = source[cursor]
+    if quote != 0 {
+      if ch == quote {
+        quote = 0
+      }
+    } else if ch == '"' || ch == '\'' {
+      quote = ch
+    } else if ch == '>' {
+      return cursor
+    }
+    cursor += 1
+  }
+  -1
 }
 
 ///|

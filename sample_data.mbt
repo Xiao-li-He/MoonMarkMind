@@ -28,22 +28,37 @@ fn rules_sample_fallback_markdown(sample_id : String) -> String {
 }
 
 ///|
-extern "js" fn fetch_markdown_asset(
+fn fetch_markdown_asset(
   path : String,
   on_success : (String) -> Unit,
   on_error : () -> Unit,
-) -> Unit =
-  #| (path, onSuccess, onError) => {
-  #|   fetch(path)
-  #|     .then((response) => {
-  #|       if (!response.ok) {
-  #|         throw new Error(`Failed to load ${path}`);
-  #|       }
-  #|       return response.text();
-  #|     })
-  #|     .then(onSuccess)
-  #|     .catch(onError);
-  #| }
+) -> Unit {
+  ignore(
+    @core.Promise::new(async fn(resolve, _reject) {
+      let response = @dom.window().fetch(path) catch {
+        _ => {
+          on_error()
+          resolve(())
+          return
+        }
+      }
+      if !response.ok {
+        on_error()
+        resolve(())
+        return
+      }
+      let markdown = response.text() catch {
+        _ => {
+          on_error()
+          resolve(())
+          return
+        }
+      }
+      on_success(markdown)
+      resolve(())
+    }),
+  )
+}
 
 ///|
 fn load_rules_sample_markdown(
