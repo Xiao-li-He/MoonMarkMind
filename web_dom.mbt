@@ -200,6 +200,8 @@ fn render_mindmap_connectors() -> Unit {
                         layout,
                         element_rect(parent),
                         element_rect(node),
+                        parent,
+                        node,
                         stage_left,
                         stage_top,
                         safe_zoom,
@@ -321,6 +323,8 @@ fn connector_geometry(
   layout : StageLayoutKind,
   parent_rect : @dom.DOMRect,
   node_rect : @dom.DOMRect,
+  parent_node : @dom.Element,
+  node : @dom.Element,
   stage_left : Double,
   stage_top : Double,
   safe_zoom : Double,
@@ -345,6 +349,16 @@ fn connector_geometry(
     stage_top,
     safe_zoom,
   )
+  let parent_anchor_y = stage_local_y(
+    connector_node_anchor_y(parent_rect, parent_node),
+    stage_top,
+    safe_zoom,
+  )
+  let node_anchor_y = stage_local_y(
+    connector_node_anchor_y(node_rect, node),
+    stage_top,
+    safe_zoom,
+  )
   match layout {
     StageLayoutKind::Tree => {
       let start_x = parent_center_x
@@ -366,9 +380,9 @@ fn connector_geometry(
     }
     StageLayoutKind::Logic => {
       let start_x = stage_local_x(parent_rect.right, stage_left, safe_zoom)
-      let start_y = parent_center_y
+      let start_y = parent_anchor_y
       let end_x = stage_local_x(node_rect.left, stage_left, safe_zoom)
-      let end_y = node_center_y
+      let end_y = node_anchor_y
       let span_x = abs_double(end_x - start_x)
       let bend = min_double(36.0, max_double(14.0, span_x * 0.28))
       Some(ConnectorPathData::{
@@ -408,15 +422,24 @@ fn connector_geometry(
       let mid_y = parent_center_y + (node_center_y - parent_center_y) * 0.2
       Some(ConnectorPathData::{
         start_x,
-        start_y: parent_center_y,
+        start_y: parent_anchor_y,
         control1_x: start_x + direction * pull,
         control1_y: mid_y,
         control2_x: end_x - direction * settle,
-        control2_y: node_center_y,
+        control2_y: node_anchor_y,
         end_x,
-        end_y: node_center_y,
+        end_y: node_anchor_y,
       })
     }
+  }
+}
+
+///|
+fn connector_node_anchor_y(rect : @dom.DOMRect, node : @dom.Element) -> Double {
+  if has_class_name(node, "node--branch-line") {
+    rect.bottom - 5.0
+  } else {
+    rect_center_y(rect)
   }
 }
 
@@ -2981,6 +3004,8 @@ fn render_export_mindmap_connectors(export_root : @dom.Element) -> Unit {
               layout,
               element_rect(parent),
               element_rect(node),
+              parent,
+              node,
               stage_rect.left,
               stage_rect.top,
             )
@@ -3240,6 +3265,8 @@ fn build_mindmap_export_connector_group(
               layout,
               element_rect(parent),
               element_rect(node),
+              parent,
+              node,
               export_left,
               export_top,
             )
@@ -3262,6 +3289,8 @@ fn export_connector_geometry(
   layout : StageLayoutKind,
   parent_rect : @dom.DOMRect,
   node_rect : @dom.DOMRect,
+  parent_node : @dom.Element,
+  node : @dom.Element,
   export_left : Double,
   export_top : Double,
 ) -> ConnectorPathData {
@@ -3269,6 +3298,9 @@ fn export_connector_geometry(
   let parent_center_y = rect_center_y(parent_rect) - export_top
   let node_center_x = rect_center_x(node_rect) - export_left
   let node_center_y = rect_center_y(node_rect) - export_top
+  let parent_anchor_y = connector_node_anchor_y(parent_rect, parent_node) -
+    export_top
+  let node_anchor_y = connector_node_anchor_y(node_rect, node) - export_top
   match layout {
     StageLayoutKind::Tree => {
       let start_x = parent_center_x
@@ -3290,9 +3322,9 @@ fn export_connector_geometry(
     }
     StageLayoutKind::Logic => {
       let start_x = parent_rect.right - export_left
-      let start_y = parent_center_y
+      let start_y = parent_anchor_y
       let end_x = node_rect.left - export_left
-      let end_y = node_center_y
+      let end_y = node_anchor_y
       let span_x = abs_double(end_x - start_x)
       let bend = min_double(36.0, max_double(14.0, span_x * 0.28))
       ConnectorPathData::{
@@ -3324,13 +3356,13 @@ fn export_connector_geometry(
       let mid_y = parent_center_y + (node_center_y - parent_center_y) * 0.2
       ConnectorPathData::{
         start_x,
-        start_y: parent_center_y,
+        start_y: parent_anchor_y,
         control1_x: start_x + direction * pull,
         control1_y: mid_y,
         control2_x: end_x - direction * settle,
-        control2_y: node_center_y,
+        control2_y: node_anchor_y,
         end_x,
-        end_y: node_center_y,
+        end_y: node_anchor_y,
       }
     }
   }

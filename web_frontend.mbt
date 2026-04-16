@@ -3253,6 +3253,7 @@ fn render_stage_class() -> String {
   let classes = ["mindmap-stage"]
   if app_state.style_mode == "line" {
     classes.push("mindmap-stage--fill")
+    classes.push("mindmap-stage--branch-line")
   } else {
     classes.push("mindmap-stage--line")
   }
@@ -3262,7 +3263,7 @@ fn render_stage_class() -> String {
 ///|
 fn render_node_style_class() -> String {
   if app_state.style_mode == "line" {
-    "node--fill"
+    "node--fill node--branch-line"
   } else {
     "node--line"
   }

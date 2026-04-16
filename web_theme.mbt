@@ -262,6 +262,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "mindmap-stage--line") {
     style_mindmap_stage_line(element)
   }
+  if has_class_name(element, "mindmap-stage--branch-line") {
+    style_mindmap_stage_branch_line(element)
+  }
   if has_class_name(element, "mindmap-stage--vertical") {
     style_mindmap_stage_vertical(element)
   }
@@ -374,6 +377,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   }
   if has_class_name(element, "node--center") {
     style_node_center(element)
+  }
+  if has_class_name(element, "node--branch-line") {
+    style_node_branch_line(element)
   }
   if has_class_name(element, "is-selected") {
     style_node_selected(element)
@@ -1837,6 +1843,12 @@ fn style_mindmap_stage_line(element : @dom.Element) -> Unit {
 }
 
 ///|
+fn style_mindmap_stage_branch_line(element : @dom.Element) -> Unit {
+  set_style(element, "gap", "52px")
+  set_style(element, "padding", "48px 28px")
+}
+
+///|
 fn style_mindmap_stage_vertical(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
@@ -2173,6 +2185,40 @@ fn style_node_fill(element : @dom.Element) -> Unit {
 }
 
 ///|
+fn style_node_branch_line(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-flex")
+  set_style(element, "align-items", "flex-start")
+  set_style(element, "justify-content", "flex-end")
+  set_style(element, "gap", "0")
+  set_style(element, "min-width", "48px")
+  set_style(element, "max-width", "360px")
+  set_style(element, "padding", "0 0 4px")
+  set_style(element, "border", "0")
+  set_style(element, "border-radius", "0")
+  set_style(
+    element, "border-bottom", "2px solid var(--mindmap-connector-color, #94b6db)",
+  )
+  set_style(element, "background", "transparent")
+  set_style(element, "box-shadow", "none")
+  set_style(element, "color", "#596475")
+  set_style(element, "text-align", "left")
+  match element.closest(".branch-item--left, .single-right-tree__node--left") {
+    Some(_) => {
+      set_style(element, "align-items", "flex-end")
+      set_style(element, "text-align", "right")
+    }
+    None => ()
+  }
+  if has_class_name(element, "node--center") {
+    set_style(element, "min-width", "128px")
+    set_style(element, "max-width", "220px")
+    set_style(element, "padding", "0 0 5px")
+    set_style(element, "border-bottom-width", "3px")
+    set_style(element, "color", "#4d5969")
+  }
+}
+
+///|
 fn style_node_kicker(element : @dom.Element) -> Unit {
   match element.closest(".mindmap-stage--radial, .node--fill") {
     Some(_) => {
@@ -2193,6 +2239,24 @@ fn style_node_kicker(element : @dom.Element) -> Unit {
 fn style_node_title(element : @dom.Element) -> Unit {
   match element.closest(".node") {
     Some(node) => {
+      if has_class_name(node, "node--branch-line") {
+        set_style(element, "display", "block")
+        set_style(
+          element,
+          "font-size",
+          if has_class_name(node, "node--center") {
+            "20px"
+          } else {
+            "18px"
+          },
+        )
+        set_style(element, "line-height", "1.18")
+        set_style(element, "font-weight", "400")
+        set_style(element, "color", "inherit")
+        set_style(element, "white-space", "normal")
+        set_style(element, "word-break", "break-word")
+        return
+      }
       if has_class_name(node, "node--fill") {
         if has_class_name(node, "node--center") {
           set_style(element, "display", "block")
@@ -2237,6 +2301,30 @@ fn style_node_title(element : @dom.Element) -> Unit {
 
 ///|
 fn style_node_body(element : @dom.Element) -> Unit {
+  match element.closest(".node--branch-line") {
+    Some(_) => {
+      set_style(element, "display", "block")
+      set_style(element, "width", "100%")
+      set_style(element, "max-width", "100%")
+      set_style(element, "min-width", "0")
+      set_style(element, "box-sizing", "border-box")
+      set_style(element, "margin-top", "6px")
+      set_style(element, "padding", "0")
+      set_style(element, "border", "0")
+      set_style(element, "border-radius", "0")
+      set_style(element, "background", "transparent")
+      set_style(element, "color", "inherit")
+      set_style(element, "font-size", "14px")
+      set_style(element, "line-height", "1.35")
+      set_style(element, "white-space", "pre-wrap")
+      set_style(element, "word-break", "break-word")
+      set_style(element, "max-height", "160px")
+      set_style(element, "overflow", "auto")
+      set_style(element, "font-weight", "400")
+      return
+    }
+    None => ()
+  }
   set_style(element, "display", "block")
   set_style(element, "width", "100%")
   set_style(element, "max-width", "100%")
@@ -2500,6 +2588,11 @@ fn style_node_editor(element : @dom.Element) -> Unit {
 
 ///|
 fn style_node_selected(element : @dom.Element) -> Unit {
+  if has_class_name(element, "node--branch-line") {
+    set_style(element, "border-bottom-color", "rgba(44, 112, 206, 0.95)")
+    set_style(element, "box-shadow", "0 3px 0 rgba(44, 112, 206, 0.22)")
+    return
+  }
   set_style(element, "border-color", "rgba(44, 112, 206, 0.95)")
   set_style(
     element, "box-shadow", "inset 0 0 0 1px rgba(255, 255, 255, 0.8), 0 0 0 2px rgba(44, 112, 206, 0.42)",
