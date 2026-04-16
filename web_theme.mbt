@@ -2707,11 +2707,16 @@ fn style_node_editor(element : @dom.Element) -> Unit {
 ///|
 fn style_node_selected(element : @dom.Element) -> Unit {
   if has_class_name(element, "node--branch-line") {
+    set_style(element, "border-radius", "8px")
     if has_class_name(element, "node--line-tree") {
       set_style(element, "border-bottom-color", "rgba(44, 112, 206, 0.95)")
-      set_style(element, "box-shadow", "0 3px 0 rgba(44, 112, 206, 0.22)")
+      set_style(
+        element, "box-shadow", "0 0 0 1.5px rgba(44, 112, 206, 0.58), 0 3px 0 rgba(44, 112, 206, 0.22)",
+      )
     } else {
-      set_style(element, "box-shadow", "0 2px 0 rgba(44, 112, 206, 0.28)")
+      set_style(
+        element, "box-shadow", "0 0 0 1.5px rgba(44, 112, 206, 0.58), 0 2px 0 rgba(44, 112, 206, 0.28)",
+      )
     }
     return
   }
