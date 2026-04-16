@@ -3363,7 +3363,11 @@ fn render_stage_class() -> String {
 ///|
 fn render_node_style_class() -> String {
   if app_state.style_mode == "line" {
-    "node--fill node--branch-line"
+    if app_state.layout_mode == "tree" {
+      "node--fill node--branch-line node--line-tree"
+    } else {
+      "node--fill node--branch-line"
+    }
   } else {
     "node--line"
   }

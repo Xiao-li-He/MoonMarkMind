@@ -2014,9 +2014,9 @@ fn style_vertical_tree(element : @dom.Element) -> Unit {
   set_style(element, "gap", "18px")
   set_style(element, "flex", "0 0 auto")
   if has_class_name(element, "vertical-tree--line-note") {
-    set_style(element, "width", "290px")
-    set_style(element, "min-width", "290px")
-    set_style(element, "max-width", "290px")
+    set_style(element, "width", "200px")
+    set_style(element, "min-width", "200px")
+    set_style(element, "max-width", "200px")
   }
 }
 
@@ -2042,9 +2042,9 @@ fn style_vertical_tree_child(element : @dom.Element) -> Unit {
   set_style(element, "flex", "0 0 auto")
   set_style(element, "min-width", "auto")
   if has_class_name(element, "vertical-tree__child--line-note") {
-    set_style(element, "width", "290px")
-    set_style(element, "min-width", "290px")
-    set_style(element, "max-width", "290px")
+    set_style(element, "width", "200px")
+    set_style(element, "min-width", "200px")
+    set_style(element, "max-width", "200px")
   }
 }
 
@@ -2240,10 +2240,20 @@ fn style_node_branch_line(element : @dom.Element) -> Unit {
     set_style(element, "border-bottom-width", "1.8px")
     set_style(element, "color", "#4d5969")
   }
+  if has_class_name(element, "node--line-tree") {
+    set_style(element, "min-width", "36px")
+    set_style(element, "max-width", "130px")
+    set_style(element, "padding", "0 10px 4px")
+    if has_class_name(element, "node--center") {
+      set_style(element, "min-width", "108px")
+      set_style(element, "max-width", "200px")
+      set_style(element, "padding", "0 12px 5px")
+    }
+  }
   if has_class_name(element, "node--line-tree-note") {
-    set_style(element, "width", "290px")
-    set_style(element, "min-width", "290px")
-    set_style(element, "max-width", "290px")
+    set_style(element, "width", "200px")
+    set_style(element, "min-width", "200px")
+    set_style(element, "max-width", "200px")
   }
 }
 
@@ -2372,8 +2382,8 @@ fn branch_line_title_font_size(node : @dom.Element) -> String {
 fn style_node_body(element : @dom.Element) -> Unit {
   if has_class_name(element, "node-body--line-tree") {
     style_node_body_branch_line(element)
-    set_style(element, "width", "260px")
-    set_style(element, "max-width", "260px")
+    set_style(element, "width", "180px")
+    set_style(element, "max-width", "180px")
     set_style(element, "max-height", "128px")
     return
   }

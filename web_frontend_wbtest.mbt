@@ -243,6 +243,17 @@ test "root split count follows contour balance rather than node count" {
 }
 
 ///|
+test "tree line style marks nodes with compact line tree class" {
+  reset_frontend_test_state()
+  app_state.layout_mode = "tree"
+  app_state.style_mode = "line"
+  assert_true(render_node_style_class().contains("node--branch-line"))
+  assert_true(render_node_style_class().contains("node--line-tree"))
+  app_state.layout_mode = "mindmap"
+  assert_eq(render_node_style_class().contains("node--line-tree"), false)
+}
+
+///|
 test "balanced first layer insert adds to left when left side is shorter" {
   reset_frontend_test_state()
   app_state.layout_mode = "mindmap"
