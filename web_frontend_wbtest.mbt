@@ -400,6 +400,38 @@ test "node editor commit adds single global undo entry" {
 }
 
 ///|
+test "undo after renaming newly added node deletes the node" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+  handle_add_child(1)
+  let new_index = app_state.selected_node
+
+  sync_editor_draft(new_index, "Gamma")
+  save_editor(new_index, "Gamma")
+  handle_undo()
+
+  assert_eq(app_state.markdown, frontend_test_markdown())
+  assert_eq(outline_flat_index_by_title(app_state.root, "Gamma"), -1)
+  assert_eq(outline_flat_index_by_title(app_state.root, "New node"), -1)
+}
+
+///|
+test "local undo while editing newly added node deletes the node" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+  handle_add_child(1)
+  let new_index = app_state.selected_node
+
+  sync_editor_draft(new_index, "Gamma")
+  editor_undo(new_index)
+
+  assert_eq(app_state.markdown, frontend_test_markdown())
+  assert_eq(app_state.editing_node, -2)
+  assert_eq(outline_flat_index_by_title(app_state.root, "Gamma"), -1)
+  assert_eq(outline_flat_index_by_title(app_state.root, "New node"), -1)
+}
+
+///|
 test "undo expands collapsed selected node after edit commit" {
   reset_navigation_test_state()
   begin_edit_node(1)

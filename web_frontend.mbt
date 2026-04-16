@@ -92,6 +92,9 @@ let note_editor_redo_stack : @ref.Ref[Array[String]] = @ref.Ref([])
 let undo_expand_node : @ref.Ref[Int] = @ref.Ref(-2)
 
 ///|
+let editor_created_node : @ref.Ref[Int] = @ref.Ref(-2)
+
+///|
 pub fn start_web_app() -> Unit {
   match get_element("#mindmap-export") {
     Some(export_root) => {
@@ -659,6 +662,7 @@ fn handle_add_child(node_index : Int) -> Unit {
   if target_index >= 0 {
     select_single_node(target_index, false)
     begin_edit_node(target_index)
+    editor_created_node.val = target_index
     return
   }
   sync_detail_customized()
@@ -674,6 +678,7 @@ fn handle_add_sibling(node_index : Int, place_after : Bool) -> Unit {
     if target_index >= 0 {
       select_single_node(target_index, false)
       begin_edit_node(target_index)
+      editor_created_node.val = target_index
       return
     }
     render_ui()
@@ -691,6 +696,7 @@ fn handle_add_sibling(node_index : Int, place_after : Bool) -> Unit {
   if target_index >= 0 {
     select_single_node(target_index, false)
     begin_edit_node(target_index)
+    editor_created_node.val = target_index
     return
   }
   render_ui()
@@ -948,7 +954,8 @@ fn save_editor(node_index : Int, title : String) -> Unit {
   if next_markdown != editor_draft_markdown.val {
     apply_editor_draft_markdown(next_markdown)
   }
-  if editor_snapshot_markdown.val != app_state.markdown {
+  if editor_snapshot_markdown.val != app_state.markdown &&
+    editor_created_node.val != node_index {
     app_state.undo_stack.push(editor_snapshot_markdown.val)
     app_state.redo_stack = []
   }
@@ -1013,6 +1020,7 @@ fn clear_editing_session() -> Unit {
   editor_draft_markdown.val = ""
   editor_undo_stack.val = []
   editor_redo_stack.val = []
+  editor_created_node.val = -2
   clear_note_editing_session()
 }
 
@@ -1167,6 +1175,13 @@ fn editor_undo(node_index : Int) -> Unit {
   }
   let last_index = editor_undo_stack.val.length() - 1
   let previous = editor_undo_stack.val[last_index]
+  if editor_created_node.val == node_index &&
+    previous == editor_snapshot_markdown.val {
+    clear_editing_session()
+    app_state.editing_node = -2
+    handle_undo()
+    return
+  }
   let next_redo = slice_strings(
     editor_redo_stack.val,
     0,
