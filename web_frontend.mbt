@@ -92,6 +92,9 @@ let note_editor_redo_stack : @ref.Ref[Array[String]] = @ref.Ref([])
 let undo_expand_node : @ref.Ref[Int] = @ref.Ref(-2)
 
 ///|
+let redo_expand_node : @ref.Ref[Int] = @ref.Ref(-2)
+
+///|
 let editor_created_node : @ref.Ref[Int] = @ref.Ref(-2)
 
 ///|
@@ -1329,6 +1332,11 @@ fn handle_undo() -> Unit {
   let last_index = app_state.undo_stack.length() - 1
   let previous = app_state.undo_stack[last_index]
   app_state.undo_stack = slice_strings(app_state.undo_stack, 0, last_index)
+  redo_expand_node.val = if app_state.selected_node >= 0 {
+    app_state.selected_node
+  } else {
+    expanded_node
+  }
   app_state.redo_stack.push(app_state.markdown)
   load_markdown(previous, false)
   expand_node_path(expanded_node)
@@ -1345,9 +1353,20 @@ fn handle_redo() -> Unit {
   }
   let last_index = app_state.redo_stack.length() - 1
   let next_markdown = app_state.redo_stack[last_index]
+  let expanded_node = if redo_expand_node.val >= 0 {
+    redo_expand_node.val
+  } else {
+    app_state.selected_node
+  }
+  redo_expand_node.val = -2
   app_state.redo_stack = slice_strings(app_state.redo_stack, 0, last_index)
   app_state.undo_stack.push(app_state.markdown)
   load_markdown(next_markdown, false)
+  expand_node_path(expanded_node)
+  sync_detail_customized()
+  if app_state.started {
+    render_ui()
+  }
 }
 
 ///|
@@ -1396,6 +1415,7 @@ fn reset_history() -> Unit {
   app_state.undo_stack = []
   app_state.redo_stack = []
   undo_expand_node.val = -2
+  redo_expand_node.val = -2
 }
 
 ///|
