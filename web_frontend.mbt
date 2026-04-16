@@ -95,6 +95,18 @@ let undo_expand_node : @ref.Ref[Int] = @ref.Ref(-2)
 let redo_expand_node : @ref.Ref[Int] = @ref.Ref(-2)
 
 ///|
+let undo_expand_stack : @ref.Ref[Array[Int]] = @ref.Ref([])
+
+///|
+let undo_redo_expand_stack : @ref.Ref[Array[Int]] = @ref.Ref([])
+
+///|
+let redo_expand_stack : @ref.Ref[Array[Int]] = @ref.Ref([])
+
+///|
+let redo_undo_expand_stack : @ref.Ref[Array[Int]] = @ref.Ref([])
+
+///|
 let editor_created_node : @ref.Ref[Int] = @ref.Ref(-2)
 
 ///|
@@ -661,6 +673,7 @@ fn handle_add_child(node_index : Int) -> Unit {
       target_index_after_add_child(node_index),
     )
   }
+  redo_expand_node.val = target_index
   apply_markdown_change(next_markdown, false)
   expand_node(node_index)
   if target_index >= 0 {
@@ -689,6 +702,7 @@ fn handle_add_sibling(node_index : Int, place_after : Bool) -> Unit {
   undo_expand_node.val = undo_expand_target
   if should_balance_first_layer_sibling_insert(node_index) {
     let (next_markdown, target_index) = add_balanced_first_layer_heading(title)
+    redo_expand_node.val = target_index
     apply_markdown_change(next_markdown, false)
     if target_index >= 0 {
       select_single_node(target_index, false)
@@ -707,6 +721,7 @@ fn handle_add_sibling(node_index : Int, place_after : Bool) -> Unit {
     title,
     place_after,
   )
+  redo_expand_node.val = target_index
   apply_markdown_change(next_markdown, false)
   if target_index >= 0 {
     select_single_node(target_index, false)
@@ -780,6 +795,7 @@ fn handle_delete(node_index : Int) -> Unit {
       }
     None => node_index
   }
+  redo_expand_node.val = undo_expand_node.val
   shrink_root_split_after_delete(node_index)
   let next_markdown = delete_heading(app_state.markdown, node_index)
   clear_editing_session()
@@ -971,8 +987,8 @@ fn save_editor(node_index : Int, title : String) -> Unit {
   }
   if editor_snapshot_markdown.val != app_state.markdown &&
     editor_created_node.val != node_index {
-    app_state.undo_stack.push(editor_snapshot_markdown.val)
-    app_state.redo_stack = []
+    push_undo_history(editor_snapshot_markdown.val, node_index, node_index)
+    clear_redo_history()
   }
   select_single_node(node_index, false)
   clear_editing_session()
@@ -1093,8 +1109,8 @@ fn save_note_editor(node_index : Int, body_text : String) -> Unit {
   }
   sync_note_editor_draft(node_index, body_text)
   if note_editor_snapshot_markdown.val != app_state.markdown {
-    app_state.undo_stack.push(note_editor_snapshot_markdown.val)
-    app_state.redo_stack = []
+    push_undo_history(note_editor_snapshot_markdown.val, node_index, node_index)
+    clear_redo_history()
   }
   clear_note_editing_session()
   render_ui()
@@ -1323,21 +1339,18 @@ fn handle_undo() -> Unit {
   if app_state.undo_stack.length() == 0 {
     return
   }
-  let expanded_node = if undo_expand_node.val >= 0 {
-    undo_expand_node.val
-  } else {
-    app_state.selected_node
-  }
-  undo_expand_node.val = -2
   let last_index = app_state.undo_stack.length() - 1
   let previous = app_state.undo_stack[last_index]
+  let expanded_node = undo_expand_stack.val[last_index]
+  let redo_expanded_node = undo_redo_expand_stack.val[last_index]
   app_state.undo_stack = slice_strings(app_state.undo_stack, 0, last_index)
-  redo_expand_node.val = if app_state.selected_node >= 0 {
-    app_state.selected_node
-  } else {
-    expanded_node
-  }
-  app_state.redo_stack.push(app_state.markdown)
+  undo_expand_stack.val = slice_ints(undo_expand_stack.val, 0, last_index)
+  undo_redo_expand_stack.val = slice_ints(
+    undo_redo_expand_stack.val,
+    0,
+    last_index,
+  )
+  push_redo_history(app_state.markdown, redo_expanded_node, expanded_node)
   load_markdown(previous, false)
   expand_node_path(expanded_node)
   sync_detail_customized()
@@ -1353,14 +1366,16 @@ fn handle_redo() -> Unit {
   }
   let last_index = app_state.redo_stack.length() - 1
   let next_markdown = app_state.redo_stack[last_index]
-  let expanded_node = if redo_expand_node.val >= 0 {
-    redo_expand_node.val
-  } else {
-    app_state.selected_node
-  }
-  redo_expand_node.val = -2
+  let expanded_node = redo_expand_stack.val[last_index]
+  let undo_expanded_node = redo_undo_expand_stack.val[last_index]
   app_state.redo_stack = slice_strings(app_state.redo_stack, 0, last_index)
-  app_state.undo_stack.push(app_state.markdown)
+  redo_expand_stack.val = slice_ints(redo_expand_stack.val, 0, last_index)
+  redo_undo_expand_stack.val = slice_ints(
+    redo_undo_expand_stack.val,
+    0,
+    last_index,
+  )
+  push_undo_history(app_state.markdown, undo_expanded_node, expanded_node)
   load_markdown(next_markdown, false)
   expand_node_path(expanded_node)
   sync_detail_customized()
@@ -1401,12 +1416,17 @@ fn apply_markdown_change(markdown : String, reset_ui : Bool) -> Unit {
     if reset_ui {
       apply_markdown_state(markdown, true, false)
     }
+    clear_pending_history_targets()
     return
   }
   if app_state.markdown.length() > 0 || markdown.length() > 0 {
-    app_state.undo_stack.push(app_state.markdown)
+    let undo_target = consume_pending_undo_expand(app_state.selected_node)
+    let redo_target = consume_pending_redo_expand(undo_target)
+    push_undo_history(app_state.markdown, undo_target, redo_target)
+  } else {
+    clear_pending_history_targets()
   }
-  app_state.redo_stack = []
+  clear_redo_history()
   apply_markdown_state(markdown, reset_ui, false)
 }
 
@@ -1414,6 +1434,73 @@ fn apply_markdown_change(markdown : String, reset_ui : Bool) -> Unit {
 fn reset_history() -> Unit {
   app_state.undo_stack = []
   app_state.redo_stack = []
+  undo_expand_stack.val = []
+  undo_redo_expand_stack.val = []
+  redo_expand_stack.val = []
+  redo_undo_expand_stack.val = []
+  undo_expand_node.val = -2
+  redo_expand_node.val = -2
+}
+
+///|
+fn push_undo_history(
+  markdown : String,
+  undo_expand_target : Int,
+  redo_expand_target : Int,
+) -> Unit {
+  app_state.undo_stack.push(markdown)
+  undo_expand_stack.val = append_int(undo_expand_stack.val, undo_expand_target)
+  undo_redo_expand_stack.val = append_int(
+    undo_redo_expand_stack.val,
+    redo_expand_target,
+  )
+}
+
+///|
+fn push_redo_history(
+  markdown : String,
+  redo_expand_target : Int,
+  undo_expand_target : Int,
+) -> Unit {
+  app_state.redo_stack.push(markdown)
+  redo_expand_stack.val = append_int(redo_expand_stack.val, redo_expand_target)
+  redo_undo_expand_stack.val = append_int(
+    redo_undo_expand_stack.val,
+    undo_expand_target,
+  )
+}
+
+///|
+fn clear_redo_history() -> Unit {
+  app_state.redo_stack = []
+  redo_expand_stack.val = []
+  redo_undo_expand_stack.val = []
+}
+
+///|
+fn consume_pending_undo_expand(fallback : Int) -> Int {
+  let target = if undo_expand_node.val >= 0 {
+    undo_expand_node.val
+  } else {
+    fallback
+  }
+  undo_expand_node.val = -2
+  target
+}
+
+///|
+fn consume_pending_redo_expand(fallback : Int) -> Int {
+  let target = if redo_expand_node.val >= 0 {
+    redo_expand_node.val
+  } else {
+    fallback
+  }
+  redo_expand_node.val = -2
+  target
+}
+
+///|
+fn clear_pending_history_targets() -> Unit {
   undo_expand_node.val = -2
   redo_expand_node.val = -2
 }
@@ -1788,6 +1875,13 @@ fn copy_ints(values : Array[Int]) -> Array[Int] {
   for value in values {
     next.push(value)
   }
+  next
+}
+
+///|
+fn append_int(values : Array[Int], target : Int) -> Array[Int] {
+  let next = copy_ints(values)
+  next.push(target)
   next
 }
 
@@ -3314,6 +3408,15 @@ fn slice_strings(
   start : Int,
   end_ : Int,
 ) -> Array[String] {
+  let sliced = []
+  for index in start..<end_ {
+    sliced.push(values[index])
+  }
+  sliced
+}
+
+///|
+fn slice_ints(values : Array[Int], start : Int, end_ : Int) -> Array[Int] {
   let sliced = []
   for index in start..<end_ {
     sliced.push(values[index])

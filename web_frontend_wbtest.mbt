@@ -491,6 +491,22 @@ test "undo expands collapsed ancestors of selected edited node" {
 }
 
 ///|
+test "undo expands edited node path even after selecting another node" {
+  reset_navigation_test_state()
+  begin_edit_node(2)
+  sync_editor_draft(2, "Child A2")
+  save_editor(2, "Child A2")
+  select_single_node(4, false)
+  app_state.collapsed = [1, 2]
+
+  handle_undo()
+
+  assert_eq(title_at(2), "Child A")
+  assert_eq(is_collapsed(1), false)
+  assert_eq(is_collapsed(2), false)
+}
+
+///|
 test "undo keeps collapsed descendants of selected edited node collapsed" {
   load_markdown("# Root\n## Parent\n### Child\n#### Grandchild\n## Other", true)
   begin_edit_node(1)
@@ -519,6 +535,23 @@ test "redo expands parent path and keeps collapsed descendants collapsed" {
   assert_eq(title_at(1), "Parent2")
   assert_eq(is_collapsed(1), false)
   assert_eq(is_collapsed(2), true)
+}
+
+///|
+test "redo expands edited node path even after selecting another node" {
+  reset_navigation_test_state()
+  begin_edit_node(2)
+  sync_editor_draft(2, "Child A2")
+  save_editor(2, "Child A2")
+
+  handle_undo()
+  select_single_node(4, false)
+  app_state.collapsed = [1, 2]
+  handle_redo()
+
+  assert_eq(title_at(2), "Child A2")
+  assert_eq(is_collapsed(1), false)
+  assert_eq(is_collapsed(2), false)
 }
 
 ///|
