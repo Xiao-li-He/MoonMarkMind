@@ -3385,15 +3385,15 @@ fn build_mindmap_export_svg_element() -> @dom.Element? {
       mindmap_style.set_property("--pan-x", "0px")
       mindmap_style.set_property("--pan-y", "0px")
       mindmap_style.set_property("--zoom", "1")
-      wrapper.as_node().appendChild(clone.as_node()) |> ignore
-      foreign_object.as_node().appendChild(wrapper.as_node()) |> ignore
-      svg.as_node().appendChild(foreign_object.as_node()) |> ignore
       match
         build_mindmap_export_connector_group(mindmap, bounds.left, bounds.top) {
         Some(connectors) =>
           svg.as_node().appendChild(connectors.as_node()) |> ignore
         None => ()
       }
+      wrapper.as_node().appendChild(clone.as_node()) |> ignore
+      foreign_object.as_node().appendChild(wrapper.as_node()) |> ignore
+      svg.as_node().appendChild(foreign_object.as_node()) |> ignore
       restore_mindmap_export_view(mindmap, view_state)
       render_mindmap_connectors()
       Some(svg)
