@@ -423,26 +423,21 @@ fn connector_geometry(
       let span = abs_double(end_x - start_x)
       let is_branch_line = has_class_name(parent_node, "node--branch-line") ||
         has_class_name(node, "node--branch-line")
-      let pull = if is_branch_line {
-        min_double(18.0, max_double(8.0, span * 0.18))
-      } else {
-        min_double(30.0, max_double(12.0, span * 0.26))
+      if is_branch_line {
+        return Some(
+          branch_line_connector_path_data(
+            start_x, parent_anchor_y, end_x, node_anchor_y, direction, span,
+          ),
+        )
       }
-      let settle = if is_branch_line {
-        min_double(20.0, max_double(8.0, span * 0.2))
-      } else {
-        min_double(40.0, max_double(14.0, span * 0.38))
-      }
+      let pull = min_double(30.0, max_double(12.0, span * 0.26))
+      let settle = min_double(40.0, max_double(14.0, span * 0.38))
       let mid_y = parent_center_y + (node_center_y - parent_center_y) * 0.2
       Some(ConnectorPathData::{
         start_x,
         start_y: parent_anchor_y,
         control1_x: start_x + direction * pull,
-        control1_y: if is_branch_line {
-          parent_anchor_y
-        } else {
-          mid_y
-        },
+        control1_y: mid_y,
         control2_x: end_x - direction * settle,
         control2_y: node_anchor_y,
         end_x,
@@ -453,11 +448,48 @@ fn connector_geometry(
 }
 
 ///|
+fn branch_line_connector_path_data(
+  start_x : Double,
+  start_y : Double,
+  end_x : Double,
+  end_y : Double,
+  direction : Double,
+  span : Double,
+) -> ConnectorPathData {
+  let vertical_delta = abs_double(end_y - start_y)
+  let handle_limit = max_double(14.0, span * 0.46)
+  let handle_target = min_double(
+    68.0,
+    max_double(22.0, span * 0.34 + vertical_delta * 0.2),
+  )
+  let handle = min_double(handle_limit, handle_target)
+  ConnectorPathData::{
+    start_x,
+    start_y,
+    control1_x: start_x + direction * handle,
+    control1_y: start_y,
+    control2_x: end_x - direction * handle,
+    control2_y: end_y,
+    end_x,
+    end_y,
+  }
+}
+
+///|
 fn connector_node_anchor_y(rect : @dom.DOMRect, node : @dom.Element) -> Double {
   if has_class_name(node, "node--branch-line") {
-    rect.bottom - 1.0
+    rect.bottom - branch_line_baseline_offset(node)
   } else {
     rect_center_y(rect)
+  }
+}
+
+///|
+fn branch_line_baseline_offset(node : @dom.Element) -> Double {
+  if has_class_name(node, "node--center") {
+    0.9
+  } else {
+    0.7
   }
 }
 
@@ -3403,26 +3435,19 @@ fn export_connector_geometry(
       let span = abs_double(end_x - start_x)
       let is_branch_line = has_class_name(parent_node, "node--branch-line") ||
         has_class_name(node, "node--branch-line")
-      let pull = if is_branch_line {
-        min_double(18.0, max_double(8.0, span * 0.18))
-      } else {
-        min_double(30.0, max_double(12.0, span * 0.26))
+      if is_branch_line {
+        return branch_line_connector_path_data(
+          start_x, parent_anchor_y, end_x, node_anchor_y, direction, span,
+        )
       }
-      let settle = if is_branch_line {
-        min_double(20.0, max_double(8.0, span * 0.2))
-      } else {
-        min_double(40.0, max_double(14.0, span * 0.38))
-      }
+      let pull = min_double(30.0, max_double(12.0, span * 0.26))
+      let settle = min_double(40.0, max_double(14.0, span * 0.38))
       let mid_y = parent_center_y + (node_center_y - parent_center_y) * 0.2
       ConnectorPathData::{
         start_x,
         start_y: parent_anchor_y,
         control1_x: start_x + direction * pull,
-        control1_y: if is_branch_line {
-          parent_anchor_y
-        } else {
-          mid_y
-        },
+        control1_y: mid_y,
         control2_x: end_x - direction * settle,
         control2_y: node_anchor_y,
         end_x,
