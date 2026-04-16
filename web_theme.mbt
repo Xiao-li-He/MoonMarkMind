@@ -2201,7 +2201,7 @@ fn style_node_branch_line(element : @dom.Element) -> Unit {
   set_style(element, "gap", "0")
   set_style(element, "min-width", "48px")
   set_style(element, "max-width", "360px")
-  set_style(element, "padding", "0 0 4px")
+  set_style(element, "padding", "0 15px 4px")
   set_style(element, "border", "0")
   set_style(element, "border-radius", "0")
   set_style(
@@ -2656,16 +2656,16 @@ fn style_node_actions_branch_line(element : @dom.Element) -> Unit {
   set_style(element, "top", "100%")
   set_style(element, "bottom", "auto")
   if has_class_name(element, "node-actions--left-mid") {
-    set_style(element, "left", "-15px")
+    set_style(element, "left", "0")
     set_style(element, "right", "auto")
     set_style(element, "transform", "translate(-50%, -50%)")
   } else if has_class_name(element, "node-actions--bottom-center") {
     set_style(element, "left", "50%")
     set_style(element, "right", "auto")
-    set_style(element, "top", "calc(100% + 15px)")
+    set_style(element, "top", "100%")
     set_style(element, "transform", "translate(-50%, -50%)")
   } else {
-    set_style(element, "right", "-15px")
+    set_style(element, "right", "0")
     set_style(element, "left", "auto")
     set_style(element, "transform", "translate(50%, -50%)")
   }

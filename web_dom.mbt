@@ -362,7 +362,11 @@ fn connector_geometry(
   match layout {
     StageLayoutKind::Tree => {
       let start_x = parent_center_x
-      let start_y = stage_local_y(parent_rect.bottom, stage_top, safe_zoom)
+      let start_y = stage_local_y(
+        connector_node_bottom_y(parent_rect, parent_node, safe_zoom),
+        stage_top,
+        safe_zoom,
+      )
       let end_x = node_center_x
       let end_y = stage_local_y(node_rect.top, stage_top, safe_zoom)
       let span_y = abs_double(end_y - start_y)
@@ -379,7 +383,11 @@ fn connector_geometry(
       })
     }
     StageLayoutKind::Logic => {
-      let start_x = stage_local_x(parent_rect.right, stage_left, safe_zoom)
+      let start_x = stage_local_x(
+        connector_node_side_x(parent_rect, parent_node, 1.0, safe_zoom),
+        stage_left,
+        safe_zoom,
+      )
       let start_y = parent_anchor_y
       let end_x = stage_local_x(node_rect.left, stage_left, safe_zoom)
       let end_y = node_anchor_y
@@ -399,11 +407,7 @@ fn connector_geometry(
     StageLayoutKind::Mindmap => {
       let direction = if node_center_x >= parent_center_x { 1.0 } else { -1.0 }
       let start_x = stage_local_x(
-        if direction > 0.0 {
-          parent_rect.right
-        } else {
-          parent_rect.left
-        },
+        connector_node_side_x(parent_rect, parent_node, direction, safe_zoom),
         stage_left,
         safe_zoom,
       )
@@ -455,6 +459,30 @@ fn connector_node_anchor_y(rect : @dom.DOMRect, node : @dom.Element) -> Double {
   } else {
     rect_center_y(rect)
   }
+}
+
+///|
+fn connector_node_side_x(
+  rect : @dom.DOMRect,
+  node : @dom.Element,
+  direction : Double,
+  safe_zoom : Double,
+) -> Double {
+  let edge = if direction > 0.0 { rect.right } else { rect.left }
+  let _ = node
+  let _ = safe_zoom
+  edge
+}
+
+///|
+fn connector_node_bottom_y(
+  rect : @dom.DOMRect,
+  node : @dom.Element,
+  safe_zoom : Double,
+) -> Double {
+  let _ = node
+  let _ = safe_zoom
+  rect.bottom
 }
 
 ///|
@@ -3325,7 +3353,8 @@ fn export_connector_geometry(
   match layout {
     StageLayoutKind::Tree => {
       let start_x = parent_center_x
-      let start_y = parent_rect.bottom - export_top
+      let start_y = connector_node_bottom_y(parent_rect, parent_node, 1.0) -
+        export_top
       let end_x = node_center_x
       let end_y = node_rect.top - export_top
       let span_y = abs_double(end_y - start_y)
@@ -3342,7 +3371,8 @@ fn export_connector_geometry(
       }
     }
     StageLayoutKind::Logic => {
-      let start_x = parent_rect.right - export_left
+      let start_x = connector_node_side_x(parent_rect, parent_node, 1.0, 1.0) -
+        export_left
       let start_y = parent_anchor_y
       let end_x = node_rect.left - export_left
       let end_y = node_anchor_y
@@ -3361,11 +3391,10 @@ fn export_connector_geometry(
     }
     StageLayoutKind::Mindmap => {
       let direction = if node_center_x >= parent_center_x { 1.0 } else { -1.0 }
-      let start_x = if direction > 0.0 {
-        parent_rect.right - export_left
-      } else {
-        parent_rect.left - export_left
-      }
+      let start_x = connector_node_side_x(
+          parent_rect, parent_node, direction, 1.0,
+        ) -
+        export_left
       let end_x = if direction > 0.0 {
         node_rect.left - export_left
       } else {
