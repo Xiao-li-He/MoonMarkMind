@@ -83,6 +83,12 @@ let note_editor_snapshot_markdown : @ref.Ref[String] = @ref.Ref("")
 let note_editor_draft_markdown : @ref.Ref[String] = @ref.Ref("")
 
 ///|
+let note_editor_undo_stack : @ref.Ref[Array[String]] = @ref.Ref([])
+
+///|
+let note_editor_redo_stack : @ref.Ref[Array[String]] = @ref.Ref([])
+
+///|
 pub fn start_web_app() -> Unit {
   match get_element("#mindmap-export") {
     Some(export_root) => {
@@ -301,8 +307,8 @@ fn on_toolbar_action(action : String) -> Unit {
     return
   }
   match action {
-    "undo" => handle_undo()
-    "redo" => handle_redo()
+    "undo" => handle_undo_action()
+    "redo" => handle_redo_action()
     "new-branch" => handle_add_sibling(app_state.selected_node, true)
     "new-child" => handle_add_child(app_state.selected_node)
     "delete-node" => handle_delete(app_state.selected_node)
@@ -364,14 +370,20 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
   let note_editor_index = event_note_editor_index_from_target(event.target())
   if note_editor_index >= 0 {
     let command_key = event.ctrlKey || event.metaKey
-    if command_key &&
-      (event_key(event) == "Enter" || event_key(event) == "enter") {
+    let key = event_key(event)
+    if is_undo_shortcut(command_key, event.shiftKey, key) {
+      event.preventDefault()
+      note_editor_undo(note_editor_index)
+    } else if is_redo_shortcut(command_key, event.shiftKey, key) {
+      event.preventDefault()
+      note_editor_redo(note_editor_index)
+    } else if command_key && (key == "Enter" || key == "enter") {
       event.preventDefault()
       save_note_editor(
         note_editor_index,
         event_note_editor_value_from_target(event.target()),
       )
-    } else if event_key(event) == "Escape" {
+    } else if key == "Escape" {
       event.preventDefault()
       canceled_note_editor_node.val = note_editor_index
       cancel_note_editor(note_editor_index)
@@ -381,17 +393,15 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
   let editor_index = event_editor_index_from_target(event.target())
   if editor_index >= 0 {
     let command_key = event.ctrlKey || event.metaKey
-    if command_key &&
-      !event.shiftKey &&
-      (event_key(event) == "z" || event_key(event) == "Z") {
+    let key = event_key(event)
+    if is_undo_shortcut(command_key, event.shiftKey, key) {
       event.preventDefault()
       editor_undo(editor_index)
-    } else if command_key &&
-      (event_key(event) == "y" || event_key(event) == "Y") {
+    } else if is_redo_shortcut(command_key, event.shiftKey, key) {
       event.preventDefault()
       editor_redo(editor_index)
     } else {
-      match event_key(event) {
+      match key {
         "Enter" => {
           event.preventDefault()
           save_editor(
@@ -415,15 +425,14 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
     node_index
   }
   let command_key = event.ctrlKey || event.metaKey
-  if command_key &&
-    !event.shiftKey &&
-    (event_key(event) == "z" || event_key(event) == "Z") {
+  let key = event_key(event)
+  if is_undo_shortcut(command_key, event.shiftKey, key) {
     event.preventDefault()
     event.stopPropagation()
     handle_undo()
     return
   }
-  if command_key && (event_key(event) == "y" || event_key(event) == "Y") {
+  if is_redo_shortcut(command_key, event.shiftKey, key) {
     event.preventDefault()
     event.stopPropagation()
     handle_redo()
@@ -483,6 +492,23 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
       handle_delete(target_node_index)
     }
     _ => ()
+  }
+}
+
+///|
+fn is_undo_shortcut(command_key : Bool, shift_key : Bool, key : String) -> Bool {
+  command_key && !shift_key && (key == "z" || key == "Z")
+}
+
+///|
+fn is_redo_shortcut(command_key : Bool, shift_key : Bool, key : String) -> Bool {
+  if !command_key {
+    return false
+  }
+  if shift_key {
+    key == "z" || key == "Z"
+  } else {
+    key == "y" || key == "Y"
   }
 }
 
@@ -936,6 +962,8 @@ fn begin_note_edit_node(node_index : Int) -> Unit {
   note_editor_snapshot_node.val = node_index
   note_editor_snapshot_markdown.val = app_state.markdown
   note_editor_draft_markdown.val = app_state.markdown
+  note_editor_undo_stack.val = []
+  note_editor_redo_stack.val = []
   app_state.editing_note_node = node_index
   render_ui()
 }
@@ -955,6 +983,8 @@ fn clear_note_editing_session() -> Unit {
   note_editor_snapshot_node.val = -1
   note_editor_snapshot_markdown.val = ""
   note_editor_draft_markdown.val = ""
+  note_editor_undo_stack.val = []
+  note_editor_redo_stack.val = []
   app_state.editing_note_node = -2
 }
 
@@ -984,6 +1014,14 @@ fn sync_note_editor_draft(node_index : Int, body_text : String) -> Unit {
   if next_markdown == current_markdown {
     return
   }
+  let next_undo = slice_strings(
+    note_editor_undo_stack.val,
+    0,
+    note_editor_undo_stack.val.length(),
+  )
+  next_undo.push(current_markdown)
+  note_editor_undo_stack.val = next_undo
+  note_editor_redo_stack.val = []
   apply_note_editor_draft_markdown(next_markdown)
 }
 
@@ -1034,6 +1072,54 @@ fn toggle_note_editor(node_index : Int) -> Unit {
 }
 
 ///|
+fn note_editor_undo(node_index : Int) -> Unit {
+  if app_state.editing_note_node != node_index ||
+    note_editor_undo_stack.val.length() == 0 {
+    return
+  }
+  let last_index = note_editor_undo_stack.val.length() - 1
+  let previous = note_editor_undo_stack.val[last_index]
+  let next_redo = slice_strings(
+    note_editor_redo_stack.val,
+    0,
+    note_editor_redo_stack.val.length(),
+  )
+  next_redo.push(note_editor_draft_markdown.val)
+  note_editor_redo_stack.val = next_redo
+  note_editor_undo_stack.val = slice_strings(
+    note_editor_undo_stack.val,
+    0,
+    last_index,
+  )
+  apply_note_editor_draft_markdown(previous)
+  sync_note_editor_input_value(node_index)
+}
+
+///|
+fn note_editor_redo(node_index : Int) -> Unit {
+  if app_state.editing_note_node != node_index ||
+    note_editor_redo_stack.val.length() == 0 {
+    return
+  }
+  let last_index = note_editor_redo_stack.val.length() - 1
+  let next_markdown = note_editor_redo_stack.val[last_index]
+  let next_undo = slice_strings(
+    note_editor_undo_stack.val,
+    0,
+    note_editor_undo_stack.val.length(),
+  )
+  next_undo.push(note_editor_draft_markdown.val)
+  note_editor_undo_stack.val = next_undo
+  note_editor_redo_stack.val = slice_strings(
+    note_editor_redo_stack.val,
+    0,
+    last_index,
+  )
+  apply_note_editor_draft_markdown(next_markdown)
+  sync_note_editor_input_value(node_index)
+}
+
+///|
 fn editor_undo(node_index : Int) -> Unit {
   if app_state.editing_node != node_index || editor_undo_stack.val.length() == 0 {
     return
@@ -1081,6 +1167,23 @@ fn apply_editor_draft_markdown(markdown : String) -> Unit {
 fn apply_note_editor_draft_markdown(markdown : String) -> Unit {
   note_editor_draft_markdown.val = markdown
   apply_markdown_state(markdown, false, true)
+}
+
+///|
+fn sync_note_editor_input_value(node_index : Int) -> Unit {
+  if !app_state.started {
+    return
+  }
+  match get_element("[data-note-editor-for=\"\{node_index}\"]") {
+    Some(element) => {
+      let body_text = match find_node(app_state.root, node_index) {
+        Some(node) => node.body.join("\n\n")
+        None => ""
+      }
+      @dom.HTMLTextAreaElement::cast_from_element(element).value = body_text
+    }
+    None => ()
+  }
 }
 
 ///|
@@ -1161,6 +1264,32 @@ fn handle_redo() -> Unit {
 }
 
 ///|
+fn handle_undo_action() -> Unit {
+  if app_state.editing_node >= 0 {
+    editor_undo(app_state.editing_node)
+    return
+  }
+  if app_state.editing_note_node >= 0 {
+    note_editor_undo(app_state.editing_note_node)
+    return
+  }
+  handle_undo()
+}
+
+///|
+fn handle_redo_action() -> Unit {
+  if app_state.editing_node >= 0 {
+    editor_redo(app_state.editing_node)
+    return
+  }
+  if app_state.editing_note_node >= 0 {
+    note_editor_redo(app_state.editing_note_node)
+    return
+  }
+  handle_redo()
+}
+
+///|
 fn apply_markdown_change(markdown : String, reset_ui : Bool) -> Unit {
   if markdown == app_state.markdown {
     if reset_ui {
@@ -1179,6 +1308,28 @@ fn apply_markdown_change(markdown : String, reset_ui : Bool) -> Unit {
 fn reset_history() -> Unit {
   app_state.undo_stack = []
   app_state.redo_stack = []
+}
+
+///|
+fn can_undo_action() -> Bool {
+  if app_state.editing_node >= 0 {
+    return editor_undo_stack.val.length() > 0
+  }
+  if app_state.editing_note_node >= 0 {
+    return note_editor_undo_stack.val.length() > 0
+  }
+  app_state.undo_stack.length() > 0
+}
+
+///|
+fn can_redo_action() -> Bool {
+  if app_state.editing_node >= 0 {
+    return editor_redo_stack.val.length() > 0
+  }
+  if app_state.editing_note_node >= 0 {
+    return note_editor_redo_stack.val.length() > 0
+  }
+  app_state.redo_stack.length() > 0
 }
 
 ///|
@@ -1329,8 +1480,8 @@ fn render_ui() -> Unit {
   set_select_value("detail-select", detail_select_value)
   set_select_muted("detail-select", app_state.detail_customized)
   sync_selection_toolbar()
-  set_aux_action_enabled("undo-action", app_state.undo_stack.length() > 0)
-  set_aux_action_enabled("redo-action", app_state.redo_stack.length() > 0)
+  set_aux_action_enabled("undo-action", can_undo_action())
+  set_aux_action_enabled("redo-action", can_redo_action())
   set_mindmap_dom(build_mindmap_dom())
   if app_state.editing_node >= 0 &&
     (app_state.editing_node == app_state.selected_node || !has_selected_nodes()) {
@@ -1355,6 +1506,8 @@ fn sync_selection_ui() -> Unit {
     return
   }
   sync_selection_toolbar()
+  set_aux_action_enabled("undo-action", can_undo_action())
+  set_aux_action_enabled("redo-action", can_redo_action())
   sync_mindmap_selected_nodes()
   let linked_lines = selected_markdown_lines()
   set_input_linked_lines(ints_to_csv(linked_lines))
@@ -1570,32 +1723,38 @@ fn source_line_for_flat_index(root : OutlineNode, flat_index : Int) -> Int {
 
 ///|
 fn can_toolbar_action(action : String) -> Bool {
-  if app_state.selected_node < 0 {
-    return false
-  }
   match action {
-    "new-branch" => can_add_sibling_selected()
-    "new-child" => selected_node_exists()
-    "delete-node" => selected_node_exists()
-    "edit-node" => selected_node_exists()
-    "move-up" => can_move_selected(false)
-    "move-down" => can_move_selected(true)
-    "indent-node" =>
-      selected_node_exists() &&
-      indent_heading(app_state.markdown, app_state.selected_node) !=
-      app_state.markdown
-    "promote-node" =>
-      selected_node_exists() &&
-      promote_heading(app_state.markdown, app_state.selected_node) !=
-      app_state.markdown
-    "toggle-node" => selected_has_children()
-    "insert-note" => selected_node_exists()
-    "insert-link" => selected_node_exists()
-    "insert-image" => selected_node_exists()
-    "insert-formula" => selected_node_exists()
-    "insert-code" => selected_node_exists()
-    "insert-table" => selected_node_exists()
-    _ => false
+    "undo" => can_undo_action()
+    "redo" => can_redo_action()
+    _ =>
+      if app_state.selected_node < 0 {
+        false
+      } else {
+        match action {
+          "new-branch" => can_add_sibling_selected()
+          "new-child" => selected_node_exists()
+          "delete-node" => selected_node_exists()
+          "edit-node" => selected_node_exists()
+          "move-up" => can_move_selected(false)
+          "move-down" => can_move_selected(true)
+          "indent-node" =>
+            selected_node_exists() &&
+            indent_heading(app_state.markdown, app_state.selected_node) !=
+            app_state.markdown
+          "promote-node" =>
+            selected_node_exists() &&
+            promote_heading(app_state.markdown, app_state.selected_node) !=
+            app_state.markdown
+          "toggle-node" => selected_has_children()
+          "insert-note" => selected_node_exists()
+          "insert-link" => selected_node_exists()
+          "insert-image" => selected_node_exists()
+          "insert-formula" => selected_node_exists()
+          "insert-code" => selected_node_exists()
+          "insert-table" => selected_node_exists()
+          _ => false
+        }
+      }
   }
 }
 

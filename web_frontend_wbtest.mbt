@@ -304,6 +304,82 @@ test "node editor undo stays local until commit" {
 }
 
 ///|
+test "redo shortcut helper accepts y and shift z" {
+  assert_eq(is_redo_shortcut(true, false, "y"), true)
+  assert_eq(is_redo_shortcut(true, false, "Y"), true)
+  assert_eq(is_redo_shortcut(true, true, "z"), true)
+  assert_eq(is_redo_shortcut(true, true, "Z"), true)
+  assert_eq(is_redo_shortcut(true, true, "y"), false)
+  assert_eq(is_redo_shortcut(false, false, "y"), false)
+}
+
+///|
+test "redo tooltip helper mentions shift z" {
+  let tip = redo_action_tip()
+  assert_true(tip.contains("Ctrl+Y"))
+  assert_true(tip.contains("Ctrl+Shift+Z"))
+}
+
+///|
+test "note editor undo stays local until commit" {
+  reset_frontend_test_state()
+  begin_note_edit_node(1)
+
+  sync_note_editor_draft(1, "Alpha note 1")
+  sync_note_editor_draft(1, "Alpha note 12")
+  assert_eq(app_state.undo_stack.length(), 0)
+  assert_eq(note_editor_undo_stack.val.length(), 2)
+
+  note_editor_undo(1)
+  assert_eq(note_editor_draft_markdown.val.contains("Alpha note 1"), true)
+  assert_eq(app_state.undo_stack.length(), 0)
+
+  note_editor_redo(1)
+  assert_eq(note_editor_draft_markdown.val.contains("Alpha note 12"), true)
+  assert_eq(app_state.undo_stack.length(), 0)
+}
+
+///|
+test "toolbar undo and redo route to active note editor" {
+  reset_frontend_test_state()
+  begin_note_edit_node(1)
+  sync_note_editor_draft(1, "Alpha note 1")
+  sync_note_editor_draft(1, "Alpha note 12")
+
+  on_toolbar_action("undo")
+  assert_eq(note_editor_draft_markdown.val.contains("Alpha note 1"), true)
+  on_toolbar_action("redo")
+  assert_eq(note_editor_draft_markdown.val.contains("Alpha note 12"), true)
+}
+
+///|
+test "active editor controls undo and redo availability" {
+  reset_frontend_test_state()
+  begin_note_edit_node(1)
+  assert_eq(can_undo_action(), false)
+  assert_eq(can_redo_action(), false)
+  sync_note_editor_draft(1, "Alpha note 1")
+  assert_eq(can_undo_action(), true)
+  assert_eq(can_redo_action(), false)
+  note_editor_undo(1)
+  assert_eq(can_undo_action(), false)
+  assert_eq(can_redo_action(), true)
+}
+
+///|
+test "toolbar undo works without a selected node while editing note body" {
+  reset_frontend_test_state()
+  begin_note_edit_node(1)
+  let initial_markdown = note_editor_draft_markdown.val
+  sync_note_editor_draft(1, "Alpha note 1")
+  app_state.selected_node = -2
+
+  assert_eq(can_toolbar_action("undo"), true)
+  on_toolbar_action("undo")
+  assert_eq(note_editor_draft_markdown.val, initial_markdown)
+}
+
+///|
 test "node editor commit adds single global undo entry" {
   reset_frontend_test_state()
   begin_edit_node(1)

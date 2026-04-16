@@ -766,7 +766,7 @@ fn build_secondary_toolbar() -> @dom.Element {
   )
   append_child(
     toolbar,
-    build_aux_button(id="redo-action", tip="重做 / Ctrl+Y", label="↷"),
+    build_aux_button(id="redo-action", tip=redo_action_tip(), label="↷"),
   )
   append_child(
     toolbar,
@@ -1028,6 +1028,11 @@ fn aux_icon_key(id : String, label : String) -> String {
   } else {
     "help"
   }
+}
+
+///|
+fn redo_action_tip() -> String {
+  "重做 / Ctrl+Y / Ctrl+Shift+Z"
 }
 
 ///|
