@@ -2520,9 +2520,14 @@ fn build_node_actions_dom(
   }
   let expanded = (!collapsed).to_string()
   let state_class = if collapsed { " node-action--collapsed" } else { "" }
+  let branch_line_class = if app_state.style_mode == "line" {
+    " node-action--branch-line"
+  } else {
+    ""
+  }
   let button = create_element(
     "button",
-    "node-action node-action--toggle\{state_class}",
+    "node-action node-action--toggle\{state_class}\{branch_line_class}",
   )
   button.setAttribute("type", "button")
   button.setAttribute("data-action", "toggle")
@@ -2930,7 +2935,12 @@ fn render_node_actions_with_note(
   }
   let expanded = (!collapsed).to_string()
   let state_class = if collapsed { " node-action--collapsed" } else { "" }
-  "<div class=\"node-actions\"><button type=\"button\" class=\"node-action node-action--toggle\{state_class}\" data-action=\"toggle\" data-tip=\"\{title}\" aria-label=\"\{title}\" aria-expanded=\"\{expanded}\">\{label}</button></div>"
+  let branch_line_class = if app_state.style_mode == "line" {
+    " node-action--branch-line"
+  } else {
+    ""
+  }
+  "<div class=\"node-actions\"><button type=\"button\" class=\"node-action node-action--toggle\{state_class}\{branch_line_class}\" data-action=\"toggle\" data-tip=\"\{title}\" aria-label=\"\{title}\" aria-expanded=\"\{expanded}\">\{label}</button></div>"
 }
 
 ///|

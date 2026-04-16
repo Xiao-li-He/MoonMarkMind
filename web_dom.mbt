@@ -417,14 +417,28 @@ fn connector_geometry(
         safe_zoom,
       )
       let span = abs_double(end_x - start_x)
-      let pull = min_double(30.0, max_double(12.0, span * 0.26))
-      let settle = min_double(40.0, max_double(14.0, span * 0.38))
+      let is_branch_line = has_class_name(parent_node, "node--branch-line") ||
+        has_class_name(node, "node--branch-line")
+      let pull = if is_branch_line {
+        min_double(18.0, max_double(8.0, span * 0.18))
+      } else {
+        min_double(30.0, max_double(12.0, span * 0.26))
+      }
+      let settle = if is_branch_line {
+        min_double(20.0, max_double(8.0, span * 0.2))
+      } else {
+        min_double(40.0, max_double(14.0, span * 0.38))
+      }
       let mid_y = parent_center_y + (node_center_y - parent_center_y) * 0.2
       Some(ConnectorPathData::{
         start_x,
         start_y: parent_anchor_y,
         control1_x: start_x + direction * pull,
-        control1_y: mid_y,
+        control1_y: if is_branch_line {
+          parent_anchor_y
+        } else {
+          mid_y
+        },
         control2_x: end_x - direction * settle,
         control2_y: node_anchor_y,
         end_x,
@@ -3358,14 +3372,28 @@ fn export_connector_geometry(
         node_rect.right - export_left
       }
       let span = abs_double(end_x - start_x)
-      let pull = min_double(30.0, max_double(12.0, span * 0.26))
-      let settle = min_double(40.0, max_double(14.0, span * 0.38))
+      let is_branch_line = has_class_name(parent_node, "node--branch-line") ||
+        has_class_name(node, "node--branch-line")
+      let pull = if is_branch_line {
+        min_double(18.0, max_double(8.0, span * 0.18))
+      } else {
+        min_double(30.0, max_double(12.0, span * 0.26))
+      }
+      let settle = if is_branch_line {
+        min_double(20.0, max_double(8.0, span * 0.2))
+      } else {
+        min_double(40.0, max_double(14.0, span * 0.38))
+      }
       let mid_y = parent_center_y + (node_center_y - parent_center_y) * 0.2
       ConnectorPathData::{
         start_x,
         start_y: parent_anchor_y,
         control1_x: start_x + direction * pull,
-        control1_y: mid_y,
+        control1_y: if is_branch_line {
+          parent_anchor_y
+        } else {
+          mid_y
+        },
         control2_x: end_x - direction * settle,
         control2_y: node_anchor_y,
         end_x,

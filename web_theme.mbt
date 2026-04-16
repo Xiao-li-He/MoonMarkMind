@@ -498,8 +498,14 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "node-action--toggle") {
     style_node_action_toggle(element)
   }
+  if has_class_name(element, "node-action--branch-line") {
+    style_node_action_branch_line(element)
+  }
   if has_class_name(element, "node-action--collapsed") {
     style_node_action_collapsed(element)
+  }
+  if has_class_name(element, "node-action--branch-line") {
+    style_node_action_branch_line(element)
   }
   if has_class_name(element, "node-action--danger") {
     style_node_action_danger(element)
@@ -2615,6 +2621,14 @@ fn style_node_actions_left_mid(element : @dom.Element) -> Unit {
   set_style(element, "right", "auto")
   set_style(element, "bottom", "auto")
   set_style(element, "transform", "translate(-50%, -50%)")
+  match element.closest(".node--branch-line") {
+    Some(_) => {
+      set_style(element, "top", "100%")
+      set_style(element, "left", "0")
+      set_style(element, "transform", "translate(-50%, -50%)")
+    }
+    None => ()
+  }
 }
 
 ///|
@@ -2624,6 +2638,14 @@ fn style_node_actions_right_mid(element : @dom.Element) -> Unit {
   set_style(element, "left", "auto")
   set_style(element, "bottom", "auto")
   set_style(element, "transform", "translate(50%, -50%)")
+  match element.closest(".node--branch-line") {
+    Some(_) => {
+      set_style(element, "top", "100%")
+      set_style(element, "right", "0")
+      set_style(element, "transform", "translate(50%, -50%)")
+    }
+    None => ()
+  }
 }
 
 ///|
@@ -2699,6 +2721,28 @@ fn style_node_action(element : @dom.Element) -> Unit {
     }
     None => ()
   }
+  match element.closest(".node--branch-line") {
+    Some(_) =>
+      if has_class_name(element, "node-action--toggle") {
+        set_style(element, "width", "20px")
+        set_style(element, "height", "20px")
+        set_style(element, "min-width", "20px")
+        set_style(element, "max-width", "20px")
+        set_style(element, "max-height", "20px")
+        set_style(element, "flex", "0 0 20px")
+        set_style(element, "box-sizing", "border-box")
+        set_style(element, "overflow", "hidden")
+        set_style(
+          element, "border", "1.6px solid var(--mindmap-connector-color, #94b6db)",
+        )
+        set_style(element, "background", "#ffffff")
+        set_style(element, "color", "var(--mindmap-connector-color, #94b6db)")
+        set_style(element, "font-size", "0")
+        set_style(element, "text-indent", "-999px")
+        set_style(element, "box-shadow", "none")
+      }
+    None => ()
+  }
 }
 
 ///|
@@ -2717,19 +2761,55 @@ fn style_node_action_toggle(element : @dom.Element) -> Unit {
   }
   match element.closest(".node--branch-line") {
     Some(_) => {
-      set_style(element, "width", "15px")
-      set_style(element, "height", "15px")
-      set_style(element, "min-width", "15px")
+      set_style(element, "width", "20px")
+      set_style(element, "height", "20px")
+      set_style(element, "min-width", "20px")
+      set_style(element, "max-width", "20px")
+      set_style(element, "max-height", "20px")
+      set_style(element, "flex", "0 0 20px")
+      set_style(element, "box-sizing", "border-box")
+      set_style(element, "overflow", "hidden")
       set_style(element, "padding", "0")
       set_style(
-        element, "border", "1.5px solid var(--mindmap-connector-color, #94b6db)",
+        element, "border", "1.6px solid var(--mindmap-connector-color, #94b6db)",
       )
       set_style(element, "background", "#ffffff")
       set_style(element, "color", "var(--mindmap-connector-color, #94b6db)")
+      set_style(element, "font-size", "0")
+      set_style(element, "text-indent", "-999px")
       set_style(element, "box-shadow", "none")
     }
     None => ()
   }
+}
+
+///|
+fn style_node_action_branch_line(element : @dom.Element) -> Unit {
+  set_style(element, "width", "20px")
+  set_style(element, "height", "20px")
+  set_style(element, "min-width", "20px")
+  set_style(element, "max-width", "20px")
+  set_style(element, "max-height", "20px")
+  set_style(element, "flex", "0 0 20px")
+  set_style(element, "box-sizing", "border-box")
+  set_style(element, "overflow", "hidden")
+  set_style(element, "padding", "0")
+  set_style(
+    element, "border", "1.6px solid var(--mindmap-connector-color, #94b6db)",
+  )
+  set_style(element, "border-radius", "999px")
+  set_style(element, "background", "#ffffff")
+  set_style(element, "color", "var(--mindmap-connector-color, #94b6db)")
+  set_style(element, "line-height", "1")
+  if has_class_name(element, "node-action--collapsed") {
+    set_style(element, "font-size", "9px")
+    set_style(element, "font-weight", "700")
+    set_style(element, "text-indent", "0")
+  } else {
+    set_style(element, "font-size", "0")
+    set_style(element, "text-indent", "-999px")
+  }
+  set_style(element, "box-shadow", "none")
 }
 
 ///|
@@ -2739,10 +2819,18 @@ fn style_node_action_collapsed(element : @dom.Element) -> Unit {
   set_style(element, "padding", "0 7px")
   match element.closest(".node--branch-line") {
     Some(_) => {
-      set_style(element, "min-width", "17px")
-      set_style(element, "width", "auto")
-      set_style(element, "height", "15px")
-      set_style(element, "padding", "0 4px")
+      set_style(element, "min-width", "20px")
+      set_style(element, "width", "20px")
+      set_style(element, "height", "20px")
+      set_style(element, "max-width", "20px")
+      set_style(element, "max-height", "20px")
+      set_style(element, "flex", "0 0 20px")
+      set_style(element, "box-sizing", "border-box")
+      set_style(element, "overflow", "hidden")
+      set_style(element, "padding", "0")
+      set_style(element, "font-size", "9px")
+      set_style(element, "font-weight", "700")
+      set_style(element, "text-indent", "0")
     }
     None => ()
   }
