@@ -2509,7 +2509,15 @@ fn build_node_actions_dom(
   if is_center || node.children.length() == 0 {
     return None
   }
-  let actions = create_element("div", "node-actions \{action_anchor}")
+  let branch_line_actions_class = if app_state.style_mode == "line" {
+    " node-actions--branch-line"
+  } else {
+    ""
+  }
+  let actions = create_element(
+    "div",
+    "node-actions \{action_anchor}\{branch_line_actions_class}",
+  )
   let collapsed = is_collapsed(node.flat_index)
   let hidden_count = count_hidden_descendants(node)
   let label = if collapsed { hidden_count.to_string() } else { "" }
@@ -2940,7 +2948,12 @@ fn render_node_actions_with_note(
   } else {
     ""
   }
-  "<div class=\"node-actions\"><button type=\"button\" class=\"node-action node-action--toggle\{state_class}\{branch_line_class}\" data-action=\"toggle\" data-tip=\"\{title}\" aria-label=\"\{title}\" aria-expanded=\"\{expanded}\">\{label}</button></div>"
+  let branch_line_actions_class = if app_state.style_mode == "line" {
+    " node-actions--branch-line"
+  } else {
+    ""
+  }
+  "<div class=\"node-actions\{branch_line_actions_class}\"><button type=\"button\" class=\"node-action node-action--toggle\{state_class}\{branch_line_class}\" data-action=\"toggle\" data-tip=\"\{title}\" aria-label=\"\{title}\" aria-expanded=\"\{expanded}\">\{label}</button></div>"
 }
 
 ///|

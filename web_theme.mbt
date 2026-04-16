@@ -483,6 +483,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "node-actions--right-mid") {
     style_node_actions_right_mid(element)
   }
+  if has_class_name(element, "node-actions--branch-line") {
+    style_node_actions_branch_line(element)
+  }
   if has_class_name(element, "node-actions--top-center") {
     style_node_actions_top_center(element)
   }
@@ -1685,7 +1688,7 @@ fn style_mindmap_toolbar(element : @dom.Element) -> Unit {
   set_style(element, "justify-content", "space-between")
   set_style(element, "column-gap", "8px")
   set_style(element, "row-gap", "10px")
-  set_style(element, "padding", "0 0 4px")
+  set_style(element, "padding", "0 15px 4px")
   set_style(element, "position", "relative")
   set_style(element, "z-index", "3")
   set_style(element, "min-width", "0")
@@ -2218,7 +2221,7 @@ fn style_node_branch_line(element : @dom.Element) -> Unit {
   if has_class_name(element, "node--center") {
     set_style(element, "min-width", "128px")
     set_style(element, "max-width", "220px")
-    set_style(element, "padding", "0 0 5px")
+    set_style(element, "padding", "0 15px 5px")
     set_style(element, "border-bottom-width", "1.8px")
     set_style(element, "color", "#4d5969")
   }
@@ -2624,7 +2627,7 @@ fn style_node_actions_left_mid(element : @dom.Element) -> Unit {
   match element.closest(".node--branch-line") {
     Some(_) => {
       set_style(element, "top", "100%")
-      set_style(element, "left", "0")
+      set_style(element, "left", "15px")
       set_style(element, "transform", "translate(-50%, -50%)")
     }
     None => ()
@@ -2641,10 +2644,30 @@ fn style_node_actions_right_mid(element : @dom.Element) -> Unit {
   match element.closest(".node--branch-line") {
     Some(_) => {
       set_style(element, "top", "100%")
-      set_style(element, "right", "0")
+      set_style(element, "right", "15px")
       set_style(element, "transform", "translate(50%, -50%)")
     }
     None => ()
+  }
+}
+
+///|
+fn style_node_actions_branch_line(element : @dom.Element) -> Unit {
+  set_style(element, "top", "100%")
+  set_style(element, "bottom", "auto")
+  if has_class_name(element, "node-actions--left-mid") {
+    set_style(element, "left", "-15px")
+    set_style(element, "right", "auto")
+    set_style(element, "transform", "translate(-50%, -50%)")
+  } else if has_class_name(element, "node-actions--bottom-center") {
+    set_style(element, "left", "50%")
+    set_style(element, "right", "auto")
+    set_style(element, "top", "calc(100% + 15px)")
+    set_style(element, "transform", "translate(-50%, -50%)")
+  } else {
+    set_style(element, "right", "-15px")
+    set_style(element, "left", "auto")
+    set_style(element, "transform", "translate(50%, -50%)")
   }
 }
 
