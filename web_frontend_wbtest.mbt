@@ -486,6 +486,17 @@ test "moving selected node keeps it selected" {
 }
 
 ///|
+test "mindmap ctrl arrow shortcut moves selected node before navigation" {
+  reset_navigation_test_state()
+  select_single_node(1, false)
+
+  assert_eq(handle_mindmap_move_shortcut(true, "ArrowDown"), true)
+
+  assert_eq(app_state.selected_node, 2)
+  assert_eq(title_at(app_state.selected_node), "Parent")
+}
+
+///|
 test "move heading prev stops before document root" {
   let markdown = "# Root\n## Child"
 

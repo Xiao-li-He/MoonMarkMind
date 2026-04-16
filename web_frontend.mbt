@@ -438,6 +438,11 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
     handle_redo()
     return
   }
+  if handle_mindmap_move_shortcut(command_key, key) {
+    event.preventDefault()
+    event.stopPropagation()
+    return
+  }
   if target_node_index < 0 {
     return
   }
@@ -509,6 +514,24 @@ fn is_redo_shortcut(command_key : Bool, shift_key : Bool, key : String) -> Bool 
     key == "z" || key == "Z"
   } else {
     key == "y" || key == "Y"
+  }
+}
+
+///|
+fn handle_mindmap_move_shortcut(command_key : Bool, key : String) -> Bool {
+  if !command_key || app_state.selected_node < 0 {
+    return false
+  }
+  match key {
+    "ArrowUp" => {
+      handle_move_selected(false)
+      true
+    }
+    "ArrowDown" => {
+      handle_move_selected(true)
+      true
+    }
+    _ => false
   }
 }
 
