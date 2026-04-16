@@ -429,6 +429,21 @@ test "undo expands collapsed ancestors of selected edited node" {
 }
 
 ///|
+test "undo keeps collapsed descendants of selected edited node collapsed" {
+  load_markdown("# Root\n## Parent\n### Child\n#### Grandchild\n## Other", true)
+  begin_edit_node(1)
+  sync_editor_draft(1, "Parent2")
+  save_editor(1, "Parent2")
+  app_state.collapsed = [1, 2]
+
+  handle_undo()
+
+  assert_eq(title_at(1), "Parent")
+  assert_eq(is_collapsed(1), false)
+  assert_eq(is_collapsed(2), true)
+}
+
+///|
 test "node editor duplicate save after commit does not push empty undo state" {
   reset_frontend_test_state()
   begin_edit_node(1)
