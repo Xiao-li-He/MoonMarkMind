@@ -480,9 +480,11 @@ fn connector_node_bottom_y(
   node : @dom.Element,
   safe_zoom : Double,
 ) -> Double {
-  let _ = node
-  let _ = safe_zoom
-  rect.bottom
+  if has_class_name(node, "node--branch-line") {
+    rect.bottom + 15.0 * safe_zoom
+  } else {
+    rect.bottom
+  }
 }
 
 ///|

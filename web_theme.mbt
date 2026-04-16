@@ -483,9 +483,6 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "node-actions--right-mid") {
     style_node_actions_right_mid(element)
   }
-  if has_class_name(element, "node-actions--branch-line") {
-    style_node_actions_branch_line(element)
-  }
   if has_class_name(element, "node-actions--top-center") {
     style_node_actions_top_center(element)
   }
@@ -494,6 +491,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   }
   if has_class_name(element, "node-actions--corner") {
     style_node_actions_corner(element)
+  }
+  if has_class_name(element, "node-actions--branch-line") {
+    style_node_actions_branch_line(element)
   }
   if has_class_name(element, "node-action") {
     style_node_action(element)
@@ -2662,7 +2662,7 @@ fn style_node_actions_branch_line(element : @dom.Element) -> Unit {
   } else if has_class_name(element, "node-actions--bottom-center") {
     set_style(element, "left", "50%")
     set_style(element, "right", "auto")
-    set_style(element, "top", "100%")
+    set_style(element, "top", "calc(100% + 15px)")
     set_style(element, "transform", "translate(-50%, -50%)")
   } else {
     set_style(element, "right", "0")
