@@ -2246,11 +2246,13 @@ fn style_node_branch_line(element : @dom.Element) -> Unit {
   if has_class_name(element, "node--line-tree") {
     set_style(element, "min-width", "36px")
     set_style(element, "max-width", "130px")
-    set_style(element, "padding", "0 10px 4px")
+    set_style(element, "padding", "4px 10px 4px")
+    set_style(element, "border-bottom-width", "2.0px")
     if has_class_name(element, "node--center") {
       set_style(element, "min-width", "108px")
       set_style(element, "max-width", "200px")
       set_style(element, "padding", "0 12px 5px")
+      set_style(element, "border-bottom-width", "1.8px")
     }
   }
   if has_class_name(element, "node--line-tree-note") {

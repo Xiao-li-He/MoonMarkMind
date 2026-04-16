@@ -103,9 +103,9 @@ test "branch line connector extension preserves anchors" {
   assert_eq(path_direction(0.0), 0.0)
   assert_eq(connector_layer_z_index(StageLayoutKind::Tree), "0")
   assert_eq(connector_layer_z_index(StageLayoutKind::Mindmap), "1")
-  assert_eq(branch_line_stroke_width_by_kind(center=true, depth=0), 2.0)
-  assert_eq(branch_line_stroke_width_by_kind(center=false, depth=1), 1.8)
-  assert_eq(branch_line_stroke_width_by_kind(center=false, depth=2), 1.8)
+  assert_eq(branch_line_stroke_width_by_kind(center=true, depth=0), 1.8)
+  assert_eq(branch_line_stroke_width_by_kind(center=false, depth=1), 1.5)
+  assert_eq(branch_line_stroke_width_by_kind(center=false, depth=2), 1.25)
 }
 
 ///|
