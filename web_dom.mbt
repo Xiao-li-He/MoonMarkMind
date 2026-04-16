@@ -557,7 +557,12 @@ fn build_connector_path(
   path_data : ConnectorPathData,
 ) -> @dom.Element {
   let stroke_width = if has_class_name(node, "node--branch-line") {
-    branch_line_stroke_width(node)
+    let node_stroke_width = branch_line_stroke_width(node)
+    if has_class_name(parent_node, "node--branch-line") {
+      max_double(node_stroke_width, branch_line_stroke_width(parent_node))
+    } else {
+      node_stroke_width
+    }
   } else if parse_int_or_default(
       node.getAttribute("data-depth").unwrap_or("0"),
       0,
@@ -627,8 +632,20 @@ fn build_branch_line_node_baseline(
 
 ///|
 fn branch_line_stroke_width(node : @dom.Element) -> Double {
-  if parse_int_or_default(node.getAttribute("data-depth").unwrap_or("0"), 0) ==
-    1 {
+  branch_line_stroke_width_by_kind(
+    center=has_class_name(node, "node--center"),
+    depth=parse_int_or_default(
+      node.getAttribute("data-depth").unwrap_or("0"),
+      0,
+    ),
+  )
+}
+
+///|
+fn branch_line_stroke_width_by_kind(center~ : Bool, depth~ : Int) -> Double {
+  if center {
+    1.8
+  } else if depth == 1 {
     1.5
   } else {
     1.25
