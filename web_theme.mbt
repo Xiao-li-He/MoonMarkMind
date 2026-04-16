@@ -2196,7 +2196,7 @@ fn style_node_branch_line(element : @dom.Element) -> Unit {
   set_style(element, "border", "0")
   set_style(element, "border-radius", "0")
   set_style(
-    element, "border-bottom", "2px solid var(--mindmap-connector-color, #94b6db)",
+    element, "border-bottom", "1.4px solid var(--mindmap-connector-color, #94b6db)",
   )
   set_style(element, "background", "transparent")
   set_style(element, "box-shadow", "none")
@@ -2213,7 +2213,7 @@ fn style_node_branch_line(element : @dom.Element) -> Unit {
     set_style(element, "min-width", "128px")
     set_style(element, "max-width", "220px")
     set_style(element, "padding", "0 0 5px")
-    set_style(element, "border-bottom-width", "3px")
+    set_style(element, "border-bottom-width", "1.8px")
     set_style(element, "color", "#4d5969")
   }
 }
@@ -2673,6 +2673,24 @@ fn style_node_action(element : @dom.Element) -> Unit {
     set_style(element, "background", "rgba(255, 255, 255, 0.98)")
     set_style(element, "color", "rgba(95, 143, 190, 0.92)")
   }
+  match element.closest(".node--branch-line") {
+    Some(_) =>
+      if has_class_name(element, "node-action--toggle") {
+        set_style(element, "width", "15px")
+        set_style(element, "height", "15px")
+        set_style(element, "min-width", "15px")
+        set_style(element, "padding", "0")
+        set_style(
+          element, "border", "1.5px solid var(--mindmap-connector-color, #94b6db)",
+        )
+        set_style(element, "background", "#ffffff")
+        set_style(element, "color", "var(--mindmap-connector-color, #94b6db)")
+        set_style(element, "font-size", "8px")
+        set_style(element, "line-height", "1")
+        set_style(element, "box-shadow", "none")
+      }
+    None => ()
+  }
   match element.closest(".mindmap-stage--fill") {
     Some(_) => {
       set_style(element, "background", "rgba(39, 64, 92, 0.12)")
@@ -2697,6 +2715,21 @@ fn style_node_action_toggle(element : @dom.Element) -> Unit {
     }
     None => ()
   }
+  match element.closest(".node--branch-line") {
+    Some(_) => {
+      set_style(element, "width", "15px")
+      set_style(element, "height", "15px")
+      set_style(element, "min-width", "15px")
+      set_style(element, "padding", "0")
+      set_style(
+        element, "border", "1.5px solid var(--mindmap-connector-color, #94b6db)",
+      )
+      set_style(element, "background", "#ffffff")
+      set_style(element, "color", "var(--mindmap-connector-color, #94b6db)")
+      set_style(element, "box-shadow", "none")
+    }
+    None => ()
+  }
 }
 
 ///|
@@ -2704,6 +2737,15 @@ fn style_node_action_collapsed(element : @dom.Element) -> Unit {
   set_style(element, "min-width", "28px")
   set_style(element, "width", "auto")
   set_style(element, "padding", "0 7px")
+  match element.closest(".node--branch-line") {
+    Some(_) => {
+      set_style(element, "min-width", "17px")
+      set_style(element, "width", "auto")
+      set_style(element, "height", "15px")
+      set_style(element, "padding", "0 4px")
+    }
+    None => ()
+  }
 }
 
 ///|

@@ -437,7 +437,7 @@ fn connector_geometry(
 ///|
 fn connector_node_anchor_y(rect : @dom.DOMRect, node : @dom.Element) -> Double {
   if has_class_name(node, "node--branch-line") {
-    rect.bottom - 5.0
+    rect.bottom - 1.0
   } else {
     rect_center_y(rect)
   }
@@ -448,7 +448,14 @@ fn build_connector_path(
   node : @dom.Element,
   path_data : ConnectorPathData,
 ) -> @dom.Element {
-  let stroke_width = if parse_int_or_default(
+  let stroke_width = if has_class_name(node, "node--branch-line") {
+    if parse_int_or_default(node.getAttribute("data-depth").unwrap_or("0"), 0) ==
+      1 {
+      1.5
+    } else {
+      1.25
+    }
+  } else if parse_int_or_default(
       node.getAttribute("data-depth").unwrap_or("0"),
       0,
     ) ==
