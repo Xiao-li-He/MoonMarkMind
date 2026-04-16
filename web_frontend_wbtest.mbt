@@ -432,6 +432,36 @@ test "local undo while editing newly added node deletes the node" {
 }
 
 ///|
+test "undo newly added child expands collapsed parent path" {
+  load_markdown("# Root\n## Parent\n### Child\n## Other", true)
+  handle_add_child(2)
+  let new_index = app_state.selected_node
+  save_editor(new_index, "New node")
+  app_state.collapsed = [1, 2]
+
+  handle_undo()
+
+  assert_eq(outline_flat_index_by_title(app_state.root, "New node"), -1)
+  assert_eq(is_collapsed(1), false)
+  assert_eq(is_collapsed(2), false)
+}
+
+///|
+test "local undo newly added child expands collapsed parent path" {
+  load_markdown("# Root\n## Parent\n### Child\n## Other", true)
+  handle_add_child(2)
+  let new_index = app_state.selected_node
+  app_state.collapsed = [1, 2]
+
+  editor_undo(new_index)
+
+  assert_eq(outline_flat_index_by_title(app_state.root, "New node"), -1)
+  assert_eq(app_state.editing_node, -2)
+  assert_eq(is_collapsed(1), false)
+  assert_eq(is_collapsed(2), false)
+}
+
+///|
 test "undo expands collapsed selected node after edit commit" {
   reset_navigation_test_state()
   begin_edit_node(1)

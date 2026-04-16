@@ -647,6 +647,7 @@ fn on_mindmap_drop(event : @dom.DragEvent) -> Unit {
 ///|
 fn handle_add_child(node_index : Int) -> Unit {
   let title = "New node"
+  undo_expand_node.val = node_index
   let (next_markdown, target_index) = if should_balance_first_layer_insert(
       node_index,
     ) {
@@ -672,6 +673,17 @@ fn handle_add_child(node_index : Int) -> Unit {
 ///|
 fn handle_add_sibling(node_index : Int, place_after : Bool) -> Unit {
   let title = "New node"
+  let undo_expand_target = match
+    locate_tree_context(app_state.root, node_index) {
+    Some((parent_index, _, _)) =>
+      if parent_index >= 0 {
+        parent_index
+      } else {
+        node_index
+      }
+    None => node_index
+  }
+  undo_expand_node.val = undo_expand_target
   if should_balance_first_layer_sibling_insert(node_index) {
     let (next_markdown, target_index) = add_balanced_first_layer_heading(title)
     apply_markdown_change(next_markdown, false)
@@ -1170,7 +1182,15 @@ fn note_editor_redo(node_index : Int) -> Unit {
 
 ///|
 fn editor_undo(node_index : Int) -> Unit {
-  if app_state.editing_node != node_index || editor_undo_stack.val.length() == 0 {
+  if app_state.editing_node != node_index {
+    return
+  }
+  if editor_undo_stack.val.length() == 0 {
+    if editor_created_node.val == node_index {
+      clear_editing_session()
+      app_state.editing_node = -2
+      handle_undo()
+    }
     return
   }
   let last_index = editor_undo_stack.val.length() - 1
@@ -1381,7 +1401,8 @@ fn reset_history() -> Unit {
 ///|
 fn can_undo_action() -> Bool {
   if app_state.editing_node >= 0 {
-    return editor_undo_stack.val.length() > 0
+    return editor_undo_stack.val.length() > 0 ||
+      editor_created_node.val == app_state.editing_node
   }
   if app_state.editing_note_node >= 0 {
     return note_editor_undo_stack.val.length() > 0
