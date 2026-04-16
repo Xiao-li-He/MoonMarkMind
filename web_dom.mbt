@@ -186,6 +186,21 @@ fn render_mindmap_connectors() -> Unit {
               let svg_paths : Array[@dom.Element] = []
               let layout = stage_layout_kind(stage_element)
               for node in nodes {
+                match
+                  build_branch_line_node_baseline(
+                    layout,
+                    node,
+                    element_rect(node),
+                    stage_left,
+                    stage_top,
+                    safe_zoom,
+                    "var(--mindmap-connector-color, #94b6db)",
+                  ) {
+                  Some(path) => svg_paths.push(path)
+                  None => ()
+                }
+              }
+              for node in nodes {
                 let parent_index = parse_int_or_default(
                   node.getAttribute("data-parent-index").unwrap_or("-1"),
                   -1,
@@ -207,7 +222,9 @@ fn render_mindmap_connectors() -> Unit {
                         safe_zoom,
                       ) {
                       Some(path_data) =>
-                        svg_paths.push(build_connector_path(node, path_data))
+                        svg_paths.push(
+                          build_connector_path(parent, node, path_data),
+                        )
                       None => ()
                     }
                   None => ()
@@ -225,7 +242,7 @@ fn render_mindmap_connectors() -> Unit {
               style.set_property("top", "0px")
               style.set_property("width", "\{width}px")
               style.set_property("height", "\{height}px")
-              style.set_property("z-index", "0")
+              style.set_property("z-index", connector_layer_z_index(layout))
               style.set_property("pointer-events", "none")
               style.set_property("position", "absolute")
               style.set_property("overflow", "visible")
@@ -494,6 +511,22 @@ fn branch_line_baseline_offset(node : @dom.Element) -> Double {
 }
 
 ///|
+fn branch_line_connector_extension(node : @dom.Element) -> Double {
+  branch_line_connector_extension_by_kind(
+    center=has_class_name(node, "node--center"),
+  )
+}
+
+///|
+fn branch_line_connector_extension_by_kind(center~ : Bool) -> Double {
+  if center {
+    30.0
+  } else {
+    22.0
+  }
+}
+
+///|
 fn connector_node_side_x(
   rect : @dom.DOMRect,
   node : @dom.Element,
@@ -519,16 +552,12 @@ fn connector_node_bottom_y(
 
 ///|
 fn build_connector_path(
+  parent_node : @dom.Element,
   node : @dom.Element,
   path_data : ConnectorPathData,
 ) -> @dom.Element {
   let stroke_width = if has_class_name(node, "node--branch-line") {
-    if parse_int_or_default(node.getAttribute("data-depth").unwrap_or("0"), 0) ==
-      1 {
-      1.5
-    } else {
-      1.25
-    }
+    branch_line_stroke_width(node)
   } else if parse_int_or_default(
       node.getAttribute("data-depth").unwrap_or("0"),
       0,
@@ -539,9 +568,12 @@ fn build_connector_path(
     2.0
   }
   let path = create_svg_element("path", "")
+  let branch_extension = branch_line_connector_path_extension(
+    parent_node, path_data,
+  )
   path.setAttribute(
     "d",
-    "M \{double_to_svg_number(path_data.start_x)} \{double_to_svg_number(path_data.start_y)} C \{double_to_svg_number(path_data.control1_x)} \{double_to_svg_number(path_data.control1_y)}, \{double_to_svg_number(path_data.control2_x)} \{double_to_svg_number(path_data.control2_y)}, \{double_to_svg_number(path_data.end_x)} \{double_to_svg_number(path_data.end_y)}",
+    "\{branch_extension}M \{double_to_svg_number(path_data.start_x)} \{double_to_svg_number(path_data.start_y)} C \{double_to_svg_number(path_data.control1_x)} \{double_to_svg_number(path_data.control1_y)}, \{double_to_svg_number(path_data.control2_x)} \{double_to_svg_number(path_data.control2_y)}, \{double_to_svg_number(path_data.end_x)} \{double_to_svg_number(path_data.end_y)}",
   )
   path.setAttribute("fill", "none")
   path.setAttribute("stroke", "var(--mindmap-connector-color, #94b6db)")
@@ -551,6 +583,100 @@ fn build_connector_path(
   path.setAttribute("stroke-linejoin", "round")
   path.setAttribute("vector-effect", "non-scaling-stroke")
   path
+}
+
+///|
+fn build_branch_line_node_baseline(
+  layout : StageLayoutKind,
+  node : @dom.Element,
+  rect : @dom.DOMRect,
+  origin_left : Double,
+  origin_top : Double,
+  safe_zoom : Double,
+  color : String,
+) -> @dom.Element? {
+  if is_tree_layout(layout) ||
+    !has_class_name(node, "node--branch-line") ||
+    has_class_name(node, "node--line-tree") {
+    return None
+  }
+  let start_x = stage_local_x(rect.left, origin_left, safe_zoom)
+  let end_x = stage_local_x(rect.right, origin_left, safe_zoom)
+  let y = stage_local_y(
+    connector_node_anchor_y(rect, node),
+    origin_top,
+    safe_zoom,
+  )
+  let path = create_svg_element("path", "")
+  path.setAttribute(
+    "d",
+    "M \{double_to_svg_number(start_x)} \{double_to_svg_number(y)} L \{double_to_svg_number(end_x)} \{double_to_svg_number(y)}",
+  )
+  path.setAttribute("fill", "none")
+  path.setAttribute("stroke", color)
+  path.setAttribute("stroke-opacity", "0.9")
+  path.setAttribute(
+    "stroke-width",
+    double_to_svg_number(branch_line_stroke_width(node)),
+  )
+  path.setAttribute("stroke-linecap", "round")
+  path.setAttribute("stroke-linejoin", "round")
+  path.setAttribute("vector-effect", "non-scaling-stroke")
+  Some(path)
+}
+
+///|
+fn branch_line_stroke_width(node : @dom.Element) -> Double {
+  if parse_int_or_default(node.getAttribute("data-depth").unwrap_or("0"), 0) ==
+    1 {
+    1.5
+  } else {
+    1.25
+  }
+}
+
+///|
+fn branch_line_connector_path_extension(
+  parent_node : @dom.Element,
+  path_data : ConnectorPathData,
+) -> String {
+  if !has_class_name(parent_node, "node--branch-line") {
+    return ""
+  }
+  let direction = path_direction(path_data.control1_x - path_data.start_x)
+  if direction == 0.0 {
+    return ""
+  }
+  let extension_x = path_data.start_x -
+    direction * branch_line_connector_extension(parent_node)
+  "M \{double_to_svg_number(path_data.start_x)} \{double_to_svg_number(path_data.start_y)} L \{double_to_svg_number(extension_x)} \{double_to_svg_number(path_data.start_y)} "
+}
+
+///|
+fn path_direction(delta : Double) -> Double {
+  if delta > 0.0 {
+    1.0
+  } else if delta < 0.0 {
+    -1.0
+  } else {
+    0.0
+  }
+}
+
+///|
+fn connector_layer_z_index(layout : StageLayoutKind) -> String {
+  match layout {
+    StageLayoutKind::Tree => "0"
+    _ => "1"
+  }
+}
+
+///|
+fn is_tree_layout(layout : StageLayoutKind) -> Bool {
+  match layout {
+    StageLayoutKind::Tree => true
+    _ => false
+  }
 }
 
 ///|
@@ -3071,9 +3197,24 @@ fn render_export_mindmap_connectors(export_root : @dom.Element) -> Unit {
       svg_style.set_property("top", "0px")
       svg_style.set_property("overflow", "visible")
       svg_style.set_property("pointer-events", "none")
-      svg_style.set_property("z-index", "0")
       let layout = stage_layout_kind(stage)
+      svg_style.set_property("z-index", connector_layer_z_index(layout))
       let color = export_connector_color(stage)
+      for node in nodes {
+        match
+          build_branch_line_node_baseline(
+            layout,
+            node,
+            element_rect(node),
+            stage_rect.left,
+            stage_rect.top,
+            1.0,
+            color,
+          ) {
+          Some(path) => append_child(svg, path)
+          None => ()
+        }
+      }
       for node in nodes {
         let parent_index = export_parent_index(node)
         if parent_index < 0 {
@@ -3092,7 +3233,7 @@ fn render_export_mindmap_connectors(export_root : @dom.Element) -> Unit {
             )
             append_child(
               svg,
-              build_export_connector_path(node, path_data, color),
+              build_export_connector_path(parent, node, path_data, color),
             )
           }
           None => ()
@@ -3333,6 +3474,21 @@ fn build_mindmap_export_connector_group(
       group.setAttribute("fill", "none")
       group.setAttribute("opacity", "0.92")
       for node in nodes {
+        match
+          build_branch_line_node_baseline(
+            layout,
+            node,
+            element_rect(node),
+            export_left,
+            export_top,
+            1.0,
+            color,
+          ) {
+          Some(path) => append_child(group, path)
+          None => ()
+        }
+      }
+      for node in nodes {
         let parent_index = parse_int_or_default(
           node.getAttribute("data-parent-index").unwrap_or("-1"),
           -1,
@@ -3353,7 +3509,7 @@ fn build_mindmap_export_connector_group(
             )
             append_child(
               group,
-              build_export_connector_path(node, path_data, color),
+              build_export_connector_path(parent, node, path_data, color),
             )
           }
           None => ()
@@ -3459,11 +3615,12 @@ fn export_connector_geometry(
 
 ///|
 fn build_export_connector_path(
+  parent_node : @dom.Element,
   node : @dom.Element,
   path_data : ConnectorPathData,
   color : String,
 ) -> @dom.Element {
-  let path = build_connector_path(node, path_data)
+  let path = build_connector_path(parent_node, node, path_data)
   path.setAttribute("stroke", color)
   path.setAttribute("stroke-opacity", "0.92")
   path

@@ -95,6 +95,17 @@ test "export runtime script is inline safe" {
 }
 
 ///|
+test "branch line connector extension preserves anchors" {
+  assert_eq(branch_line_connector_extension_by_kind(center=false), 22.0)
+  assert_eq(branch_line_connector_extension_by_kind(center=true), 30.0)
+  assert_eq(path_direction(10.0), 1.0)
+  assert_eq(path_direction(-10.0), -1.0)
+  assert_eq(path_direction(0.0), 0.0)
+  assert_eq(connector_layer_z_index(StageLayoutKind::Tree), "0")
+  assert_eq(connector_layer_z_index(StageLayoutKind::Mindmap), "1")
+}
+
+///|
 test "svg export void elements are xml self closing" {
   let source = "<svg><foreignObject><div><input class=\"markdown-task__check\" type=\"checkbox\"><span>Done</span><br></div></foreignObject></svg>"
   let fixed = close_svg_void_elements(source)

@@ -2240,6 +2240,9 @@ fn style_node_branch_line(element : @dom.Element) -> Unit {
     set_style(element, "border-bottom-width", "1.8px")
     set_style(element, "color", "#4d5969")
   }
+  if !has_class_name(element, "node--line-tree") {
+    set_style(element, "border-bottom", "0")
+  }
   if has_class_name(element, "node--line-tree") {
     set_style(element, "min-width", "36px")
     set_style(element, "max-width", "130px")
@@ -2702,8 +2705,12 @@ fn style_node_editor(element : @dom.Element) -> Unit {
 ///|
 fn style_node_selected(element : @dom.Element) -> Unit {
   if has_class_name(element, "node--branch-line") {
-    set_style(element, "border-bottom-color", "rgba(44, 112, 206, 0.95)")
-    set_style(element, "box-shadow", "0 3px 0 rgba(44, 112, 206, 0.22)")
+    if has_class_name(element, "node--line-tree") {
+      set_style(element, "border-bottom-color", "rgba(44, 112, 206, 0.95)")
+      set_style(element, "box-shadow", "0 3px 0 rgba(44, 112, 206, 0.22)")
+    } else {
+      set_style(element, "box-shadow", "0 2px 0 rgba(44, 112, 206, 0.28)")
+    }
     return
   }
   set_style(element, "border-color", "rgba(44, 112, 206, 0.95)")
