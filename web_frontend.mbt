@@ -89,6 +89,9 @@ let note_editor_undo_stack : @ref.Ref[Array[String]] = @ref.Ref([])
 let note_editor_redo_stack : @ref.Ref[Array[String]] = @ref.Ref([])
 
 ///|
+let undo_expand_node : @ref.Ref[Int] = @ref.Ref(-2)
+
+///|
 pub fn start_web_app() -> Unit {
   match get_element("#mindmap-export") {
     Some(export_root) => {
@@ -747,6 +750,15 @@ fn handle_delete(node_index : Int) -> Unit {
   if node_index < 0 {
     return
   }
+  undo_expand_node.val = match locate_tree_context(app_state.root, node_index) {
+    Some((parent_index, _, _)) =>
+      if parent_index >= 0 {
+        parent_index
+      } else {
+        node_index
+      }
+    None => node_index
+  }
   shrink_root_split_after_delete(node_index)
   let next_markdown = delete_heading(app_state.markdown, node_index)
   clear_editing_session()
@@ -1273,7 +1285,12 @@ fn handle_undo() -> Unit {
   if app_state.undo_stack.length() == 0 {
     return
   }
-  let expanded_node = app_state.selected_node
+  let expanded_node = if undo_expand_node.val >= 0 {
+    undo_expand_node.val
+  } else {
+    app_state.selected_node
+  }
+  undo_expand_node.val = -2
   let last_index = app_state.undo_stack.length() - 1
   let previous = app_state.undo_stack[last_index]
   app_state.undo_stack = slice_strings(app_state.undo_stack, 0, last_index)
@@ -1343,6 +1360,7 @@ fn apply_markdown_change(markdown : String, reset_ui : Bool) -> Unit {
 fn reset_history() -> Unit {
   app_state.undo_stack = []
   app_state.redo_stack = []
+  undo_expand_node.val = -2
 }
 
 ///|
