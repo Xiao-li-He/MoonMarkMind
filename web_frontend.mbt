@@ -2270,7 +2270,7 @@ fn build_vertical_tree_dom(
   is_root : Bool,
   tone_index : Int,
 ) -> @dom.Element {
-  let tree = create_element("div", "vertical-tree")
+  let tree = create_element("div", vertical_tree_class(node))
   tree.setAttribute("data-node-index", node.flat_index.to_string())
   tree.setAttribute("data-parent-index", parent_index.to_string())
   append_child(
@@ -2296,7 +2296,7 @@ fn build_vertical_children_dom(
   node : OutlineNode,
   tone_index : Int,
 ) -> @dom.Element {
-  let children = create_element("div", "vertical-tree__children")
+  let children = create_element("div", vertical_tree_children_class())
   let child_tone = if relative_node_depth(node) == 0 { -1 } else { tone_index }
   apply_node_visual_attrs(children, node, child_tone)
   if !should_render_children(node) {
@@ -2309,7 +2309,7 @@ fn build_vertical_children_dom(
     } else {
       tone_index
     }
-    let child_wrap = create_element("div", "vertical-tree__child")
+    let child_wrap = create_element("div", vertical_tree_child_class(child))
     apply_node_visual_attrs(child_wrap, child, next_tone)
     append_child(
       child_wrap,
@@ -2416,6 +2416,9 @@ fn build_node_card_dom(
     classes.push("is-selected")
   }
   classes.push(render_node_style_class())
+  if is_branch_line_tree_note(node) {
+    classes.push("node--line-tree-note")
+  }
   if is_draggable {
     classes.push("is-draggable")
   }
@@ -2473,6 +2476,43 @@ fn node_title_class() -> String {
 }
 
 ///|
+fn is_branch_line_tree_mode() -> Bool {
+  app_state.style_mode == "line" && app_state.layout_mode == "tree"
+}
+
+///|
+fn is_branch_line_tree_note(node : OutlineNode) -> Bool {
+  is_branch_line_tree_mode() && node_has_note(node)
+}
+
+///|
+fn vertical_tree_class(node : OutlineNode) -> String {
+  if is_branch_line_tree_note(node) {
+    "vertical-tree vertical-tree--line-note"
+  } else {
+    "vertical-tree"
+  }
+}
+
+///|
+fn vertical_tree_children_class() -> String {
+  if is_branch_line_tree_mode() {
+    "vertical-tree__children vertical-tree__children--line-tree"
+  } else {
+    "vertical-tree__children"
+  }
+}
+
+///|
+fn vertical_tree_child_class(node : OutlineNode) -> String {
+  if is_branch_line_tree_note(node) {
+    "vertical-tree__child vertical-tree__child--line-note"
+  } else {
+    "vertical-tree__child"
+  }
+}
+
+///|
 fn build_node_body_dom(node : OutlineNode) -> @dom.Element? {
   if !node_has_note(node) {
     return None
@@ -2487,7 +2527,12 @@ fn build_node_body_dom(node : OutlineNode) -> @dom.Element? {
     )
     append_child(body, textarea)
   } else {
-    body.setClassName("node-body node-body-preview")
+    let line_tree_class = if is_branch_line_tree_mode() {
+      " node-body--line-tree"
+    } else {
+      ""
+    }
+    body.setClassName("node-body node-body-preview\{line_tree_class}")
     apply_theme_to_element(body)
     body.setAttribute("data-note-preview-for", node.flat_index.to_string())
     body.setAttribute("data-tip", "Double-click to edit note")
@@ -2775,7 +2820,8 @@ fn render_vertical_tree(
   let card = render_node_card(node, parent_index, is_root, tone_index)
   let after_slot = render_drop_slot(node.flat_index, parent_index, "after")
   let children_html = render_vertical_children(node, tone_index)
-  "<div class=\"vertical-tree\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\">\{before_slot}\{card}\{after_slot}\{children_html}</div>"
+  let class_name = vertical_tree_class(node)
+  "<div class=\"\{class_name}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\">\{before_slot}\{card}\{after_slot}\{children_html}</div>"
 }
 
 ///|
@@ -2800,12 +2846,14 @@ fn render_vertical_children(node : OutlineNode, tone_index : Int) -> String {
       next_tone,
     )
     let child_attrs = render_node_visual_attrs(child, next_tone)
+    let class_name = vertical_tree_child_class(child)
     child_parts.push(
-      "<div class=\"vertical-tree__child\"\{child_attrs}>\{child_html}</div>",
+      "<div class=\"\{class_name}\"\{child_attrs}>\{child_html}</div>",
     )
   }
   let body = child_parts.join("")
-  "<div class=\"vertical-tree__children\"\{wrapper_attrs}>\{body}</div>"
+  let class_name = vertical_tree_children_class()
+  "<div class=\"\{class_name}\"\{wrapper_attrs}>\{body}</div>"
 }
 
 ///|
@@ -2869,6 +2917,9 @@ fn render_node_card(
     classes.push("is-selected")
   }
   classes.push(render_node_style_class())
+  if is_branch_line_tree_note(node) {
+    classes.push("node--line-tree-note")
+  }
   if is_draggable {
     classes.push("is-draggable")
   }
@@ -2938,7 +2989,12 @@ fn render_node_body(node : OutlineNode) -> String {
     let value = escape_html(node.body.join("\n\n"))
     "<div class=\"node-body\"><textarea class=\"node-note-editor\" data-note-editor-for=\"\{node.flat_index}\" rows=\"4\">\{value}</textarea></div>"
   } else {
-    "<div class=\"node-body node-body-preview\" data-note-preview-for=\"\{node.flat_index}\" data-tip=\"Double-click to edit note\"><div class=\"markdown-blocks\">\{render_markdown_blocks_html(node.body)}</div></div>"
+    let line_tree_class = if is_branch_line_tree_mode() {
+      " node-body--line-tree"
+    } else {
+      ""
+    }
+    "<div class=\"node-body node-body-preview\{line_tree_class}\" data-note-preview-for=\"\{node.flat_index}\" data-tip=\"Double-click to edit note\"><div class=\"markdown-blocks\">\{render_markdown_blocks_html(node.body)}</div></div>"
   }
   "<div class=\"node-note-rail\">\{note_button}\{body}</div>"
 }

@@ -2012,6 +2012,12 @@ fn style_vertical_tree(element : @dom.Element) -> Unit {
   set_style(element, "flex-direction", "column")
   set_style(element, "align-items", "center")
   set_style(element, "gap", "18px")
+  set_style(element, "flex", "0 0 auto")
+  if has_class_name(element, "vertical-tree--line-note") {
+    set_style(element, "width", "290px")
+    set_style(element, "min-width", "290px")
+    set_style(element, "max-width", "290px")
+  }
 }
 
 ///|
@@ -2023,6 +2029,9 @@ fn style_vertical_tree_children(element : @dom.Element) -> Unit {
   set_style(element, "gap", "18px")
   set_style(element, "padding-top", "22px")
   set_style(element, "position", "relative")
+  if has_class_name(element, "vertical-tree__children--line-tree") {
+    set_style(element, "gap", "44px")
+  }
 }
 
 ///|
@@ -2030,7 +2039,13 @@ fn style_vertical_tree_child(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "justify-content", "center")
   set_style(element, "align-items", "flex-start")
-  set_style(element, "min-width", "0")
+  set_style(element, "flex", "0 0 auto")
+  set_style(element, "min-width", "auto")
+  if has_class_name(element, "vertical-tree__child--line-note") {
+    set_style(element, "width", "290px")
+    set_style(element, "min-width", "290px")
+    set_style(element, "max-width", "290px")
+  }
 }
 
 ///|
@@ -2225,6 +2240,11 @@ fn style_node_branch_line(element : @dom.Element) -> Unit {
     set_style(element, "border-bottom-width", "1.8px")
     set_style(element, "color", "#4d5969")
   }
+  if has_class_name(element, "node--line-tree-note") {
+    set_style(element, "width", "290px")
+    set_style(element, "min-width", "290px")
+    set_style(element, "max-width", "290px")
+  }
 }
 
 ///|
@@ -2350,26 +2370,16 @@ fn branch_line_title_font_size(node : @dom.Element) -> String {
 
 ///|
 fn style_node_body(element : @dom.Element) -> Unit {
+  if has_class_name(element, "node-body--line-tree") {
+    style_node_body_branch_line(element)
+    set_style(element, "width", "260px")
+    set_style(element, "max-width", "260px")
+    set_style(element, "max-height", "128px")
+    return
+  }
   match element.closest(".node--branch-line") {
     Some(_) => {
-      set_style(element, "display", "block")
-      set_style(element, "width", "100%")
-      set_style(element, "max-width", "100%")
-      set_style(element, "min-width", "0")
-      set_style(element, "box-sizing", "border-box")
-      set_style(element, "margin-top", "6px")
-      set_style(element, "padding", "0")
-      set_style(element, "border", "0")
-      set_style(element, "border-radius", "0")
-      set_style(element, "background", "transparent")
-      set_style(element, "color", "inherit")
-      set_style(element, "font-size", "14px")
-      set_style(element, "line-height", "1.35")
-      set_style(element, "white-space", "pre-wrap")
-      set_style(element, "word-break", "break-word")
-      set_style(element, "max-height", "160px")
-      set_style(element, "overflow", "auto")
-      set_style(element, "font-weight", "400")
+      style_node_body_branch_line(element)
       return
     }
     None => ()
@@ -2394,6 +2404,28 @@ fn style_node_body(element : @dom.Element) -> Unit {
   set_style(element, "max-height", "120px")
   set_style(element, "overflow", "auto")
   set_style(element, "font-weight", "500")
+}
+
+///|
+fn style_node_body_branch_line(element : @dom.Element) -> Unit {
+  set_style(element, "display", "block")
+  set_style(element, "width", "100%")
+  set_style(element, "max-width", "100%")
+  set_style(element, "min-width", "0")
+  set_style(element, "box-sizing", "border-box")
+  set_style(element, "margin-top", "6px")
+  set_style(element, "padding", "0")
+  set_style(element, "border", "0")
+  set_style(element, "border-radius", "0")
+  set_style(element, "background", "transparent")
+  set_style(element, "color", "inherit")
+  set_style(element, "font-size", "14px")
+  set_style(element, "line-height", "1.35")
+  set_style(element, "white-space", "pre-wrap")
+  set_style(element, "word-break", "break-word")
+  set_style(element, "max-height", "160px")
+  set_style(element, "overflow", "auto")
+  set_style(element, "font-weight", "400")
 }
 
 ///|
@@ -2470,12 +2502,34 @@ fn style_markdown_code_block(element : @dom.Element) -> Unit {
   set_style(element, "white-space", "pre")
   set_style(element, "overflow-x", "auto")
   set_style(element, "overflow-y", "hidden")
+  if branch_line_vertical_context(element) {
+    set_style(element, "white-space", "pre-wrap")
+    set_style(element, "overflow-wrap", "anywhere")
+    set_style(element, "word-break", "break-word")
+    set_style(element, "overflow-x", "hidden")
+  }
 }
 
 ///|
 fn style_markdown_code_block_code(element : @dom.Element) -> Unit {
   set_style(element, "display", "block")
   set_style(element, "min-width", "max-content")
+  if branch_line_vertical_context(element) {
+    set_style(element, "min-width", "0")
+    set_style(element, "max-width", "100%")
+    set_style(element, "white-space", "inherit")
+  }
+}
+
+///|
+fn branch_line_vertical_context(element : @dom.Element) -> Bool {
+  has_class_name(element, "markdown-code-block--line-tree") ||
+  has_class_name(element, "markdown-code-block__code--line-tree") ||
+  element.closest(".node-body--line-tree") is Some(_) ||
+  (
+    element.closest(".node--branch-line") is Some(_) &&
+    element.closest(".mindmap-stage--vertical") is Some(_)
+  )
 }
 
 ///|

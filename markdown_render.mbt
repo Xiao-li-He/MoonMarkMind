@@ -219,11 +219,11 @@ fn build_markdown_block_dom(block : MarkdownBlock) -> @dom.Element {
       paragraph
     }
     BlockCode(lang, code_text) => {
-      let pre = create_element("pre", "markdown-code-block")
+      let pre = create_element("pre", markdown_code_block_class())
       if lang.length() > 0 {
         pre.setAttribute("data-lang", lang)
       }
-      let code = create_element("code", "markdown-code-block__code")
+      let code = create_element("code", markdown_code_block_code_class())
       code.setTextContent(code_text)
       append_child(pre, code)
       pre
@@ -248,6 +248,24 @@ fn build_markdown_block_dom(block : MarkdownBlock) -> @dom.Element {
       math.setInnerHTML(render_latex_math_html(source).value)
       math
     }
+  }
+}
+
+///|
+fn markdown_code_block_class() -> String {
+  if is_branch_line_tree_mode() {
+    "markdown-code-block markdown-code-block--line-tree"
+  } else {
+    "markdown-code-block"
+  }
+}
+
+///|
+fn markdown_code_block_code_class() -> String {
+  if is_branch_line_tree_mode() {
+    "markdown-code-block__code markdown-code-block__code--line-tree"
+  } else {
+    "markdown-code-block__code"
   }
 }
 
@@ -304,12 +322,12 @@ fn render_markdown_block_safe_html(block : MarkdownBlock) -> SafeHtml {
       }
       safe_html_element(
         "pre",
-        class_name="markdown-code-block",
+        class_name=markdown_code_block_class(),
         attrs=lang_attr,
         children=[
           safe_html_element(
             "code",
-            class_name="markdown-code-block__code",
+            class_name=markdown_code_block_code_class(),
             attrs="",
             children=[safe_html_text(code_text)],
           ),
