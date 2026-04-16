@@ -2196,8 +2196,8 @@ fn style_node_fill(element : @dom.Element) -> Unit {
 ///|
 fn style_node_branch_line(element : @dom.Element) -> Unit {
   set_style(element, "display", "inline-flex")
-  set_style(element, "align-items", "flex-start")
-  set_style(element, "justify-content", "flex-end")
+  set_style(element, "align-items", "center")
+  set_style(element, "justify-content", "center")
   set_style(element, "gap", "0")
   set_style(element, "min-width", "48px")
   set_style(element, "max-width", "360px")
@@ -2210,11 +2210,11 @@ fn style_node_branch_line(element : @dom.Element) -> Unit {
   set_style(element, "background", "transparent")
   set_style(element, "box-shadow", "none")
   set_style(element, "color", "#596475")
-  set_style(element, "text-align", "left")
+  set_style(element, "text-align", "center")
   match element.closest(".branch-item--left, .single-right-tree__node--left") {
     Some(_) => {
-      set_style(element, "align-items", "flex-end")
-      set_style(element, "text-align", "right")
+      set_style(element, "align-items", "center")
+      set_style(element, "text-align", "center")
     }
     None => ()
   }
