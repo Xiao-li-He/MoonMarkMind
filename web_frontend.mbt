@@ -197,8 +197,10 @@ fn on_layout_change(mode : String) -> Unit {
 
 ///|
 fn on_style_change(mode : String) -> Unit {
+  let root_anchor = capture_mindmap_current_root_anchor()
   app_state.style_mode = normalize_style_mode(mode)
   render_ui()
+  schedule_mindmap_preserve_root_anchor(root_anchor)
 }
 
 ///|
