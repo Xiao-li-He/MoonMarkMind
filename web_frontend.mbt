@@ -925,6 +925,9 @@ fn default_root_split_count(root : OutlineNode) -> Int {
 
 ///|
 fn save_editor(node_index : Int, title : String) -> Unit {
+  if editor_snapshot_node.val != node_index {
+    return
+  }
   let next_markdown = rename_heading(
     editor_draft_markdown.val,
     node_index,
@@ -1050,6 +1053,9 @@ fn sync_note_editor_draft(node_index : Int, body_text : String) -> Unit {
 
 ///|
 fn save_note_editor(node_index : Int, body_text : String) -> Unit {
+  if note_editor_snapshot_node.val != node_index {
+    return
+  }
   sync_note_editor_draft(node_index, body_text)
   if note_editor_snapshot_markdown.val != app_state.markdown {
     app_state.undo_stack.push(note_editor_snapshot_markdown.val)

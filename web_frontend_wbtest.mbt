@@ -400,6 +400,21 @@ test "node editor commit adds single global undo entry" {
 }
 
 ///|
+test "node editor duplicate save after commit does not push empty undo state" {
+  reset_frontend_test_state()
+  begin_edit_node(1)
+
+  sync_editor_draft(1, "Alpha12")
+  save_editor(1, "Alpha12")
+  save_editor(1, "Alpha12")
+
+  assert_eq(app_state.undo_stack.length(), 1)
+  handle_undo()
+  assert_eq(app_state.markdown.length() > 0, true)
+  assert_eq(title_at(1), "Alpha")
+}
+
+///|
 test "node editor cancel restores original markdown without global history" {
   reset_frontend_test_state()
   begin_edit_node(1)
@@ -729,6 +744,22 @@ test "insert note opens editor and commits heading markdown body" {
   save_note_editor(1, "Alpha note")
   assert_eq(app_state.editing_note_node, -2)
   assert_eq(app_state.undo_stack.length(), 1)
+}
+
+///|
+test "note editor duplicate save after commit does not push empty undo state" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+  handle_insert_note()
+
+  sync_note_editor_draft(1, "Alpha note")
+  save_note_editor(1, "Alpha note")
+  save_note_editor(1, "Alpha note")
+
+  assert_eq(app_state.undo_stack.length(), 1)
+  handle_undo()
+  assert_eq(app_state.markdown.length() > 0, true)
+  assert_eq(app_state.markdown, "# Root\n## Alpha\n## Beta")
 }
 
 ///|
