@@ -1273,11 +1273,17 @@ fn handle_undo() -> Unit {
   if app_state.undo_stack.length() == 0 {
     return
   }
+  let expanded_node = app_state.selected_node
   let last_index = app_state.undo_stack.length() - 1
   let previous = app_state.undo_stack[last_index]
   app_state.undo_stack = slice_strings(app_state.undo_stack, 0, last_index)
   app_state.redo_stack.push(app_state.markdown)
   load_markdown(previous, false)
+  expand_node_path(expanded_node)
+  sync_detail_customized()
+  if app_state.started {
+    render_ui()
+  }
 }
 
 ///|
@@ -2983,6 +2989,29 @@ fn expand_node(node_index : Int) -> Unit {
     return
   }
   app_state.collapsed = remove_int(app_state.collapsed, node_index)
+}
+
+///|
+fn expand_node_path(node_index : Int) -> Unit {
+  if node_index < 0 {
+    return
+  }
+  expand_node(node_index)
+  ignore(expand_ancestors_to_node(app_state.root, node_index))
+}
+
+///|
+fn expand_ancestors_to_node(node : OutlineNode, target : Int) -> Bool {
+  if node.flat_index == target {
+    return true
+  }
+  for child in node.children {
+    if expand_ancestors_to_node(child, target) {
+      expand_node(node.flat_index)
+      return true
+    }
+  }
+  false
 }
 
 ///|

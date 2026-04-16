@@ -400,6 +400,35 @@ test "node editor commit adds single global undo entry" {
 }
 
 ///|
+test "undo expands collapsed selected node after edit commit" {
+  reset_navigation_test_state()
+  begin_edit_node(1)
+  sync_editor_draft(1, "Parent2")
+  save_editor(1, "Parent2")
+  app_state.collapsed = [1]
+
+  handle_undo()
+
+  assert_eq(title_at(1), "Parent")
+  assert_eq(is_collapsed(1), false)
+}
+
+///|
+test "undo expands collapsed ancestors of selected edited node" {
+  reset_navigation_test_state()
+  begin_edit_node(2)
+  sync_editor_draft(2, "Child A2")
+  save_editor(2, "Child A2")
+  app_state.collapsed = [1, 2]
+
+  handle_undo()
+
+  assert_eq(title_at(2), "Child A")
+  assert_eq(is_collapsed(1), false)
+  assert_eq(is_collapsed(2), false)
+}
+
+///|
 test "node editor duplicate save after commit does not push empty undo state" {
   reset_frontend_test_state()
   begin_edit_node(1)
