@@ -2448,9 +2448,27 @@ fn build_node_title_dom(node : OutlineNode, is_editing : Bool) -> @dom.Element {
     @dom.HTMLInputElement::cast_from_element(input).value = node.title
     input
   } else {
-    let title = create_element("strong", "node-title")
+    let title = create_element("strong", node_title_class())
+    title.setAttribute(
+      "data-title-depth",
+      relative_node_depth(node).to_string(),
+    )
+    title.setAttribute(
+      "data-title-center",
+      (node.flat_index == app_state.root.flat_index).to_string(),
+    )
+    apply_theme_to_element(title)
     append_child(title, build_markdown_title_dom(node.title))
     title
+  }
+}
+
+///|
+fn node_title_class() -> String {
+  if app_state.style_mode == "line" {
+    "node-title node-title--scaled node-title--line"
+  } else {
+    "node-title node-title--scaled node-title--fill"
   }
 }
 
@@ -2899,7 +2917,10 @@ fn render_node_title(node : OutlineNode, is_editing : Bool) -> String {
     return "<input class=\"node-editor\" data-editor-for=\"\{node.flat_index}\" type=\"text\" value=\"\{value}\" />"
   }
   let title = render_markdown_title_html(node.title)
-  "<strong>\{title}</strong>"
+  let class_name = node_title_class()
+  let depth = relative_node_depth(node)
+  let center = node.flat_index == app_state.root.flat_index
+  "<strong class=\"\{class_name}\" data-title-depth=\"\{depth}\" data-title-center=\"\{center}\">\{title}</strong>"
 }
 
 ///|

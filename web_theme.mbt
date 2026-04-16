@@ -2246,19 +2246,29 @@ fn style_node_kicker(element : @dom.Element) -> Unit {
 
 ///|
 fn style_node_title(element : @dom.Element) -> Unit {
+  if has_class_name(element, "node-title--scaled") {
+    set_style(element, "display", "block")
+    set_style(element, "font-size", scaled_node_title_font_size(element))
+    set_style(
+      element,
+      "line-height",
+      if has_class_name(element, "node-title--line") {
+        "1.18"
+      } else {
+        "1.28"
+      },
+    )
+    set_style(element, "font-weight", "400")
+    set_style(element, "color", "inherit")
+    set_style(element, "white-space", "normal")
+    set_style(element, "word-break", "break-word")
+    return
+  }
   match element.closest(".node") {
     Some(node) => {
       if has_class_name(node, "node--branch-line") {
         set_style(element, "display", "block")
-        set_style(
-          element,
-          "font-size",
-          if has_class_name(node, "node--center") {
-            "20px"
-          } else {
-            "18px"
-          },
-        )
+        set_style(element, "font-size", branch_line_title_font_size(node))
         set_style(element, "line-height", "1.18")
         set_style(element, "font-weight", "400")
         set_style(element, "color", "inherit")
@@ -2306,6 +2316,36 @@ fn style_node_title(element : @dom.Element) -> Unit {
   set_style(element, "line-height", "1.3")
   set_style(element, "font-weight", "700")
   set_style(element, "color", "inherit")
+}
+
+///|
+fn scaled_node_title_font_size(element : @dom.Element) -> String {
+  if element.getAttribute("data-title-center").unwrap_or("false") == "true" {
+    "22px"
+  } else {
+    match element.getAttribute("data-title-depth").unwrap_or("0") {
+      "1" => "20px"
+      "2" => "18px"
+      "3" => "16px"
+      "4" => "15px"
+      _ => "14px"
+    }
+  }
+}
+
+///|
+fn branch_line_title_font_size(node : @dom.Element) -> String {
+  if has_class_name(node, "node--center") {
+    "22px"
+  } else {
+    match node.getAttribute("data-depth").unwrap_or("0") {
+      "1" => "20px"
+      "2" => "18px"
+      "3" => "16px"
+      "4" => "15px"
+      _ => "14px"
+    }
+  }
 }
 
 ///|
