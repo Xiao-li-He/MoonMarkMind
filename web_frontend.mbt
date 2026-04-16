@@ -41,7 +41,7 @@ let app_state : AppState = AppState::{
   editing_node: -2,
   editing_note_node: -2,
   layout_mode: "logic",
-  style_mode: "line",
+  style_mode: "full",
   detail_level: "all",
   detail_customized: false,
   left_panel_percent: 33,
@@ -2983,7 +2983,7 @@ fn contour_node_height(node : OutlineNode) -> Int {
   }
   let title_chars = if is_center {
     15
-  } else if app_state.style_mode == "fill" {
+  } else if app_state.style_mode == "line" {
     18
   } else {
     20
@@ -3006,7 +3006,7 @@ fn contour_note_height(node : OutlineNode) -> Int {
     return 0
   }
   let mut line_count = 0
-  let wrap_chars = if app_state.style_mode == "fill" { 22 } else { 20 }
+  let wrap_chars = if app_state.style_mode == "line" { 22 } else { 20 }
   for block in node.body {
     let wrapped = contour_wrap_lines(block, wrap_chars)
     line_count += if wrapped > 0 { wrapped } else { 1 }
@@ -3228,8 +3228,9 @@ fn normalize_layout_mode(mode : String) -> String {
 ///|
 fn normalize_style_mode(mode : String) -> String {
   match mode {
-    "fill" => "fill"
-    _ => "line"
+    "line" => "line"
+    "full" | "fill" => "full"
+    _ => "full"
   }
 }
 
@@ -3248,7 +3249,7 @@ fn normalize_detail_level(level : String) -> String {
 ///|
 fn render_stage_class() -> String {
   let classes = ["mindmap-stage"]
-  if app_state.style_mode == "fill" {
+  if app_state.style_mode == "line" {
     classes.push("mindmap-stage--fill")
   } else {
     classes.push("mindmap-stage--line")
@@ -3258,7 +3259,7 @@ fn render_stage_class() -> String {
 
 ///|
 fn render_node_style_class() -> String {
-  if app_state.style_mode == "fill" {
+  if app_state.style_mode == "line" {
     "node--fill"
   } else {
     "node--line"
