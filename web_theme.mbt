@@ -2293,7 +2293,15 @@ fn style_node_title(element : @dom.Element) -> Unit {
         "1.28"
       },
     )
-    set_style(element, "font-weight", "400")
+    set_style(
+      element,
+      "font-weight",
+      if element.getAttribute("data-title-center").unwrap_or("false") == "true" {
+        "700"
+      } else {
+        "400"
+      },
+    )
     set_style(element, "color", "inherit")
     set_style(element, "white-space", "normal")
     set_style(element, "word-break", "break-word")
