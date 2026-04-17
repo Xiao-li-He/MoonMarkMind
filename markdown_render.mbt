@@ -6,6 +6,7 @@ priv enum MarkdownInline {
   InlineCode(String)
   InlineStrike(String)
   InlineLink(String, String)
+  InlineImage(String, String)
   InlineMath(String)
 }
 
@@ -104,6 +105,18 @@ fn build_markdown_inline_piece_dom(inline : MarkdownInline) -> @dom.Element {
         span.setTextContent(text)
         span
       }
+    InlineImage(alt, src) =>
+      if is_safe_markdown_image_src(src) {
+        let image = create_element("img", "markdown-image")
+        image.setAttribute("src", src.trim().to_string())
+        image.setAttribute("alt", alt)
+        image.setAttribute("loading", "lazy")
+        image
+      } else {
+        let span = create_element("span", "markdown-text")
+        span.setTextContent(alt)
+        span
+      }
     InlineMath(source) => {
       let math = create_element("span", "markdown-math markdown-math--inline")
       math.setInnerHTML(render_latex_math_html(source).value)
@@ -190,6 +203,17 @@ fn render_markdown_inline_piece_safe_html(inline : MarkdownInline) -> SafeHtml {
         )
       } else {
         safe_html_text(text)
+      }
+    InlineImage(alt, src) =>
+      if is_safe_markdown_image_src(src) {
+        safe_html_element(
+          "img",
+          class_name="markdown-image",
+          attrs=" src=\"\{escape_html_attribute(src.trim().to_string())}\" alt=\"\{escape_html_attribute(alt)}\" loading=\"lazy\"",
+          children=[],
+        )
+      } else {
+        safe_html_text(alt)
       }
     InlineMath(source) =>
       safe_html_element(
@@ -908,6 +932,12 @@ fn parse_markdown_inline_at(
       None => ()
     }
   }
+  if has_markdown_at(source, cursor, "![") {
+    match parse_markdown_image_at(source, cursor) {
+      Some(image) => return Some(image)
+      None => ()
+    }
+  }
   if has_markdown_at(source, cursor, "[") {
     match parse_markdown_link_at(source, cursor) {
       Some(link) => return Some(link)
@@ -915,6 +945,30 @@ fn parse_markdown_inline_at(
     }
   }
   None
+}
+
+///|
+fn parse_markdown_image_at(
+  source : String,
+  cursor : Int,
+) -> (Int, MarkdownInline)? {
+  match find_markdown_from(source, "](", cursor + 2) {
+    Some(close_alt) => {
+      let src_start = close_alt + 2
+      match find_markdown_from(source, ")", src_start) {
+        Some(close_src) =>
+          if close_alt >= cursor + 2 && close_src > src_start {
+            let alt = source[cursor + 2:close_alt].to_string()
+            let src = source[src_start:close_src].to_string()
+            Some((close_src + 1, InlineImage(alt, src)))
+          } else {
+            None
+          }
+        None => None
+      }
+    }
+    None => None
+  }
 }
 
 ///|
@@ -966,4 +1020,21 @@ fn is_safe_markdown_href(href : String) -> Bool {
   trimmed.has_prefix("http://") ||
   trimmed.has_prefix("mailto:") ||
   trimmed.has_prefix("#")
+}
+
+///|
+fn is_safe_markdown_image_src(src : String) -> Bool {
+  let trimmed = src.trim().to_string()
+  if trimmed.length() == 0 {
+    return false
+  }
+  let lower = trimmed.to_lower()
+  if lower.has_prefix("https://") ||
+    lower.has_prefix("http://") ||
+    lower.has_prefix("./") ||
+    lower.has_prefix("../") ||
+    lower.has_prefix("/") {
+    return true
+  }
+  !trimmed.contains(":")
 }

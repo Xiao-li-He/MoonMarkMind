@@ -100,6 +100,35 @@ test "markdown inline renderer degrades unsafe links to text" {
 }
 
 ///|
+test "markdown inline renderer previews image syntax" {
+  let html = render_markdown_inline_html("![Logo](image.png)")
+  assert_eq(html.contains("class=\"markdown-image\""), true)
+  assert_eq(html.contains("src=\"image.png\""), true)
+  assert_eq(html.contains("alt=\"Logo\""), true)
+  assert_eq(html.contains("markdown-link"), false)
+}
+
+///|
+test "markdown inline renderer previews image with empty alt" {
+  let html = render_markdown_inline_html(
+    "![](https://markmap.js.org/favicon.png)",
+  )
+  assert_eq(html.contains("class=\"markdown-image\""), true)
+  assert_eq(html.contains("src=\"https://markmap.js.org/favicon.png\""), true)
+  assert_eq(html.contains("alt=\"\""), true)
+  assert_eq(html.contains("markdown-link"), false)
+}
+
+///|
+test "markdown inline renderer degrades unsafe image sources" {
+  let html = render_markdown_inline_html("![Bad](javascript:alert(1))")
+  assert_eq(html.contains("<img"), false)
+  assert_eq(html.contains("src="), false)
+  assert_eq(html.contains("Bad"), true)
+  assert_eq(html.contains("javascript:"), false)
+}
+
+///|
 test "markdown inline renderer renders latex math" {
   let html = render_markdown_inline_html("Value $x^2 + \\alpha$")
   assert_eq(

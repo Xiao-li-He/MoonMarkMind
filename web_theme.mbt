@@ -445,6 +445,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "markdown-link") {
     style_markdown_link(element)
   }
+  if has_class_name(element, "markdown-image") {
+    style_markdown_image(element)
+  }
   if has_class_name(element, "markdown-code-block") {
     style_markdown_code_block(element)
   }
@@ -2631,6 +2634,15 @@ fn style_markdown_link(element : @dom.Element) -> Unit {
   set_style(element, "color", "#2c70ce")
   set_style(element, "text-decoration", "underline")
   set_style(element, "text-underline-offset", "2px")
+}
+
+///|
+fn style_markdown_image(element : @dom.Element) -> Unit {
+  set_style(element, "display", "block")
+  set_style(element, "max-width", "100%")
+  set_style(element, "height", "auto")
+  set_style(element, "border-radius", "6px")
+  set_style(element, "object-fit", "contain")
 }
 
 ///|
