@@ -490,6 +490,30 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "markdown-math-sqrt__radicand") {
     style_markdown_math_sqrt_radicand(element)
   }
+  if has_class_name(element, "markdown-math-lines") {
+    style_markdown_math_lines(element)
+  }
+  if has_class_name(element, "markdown-math-row") {
+    style_markdown_math_row(element)
+  }
+  if has_class_name(element, "markdown-math-row--aligned") {
+    style_markdown_math_row_aligned(element)
+  }
+  if has_class_name(element, "markdown-math-align-cell") {
+    style_markdown_math_align_cell(element)
+  }
+  if has_class_name(element, "markdown-math-scripted") {
+    style_markdown_math_scripted(element)
+  }
+  if has_class_name(element, "markdown-math-sqrt__index") {
+    style_markdown_math_sqrt_index(element)
+  }
+  if has_class_name(element, "markdown-math-text") {
+    style_markdown_math_text(element)
+  }
+  if has_class_name(element, "markdown-math-op") {
+    style_markdown_math_op(element)
+  }
   if has_class_name(element, "markdown-task") {
     style_markdown_task(element)
   }
@@ -2864,6 +2888,68 @@ fn style_markdown_math_sqrt_symbol(element : @dom.Element) -> Unit {
 fn style_markdown_math_sqrt_radicand(element : @dom.Element) -> Unit {
   set_style(element, "border-top", "1px solid currentColor")
   set_style(element, "padding", "0 2px")
+}
+
+///|
+fn style_markdown_math_lines(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-flex")
+  set_style(element, "flex-direction", "column")
+  set_style(element, "align-items", "center")
+  set_style(element, "gap", "4px")
+  set_style(element, "max-width", "100%")
+}
+
+///|
+fn style_markdown_math_row(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-flex")
+  set_style(element, "align-items", "center")
+  set_style(element, "justify-content", "center")
+  set_style(element, "white-space", "nowrap")
+}
+
+///|
+fn style_markdown_math_row_aligned(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-grid")
+  set_style(element, "grid-auto-flow", "column")
+  set_style(element, "grid-auto-columns", "max-content")
+  set_style(element, "column-gap", "6px")
+  set_style(element, "align-items", "center")
+  set_style(element, "justify-content", "center")
+}
+
+///|
+fn style_markdown_math_align_cell(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-flex")
+  set_style(element, "align-items", "center")
+  set_style(element, "white-space", "nowrap")
+}
+
+///|
+fn style_markdown_math_scripted(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-flex")
+  set_style(element, "align-items", "center")
+  set_style(element, "vertical-align", "middle")
+}
+
+///|
+fn style_markdown_math_sqrt_index(element : @dom.Element) -> Unit {
+  set_style(element, "font-size", "0.62em")
+  set_style(element, "line-height", "1")
+  set_style(element, "align-self", "flex-start")
+  set_style(element, "margin-right", "-2px")
+}
+
+///|
+fn style_markdown_math_text(element : @dom.Element) -> Unit {
+  set_style(element, "font-family", "inherit")
+  set_style(element, "font-style", "normal")
+}
+
+///|
+fn style_markdown_math_op(element : @dom.Element) -> Unit {
+  set_style(element, "font-family", "inherit")
+  set_style(element, "font-style", "normal")
+  set_style(element, "padding", "0 1px")
 }
 
 ///|

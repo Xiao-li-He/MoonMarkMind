@@ -119,7 +119,8 @@ fn build_markdown_inline_piece_dom(inline : MarkdownInline) -> @dom.Element {
       }
     InlineMath(source) => {
       let math = create_element("span", "markdown-math markdown-math--inline")
-      math.setInnerHTML(render_latex_math_html(source).value)
+      math.setInnerHTML(render_latex_math_inline_html(source).value)
+      apply_theme_to_subtree(math)
       math
     }
   }
@@ -220,7 +221,7 @@ fn render_markdown_inline_piece_safe_html(inline : MarkdownInline) -> SafeHtml {
         "span",
         class_name="markdown-math markdown-math--inline",
         attrs="",
-        children=[render_latex_math_html(source)],
+        children=[render_latex_math_inline_html(source)],
       )
   }
 }
@@ -269,9 +270,18 @@ fn build_markdown_block_dom(block : MarkdownBlock) -> @dom.Element {
     BlockTable(header, rows) => build_markdown_table_dom(header, rows)
     BlockMath(source) => {
       let math = create_element("div", "markdown-math markdown-math--block")
-      math.setInnerHTML(render_latex_math_html(source).value)
+      math.setInnerHTML(render_latex_math_block_html(source).value)
+      apply_theme_to_subtree(math)
       math
     }
+  }
+}
+
+///|
+fn apply_theme_to_subtree(root : @dom.Element) -> Unit {
+  apply_theme_to_element(root)
+  for element in root.querySelectorAll("*") {
+    apply_theme_to_element(element)
   }
 }
 
@@ -382,7 +392,7 @@ fn render_markdown_block_safe_html(block : MarkdownBlock) -> SafeHtml {
         "div",
         class_name="markdown-math markdown-math--block",
         attrs="",
-        children=[render_latex_math_html(source)],
+        children=[render_latex_math_block_html(source)],
       )
   }
 }
@@ -434,203 +444,6 @@ fn safe_html_join(parts : Array[SafeHtml]) -> SafeHtml {
     values.push(part.value)
   }
   SafeHtml::{ value: values.join("") }
-}
-
-///|
-fn render_latex_math_html(source : String) -> SafeHtml {
-  SafeHtml::{ value: render_latex_math_fragment(source.trim().to_string()) }
-}
-
-///|
-fn render_latex_math_fragment(source : String) -> String {
-  let parts = []
-  let mut cursor = 0
-  while cursor < source.length() {
-    if has_markdown_at(source, cursor, "\\frac") {
-      match read_latex_group(source, cursor + 5) {
-        Some((numerator, after_numerator)) =>
-          match read_latex_group(source, after_numerator) {
-            Some((denominator, after_denominator)) => {
-              parts.push(
-                "<span class=\"markdown-math-frac\"><span class=\"markdown-math-frac__num\">\{render_latex_math_fragment(numerator)}</span><span class=\"markdown-math-frac__den\">\{render_latex_math_fragment(denominator)}</span></span>",
-              )
-              cursor = after_denominator
-              continue
-            }
-            None => ()
-          }
-        None => ()
-      }
-    }
-    if has_markdown_at(source, cursor, "\\sqrt") {
-      match read_latex_group(source, cursor + 5) {
-        Some((radicand, after_radicand)) => {
-          parts.push(
-            "<span class=\"markdown-math-sqrt\"><span class=\"markdown-math-sqrt__symbol\">√</span><span class=\"markdown-math-sqrt__radicand\">\{render_latex_math_fragment(radicand)}</span></span>",
-          )
-          cursor = after_radicand
-          continue
-        }
-        None => ()
-      }
-    }
-    if source[cursor] == '^' || source[cursor] == '_' {
-      let is_sup = source[cursor] == '^'
-      match read_latex_atom(source, cursor + 1) {
-        Some((atom, after_atom)) => {
-          parts.push(
-            if is_sup {
-              "<sup>\{atom}</sup>"
-            } else {
-              "<sub>\{atom}</sub>"
-            },
-          )
-          cursor = after_atom
-          continue
-        }
-        None => ()
-      }
-    }
-    if source[cursor] == '\\' {
-      let (command, after_command) = read_latex_command(source, cursor + 1)
-      if command.length() > 0 {
-        parts.push(safe_html_text(latex_command_symbol(command)).value)
-        cursor = after_command
-        continue
-      }
-    }
-    if source[cursor] == '{' {
-      match read_latex_group(source, cursor) {
-        Some((group, after_group)) => {
-          parts.push(render_latex_math_fragment(group))
-          cursor = after_group
-          continue
-        }
-        None => ()
-      }
-    }
-    if source[cursor] == '}' {
-      cursor += 1
-    } else {
-      parts.push(safe_html_text(source[cursor:cursor + 1].to_string()).value)
-      cursor += 1
-    }
-  }
-  parts.join("")
-}
-
-///|
-fn read_latex_atom(source : String, start : Int) -> (String, Int)? {
-  let cursor = skip_latex_spaces(source, start)
-  if cursor >= source.length() {
-    return None
-  }
-  if source[cursor] == '{' {
-    match read_latex_group(source, cursor) {
-      Some((group, after_group)) =>
-        Some((render_latex_math_fragment(group), after_group))
-      None => None
-    }
-  } else if source[cursor] == '\\' {
-    let (command, after_command) = read_latex_command(source, cursor + 1)
-    if command.length() == 0 {
-      Some((safe_html_text("\\").value, cursor + 1))
-    } else {
-      Some((safe_html_text(latex_command_symbol(command)).value, after_command))
-    }
-  } else {
-    Some(
-      (safe_html_text(source[cursor:cursor + 1].to_string()).value, cursor + 1),
-    )
-  }
-}
-
-///|
-fn read_latex_group(source : String, start : Int) -> (String, Int)? {
-  let cursor = skip_latex_spaces(source, start)
-  if cursor >= source.length() || source[cursor] != '{' {
-    return None
-  }
-  let mut depth = 1
-  let mut index = cursor + 1
-  while index < source.length() {
-    if source[index] == '{' {
-      depth += 1
-    } else if source[index] == '}' {
-      depth -= 1
-      if depth == 0 {
-        return Some((source[cursor + 1:index].to_string(), index + 1))
-      }
-    }
-    index += 1
-  }
-  None
-}
-
-///|
-fn skip_latex_spaces(source : String, start : Int) -> Int {
-  let mut cursor = start
-  while cursor < source.length() && source[cursor] == ' ' {
-    cursor += 1
-  }
-  cursor
-}
-
-///|
-fn read_latex_command(source : String, start : Int) -> (String, Int) {
-  let mut cursor = start
-  while cursor < source.length() && is_ascii_letter(source[cursor]) {
-    cursor += 1
-  }
-  (source[start:cursor].to_string(), cursor)
-}
-
-///|
-fn is_ascii_letter(ch : UInt16) -> Bool {
-  (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
-}
-
-///|
-fn latex_command_symbol(command : String) -> String {
-  match command {
-    "alpha" => "α"
-    "beta" => "β"
-    "gamma" => "γ"
-    "delta" => "δ"
-    "epsilon" => "ε"
-    "theta" => "θ"
-    "lambda" => "λ"
-    "mu" => "μ"
-    "pi" => "π"
-    "rho" => "ρ"
-    "sigma" => "σ"
-    "tau" => "τ"
-    "phi" => "φ"
-    "omega" => "ω"
-    "Gamma" => "Γ"
-    "Delta" => "Δ"
-    "Theta" => "Θ"
-    "Lambda" => "Λ"
-    "Pi" => "Π"
-    "Sigma" => "Σ"
-    "Phi" => "Φ"
-    "Omega" => "Ω"
-    "times" => "×"
-    "cdot" => "·"
-    "pm" => "±"
-    "le" => "≤"
-    "ge" => "≥"
-    "neq" => "≠"
-    "approx" => "≈"
-    "infty" => "∞"
-    "sum" => "∑"
-    "prod" => "∏"
-    "int" => "∫"
-    "rightarrow" => "→"
-    "leftarrow" => "←"
-    "to" => "→"
-    _ => command
-  }
 }
 
 ///|
@@ -881,9 +694,10 @@ fn parse_markdown_inline_at(
     match find_markdown_from(source, "$", cursor + 1) {
       Some(end_) =>
         if end_ > cursor + 1 {
-          return Some(
-            (end_ + 1, InlineMath(source[cursor + 1:end_].to_string())),
-          )
+          let math_source = source[cursor + 1:end_].to_string()
+          if math_source.trim().to_string().length() > 0 {
+            return Some((end_ + 1, InlineMath(math_source)))
+          }
         }
       None => ()
     }

@@ -164,7 +164,70 @@ test "markdown inline renderer renders latex math" {
     true,
   )
   assert_eq(html.contains("<sup>2</sup>"), true)
-  assert_eq(html.contains("α"), true)
+  assert_eq(html.contains("&alpha;"), true)
+}
+
+///|
+test "markdown inline renderer renders common latex formula subset" {
+  let html = render_markdown_inline_html(
+    "Formula $x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$ and $x_i^2$",
+  )
+  assert_eq(html.contains("class=\"markdown-math-frac\""), true)
+  assert_eq(html.contains("class=\"markdown-math-sqrt\""), true)
+  assert_eq(html.contains("&plusmn;"), true)
+  assert_eq(html.contains("<sub>i</sub>"), true)
+  assert_eq(html.contains("<sup>2</sup>"), true)
+}
+
+///|
+test "markdown inline renderer renders latex over fractions" {
+  let html = render_markdown_inline_html(
+    "Formula $x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}$",
+  )
+  assert_eq(html.contains("class=\"markdown-math-frac\""), true)
+  assert_eq(html.contains("class=\"markdown-math-sqrt\""), true)
+  assert_eq(html.contains("&plusmn;"), true)
+  assert_eq(html.contains("\\over"), false)
+}
+
+///|
+test "markdown inline renderer exposes latex math subtree classes" {
+  let html0 = render_markdown_inline_html(
+    "公式 $x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}$",
+  )
+  let _ = html0
+  let html = render_markdown_inline_html(
+    "Formula $x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}$",
+  )
+  assert_eq(html.contains("markdown-math-frac"), true)
+  assert_eq(html.contains("markdown-math-sqrt"), true)
+  assert_eq(html.contains("markdown-math-frac__num"), true)
+  assert_eq(html.contains("markdown-math-frac__den"), true)
+  assert_eq(html.contains("\\over"), false)
+}
+
+///|
+test "markdown inline renderer keeps invalid math delimiters as text" {
+  let unclosed = render_markdown_inline_html("Value $x^2")
+  assert_eq(unclosed.contains("markdown-math"), false)
+  assert_eq(unclosed.contains("$x^2"), true)
+  let empty = render_markdown_inline_html("Value $ $")
+  assert_eq(empty.contains("markdown-math"), false)
+  assert_eq(empty.contains("$ $"), true)
+  let code = render_markdown_inline_html("`$x^2$`")
+  assert_eq(code.contains("markdown-math"), false)
+  assert_eq(code.contains("markdown-inline-code"), true)
+}
+
+///|
+test "markdown inline renderer escapes latex math text" {
+  let html = render_markdown_inline_html(
+    "$<img src=x onerror=alert(1)> + \\text{<script>}$",
+  )
+  assert_eq(html.contains("<img"), false)
+  assert_eq(html.contains("<script>"), false)
+  assert_eq(html.contains("&lt;img src=x onerror=alert(1)&gt;"), true)
+  assert_eq(html.contains("&lt;script&gt;"), true)
 }
 
 ///|
@@ -208,6 +271,28 @@ test "markdown block renderer renders latex math" {
   assert_eq(html.contains("<sub>1</sub>"), true)
   assert_eq(html.contains("<sup>2</sup>"), true)
   assert_eq(html.contains("markdown-math-sqrt__symbol"), true)
+}
+
+///|
+test "markdown block renderer exposes latex math subtree classes" {
+  let html = render_markdown_blocks_html(["$$\\frac{a}{b}$$"])
+  let _ = html
+  assert_eq(html.contains("markdown-math-frac"), true)
+  assert_eq(html.contains("markdown-math-frac__num"), true)
+  assert_eq(html.contains("markdown-math-frac__den"), true)
+}
+
+///|
+test "markdown block renderer preserves latex math rows and alignment" {
+  let html = render_markdown_blocks_html([
+    "$$\na &= b + c \\\\\nx &= {-b \\pm \\sqrt{b^2-4ac} \\over 2a}\n$$",
+  ])
+  assert_eq(html.contains("class=\"markdown-math-lines\""), true)
+  assert_eq(html.contains("markdown-math-row--aligned"), true)
+  assert_eq(html.contains("markdown-math-align-cell"), true)
+  assert_eq(html.contains("class=\"markdown-math-frac\""), true)
+  assert_eq(html.contains("class=\"markdown-math-sqrt\""), true)
+  assert_eq(html.contains("\\over"), false)
 }
 
 ///|
