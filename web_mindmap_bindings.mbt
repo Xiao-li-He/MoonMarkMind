@@ -785,10 +785,6 @@ fn bind_mindmap_ui(
   keydown_callback : (@dom.KeyboardEvent) -> Unit,
   focusout_callback : (@dom.FocusEvent) -> Unit,
   input_callback : (@dom.Event) -> Unit,
-  dragstart_callback : (@dom.DragEvent) -> Unit,
-  dragend_callback : (@dom.DragEvent) -> Unit,
-  dragover_callback : (@dom.DragEvent) -> Unit,
-  drop_callback : (@dom.DragEvent) -> Unit,
 ) -> Unit {
   match get_element("#mindmap") {
     Some(mindmap) => {
@@ -869,18 +865,6 @@ fn bind_mindmap_ui(
         },
         passive=false,
       )
-      mindmap
-      .as_event_target()
-      .on("dragstart", fn(raw) { dragstart_callback(raw.cast()) })
-      mindmap
-      .as_event_target()
-      .on("dragend", fn(raw) { dragend_callback(raw.cast()) })
-      mindmap
-      .as_event_target()
-      .on("dragover", fn(raw) { dragover_callback(raw.cast()) })
-      mindmap
-      .as_event_target()
-      .on("drop", fn(raw) { drop_callback(raw.cast()) })
       mindmap
       .as_event_target()
       .on("mousedown", fn(raw) {

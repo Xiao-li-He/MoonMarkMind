@@ -23,8 +23,6 @@ priv struct AppState {
   mut left_panel_percent : Int
   mut root_split_count : Int
   mut reveal_selected_line : Bool
-  mut drag_source_index : Int
-  mut drag_source_parent : Int
   mut sample_variant : String
 }
 
@@ -53,8 +51,6 @@ let app_state : AppState = AppState::{
   left_panel_percent: 33,
   root_split_count: 0,
   reveal_selected_line: false,
-  drag_source_index: -1,
-  drag_source_parent: -2,
   sample_variant: rules_sample_default_id(),
 }
 
@@ -141,8 +137,7 @@ pub fn start_web_app() -> Unit {
   bind_splitter_ui(on_splitter_change)
   bind_mindmap_ui(
     on_mindmap_click, on_mindmap_dblclick, on_mindmap_keydown, on_mindmap_focusout,
-    on_mindmap_editor_input, on_mindmap_dragstart, on_mindmap_dragend, on_mindmap_dragover,
-    on_mindmap_drop,
+    on_mindmap_editor_input,
   )
   bind_input_listener(on_input_change, on_input_selected_headings_change)
   load_rules_sample(rules_sample_default_id(), true)
@@ -375,7 +370,7 @@ fn is_blank_mindmap_click_target(target : @dom.Element) -> Bool {
   match target.closest(".mindmap, .mindmap-content, .mindmap-stage") {
     Some(_) =>
       target.closest(
-        "[data-node-index], [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for], [data-drop-target], [data-drop-parent]",
+        "[data-node-index], [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for]",
       )
       is None
     None => false
@@ -656,67 +651,6 @@ fn on_mindmap_editor_input(event : @dom.Event) -> Unit {
     return
   }
   sync_editor_draft(node_index, event_editor_value_from_target(event.target()))
-}
-
-///|
-fn on_mindmap_dragstart(event : @dom.DragEvent) -> Unit {
-  let node_index = event_drag_source_index(event)
-  if node_index < 0 {
-    return
-  }
-  app_state.drag_source_index = node_index
-  app_state.drag_source_parent = event_drag_parent(event)
-  match get_element("[data-drag-index=\"\{node_index}\"]") {
-    Some(node) => toggle_class(node, "is-dragging", true)
-    None => ()
-  }
-  set_drag_text(event, node_index.to_string())
-}
-
-///|
-fn on_mindmap_dragend(_event : @dom.DragEvent) -> Unit {
-  if app_state.drag_source_index >= 0 {
-    match get_element("[data-drag-index=\"\{app_state.drag_source_index}\"]") {
-      Some(node) => toggle_class(node, "is-dragging", false)
-      None => ()
-    }
-  }
-  app_state.drag_source_index = -1
-  app_state.drag_source_parent = -2
-  clear_drop_highlights()
-}
-
-///|
-fn on_mindmap_dragover(event : @dom.DragEvent) -> Unit {
-  let target_index = event_drop_target_index(event)
-  let parent_index = event_drop_parent_index(event)
-  if !is_valid_drop_target(target_index, parent_index) {
-    clear_drop_highlights()
-    return
-  }
-  event.preventDefault()
-  highlight_drop_target(target_index, event_drop_place_after(event))
-}
-
-///|
-fn on_mindmap_drop(event : @dom.DragEvent) -> Unit {
-  let target_index = event_drop_target_index(event)
-  let parent_index = event_drop_parent_index(event)
-  if !is_valid_drop_target(target_index, parent_index) {
-    clear_drop_highlights()
-    return
-  }
-  event.preventDefault()
-  clear_drop_highlights()
-  let next_markdown = move_heading(
-    app_state.markdown,
-    app_state.drag_source_index,
-    target_index,
-    event_drop_place_after(event),
-  )
-  app_state.drag_source_index = -1
-  app_state.drag_source_parent = -2
-  load_markdown(next_markdown, false)
 }
 
 ///|
@@ -2363,16 +2297,8 @@ fn build_root_branch_node_dom(
   branch.setAttribute("data-parent-index", parent_index.to_string())
   apply_node_visual_attrs(branch, node, tone_index)
   apply_root_weight_style(branch, offset, weight, total_weight)
-  append_child(
-    branch,
-    build_drop_slot_dom(node.flat_index, parent_index, "before"),
-  )
   append_branch_logic_parts(
     branch, node, parent_index, false, direction, tone_index,
-  )
-  append_child(
-    branch,
-    build_drop_slot_dom(node.flat_index, parent_index, "after"),
   )
   branch
 }
@@ -2426,16 +2352,8 @@ fn build_branch_node_dom(
   branch.setAttribute("data-node-index", node.flat_index.to_string())
   branch.setAttribute("data-parent-index", parent_index.to_string())
   apply_node_visual_attrs(branch, node, tone_index)
-  append_child(
-    branch,
-    build_drop_slot_dom(node.flat_index, parent_index, "before"),
-  )
   append_branch_logic_parts(
     branch, node, parent_index, false, direction, tone_index,
-  )
-  append_child(
-    branch,
-    build_drop_slot_dom(node.flat_index, parent_index, "after"),
   )
   branch
 }
@@ -2515,17 +2433,9 @@ fn build_vertical_tree_dom(
   tree.setAttribute("data-parent-index", parent_index.to_string())
   append_child(
     tree,
-    build_drop_slot_dom(node.flat_index, parent_index, "before"),
-  )
-  append_child(
-    tree,
     build_node_card_dom(
       node, parent_index, is_root, tone_index, "node-actions--bottom-center",
     ),
-  )
-  append_child(
-    tree,
-    build_drop_slot_dom(node.flat_index, parent_index, "after"),
   )
   append_child(tree, build_vertical_children_dom(node, tone_index))
   tree
@@ -2586,10 +2496,6 @@ fn build_single_right_tree_dom(
   tree.setAttribute("data-node-index", node.flat_index.to_string())
   tree.setAttribute("data-parent-index", parent_index.to_string())
   apply_node_visual_attrs(tree, node, tone_index)
-  append_child(
-    tree,
-    build_drop_slot_dom(node.flat_index, parent_index, "before"),
-  )
   let head = create_element("div", "single-right-tree__head")
   append_child(
     head,
@@ -2598,10 +2504,6 @@ fn build_single_right_tree_dom(
     ),
   )
   append_child(tree, head)
-  append_child(
-    tree,
-    build_drop_slot_dom(node.flat_index, parent_index, "after"),
-  )
   append_child(tree, build_single_right_children_dom(node, tone_index))
   tree
 }
@@ -2647,7 +2549,6 @@ fn build_node_card_dom(
   let has_children = node.children.length() > 0
   let editable = !node.synthetic
   let is_editing = app_state.editing_node == node.flat_index
-  let is_draggable = editable && !is_center && !is_editing
   let classes = ["node"]
   if is_center {
     classes.push("node--center")
@@ -2659,15 +2560,11 @@ fn build_node_card_dom(
   if is_branch_line_tree_note(node) {
     classes.push("node--line-tree-note")
   }
-  if is_draggable {
-    classes.push("is-draggable")
-  }
   let card = create_element("div", classes.iter().join(" "))
   card.setAttribute("data-level", node.level.to_string())
   card.setAttribute("data-node-index", node.flat_index.to_string())
   card.setAttribute("data-parent-index", parent_index.to_string())
   apply_node_visual_attrs(card, node, tone_index)
-  apply_drag_attrs(card, node, parent_index, is_draggable)
   append_child(card, build_node_title_dom(node, is_editing))
   match build_node_note_dom(node) {
     Some(note) => append_child(card, note)
@@ -3158,24 +3055,6 @@ fn build_hidden_marker_dom(
 }
 
 ///|
-fn build_drop_slot_dom(
-  node_index : Int,
-  parent_index : Int,
-  position : String,
-) -> @dom.Element {
-  let class_name = if app_state.layout_mode == "logic" {
-    "drop-slot drop-slot--single-right"
-  } else {
-    "drop-slot"
-  }
-  let slot = create_element("div", class_name)
-  slot.setAttribute("data-drop-target", node_index.to_string())
-  slot.setAttribute("data-drop-parent", parent_index.to_string())
-  slot.setAttribute("data-drop-position", position)
-  slot
-}
-
-///|
 fn apply_node_visual_attrs(
   element : @dom.Element,
   node : OutlineNode,
@@ -3200,21 +3079,6 @@ fn apply_node_visual_attrs(
     "data-hidden-node",
     is_hidden_node(node.flat_index).to_string(),
   )
-}
-
-///|
-fn apply_drag_attrs(
-  element : @dom.Element,
-  node : OutlineNode,
-  parent_index : Int,
-  is_draggable : Bool,
-) -> Unit {
-  if !is_draggable {
-    return
-  }
-  element.setAttribute("draggable", "true")
-  element.setAttribute("data-drag-index", node.flat_index.to_string())
-  element.setAttribute("data-drag-parent", parent_index.to_string())
 }
 
 ///|
@@ -3292,9 +3156,7 @@ fn render_branch_node(
   direction : String,
   tone_index : Int,
 ) -> String {
-  let before_slot = render_drop_slot(node.flat_index, parent_index, "before")
   let card = render_node_card(node, parent_index, false, tone_index)
-  let after_slot = render_drop_slot(node.flat_index, parent_index, "after")
   let children_html = render_branch_children(node, direction, tone_index)
   let branch_attrs = render_node_visual_attrs(node, tone_index)
   let body = if direction == "left" {
@@ -3302,7 +3164,7 @@ fn render_branch_node(
   } else {
     "<div class=\"single-right-tree__head single-right-tree__head--right\">\{card}</div>\{children_html}"
   }
-  "<div class=\"branch-item branch-item--\{direction} single-right-tree__node single-right-tree__node--\{direction}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{branch_attrs}>\{before_slot}\{body}\{after_slot}</div>"
+  "<div class=\"branch-item branch-item--\{direction} single-right-tree__node single-right-tree__node--\{direction}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{branch_attrs}>\{body}</div>"
 }
 
 ///|
@@ -3348,12 +3210,10 @@ fn render_vertical_tree(
   is_root : Bool,
   tone_index : Int,
 ) -> String {
-  let before_slot = render_drop_slot(node.flat_index, parent_index, "before")
   let card = render_node_card(node, parent_index, is_root, tone_index)
-  let after_slot = render_drop_slot(node.flat_index, parent_index, "after")
   let children_html = render_vertical_children(node, tone_index)
   let class_name = vertical_tree_class(node)
-  "<div class=\"\{class_name}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\">\{before_slot}\{card}\{after_slot}\{children_html}</div>"
+  "<div class=\"\{class_name}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\">\{card}\{children_html}</div>"
 }
 
 ///|
@@ -3395,12 +3255,10 @@ fn render_single_right_tree(
   is_root : Bool,
   tone_index : Int,
 ) -> String {
-  let before_slot = render_drop_slot(node.flat_index, parent_index, "before")
   let card = render_node_card(node, parent_index, is_root, tone_index)
-  let after_slot = render_drop_slot(node.flat_index, parent_index, "after")
   let children_html = render_single_right_children(node, tone_index)
   let node_attrs = render_node_visual_attrs(node, tone_index)
-  "<div class=\"single-right-tree__node\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{node_attrs}>\{before_slot}<div class=\"single-right-tree__head\">\{card}</div>\{after_slot}\{children_html}</div>"
+  "<div class=\"single-right-tree__node\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{node_attrs}><div class=\"single-right-tree__head\">\{card}</div>\{children_html}</div>"
 }
 
 ///|
@@ -3440,7 +3298,6 @@ fn render_node_card(
   let has_children = node.children.length() > 0
   let editable = !node.synthetic
   let is_editing = app_state.editing_node == node.flat_index
-  let is_draggable = editable && !is_center && !is_editing
   let classes = ["node"]
   if is_center {
     classes.push("node--center")
@@ -3452,18 +3309,14 @@ fn render_node_card(
   if is_branch_line_tree_note(node) {
     classes.push("node--line-tree-note")
   }
-  if is_draggable {
-    classes.push("is-draggable")
-  }
   let class_name = classes.join(" ")
   let title_html = render_node_title(node, is_editing)
   let note_html = render_node_note(node)
   let action_html = render_node_actions_with_note(
     node, has_children, editable, is_center,
   )
-  let drag_attrs = render_drag_attrs(node, parent_index, is_draggable)
   let visual_attrs = render_node_visual_attrs(node, tone_index)
-  "<div class=\"\{class_name}\" data-level=\"\{node.level}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{visual_attrs}\{drag_attrs}>\{title_html}\{note_html}\{action_html}</div>"
+  "<div class=\"\{class_name}\" data-level=\"\{node.level}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{visual_attrs}>\{title_html}\{note_html}\{action_html}</div>"
 }
 
 ///|
@@ -3479,18 +3332,6 @@ fn render_node_visual_attrs(node : OutlineNode, tone_index : Int) -> String {
 ///|
 fn render_hidden_marker(node : OutlineNode, tone_index : Int) -> String {
   build_hidden_marker_dom(node, tone_index).outerHTML()
-}
-
-///|
-fn render_drag_attrs(
-  node : OutlineNode,
-  parent_index : Int,
-  is_draggable : Bool,
-) -> String {
-  if !is_draggable {
-    return ""
-  }
-  " draggable=\"true\" data-drag-index=\"\{node.flat_index}\" data-drag-parent=\"\{parent_index}\""
 }
 
 ///|
@@ -3791,23 +3632,6 @@ fn single_child_chain_length(node : OutlineNode) -> Int {
   } else {
     1 + single_child_chain_length(node.children[0])
   }
-}
-
-///|
-fn render_drop_slot(
-  node_index : Int,
-  parent_index : Int,
-  position : String,
-) -> String {
-  if node_index < 0 {
-    return ""
-  }
-  let class_name = if app_state.layout_mode == "logic" {
-    "drop-slot drop-slot--single-right"
-  } else {
-    "drop-slot"
-  }
-  "<div class=\"\{class_name}\" data-drop-target=\"\{node_index}\" data-drop-parent=\"\{parent_index}\" data-drop-position=\"\{position}\"></div>"
 }
 
 ///|
@@ -4134,17 +3958,6 @@ fn normalize_split_percent(percent : Int) -> Int {
   } else {
     percent
   }
-}
-
-///|
-fn is_valid_drop_target(target_index : Int, parent_index : Int) -> Bool {
-  if app_state.drag_source_index < 0 || target_index < 0 {
-    return false
-  }
-  if app_state.drag_source_index == target_index {
-    return false
-  }
-  app_state.drag_source_parent == parent_index
 }
 
 ///|

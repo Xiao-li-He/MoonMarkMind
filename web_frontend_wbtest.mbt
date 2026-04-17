@@ -26,8 +26,6 @@ fn reset_frontend_test_state() -> Unit {
   app_state.editing_body_block = -1
   app_state.root_split_count = 0
   app_state.reveal_selected_line = false
-  app_state.drag_source_index = -1
-  app_state.drag_source_parent = -2
   app_state.sample_variant = "custom"
   suppress_next_render_mindmap_reveal.val = false
   load_markdown(frontend_test_markdown(), true)
@@ -51,8 +49,6 @@ fn reset_navigation_test_state() -> Unit {
   app_state.editing_body_block = -1
   app_state.root_split_count = 0
   app_state.reveal_selected_line = false
-  app_state.drag_source_index = -1
-  app_state.drag_source_parent = -2
   app_state.sample_variant = "custom"
   suppress_next_render_mindmap_reveal.val = false
   load_markdown(navigation_test_markdown(), true)
@@ -362,6 +358,25 @@ test "sample part two nodes expose body preview html" {
     }
     None => fail("missing table node")
   }
+}
+
+///|
+test "node render omits mouse drag sorting attributes" {
+  reset_frontend_test_state()
+  let alpha_index = outline_flat_index_by_title(app_state.root, "Alpha")
+  match find_node(app_state.root, alpha_index) {
+    Some(alpha) => {
+      let card = render_node_card(alpha, 0, false, 0)
+      assert_eq(card.contains("draggable=\"true\""), false)
+      assert_eq(card.contains("data-drag-index"), false)
+      assert_eq(card.contains("data-drag-parent"), false)
+      assert_eq(card.contains("is-draggable"), false)
+    }
+    None => fail("missing alpha node")
+  }
+  let tree = render_vertical_tree(app_state.root, -1, true, -1)
+  assert_eq(tree.contains("drop-slot"), false)
+  assert_eq(tree.contains("data-drop-target"), false)
 }
 
 ///|

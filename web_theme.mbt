@@ -607,19 +607,6 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "collapsed-node") {
     style_collapsed_node(element)
   }
-  if has_class_name(element, "is-dragging") {
-    style_node_dragging(element)
-  }
-  if has_class_name(element, "drop-slot") {
-    style_drop_slot(element)
-    style_single_right_drop_slot(element)
-  }
-  if has_class_name(element, "drop-before") {
-    style_drop_before(element)
-  }
-  if has_class_name(element, "drop-after") {
-    style_drop_after(element)
-  }
   if has_class_name(element, "workspace-divider--dragging") {
     style_workspace_divider_dragging(element)
   }
@@ -2251,13 +2238,6 @@ fn style_node_center(element : @dom.Element) -> Unit {
 }
 
 ///|
-fn is_single_right_drop_slot(element : @dom.Element) -> Bool {
-  has_class_name(element, "drop-slot--single-right") ||
-  element.closest(".mindmap-stage--single-right, .single-right-tree__node")
-  is Some(_)
-}
-
-///|
 fn style_node_line(element : @dom.Element) -> Unit {
   set_style(element, "border-color", "rgba(224, 233, 242, 0.96)")
   set_style(
@@ -3469,11 +3449,6 @@ fn style_collapsed_node(element : @dom.Element) -> Unit {
 }
 
 ///|
-fn style_node_dragging(element : @dom.Element) -> Unit {
-  set_style(element, "opacity", "0.45")
-}
-
-///|
 fn style_mindmap_stage_svg_connectors(element : @dom.Element) -> Unit {
   set_style(element, "z-index", "1")
   for node_actions in element.querySelectorAll(".node-actions") {
@@ -3482,41 +3457,6 @@ fn style_mindmap_stage_svg_connectors(element : @dom.Element) -> Unit {
   for node_small in element.querySelectorAll(".node small") {
     set_style(node_small, "display", "none")
   }
-}
-
-///|
-fn style_drop_slot(element : @dom.Element) -> Unit {
-  set_style(element, "width", "100%")
-  set_style(element, "min-height", "12px")
-}
-
-///|
-fn style_single_right_drop_slot(element : @dom.Element) -> Unit {
-  match is_single_right_drop_slot(element) {
-    true => {
-      set_style(element, "width", "0")
-      set_style(element, "min-width", "0")
-      set_style(element, "min-height", "0")
-      set_style(element, "height", "0")
-      set_style(element, "overflow", "hidden")
-      set_style(element, "flex", "0 0 0")
-    }
-    false => ()
-  }
-}
-
-///|
-fn style_drop_before(element : @dom.Element) -> Unit {
-  set_style(
-    element, "box-shadow", "inset 0 4px 0 var(--mindmap-connector-accent, #5c88a8), 0 14px 28px rgba(120, 139, 164, 0.1)",
-  )
-}
-
-///|
-fn style_drop_after(element : @dom.Element) -> Unit {
-  set_style(
-    element, "box-shadow", "inset 0 -4px 0 var(--mindmap-connector-accent, #5c88a8), 0 14px 28px rgba(120, 139, 164, 0.1)",
-  )
 }
 
 ///|

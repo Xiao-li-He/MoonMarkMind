@@ -4257,7 +4257,7 @@ fn event_target_is_blank_stage_area(target : @dom.Element) -> Bool {
   match target.closest(".mindmap-stage, .mindmap-content, #mindmap") {
     Some(_) =>
       target.closest(
-        "[data-node-index], [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for], [data-drop-target], [data-drop-parent]",
+        "[data-node-index], [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for]",
       )
       is None
     None => false
@@ -4283,52 +4283,6 @@ fn event_node_index_from_point(event : @dom.MouseEvent) -> Int {
 ///|
 fn event_keyboard_node_index(event : @dom.KeyboardEvent) -> Int {
   event_node_index_from_target(event.target())
-}
-
-///|
-fn event_drop_target_index_from_target(target : @dom.Element) -> Int {
-  match target.closest("[data-drop-target]") {
-    Some(node) =>
-      @strconv.parse_int(node.getAttribute("data-drop-target").unwrap_or("-1")) catch {
-        _ => -1
-      }
-    None => -1
-  }
-}
-
-///|
-fn event_drop_target_index(event : @dom.DragEvent) -> Int {
-  event_drop_target_index_from_target(event.target())
-}
-
-///|
-fn event_drop_parent_index_from_target(target : @dom.Element) -> Int {
-  match target.closest("[data-drop-parent]") {
-    Some(node) =>
-      @strconv.parse_int(node.getAttribute("data-drop-parent").unwrap_or("-1")) catch {
-        _ => -1
-      }
-    None => -1
-  }
-}
-
-///|
-fn event_drop_parent_index(event : @dom.DragEvent) -> Int {
-  event_drop_parent_index_from_target(event.target())
-}
-
-///|
-fn event_drop_place_after_from_target(target : @dom.Element) -> Bool {
-  match target.closest("[data-drop-position]") {
-    Some(node) =>
-      node.getAttribute("data-drop-position").unwrap_or("before") == "after"
-    None => false
-  }
-}
-
-///|
-fn event_drop_place_after(event : @dom.DragEvent) -> Bool {
-  event_drop_place_after_from_target(event.target())
 }
 
 ///|
@@ -4423,74 +4377,5 @@ fn event_shift_key(event : @dom.MouseEvent) -> Bool {
 fn event_click_count(event : @dom.MouseEvent) -> Int {
   @strconv.parse_int(event.as_any()._get("detail").to_string()) catch {
     _ => 1
-  }
-}
-
-///|
-fn event_drag_source_index_from_target(target : @dom.Element) -> Int {
-  match target.closest("[data-drag-index]") {
-    Some(node) =>
-      @strconv.parse_int(node.getAttribute("data-drag-index").unwrap_or("-1")) catch {
-        _ => -1
-      }
-    None => -1
-  }
-}
-
-///|
-fn event_drag_source_index(event : @dom.DragEvent) -> Int {
-  event_drag_source_index_from_target(event.target())
-}
-
-///|
-fn event_drag_parent_from_target(target : @dom.Element) -> Int {
-  match target.closest("[data-drag-parent]") {
-    Some(node) =>
-      @strconv.parse_int(node.getAttribute("data-drag-parent").unwrap_or("-1")) catch {
-        _ => -1
-      }
-    None => -1
-  }
-}
-
-///|
-fn event_drag_parent(event : @dom.DragEvent) -> Int {
-  event_drag_parent_from_target(event.target())
-}
-
-///|
-fn set_drag_text(event : @dom.DragEvent, value : String) -> Unit {
-  match event.dataTransfer.to_option() {
-    Some(data_transfer) => {
-      data_transfer.effectAllowed = "move"
-      data_transfer.setData("text/plain", value)
-    }
-    None => ()
-  }
-}
-
-///|
-fn clear_drop_highlights() -> Unit {
-  for element in @dom.document().querySelectorAll(".drop-before, .drop-after") {
-    toggle_class(element, "drop-before", false)
-    toggle_class(element, "drop-after", false)
-  }
-}
-
-///|
-fn highlight_drop_target(node_index : Int, place_after : Bool) -> Unit {
-  clear_drop_highlights()
-  match get_element("[data-node-index=\"\{node_index}\"]") {
-    Some(card) =>
-      toggle_class(
-        card,
-        if place_after {
-          "drop-after"
-        } else {
-          "drop-before"
-        },
-        true,
-      )
-    None => ()
   }
 }
