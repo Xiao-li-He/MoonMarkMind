@@ -3566,41 +3566,54 @@ fn normalize_static_export_note_buttons(mindmap : @dom.Element) -> Unit {
     button.removeAttribute("aria-label")
     button.removeAttribute("aria-expanded")
     let button_style = style_of(button)
-    button_style.set_property("visibility", "hidden")
+    button_style.set_property("display", "none")
     button_style.set_property("pointer-events", "none")
-    button_style.set_property("box-shadow", "none")
     match button.closest(".node") {
-      Some(node) =>
-        match node.querySelector(".node-title") {
-          Some(title) => {
-            let title_style = style_of(title)
-            let current_transform = title_style
-              .get_property_value("transform")
-              .trim()
-              .to_string()
-            title_style.set_property(
-              "transform",
-              static_export_note_title_transform(current_transform),
+      Some(node) => {
+        match node.querySelector("[data-note-preview-for]") {
+          Some(body) => {
+            let body_style = style_of(body)
+            body_style.set_property(
+              "margin-top",
+              static_export_note_body_margin_top(node),
             )
           }
           None => ()
         }
+        match node.querySelector(".node-title") {
+          Some(title) => {
+            let title_style = style_of(title)
+            title_style.set_property(
+              "margin-top",
+              static_export_note_title_shift(),
+            )
+          }
+          None => ()
+        }
+      }
       None => ()
     }
   }
 }
 
 ///|
-fn static_export_note_title_transform(current_transform : String) -> String {
-  let normalized = current_transform.trim().to_string()
-  let export_shift = "translateY(6px)"
-  if normalized.length() == 0 || normalized == "none" {
-    export_shift
-  } else if normalized.contains("translateY") {
-    normalized
-  } else {
-    "\{normalized} \{export_shift}"
-  }
+fn static_export_note_body_margin_top(node : @dom.Element) -> String {
+  static_export_note_body_margin_top_for_branch_line(
+    has_class_name(node, "node--branch-line"),
+  )
+}
+
+///|
+fn static_export_note_body_margin_top_for_branch_line(
+  is_branch_line : Bool,
+) -> String {
+  let _ = is_branch_line
+  "6px"
+}
+
+///|
+fn static_export_note_title_shift() -> String {
+  "4px"
 }
 
 ///|

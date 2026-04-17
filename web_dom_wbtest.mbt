@@ -102,17 +102,14 @@ test "selection index csv roundtrips collapsed note export state" {
 }
 
 ///|
-test "static export note title transform appends export shift once" {
-  assert_eq(static_export_note_title_transform(""), "translateY(6px)")
-  assert_eq(static_export_note_title_transform("none"), "translateY(6px)")
-  assert_eq(
-    static_export_note_title_transform("scale(1.1)"),
-    "scale(1.1) translateY(6px)",
-  )
-  assert_eq(
-    static_export_note_title_transform("translateY(4px)"),
-    "translateY(4px)",
-  )
+test "static export note title shift matches removed button height" {
+  assert_eq(static_export_note_title_shift(), "4px")
+}
+
+///|
+test "static export note body margin compensates removed note button" {
+  assert_eq(static_export_note_body_margin_top_for_branch_line(false), "6px")
+  assert_eq(static_export_note_body_margin_top_for_branch_line(true), "6px")
 }
 
 ///|
