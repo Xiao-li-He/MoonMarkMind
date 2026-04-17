@@ -43,6 +43,18 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   } else if tag == "INPUT" && has_class_name(element, "zoom-edit") {
     style_zoom_edit(element)
   }
+  if tag == "SUP" {
+    match element.closest(".markdown-math") {
+      Some(_) => style_markdown_math_sup(element)
+      None => ()
+    }
+  }
+  if tag == "SUB" {
+    match element.closest(".markdown-math") {
+      Some(_) => style_markdown_math_sub(element)
+      None => ()
+    }
+  }
 
   if has_class_name(element, "app-shell") {
     style_app_shell(element)
@@ -2872,22 +2884,29 @@ fn style_markdown_math_frac_den(element : @dom.Element) -> Unit {
 ///|
 fn style_markdown_math_sqrt(element : @dom.Element) -> Unit {
   set_style(element, "display", "inline-flex")
-  set_style(element, "align-items", "stretch")
-  set_style(element, "vertical-align", "middle")
+  set_style(element, "align-items", "flex-start")
+  set_style(element, "vertical-align", "-0.08em")
   set_style(element, "margin", "0 2px")
+  set_style(element, "line-height", "1")
 }
 
 ///|
 fn style_markdown_math_sqrt_symbol(element : @dom.Element) -> Unit {
-  set_style(element, "font-size", "1.2em")
-  set_style(element, "line-height", "1")
-  set_style(element, "padding-right", "1px")
+  set_style(element, "display", "inline-block")
+  set_style(element, "font-size", "1.5em")
+  set_style(element, "line-height", "0.72")
+  set_style(element, "padding-right", "0")
+  set_style(element, "transform", "translateY(0.1em) scaleX(0.9)")
+  set_style(element, "transform-origin", "right bottom")
 }
 
 ///|
 fn style_markdown_math_sqrt_radicand(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-block")
   set_style(element, "border-top", "1px solid currentColor")
-  set_style(element, "padding", "0 2px")
+  set_style(element, "padding", "1px 2px 0")
+  set_style(element, "line-height", "1")
+  set_style(element, "margin-left", "-1px")
 }
 
 ///|
@@ -2927,8 +2946,29 @@ fn style_markdown_math_align_cell(element : @dom.Element) -> Unit {
 ///|
 fn style_markdown_math_scripted(element : @dom.Element) -> Unit {
   set_style(element, "display", "inline-flex")
-  set_style(element, "align-items", "center")
+  set_style(element, "align-items", "baseline")
   set_style(element, "vertical-align", "middle")
+  set_style(element, "line-height", "1")
+}
+
+///|
+fn style_markdown_math_sup(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-block")
+  set_style(element, "font-size", "0.68em")
+  set_style(element, "line-height", "1")
+  set_style(element, "vertical-align", "baseline")
+  set_style(element, "transform", "translateY(-0.48em)")
+  set_style(element, "margin-left", "1px")
+}
+
+///|
+fn style_markdown_math_sub(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-block")
+  set_style(element, "font-size", "0.68em")
+  set_style(element, "line-height", "1")
+  set_style(element, "vertical-align", "baseline")
+  set_style(element, "transform", "translateY(0.28em)")
+  set_style(element, "margin-left", "1px")
 }
 
 ///|
