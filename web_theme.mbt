@@ -414,6 +414,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "node-body-block-actions") {
     style_node_body_block_actions(element)
   }
+  if has_class_name(element, "node-body-block-actions--single-line") {
+    style_node_body_block_actions_single_line(element)
+  }
   if has_class_name(element, "node-body-block-action") {
     style_node_body_block_action(element)
   }
@@ -2585,6 +2588,13 @@ fn style_node_body_block_actions(element : @dom.Element) -> Unit {
   set_style(element, "pointer-events", "none")
   set_style(element, "transform", "translateX(-50%)")
   set_style(element, "transition", "opacity 120ms ease")
+}
+
+///|
+fn style_node_body_block_actions_single_line(element : @dom.Element) -> Unit {
+  set_style(element, "top", "50%")
+  set_style(element, "bottom", "auto")
+  set_style(element, "transform", "translate(-50%, -50%)")
 }
 
 ///|

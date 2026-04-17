@@ -1121,6 +1121,55 @@ test "node body block actions render svg icons" {
 }
 
 ///|
+test "single line body block actions get centered layout class" {
+  let node = OutlineNode::{
+    flat_index: 0,
+    source_line: 0,
+    level: 1,
+    title: "Root",
+    marker: "",
+    body: ["First line", "Second line\nThird line"],
+    kind: MarkdownNodeKind::Heading,
+    synthetic: false,
+    children: [],
+  }
+  app_state.editing_body_node = -2
+  app_state.editing_body_block = -1
+
+  let html = render_node_body(node)
+  assert_eq(html.contains("node-body-block--single-line"), true)
+  assert_eq(html.contains("node-body-block-actions--single-line"), true)
+  assert_eq(
+    html.contains(
+      "node-body-block-actions node-body-block-actions--single-line\" data-body-block-index=\"1\"",
+    ),
+    false,
+  )
+}
+
+///|
+test "image body block actions keep bottom layout" {
+  let node = OutlineNode::{
+    flat_index: 0,
+    source_line: 0,
+    level: 1,
+    title: "Root",
+    marker: "",
+    body: ["![Logo](image.png)"],
+    kind: MarkdownNodeKind::Heading,
+    synthetic: false,
+    children: [],
+  }
+  app_state.editing_body_node = -2
+  app_state.editing_body_block = -1
+
+  let html = render_node_body(node)
+  assert_eq(html.contains("node-body-block--image"), true)
+  assert_eq(html.contains("node-body-block--single-line"), false)
+  assert_eq(html.contains("node-body-block-actions--single-line"), false)
+}
+
+///|
 test "node visual hidden count excludes the current node" {
   reset_navigation_test_state()
   let parent_index = outline_flat_index_by_title(app_state.root, "Parent")

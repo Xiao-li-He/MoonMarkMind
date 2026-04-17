@@ -1198,6 +1198,34 @@ fn markdown_body_block_line_count(block : String) -> Int {
 }
 
 ///|
+fn is_single_line_body_block(block : String) -> Bool {
+  markdown_body_block_line_count(block) <= 1
+}
+
+///|
+fn body_block_uses_centered_actions(block : String) -> Bool {
+  is_single_line_body_block(block) && body_block_kind(block) != "image"
+}
+
+///|
+fn node_body_block_layout_class(block : String) -> String {
+  if body_block_uses_centered_actions(block) {
+    " node-body-block--single-line"
+  } else {
+    ""
+  }
+}
+
+///|
+fn node_body_block_actions_class(block : String) -> String {
+  if body_block_uses_centered_actions(block) {
+    "node-body-block-actions node-body-block-actions--single-line"
+  } else {
+    "node-body-block-actions"
+  }
+}
+
+///|
 fn markdown_node_body_block_line_range(
   node : MarkdownNode,
   block_index : Int,
@@ -2740,7 +2768,10 @@ fn build_node_body_block_dom(
   let kind = body_block_kind(block)
   let is_editing = app_state.editing_body_node == node.flat_index &&
     app_state.editing_body_block == block_index
-  let wrap = create_element("div", "node-body-block node-body-block--\{kind}")
+  let wrap = create_element(
+    "div",
+    "node-body-block node-body-block--\{kind}\{node_body_block_layout_class(block)}",
+  )
   wrap.setAttribute("data-body-block-index", block_index.to_string())
   wrap.setAttribute("data-body-block-kind", kind)
   if is_editing {
@@ -2749,7 +2780,7 @@ fn build_node_body_block_dom(
       build_body_block_editor_dom(node, block_index, block, kind),
     )
   } else {
-    let controls = build_body_block_controls_dom(block_index)
+    let controls = build_body_block_controls_dom(block_index, block)
     bind_body_block_hover_controls(wrap, controls)
     append_child(wrap, controls)
     append_child(wrap, build_markdown_blocks_dom([block]))
@@ -2779,8 +2810,11 @@ fn bind_body_block_hover_controls(
 }
 
 ///|
-fn build_body_block_controls_dom(block_index : Int) -> @dom.Element {
-  let controls = create_element("div", "node-body-block-actions")
+fn build_body_block_controls_dom(
+  block_index : Int,
+  block : String,
+) -> @dom.Element {
+  let controls = create_element("div", node_body_block_actions_class(block))
   controls.setAttribute("data-body-block-index", block_index.to_string())
   let edit = create_element("button", "node-body-block-action")
   edit.setAttribute("type", "button")
@@ -3486,8 +3520,9 @@ fn render_node_body_block(node : OutlineNode, block_index : Int) -> String {
   } else {
     let edit_icon = body_block_action_icon_html("edit")
     let delete_icon = body_block_action_icon_html("delete")
-    let controls = "<div class=\"node-body-block-actions\" data-body-block-index=\"\{block_index}\"><button type=\"button\" class=\"node-body-block-action\" data-action=\"edit-body-block\" data-body-block-index=\"\{block_index}\" data-tip=\"Edit\" aria-label=\"Edit\">\{edit_icon}</button><button type=\"button\" class=\"node-body-block-action node-body-block-action--delete\" data-action=\"delete-body-block\" data-body-block-index=\"\{block_index}\" data-tip=\"Delete\" aria-label=\"Delete\">\{delete_icon}</button></div>"
-    "<div class=\"node-body-block node-body-block--\{kind}\" data-body-block-index=\"\{block_index}\" data-body-block-kind=\"\{kind}\">\{controls}<div class=\"markdown-blocks\">\{render_markdown_blocks_html([block])}</div></div>"
+    let controls_class = node_body_block_actions_class(block)
+    let controls = "<div class=\"\{controls_class}\" data-body-block-index=\"\{block_index}\"><button type=\"button\" class=\"node-body-block-action\" data-action=\"edit-body-block\" data-body-block-index=\"\{block_index}\" data-tip=\"Edit\" aria-label=\"Edit\">\{edit_icon}</button><button type=\"button\" class=\"node-body-block-action node-body-block-action--delete\" data-action=\"delete-body-block\" data-body-block-index=\"\{block_index}\" data-tip=\"Delete\" aria-label=\"Delete\">\{delete_icon}</button></div>"
+    "<div class=\"node-body-block node-body-block--\{kind}\{node_body_block_layout_class(block)}\" data-body-block-index=\"\{block_index}\" data-body-block-kind=\"\{kind}\">\{controls}<div class=\"markdown-blocks\">\{render_markdown_blocks_html([block])}</div></div>"
   }
 }
 
