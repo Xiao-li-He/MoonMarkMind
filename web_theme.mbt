@@ -502,6 +502,15 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "markdown-math-sqrt__symbol") {
     style_markdown_math_sqrt_symbol(element)
   }
+  if has_class_name(element, "markdown-math-sqrt__radical") {
+    style_markdown_math_sqrt_radical(element)
+  }
+  if has_class_name(element, "markdown-math-sqrt__svg") {
+    style_markdown_math_sqrt_svg(element)
+  }
+  if has_class_name(element, "markdown-math-sqrt__path") {
+    style_markdown_math_sqrt_path(element)
+  }
   if has_class_name(element, "markdown-math-sqrt__radicand") {
     style_markdown_math_sqrt_radicand(element)
   }
@@ -2893,9 +2902,9 @@ fn style_markdown_math_frac_den(element : @dom.Element) -> Unit {
 
 ///|
 fn style_markdown_math_sqrt(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-flex")
-  set_style(element, "align-items", "flex-start")
-  set_style(element, "vertical-align", "-0.08em")
+  set_style(element, "display", "inline-block")
+  set_style(element, "position", "relative")
+  set_style(element, "vertical-align", "-0.1em")
   set_style(element, "margin", "0 2px")
   set_style(element, "line-height", "1")
 }
@@ -2911,12 +2920,37 @@ fn style_markdown_math_sqrt_symbol(element : @dom.Element) -> Unit {
 }
 
 ///|
+fn style_markdown_math_sqrt_radical(element : @dom.Element) -> Unit {
+  set_style(element, "position", "absolute")
+  set_style(element, "left", "0")
+  set_style(element, "right", "0")
+  set_style(element, "top", "0")
+  set_style(element, "bottom", "0")
+  set_style(element, "overflow", "hidden")
+  set_style(element, "pointer-events", "none")
+}
+
+///|
+fn style_markdown_math_sqrt_svg(element : @dom.Element) -> Unit {
+  set_style(element, "display", "block")
+  set_style(element, "width", "400em")
+  set_style(element, "height", "100%")
+  set_style(element, "min-height", "1.12em")
+  set_style(element, "max-width", "none")
+}
+
+///|
+fn style_markdown_math_sqrt_path(element : @dom.Element) -> Unit {
+  set_style(element, "fill", "currentColor")
+}
+
+///|
 fn style_markdown_math_sqrt_radicand(element : @dom.Element) -> Unit {
   set_style(element, "display", "inline-block")
-  set_style(element, "border-top", "1px solid currentColor")
-  set_style(element, "padding", "1px 2px 0")
+  set_style(element, "position", "relative")
+  set_style(element, "padding", "0.18em 0.12em 0 0.86em")
   set_style(element, "line-height", "1")
-  set_style(element, "margin-left", "-1px")
+  set_style(element, "z-index", "1")
 }
 
 ///|
@@ -2983,10 +3017,13 @@ fn style_markdown_math_sub(element : @dom.Element) -> Unit {
 
 ///|
 fn style_markdown_math_sqrt_index(element : @dom.Element) -> Unit {
+  set_style(element, "position", "absolute")
+  set_style(element, "left", "-0.34em")
+  set_style(element, "top", "-0.34em")
   set_style(element, "font-size", "0.62em")
   set_style(element, "line-height", "1")
   set_style(element, "align-self", "flex-start")
-  set_style(element, "margin-right", "-2px")
+  set_style(element, "z-index", "2")
 }
 
 ///|

@@ -488,14 +488,7 @@ fn render_latex_math_node(node : LatexMathNode, inline~ : Bool) -> String {
           )
         None => ()
       }
-      children.push(
-        safe_html_element(
-          "span",
-          class_name="markdown-math-sqrt__symbol",
-          attrs="",
-          children=[SafeHtml::{ value: "&radic;" }],
-        ),
-      )
+      children.push(render_latex_math_sqrt_radical())
       children.push(
         safe_html_element(
           "span",
@@ -547,6 +540,30 @@ fn render_latex_math_node(node : LatexMathNode, inline~ : Bool) -> String {
     MathLineBreak => if inline { " " } else { "" }
     MathAlignSep => if inline { " " } else { "" }
   }
+}
+
+///|
+fn render_latex_math_sqrt_radical() -> SafeHtml {
+  safe_html_element(
+    "span",
+    class_name="markdown-math-sqrt__radical",
+    attrs="",
+    children=[
+      safe_html_element(
+        "svg",
+        class_name="markdown-math-sqrt__svg",
+        attrs=" viewBox=\"0 0 400000 1000\" preserveAspectRatio=\"xMinYMin slice\" aria-hidden=\"true\" focusable=\"false\"",
+        children=[
+          safe_html_element(
+            "path",
+            class_name="markdown-math-sqrt__path",
+            attrs=" d=\"M72 646L198 566L430 910L718 40L400000 40L400000 96L760 96L474 1000L184 662L100 716Z\" fill=\"currentColor\"",
+            children=[],
+          ),
+        ],
+      ),
+    ],
+  )
 }
 
 ///|

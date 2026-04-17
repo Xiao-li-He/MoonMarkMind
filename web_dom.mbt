@@ -2095,7 +2095,8 @@ fn toggle_class(
 ///|
 fn has_class_name(element : @dom.Element, class_name : String) -> Bool {
   let tokens : Array[String] = element
-    .className()
+    .getAttribute("class")
+    .unwrap_or("")
     .split(" ")
     .map(token => token.to_string())
     .filter(token => token.length() > 0)

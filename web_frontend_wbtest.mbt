@@ -174,6 +174,11 @@ test "markdown inline renderer renders common latex formula subset" {
   )
   assert_eq(html.contains("class=\"markdown-math-frac\""), true)
   assert_eq(html.contains("class=\"markdown-math-sqrt\""), true)
+  assert_eq(html.contains("markdown-math-sqrt__radical"), true)
+  assert_eq(html.contains("markdown-math-sqrt__svg"), true)
+  assert_eq(html.contains("markdown-math-sqrt__path"), true)
+  assert_eq(html.contains("markdown-math-sqrt__radicand"), true)
+  assert_eq(html.contains("&radic;"), false)
   assert_eq(html.contains("&plusmn;"), true)
   assert_eq(html.contains("<sub>i</sub>"), true)
   assert_eq(html.contains("<sup>2</sup>"), true)
@@ -270,16 +275,24 @@ test "markdown block renderer renders latex math" {
   assert_eq(html.contains("class=\"markdown-math-frac\""), true)
   assert_eq(html.contains("<sub>1</sub>"), true)
   assert_eq(html.contains("<sup>2</sup>"), true)
-  assert_eq(html.contains("markdown-math-sqrt__symbol"), true)
+  assert_eq(html.contains("markdown-math-sqrt__radical"), true)
+  assert_eq(html.contains("markdown-math-sqrt__svg"), true)
+  assert_eq(html.contains("markdown-math-sqrt__path"), true)
+  assert_eq(html.contains("markdown-math-sqrt__radicand"), true)
+  assert_eq(html.contains("&radic;"), false)
 }
 
 ///|
 test "markdown block renderer exposes latex math subtree classes" {
-  let html = render_markdown_blocks_html(["$$\\frac{a}{b}$$"])
+  let html = render_markdown_blocks_html(["$$\\frac{a}{b} + \\sqrt[n]{x}$$"])
   let _ = html
   assert_eq(html.contains("markdown-math-frac"), true)
   assert_eq(html.contains("markdown-math-frac__num"), true)
   assert_eq(html.contains("markdown-math-frac__den"), true)
+  assert_eq(html.contains("markdown-math-sqrt__index"), true)
+  assert_eq(html.contains("markdown-math-sqrt__radical"), true)
+  assert_eq(html.contains("markdown-math-sqrt__svg"), true)
+  assert_eq(html.contains("markdown-math-sqrt__path"), true)
 }
 
 ///|
