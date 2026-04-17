@@ -2009,6 +2009,64 @@ fn reveal_input_line(line_index : Int) -> Unit {
 }
 
 ///|
+fn input_offset_for_line(value : String, line_index : Int) -> Int {
+  if line_index <= 0 {
+    return 0
+  }
+  let mut line = 0
+  for index in 0..<value.length() {
+    if line == line_index {
+      return index
+    }
+    if value[index] == '\n' {
+      line += 1
+    }
+  }
+  value.length()
+}
+
+///|
+fn input_offset_after_line(value : String, line_index : Int) -> Int {
+  if line_index < 0 {
+    return 0
+  }
+  let mut line = 0
+  for index in 0..<value.length() {
+    if line == line_index && value[index] == '\n' {
+      return index
+    }
+    if value[index] == '\n' {
+      line += 1
+    }
+  }
+  value.length()
+}
+
+///|
+fn focus_input_line_range(start_line : Int, end_line : Int) -> Unit {
+  let start = if start_line < 0 { 0 } else { start_line }
+  let stop = if end_line < start { start } else { end_line }
+  match get_element("#input") {
+    Some(input_element) => {
+      let input = @dom.HTMLTextAreaElement::cast_from_element(input_element)
+      let start_offset = input_offset_for_line(input.value, start)
+      let end_offset = input_offset_after_line(input.value, stop)
+      input.as_any()._call("focus", []) |> ignore
+      input
+      .as_any()
+      ._call("setSelectionRange", [
+        @core.any(start_offset),
+        @core.any(end_offset),
+      ])
+      |> ignore
+      reveal_input_line(start)
+      sync_editor_chrome()
+    }
+    None => ()
+  }
+}
+
+///|
 fn toggle_class(
   element : @dom.Element,
   class_name : String,

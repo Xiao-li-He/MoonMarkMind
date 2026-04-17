@@ -65,6 +65,12 @@ fn title_at(node_index : Int) -> String {
 }
 
 ///|
+fn mark_body_block_editing(node_index : Int, block_index : Int) -> Unit {
+  app_state.editing_body_node = node_index
+  app_state.editing_body_block = block_index
+}
+
+///|
 fn outline_flat_index_by_title(node : OutlineNode, title : String) -> Int {
   if node.title == title {
     return node.flat_index
@@ -391,7 +397,7 @@ test "body block edit save pushes one global undo entry" {
   reset_frontend_test_state()
   load_markdown("# Root\n## Alpha\nOld note\n\nSecond block\n## Beta", true)
   select_single_node(1, false)
-  begin_body_block_edit_node(1, 0)
+  mark_body_block_editing(1, 0)
 
   save_body_block_editor(1, 0, "New note")
 
@@ -419,12 +425,12 @@ test "body block edit cancel and unchanged save do not push undo" {
   load_markdown("# Root\n## Alpha\nSame note\n## Beta", true)
   select_single_node(1, false)
 
-  begin_body_block_edit_node(1, 0)
+  mark_body_block_editing(1, 0)
   cancel_body_block_editor()
   assert_eq(app_state.markdown, "# Root\n## Alpha\nSame note\n## Beta")
   assert_eq(app_state.undo_stack.length(), 0)
 
-  begin_body_block_edit_node(1, 0)
+  mark_body_block_editing(1, 0)
   save_body_block_editor(1, 0, "Same note")
   assert_eq(app_state.markdown, "# Root\n## Alpha\nSame note\n## Beta")
   assert_eq(app_state.undo_stack.length(), 0)
@@ -464,6 +470,56 @@ test "body note button toggles collapsed body instead of editing" {
   }
   toggle_note_body(1)
   assert_eq(is_note_body_collapsed(1), false)
+}
+
+///|
+test "body block edit button selects node without inline editor" {
+  reset_frontend_test_state()
+  load_markdown("# Root\n## Alpha\nAlpha note\n## Beta", true)
+  app_state.editing_node = 1
+  app_state.editing_note_node = 1
+  app_state.editing_body_node = 1
+  app_state.editing_body_block = 0
+
+  begin_body_block_edit_node(1, 0)
+
+  assert_eq(app_state.selected_node, 1)
+  assert_eq(app_state.editing_node, -2)
+  assert_eq(app_state.editing_note_node, -2)
+  assert_eq(app_state.editing_body_node, -2)
+  assert_eq(app_state.editing_body_block, -1)
+}
+
+///|
+test "body block image edit keeps inline image editor" {
+  reset_frontend_test_state()
+  load_markdown("# Root\n## Alpha\n![old](old.png)\n## Beta", true)
+
+  begin_body_block_edit_node(1, 0)
+
+  assert_eq(app_state.selected_node, 1)
+  assert_eq(app_state.editing_body_node, 1)
+  assert_eq(app_state.editing_body_block, 0)
+}
+
+///|
+test "body block edit line range points to markdown source block" {
+  reset_frontend_test_state()
+  load_markdown(
+    "# Root\n## Alpha\nFirst line\n\n```ts\nconst a = 1\n```\n## Beta", true,
+  )
+
+  match find_node(app_state.root, 1) {
+    Some(node) =>
+      match node_body_block_line_range(node, 1) {
+        Some((start_line, end_line)) => {
+          assert_eq(start_line, 4)
+          assert_eq(end_line, 6)
+        }
+        None => fail("missing body block range")
+      }
+    None => fail("missing alpha node")
+  }
 }
 
 ///|
@@ -1069,9 +1125,9 @@ test "body block duplicate save after commit does not push empty undo state" {
   select_single_node(1, false)
   handle_insert_note()
 
-  begin_body_block_edit_node(1, 0)
+  mark_body_block_editing(1, 0)
   save_body_block_editor(1, 0, "Alpha note")
-  begin_body_block_edit_node(1, 0)
+  mark_body_block_editing(1, 0)
   save_body_block_editor(1, 0, "Alpha note")
 
   assert_eq(app_state.undo_stack.length(), 2)
@@ -1089,7 +1145,7 @@ test "body block edit preserves textarea newlines in one block" {
   select_single_node(1, false)
 
   handle_insert_note()
-  begin_body_block_edit_node(1, 0)
+  mark_body_block_editing(1, 0)
   save_body_block_editor(1, 0, "First line\nSecond line")
 
   assert_eq(
@@ -1104,7 +1160,7 @@ test "body block edit preserves code block single newlines" {
   select_single_node(1, false)
 
   insert_node_body_template("code")
-  begin_body_block_edit_node(1, 0)
+  mark_body_block_editing(1, 0)
   save_body_block_editor(1, 0, "```ts\nconst a = 1\nconst b = 2\n```")
 
   assert_eq(
@@ -1119,7 +1175,7 @@ test "body block edit preserves table single newlines" {
   select_single_node(1, false)
 
   insert_node_body_template("table")
-  begin_body_block_edit_node(1, 0)
+  mark_body_block_editing(1, 0)
   save_body_block_editor(1, 0, "| A | B |\n|---|---|\n| 1 | 2 |")
 
   assert_eq(
@@ -1137,7 +1193,7 @@ test "insert note on list node preserves markdown indentation" {
 
   select_single_node(list_index, false)
   handle_insert_note()
-  begin_body_block_edit_node(list_index, 0)
+  mark_body_block_editing(list_index, 0)
   save_body_block_editor(list_index, 0, "List note")
 
   assert_eq(

@@ -1189,6 +1189,48 @@ fn is_note_body_collapsed(node_index : Int) -> Bool {
 }
 
 ///|
+fn markdown_body_block_line_count(block : String) -> Int {
+  block.split("\n").to_array().length()
+}
+
+///|
+fn markdown_node_body_block_line_range(
+  node : MarkdownNode,
+  block_index : Int,
+) -> (Int, Int)? {
+  if block_index < 0 ||
+    block_index >= node.body.length() ||
+    node.source_line < 0 {
+    return None
+  }
+  let mut line = node.source_line + 1
+  for index in 0..<block_index {
+    line += node.body_blank_lines
+      .get(index)
+      .unwrap_or(default_body_blank_line_count(index))
+    line += markdown_body_block_line_count(node.body[index])
+  }
+  line += node.body_blank_lines
+    .get(block_index)
+    .unwrap_or(default_body_blank_line_count(block_index))
+  let block_line_count = markdown_body_block_line_count(node.body[block_index])
+  let end_line = line + block_line_count - 1
+  Some((line, end_line))
+}
+
+///|
+fn node_body_block_line_range(
+  node : OutlineNode,
+  block_index : Int,
+) -> (Int, Int)? {
+  let nodes = parse_markdown_nodes(app_state.markdown)
+  if node.flat_index < 0 || node.flat_index >= nodes.length() {
+    return None
+  }
+  markdown_node_body_block_line_range(nodes[node.flat_index], block_index)
+}
+
+///|
 fn begin_body_block_edit_node(node_index : Int, block_index : Int) -> Unit {
   if node_index < 0 || block_index < 0 {
     return
@@ -1198,16 +1240,33 @@ fn begin_body_block_edit_node(node_index : Int, block_index : Int) -> Unit {
       if block_index >= node.body.length() {
         return
       }
+      if body_block_kind(node.body[block_index]) == "image" {
+        clear_editing_session()
+        app_state.editing_node = -2
+        clear_note_editing_session()
+        app_state.collapsed_note_nodes = remove_int(
+          app_state.collapsed_note_nodes,
+          node_index,
+        )
+        app_state.editing_body_node = node_index
+        app_state.editing_body_block = block_index
+        select_single_node(node_index, false)
+        render_ui()
+        return
+      }
       clear_editing_session()
+      app_state.editing_node = -2
       clear_note_editing_session()
-      app_state.collapsed_note_nodes = remove_int(
-        app_state.collapsed_note_nodes,
-        node_index,
-      )
-      app_state.editing_body_node = node_index
-      app_state.editing_body_block = block_index
+      clear_body_block_editing_session()
       select_single_node(node_index, false)
-      render_ui()
+      sync_selection_ui()
+      if app_state.started {
+        match node_body_block_line_range(node, block_index) {
+          Some((start_line, end_line)) =>
+            focus_input_line_range(start_line, end_line)
+          None => ()
+        }
+      }
     }
     None => ()
   }
