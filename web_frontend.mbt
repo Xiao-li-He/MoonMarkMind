@@ -116,6 +116,9 @@ let redo_undo_expand_stack : @ref.Ref[Array[Int]] = @ref.Ref([])
 let editor_created_node : @ref.Ref[Int] = @ref.Ref(-2)
 
 ///|
+let suppress_next_render_mindmap_reveal : @ref.Ref[Bool] = @ref.Ref(false)
+
+///|
 pub fn start_web_app() -> Unit {
   match get_element("#mindmap-export") {
     Some(export_root) => {
@@ -178,7 +181,11 @@ fn on_download_markdown_click() -> Unit {
 
 ///|
 fn on_input_change() -> Unit {
-  apply_markdown_change(get_input_value(), true)
+  let preserve_node = app_state.selected_node
+  let node_origin = capture_mindmap_node_origin(preserve_node)
+  suppress_next_render_mindmap_reveal.val = true
+  apply_markdown_change(get_input_value(), false)
+  schedule_mindmap_preserve_node_origin(preserve_node, node_origin)
 }
 
 ///|
@@ -188,6 +195,11 @@ fn on_input_selected_headings_change(serialized : String) -> Unit {
   }
   let next_selected_nodes = parse_selection_indices(serialized)
   if same_int_set(app_state.selected_nodes, next_selected_nodes) {
+    if next_selected_nodes.length() > 0 {
+      schedule_mindmap_reveal_node(
+        next_selected_nodes[next_selected_nodes.length() - 1],
+      )
+    }
     return
   }
   apply_selected_nodes(next_selected_nodes, false)
@@ -1882,6 +1894,7 @@ fn current_document_name() -> String {
 ///|
 fn render_ui() -> Unit {
   if !app_state.started {
+    suppress_next_render_mindmap_reveal.val = false
     return
   }
   set_select_value("sample-select", app_state.sample_variant)
@@ -1913,7 +1926,11 @@ fn render_ui() -> Unit {
     reveal_input_line(primary_linked_line)
   }
   app_state.reveal_selected_line = false
-  schedule_mindmap_reveal_node(app_state.selected_node)
+  if suppress_next_render_mindmap_reveal.val {
+    suppress_next_render_mindmap_reveal.val = false
+  } else {
+    schedule_mindmap_reveal_node(app_state.selected_node)
+  }
 }
 
 ///|

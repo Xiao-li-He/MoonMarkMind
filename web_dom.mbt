@@ -1919,6 +1919,12 @@ fn current_heading_selection(input : @dom.HTMLTextAreaElement) -> Array[Int] {
   }
   let start_line = line_index_at_offset(input.value, range_start)
   let end_line = line_index_at_offset(input.value, range_end)
+  if range_start == range_end {
+    let node_index = markdown_node_index_at_line(input.value, start_line)
+    if node_index >= 0 {
+      return [node_index]
+    }
+  }
   let lines = input.value.split("\n".view()).to_array()
   let structural_line_indexes : Array[(Int, Int)] = []
   let mut node_index = 0
@@ -1961,6 +1967,39 @@ fn current_heading_selection(input : @dom.HTMLTextAreaElement) -> Array[Int] {
     }
   }
   result
+}
+
+///|
+fn markdown_node_index_at_line(markdown : String, line_index : Int) -> Int {
+  if line_index < 0 {
+    return -1
+  }
+  let nodes = parse_markdown_nodes(markdown)
+  for index in 0..<nodes.length() {
+    let node = nodes[index]
+    if node.source_line == line_index {
+      return index
+    }
+    for block_index in 0..<node.body.length() {
+      match markdown_node_body_block_line_range(node, block_index) {
+        Some((start_line, end_line)) =>
+          if line_index >= start_line && line_index <= end_line {
+            return index
+          }
+        None => ()
+      }
+    }
+  }
+  -1
+}
+
+///|
+fn should_notify_selected_headings(
+  next_key : String,
+  last_key : String,
+  force_reveal : Bool,
+) -> Bool {
+  next_key != last_key || (force_reveal && next_key.length() > 0)
 }
 
 ///|
@@ -2690,7 +2729,7 @@ fn bind_input_listener(
       input.setAttribute("data-input-listener-ready", "true")
       let window = @dom.window()
 
-      let schedule_sync_selected_headings = fn() {
+      let schedule_sync_selected_headings = fn(force_reveal) {
         if input_selected_headings_frame.val != 0 {
           window.cancelAnimationFrame(input_selected_headings_frame.val)
         }
@@ -2700,7 +2739,11 @@ fn bind_input_listener(
             .map(fn(value) { value.to_string() })
             .iter()
             .join(",")
-          if next_key != input_last_selected_headings_key.val {
+          if should_notify_selected_headings(
+              next_key,
+              input_last_selected_headings_key.val,
+              force_reveal,
+            ) {
             input_last_selected_headings_key.val = next_key
             selected_headings_callback(next_key)
           }
@@ -2717,16 +2760,16 @@ fn bind_input_listener(
         })
       }
 
-      let sync_selection_state = fn() {
+      let sync_selection_state = fn(force_reveal) {
         schedule_sync_editor_chrome()
-        schedule_sync_selected_headings()
+        schedule_sync_selected_headings(force_reveal)
       }
 
       input
       .as_event_target()
       .on("input", fn(_) {
         sync_editor_chrome()
-        sync_selection_state()
+        sync_selection_state(false)
         input_callback()
       })
       input.as_event_target().on("scroll", fn(_) { sync_editor_chrome() })
@@ -2760,11 +2803,13 @@ fn bind_input_listener(
         input_hover_line_index.val = -1
         sync_editor_chrome()
       })
-      input.as_event_target().on("click", fn(_) { sync_selection_state() })
-      input.as_event_target().on("mouseup", fn(_) { sync_selection_state() })
-      input.as_event_target().on("keyup", fn(_) { sync_selection_state() })
-      input.as_event_target().on("select", fn(_) { sync_selection_state() })
-      input.as_event_target().on("focus", fn(_) { sync_selection_state() })
+      input.as_event_target().on("click", fn(_) { sync_selection_state(true) })
+      input
+      .as_event_target()
+      .on("mouseup", fn(_) { sync_selection_state(true) })
+      input.as_event_target().on("keyup", fn(_) { sync_selection_state(true) })
+      input.as_event_target().on("select", fn(_) { sync_selection_state(true) })
+      input.as_event_target().on("focus", fn(_) { sync_selection_state(true) })
       input
       .as_event_target()
       .on("blur", fn(_) {
@@ -2777,11 +2822,11 @@ fn bind_input_listener(
         if !input_active_element_is_input(input) {
           return
         }
-        sync_selection_state()
+        sync_selection_state(true)
       })
       window.as_event_target().on("resize", fn(_) { sync_editor_chrome() })
       sync_editor_chrome()
-      schedule_sync_selected_headings()
+      schedule_sync_selected_headings(false)
     }
     None => ()
   }

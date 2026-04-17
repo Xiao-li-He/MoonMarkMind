@@ -439,6 +439,31 @@ fn capture_mindmap_current_root_anchor() -> (Double, Double)? {
 }
 
 ///|
+fn mindmap_node_origin_point(
+  mindmap : @dom.Element,
+  node_index : Int,
+) -> (Double, Double)? {
+  match mindmap.querySelector(".node[data-node-index=\"\{node_index}\"]") {
+    Some(node) => {
+      let rect = element_rect(node)
+      Some((rect.left, rect.top))
+    }
+    None => None
+  }
+}
+
+///|
+fn capture_mindmap_node_origin(node_index : Int) -> (Double, Double)? {
+  if node_index < 0 {
+    return None
+  }
+  match get_element("#mindmap") {
+    Some(mindmap) => mindmap_node_origin_point(mindmap, node_index)
+    None => None
+  }
+}
+
+///|
 fn schedule_mindmap_preserve_root_anchor(
   anchor_before : (Double, Double)?,
 ) -> Unit {
@@ -452,6 +477,68 @@ fn schedule_mindmap_preserve_root_anchor(
               ignore(
                 window.requestAnimationFrame(fn(_) {
                   match mindmap_current_root_anchor_point(mindmap) {
+                    Some((after_x, after_y)) => {
+                      let current_pan_x = parse_int_or_default(
+                        mindmap.getAttribute("data-pan-x").unwrap_or("0"),
+                        0,
+                      )
+                      let current_pan_y = parse_int_or_default(
+                        mindmap.getAttribute("data-pan-y").unwrap_or("0"),
+                        0,
+                      )
+                      mindmap.setAttribute(
+                        "data-pan-x",
+                        (current_pan_x.to_double() + before_x - after_x)
+                        .round()
+                        .to_int()
+                        .to_string(),
+                      )
+                      mindmap.setAttribute(
+                        "data-pan-y",
+                        (current_pan_y.to_double() + before_y - after_y)
+                        .round()
+                        .to_int()
+                        .to_string(),
+                      )
+                      let frame = @ref.Ref(0)
+                      mindmap_sync_view(
+                        mindmap,
+                        get_element("#zoom-value"),
+                        get_element("#zoom-edit"),
+                      )
+                      mindmap_schedule_connectors(frame, window)
+                    }
+                    None => ()
+                  }
+                }),
+              )
+            }),
+          )
+        }
+        None => ()
+      }
+    None => ()
+  }
+}
+
+///|
+fn schedule_mindmap_preserve_node_origin(
+  node_index : Int,
+  origin_before : (Double, Double)?,
+) -> Unit {
+  if node_index < 0 {
+    return
+  }
+  match origin_before {
+    Some((before_x, before_y)) =>
+      match get_element("#mindmap") {
+        Some(mindmap) => {
+          let window = @dom.window()
+          ignore(
+            window.requestAnimationFrame(fn(_) {
+              ignore(
+                window.requestAnimationFrame(fn(_) {
+                  match mindmap_node_origin_point(mindmap, node_index) {
                     Some((after_x, after_y)) => {
                       let current_pan_x = parse_int_or_default(
                         mindmap.getAttribute("data-pan-x").unwrap_or("0"),

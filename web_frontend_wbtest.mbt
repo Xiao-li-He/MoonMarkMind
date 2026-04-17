@@ -29,6 +29,7 @@ fn reset_frontend_test_state() -> Unit {
   app_state.drag_source_index = -1
   app_state.drag_source_parent = -2
   app_state.sample_variant = "custom"
+  suppress_next_render_mindmap_reveal.val = false
   load_markdown(frontend_test_markdown(), true)
 }
 
@@ -53,6 +54,7 @@ fn reset_navigation_test_state() -> Unit {
   app_state.drag_source_index = -1
   app_state.drag_source_parent = -2
   app_state.sample_variant = "custom"
+  suppress_next_render_mindmap_reveal.val = false
   load_markdown(navigation_test_markdown(), true)
 }
 

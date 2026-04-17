@@ -80,6 +80,27 @@ test "current mindmap render cycle helper reflects the stored cycle" {
 }
 
 ///|
+test "markdown line selection maps body lines to owning node" {
+  let markdown = "# Root\n## Alpha\nFirst line\nSecond line\n\nSecond block\n## Beta"
+
+  assert_eq(markdown_node_index_at_line(markdown, 1), 1)
+  assert_eq(markdown_node_index_at_line(markdown, 2), 1)
+  assert_eq(markdown_node_index_at_line(markdown, 3), 1)
+  assert_eq(markdown_node_index_at_line(markdown, 4), -1)
+  assert_eq(markdown_node_index_at_line(markdown, 5), 1)
+  assert_eq(markdown_node_index_at_line(markdown, 6), 2)
+}
+
+///|
+test "selected heading notification repeats same key only when forced" {
+  assert_eq(should_notify_selected_headings("1", "", false), true)
+  assert_eq(should_notify_selected_headings("1", "1", false), false)
+  assert_eq(should_notify_selected_headings("1", "1", true), true)
+  assert_eq(should_notify_selected_headings("", "1", false), true)
+  assert_eq(should_notify_selected_headings("", "", true), false)
+}
+
+///|
 test "hover line stays hidden when editor is inactive" {
   assert_eq(should_show_input_hover_line(3, true), true)
   assert_eq(should_show_input_hover_line(3, false), false)
