@@ -87,12 +87,16 @@ fn outline_flat_index_by_title(node : OutlineNode, title : String) -> Int {
 ///|
 test "markdown inline renderer covers sample part two styles" {
   let html = render_markdown_inline_html(
-    "[Link](https://example.com) **Bold** _Italic_ `Code` ~~Gone~~",
+    "[Link](https://example.com) **Bold** _Italic_ *Star Italic* `Code` ~~Gone~~",
   )
   assert_eq(html.contains("class=\"markdown-link\""), true)
   assert_eq(html.contains("href=\"https://example.com\""), true)
   assert_eq(html.contains("class=\"markdown-strong\""), true)
   assert_eq(html.contains("class=\"markdown-emphasis\""), true)
+  assert_eq(
+    html.contains("<em class=\"markdown-emphasis\">Star Italic</em>"),
+    true,
+  )
   assert_eq(html.contains("class=\"markdown-inline-code\""), true)
   assert_eq(html.contains("class=\"markdown-strike\""), true)
 }

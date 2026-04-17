@@ -921,6 +921,17 @@ fn parse_markdown_inline_at(
       None => ()
     }
   }
+  if has_markdown_at(source, cursor, "*") {
+    match find_markdown_from(source, "*", cursor + 1) {
+      Some(end_) =>
+        if end_ > cursor + 1 {
+          return Some(
+            (end_ + 1, InlineEmphasis(source[cursor + 1:end_].to_string())),
+          )
+        }
+      None => ()
+    }
+  }
   if has_markdown_at(source, cursor, "_") {
     match find_markdown_from(source, "_", cursor + 1) {
       Some(end_) =>
