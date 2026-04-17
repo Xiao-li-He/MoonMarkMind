@@ -2784,7 +2784,7 @@ fn build_body_block_controls_dom(block_index : Int) -> @dom.Element {
   edit.setAttribute("data-body-block-index", block_index.to_string())
   edit.setAttribute("data-tip", "Edit")
   edit.setAttribute("aria-label", "Edit")
-  edit.setTextContent("E")
+  edit.setInnerHTML(body_block_action_icon_html("edit"))
   let delete = create_element(
     "button", "node-body-block-action node-body-block-action--delete",
   )
@@ -2793,10 +2793,24 @@ fn build_body_block_controls_dom(block_index : Int) -> @dom.Element {
   delete.setAttribute("data-body-block-index", block_index.to_string())
   delete.setAttribute("data-tip", "Delete")
   delete.setAttribute("aria-label", "Delete")
-  delete.setTextContent("X")
+  delete.setInnerHTML(body_block_action_icon_html("delete"))
   append_child(controls, edit)
   append_child(controls, delete)
   controls
+}
+
+///|
+fn body_block_action_icon_html(kind : String) -> String {
+  match kind {
+    "delete" => {
+      let common = "class=\"node-body-block-action-icon\" viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" aria-hidden=\"true\" focusable=\"false\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\""
+      "<svg \{common}><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M8.5 8.5l7 7\"/><path d=\"M15.5 8.5l-7 7\"/></svg>"
+    }
+    _ => {
+      let common = "class=\"node-body-block-action-icon\" viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" aria-hidden=\"true\" focusable=\"false\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\""
+      "<svg \{common}><path d=\"M5.5 18.5L6.5 14.7L15.8 5.4L18.6 8.2L9.3 17.5L5.5 18.5Z\"/><path d=\"M14.9 6.3L17.7 9.1\"/></svg>"
+    }
+  }
 }
 
 ///|
@@ -3462,7 +3476,9 @@ fn render_node_body_block(node : OutlineNode, block_index : Int) -> String {
     app_state.editing_body_block == block_index {
     render_body_block_editor(node, block_index, block, kind)
   } else {
-    let controls = "<div class=\"node-body-block-actions\" data-body-block-index=\"\{block_index}\"><button type=\"button\" class=\"node-body-block-action\" data-action=\"edit-body-block\" data-body-block-index=\"\{block_index}\" data-tip=\"Edit\" aria-label=\"Edit\">E</button><button type=\"button\" class=\"node-body-block-action node-body-block-action--delete\" data-action=\"delete-body-block\" data-body-block-index=\"\{block_index}\" data-tip=\"Delete\" aria-label=\"Delete\">X</button></div>"
+    let edit_icon = body_block_action_icon_html("edit")
+    let delete_icon = body_block_action_icon_html("delete")
+    let controls = "<div class=\"node-body-block-actions\" data-body-block-index=\"\{block_index}\"><button type=\"button\" class=\"node-body-block-action\" data-action=\"edit-body-block\" data-body-block-index=\"\{block_index}\" data-tip=\"Edit\" aria-label=\"Edit\">\{edit_icon}</button><button type=\"button\" class=\"node-body-block-action node-body-block-action--delete\" data-action=\"delete-body-block\" data-body-block-index=\"\{block_index}\" data-tip=\"Delete\" aria-label=\"Delete\">\{delete_icon}</button></div>"
     "<div class=\"node-body-block node-body-block--\{kind}\" data-body-block-index=\"\{block_index}\" data-body-block-kind=\"\{kind}\">\{controls}<div class=\"markdown-blocks\">\{render_markdown_blocks_html([block])}</div></div>"
   }
 }

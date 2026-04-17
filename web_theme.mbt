@@ -2551,25 +2551,31 @@ fn style_node_body_block_actions(element : @dom.Element) -> Unit {
 
 ///|
 fn style_node_body_block_action(element : @dom.Element) -> Unit {
-  set_style(element, "width", "22px")
-  set_style(element, "height", "18px")
+  set_style(element, "width", "28px")
+  set_style(element, "height", "28px")
   set_style(element, "padding", "0")
-  set_style(element, "border", "1px solid rgba(148, 172, 198, 0.55)")
-  set_style(element, "border-radius", "6px")
-  set_style(element, "background", "rgba(255, 255, 255, 0.92)")
-  set_style(element, "color", "#5c7a99")
-  set_style(element, "font-size", "10px")
-  set_style(element, "font-weight", "800")
+  set_style(element, "border", "1px solid rgba(214, 225, 237, 0.78)")
+  set_style(element, "border-radius", "8px")
+  set_style(
+    element, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 250, 254, 0.9))",
+  )
+  set_style(element, "color", "#5c88a8")
+  set_style(element, "font-size", "0")
+  set_style(element, "font-weight", "400")
   set_style(element, "line-height", "1")
   set_style(element, "display", "inline-flex")
   set_style(element, "align-items", "center")
   set_style(element, "justify-content", "center")
   set_style(element, "cursor", "pointer")
+  set_style(element, "box-sizing", "border-box")
+  set_style(
+    element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 5px 12px rgba(120, 139, 164, 0.08)",
+  )
 }
 
 ///|
 fn style_node_body_block_action_delete(element : @dom.Element) -> Unit {
-  set_style(element, "color", "#b94f5c")
+  set_style(element, "color", "#5c88a8")
 }
 
 ///|

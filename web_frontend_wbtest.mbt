@@ -1008,6 +1008,28 @@ test "node body block editor renders one active block editor" {
 }
 
 ///|
+test "node body block actions render svg icons" {
+  let node = OutlineNode::{
+    flat_index: 0,
+    source_line: 0,
+    level: 1,
+    title: "Root",
+    marker: "",
+    body: ["First line"],
+    kind: MarkdownNodeKind::Heading,
+    synthetic: false,
+    children: [],
+  }
+  app_state.editing_body_node = -2
+  app_state.editing_body_block = -1
+
+  let html = render_node_body(node)
+  assert_eq(html.contains("node-body-block-action-icon"), true)
+  assert_eq(html.contains(">E<"), false)
+  assert_eq(html.contains(">X<"), false)
+}
+
+///|
 test "node visual hidden count excludes the current node" {
   reset_navigation_test_state()
   let parent_index = outline_flat_index_by_title(app_state.root, "Parent")
