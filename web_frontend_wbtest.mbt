@@ -1251,6 +1251,8 @@ test "insert body template appends a markdown image block" {
     app_state.markdown.contains("](image.png)"),
     true,
   )
+  assert_eq(app_state.editing_body_node, 1)
+  assert_eq(app_state.editing_body_block, 0)
 }
 
 ///|
@@ -1298,7 +1300,7 @@ test "insert body template appends a markdown table block" {
 }
 
 ///|
-test "insert note appends note block without entering body editor" {
+test "insert note appends note block and records undo" {
   reset_frontend_test_state()
   select_single_node(1, false)
 
@@ -1310,6 +1312,29 @@ test "insert note appends note block without entering body editor" {
   assert_eq(app_state.editing_note_node, -2)
   assert_eq(app_state.editing_body_node, -2)
   assert_eq(app_state.undo_stack.length(), 1)
+}
+
+///|
+test "insert note edits existing body instead of appending" {
+  reset_frontend_test_state()
+  load_markdown("# Root\n## Alpha\n![old](old.png)\n## Beta", true)
+  select_single_node(1, false)
+  let before = app_state.markdown
+  let undo_count = app_state.undo_stack.length()
+
+  handle_insert_note()
+
+  assert_eq(app_state.markdown, before)
+  assert_eq(app_state.undo_stack.length(), undo_count)
+  match find_node(app_state.root, 1) {
+    Some(node) => {
+      assert_eq(node.body.length(), 1)
+      assert_eq(body_block_kind(node.body[0]), "image")
+    }
+    None => fail("missing alpha node")
+  }
+  assert_eq(app_state.editing_body_node, 1)
+  assert_eq(app_state.editing_body_block, 0)
 }
 
 ///|

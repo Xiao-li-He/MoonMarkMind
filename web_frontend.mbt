@@ -1046,6 +1046,17 @@ fn save_editor(node_index : Int, title : String) -> Unit {
 
 ///|
 fn handle_insert_note() -> Unit {
+  if app_state.selected_node < 0 {
+    return
+  }
+  match find_node(app_state.root, app_state.selected_node) {
+    Some(node) =>
+      if node.body.length() > 0 {
+        begin_body_block_edit_node(app_state.selected_node, 0)
+        return
+      }
+    None => return
+  }
   insert_node_body_template("note")
 }
 
@@ -2173,6 +2184,7 @@ fn insert_node_body_template(kind : String) -> Unit {
   if app_state.selected_node < 0 {
     return
   }
+  let node_index = app_state.selected_node
   let body_lines = if kind == "note" {
     ["笔记："]
   } else if kind == "link" {
@@ -2193,13 +2205,14 @@ fn insert_node_body_template(kind : String) -> Unit {
     return
   }
   let nodes = parse_markdown_nodes(app_state.markdown)
-  if app_state.selected_node >= nodes.length() {
+  if node_index >= nodes.length() {
     return
   }
+  let inserted_block_index = nodes[node_index].body.length()
   let updated = []
   for index in 0..<nodes.length() {
     let node = nodes[index]
-    if index == app_state.selected_node {
+    if index == node_index {
       let next_body = slice_strings(node.body, 0, node.body.length())
       for line in template_body {
         next_body.push(line)
@@ -2220,9 +2233,10 @@ fn insert_node_body_template(kind : String) -> Unit {
   }
   app_state.collapsed_note_nodes = remove_int(
     app_state.collapsed_note_nodes,
-    app_state.selected_node,
+    node_index,
   )
   apply_markdown_change(render_markdown_nodes(updated), false)
+  begin_body_block_edit_node(node_index, inserted_block_index)
 }
 
 ///|
