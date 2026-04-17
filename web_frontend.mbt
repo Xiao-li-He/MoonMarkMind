@@ -2803,7 +2803,7 @@ fn build_body_block_controls_dom(block_index : Int) -> @dom.Element {
 fn body_block_action_icon_html(kind : String) -> String {
   match kind {
     "delete" => {
-      let common = "class=\"node-body-block-action-icon\" viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" aria-hidden=\"true\" focusable=\"false\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\""
+      let common = "class=\"node-body-block-action-icon\" viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" aria-hidden=\"true\" focusable=\"false\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\""
       "<svg \{common}><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M8.5 8.5l7 7\"/><path d=\"M15.5 8.5l-7 7\"/></svg>"
     }
     _ => {

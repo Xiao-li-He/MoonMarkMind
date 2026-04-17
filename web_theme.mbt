@@ -2540,12 +2540,14 @@ fn style_node_body_block(element : @dom.Element) -> Unit {
 ///|
 fn style_node_body_block_actions(element : @dom.Element) -> Unit {
   set_style(element, "position", "absolute")
-  set_style(element, "top", "3px")
-  set_style(element, "right", "3px")
+  set_style(element, "left", "50%")
+  set_style(element, "right", "auto")
+  set_style(element, "bottom", "8px")
   set_style(element, "display", "flex")
   set_style(element, "gap", "4px")
   set_style(element, "opacity", "0")
   set_style(element, "pointer-events", "none")
+  set_style(element, "transform", "translateX(-50%)")
   set_style(element, "transition", "opacity 120ms ease")
 }
 
