@@ -3872,6 +3872,16 @@ fn download_mindmap_svg(filename : String) -> Unit {
 
 ///|
 fn download_mindmap_png(filename : String) -> Unit {
+  ignore(
+    @core.Promise::new(async fn(resolve, _reject) {
+      download_mindmap_png_async(filename)
+      resolve(())
+    }),
+  )
+}
+
+///|
+async fn download_mindmap_png_async(filename : String) -> Unit {
   let svg_element = match build_mindmap_export_svg_element() {
     Some(svg) => svg
     None => return
@@ -3892,6 +3902,7 @@ fn download_mindmap_png(filename : String) -> Unit {
   let output_height = (height.to_double() * scale).round().to_int()
   svg_element.setAttribute("width", output_width.to_string())
   svg_element.setAttribute("height", output_height.to_string())
+  inline_png_export_images(svg_element)
   let svg = serialize_svg_export_element(svg_element)
   let image = create_element("img", "")
   let image_element = @dom.HTMLImageElement::cast_from_element(image)
@@ -3921,6 +3932,57 @@ fn download_mindmap_png(filename : String) -> Unit {
   })
   image_element.as_event_target().addEventListener("error", fn(_) { () })
   image_element.src = export_url
+}
+
+///|
+async fn inline_png_export_images(svg_element : @dom.Element) -> Unit {
+  let images : Array[@dom.Element] = svg_element.querySelectorAll(
+    ".markdown-image",
+  )
+  for image in images {
+    let src = image.getAttribute("src").unwrap_or("")
+    if should_inline_png_export_image_src(src) {
+      let data_url = fetch_image_as_data_url(src) catch { _ => "" }
+      if data_url.length() > 0 {
+        image.setAttribute("src", data_url)
+      }
+    }
+  }
+}
+
+///|
+fn should_inline_png_export_image_src(src : String) -> Bool {
+  let trimmed = src.trim().to_string()
+  if trimmed.length() == 0 {
+    return false
+  }
+  let lower = trimmed.to_lower()
+  !(lower.has_prefix("data:") || lower.has_prefix("blob:"))
+}
+
+///|
+async fn fetch_image_as_data_url(src : String) -> String {
+  let response = @dom.window().fetch(src)
+  if !response.ok {
+    return ""
+  }
+  let blob_promise : @core.Promise[@core.Any] = response
+    .as_any()
+    ._call("blob", [])
+    .cast()
+  read_blob_as_data_url(blob_promise.wait())
+}
+
+///|
+async fn read_blob_as_data_url(blob : @core.Any) -> String {
+  let resolvers : @core.PromiseResolvers[String] = @core.Promise::withResolvers()
+  let reader = @file.FileReader::new()
+  reader.set_onload(fn(_) {
+    resolvers.resolve(reader.as_any()["result"].to_string())
+  })
+  reader.set_onerror(fn(_) { resolvers.resolve("") })
+  reader.as_any()._call("readAsDataURL", [blob]) |> ignore
+  resolvers.promise.wait()
 }
 
 ///|

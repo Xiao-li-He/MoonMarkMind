@@ -113,6 +113,24 @@ test "static export note body margin compensates removed note button" {
 }
 
 ///|
+test "png export image inlining skips already embedded sources" {
+  assert_eq(should_inline_png_export_image_src(""), false)
+  assert_eq(
+    should_inline_png_export_image_src("data:image/png;base64,abc"),
+    false,
+  )
+  assert_eq(
+    should_inline_png_export_image_src("blob:https://example.com/id"),
+    false,
+  )
+  assert_eq(
+    should_inline_png_export_image_src("https://example.com/a.png"),
+    true,
+  )
+  assert_eq(should_inline_png_export_image_src("image.png"), true)
+}
+
+///|
 test "branch line connector extension preserves anchors" {
   assert_eq(branch_line_connector_extension_by_kind(center=false), 22.0)
   assert_eq(branch_line_connector_extension_by_kind(center=true), 30.0)
