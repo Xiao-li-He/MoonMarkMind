@@ -2934,9 +2934,12 @@ fn style_markdown_math_sqrt_radical(element : @dom.Element) -> Unit {
 fn style_markdown_math_sqrt_svg(element : @dom.Element) -> Unit {
   set_style(element, "display", "block")
   set_style(element, "width", "400em")
-  set_style(element, "height", "100%")
-  set_style(element, "min-height", "1.12em")
+  set_style(element, "height", "1.12em")
   set_style(element, "max-width", "none")
+  match element.closest(".markdown-math-sqrt--tall") {
+    Some(_) => set_style(element, "height", "2.25em")
+    None => ()
+  }
 }
 
 ///|
@@ -2951,6 +2954,10 @@ fn style_markdown_math_sqrt_radicand(element : @dom.Element) -> Unit {
   set_style(element, "padding", "0.18em 0.12em 0 0.86em")
   set_style(element, "line-height", "1")
   set_style(element, "z-index", "1")
+  match element.closest(".markdown-math-sqrt--tall") {
+    Some(_) => set_style(element, "padding", "0.32em 0.14em 0 0.96em")
+    None => ()
+  }
 }
 
 ///|

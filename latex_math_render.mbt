@@ -475,6 +475,7 @@ fn render_latex_math_node(node : LatexMathNode, inline~ : Bool) -> String {
         ),
       ]).value
     MathSqrt(root_index, body) => {
+      let tall = latex_math_nodes_need_tall_sqrt(body)
       let children = []
       match root_index {
         Some(index) =>
@@ -488,7 +489,7 @@ fn render_latex_math_node(node : LatexMathNode, inline~ : Bool) -> String {
           )
         None => ()
       }
-      children.push(render_latex_math_sqrt_radical())
+      children.push(render_latex_math_sqrt_radical(tall))
       children.push(
         safe_html_element(
           "span",
@@ -497,12 +498,12 @@ fn render_latex_math_node(node : LatexMathNode, inline~ : Bool) -> String {
           children=[SafeHtml::{ value: render_latex_math_nodes(body, inline~) }],
         ),
       )
-      safe_html_element(
-        "span",
-        class_name="markdown-math-sqrt",
-        attrs="",
-        children~,
-      ).value
+      let class_name = if tall {
+        "markdown-math-sqrt markdown-math-sqrt--tall"
+      } else {
+        "markdown-math-sqrt"
+      }
+      safe_html_element("span", class_name~, attrs="", children~).value
     }
     MathSupSub(base, sub, sup) => {
       let children = [
@@ -543,7 +544,49 @@ fn render_latex_math_node(node : LatexMathNode, inline~ : Bool) -> String {
 }
 
 ///|
-fn render_latex_math_sqrt_radical() -> SafeHtml {
+fn latex_math_nodes_need_tall_sqrt(nodes : Array[LatexMathNode]) -> Bool {
+  for node in nodes {
+    if latex_math_node_needs_tall_sqrt(node) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn latex_math_node_needs_tall_sqrt(node : LatexMathNode) -> Bool {
+  match node {
+    MathFrac(_, _) => true
+    MathRow(children) => latex_math_nodes_need_tall_sqrt(children)
+    MathSqrt(_, body) => latex_math_nodes_need_tall_sqrt(body)
+    MathSupSub(base, sub, sup) => {
+      if latex_math_node_needs_tall_sqrt(base) {
+        return true
+      }
+      match sub {
+        Some(sub_node) =>
+          if latex_math_node_needs_tall_sqrt(sub_node) {
+            return true
+          }
+        None => ()
+      }
+      match sup {
+        Some(sup_node) => latex_math_node_needs_tall_sqrt(sup_node)
+        None => false
+      }
+    }
+    _ => false
+  }
+}
+
+///|
+fn render_latex_math_sqrt_radical(tall : Bool) -> SafeHtml {
+  let view_box = if tall { "0 0 400000 1700" } else { "0 0 400000 1000" }
+  let path = if tall {
+    "M72 1120L198 1040L430 1540L760 40L400000 40L400000 104L812 104L480 1700L184 1142L100 1196Z"
+  } else {
+    "M72 646L198 566L430 910L718 40L400000 40L400000 96L760 96L474 1000L184 662L100 716Z"
+  }
   safe_html_element(
     "span",
     class_name="markdown-math-sqrt__radical",
@@ -552,12 +595,12 @@ fn render_latex_math_sqrt_radical() -> SafeHtml {
       safe_html_element(
         "svg",
         class_name="markdown-math-sqrt__svg",
-        attrs=" viewBox=\"0 0 400000 1000\" preserveAspectRatio=\"xMinYMin slice\" aria-hidden=\"true\" focusable=\"false\"",
+        attrs=" viewBox=\"\{view_box}\" preserveAspectRatio=\"xMinYMin slice\" aria-hidden=\"true\" focusable=\"false\"",
         children=[
           safe_html_element(
             "path",
             class_name="markdown-math-sqrt__path",
-            attrs=" d=\"M72 646L198 566L430 910L718 40L400000 40L400000 96L760 96L474 1000L184 662L100 716Z\" fill=\"currentColor\"",
+            attrs=" d=\"\{path}\" fill=\"currentColor\"",
             children=[],
           ),
         ],

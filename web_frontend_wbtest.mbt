@@ -296,6 +296,24 @@ test "markdown block renderer exposes latex math subtree classes" {
 }
 
 ///|
+test "sqrt with fraction radicand uses tall radical" {
+  let simple = render_markdown_inline_html("$\\sqrt{x}$")
+  assert_eq(simple.contains("markdown-math-sqrt"), true)
+  assert_eq(simple.contains("markdown-math-sqrt--tall"), false)
+
+  let fraction = render_markdown_inline_html("$\\sqrt{\\frac{x}{y}}$")
+  assert_eq(fraction.contains("markdown-math-sqrt--tall"), true)
+  assert_eq(fraction.contains("markdown-math-frac"), true)
+  assert_eq(fraction.contains("markdown-math-sqrt__svg"), true)
+
+  let indexed = render_markdown_blocks_html([
+    "$$\\sqrt[n]{\\frac{x^2 + 1}{y_0 - 3}}$$",
+  ])
+  assert_eq(indexed.contains("markdown-math-sqrt__index"), true)
+  assert_eq(indexed.contains("markdown-math-sqrt--tall"), true)
+}
+
+///|
 test "markdown block renderer preserves latex math rows and alignment" {
   let html = render_markdown_blocks_html([
     "$$\na &= b + c \\\\\nx &= {-b \\pm \\sqrt{b^2-4ac} \\over 2a}\n$$",
