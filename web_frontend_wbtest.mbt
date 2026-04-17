@@ -846,7 +846,7 @@ test "node body preview keeps paragraph spacing" {
 
   assert_eq(
     render_node_body(node),
-    "<div class=\"node-note-rail\"><button type=\"button\" class=\"node-action node-action--note\" data-action=\"toggle-note\" data-tip=\"Note\" aria-label=\"Note\">N</button><div class=\"node-body\"><textarea class=\"node-note-editor\" data-note-editor-for=\"0\" rows=\"4\">First line\nSecond line\n\nThird line</textarea></div></div>",
+    "<div class=\"node-note-rail\"><button type=\"button\" class=\"node-action node-action--note\" data-action=\"toggle-note\" data-tip=\"Note\" aria-label=\"Note\">...</button><div class=\"node-body\"><textarea class=\"node-note-editor\" data-note-editor-for=\"0\" rows=\"4\">First line\nSecond line\n\nThird line</textarea></div></div>",
   )
 }
 

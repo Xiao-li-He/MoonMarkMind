@@ -498,6 +498,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "node-action") {
     style_node_action(element)
   }
+  if has_class_name(element, "node-action--note") {
+    style_node_action_note(element)
+  }
   if has_class_name(element, "node-action--toggle") {
     style_node_action_toggle(element)
   }
@@ -2890,6 +2893,40 @@ fn style_node_action(element : @dom.Element) -> Unit {
         set_style(element, "text-indent", "-999px")
         set_style(element, "box-shadow", "none")
       }
+    None => ()
+  }
+}
+
+///|
+fn style_node_action_note(element : @dom.Element) -> Unit {
+  set_style(element, "width", "28px")
+  set_style(element, "height", "14px")
+  set_style(element, "min-width", "28px")
+  set_style(element, "padding", "0 5px")
+  set_style(element, "border", "0")
+  set_style(element, "border-radius", "999px")
+  set_style(element, "color", "rgba(92, 122, 153, 0.72)")
+  set_style(
+    element, "background", "radial-gradient(circle at 9px 50%, currentColor 0 1.5px, transparent 1.7px), radial-gradient(circle at 14px 50%, currentColor 0 1.5px, transparent 1.7px), radial-gradient(circle at 19px 50%, currentColor 0 1.5px, transparent 1.7px), rgba(92, 122, 153, 0.12)",
+  )
+  set_style(element, "box-shadow", "none")
+  set_style(element, "font-size", "0")
+  set_style(element, "font-weight", "800")
+  set_style(element, "line-height", "14px")
+  set_style(element, "letter-spacing", "0")
+  set_style(element, "text-indent", "-999px")
+  set_style(element, "overflow", "hidden")
+  match element.closest(".node--branch-line") {
+    Some(_) => {
+      set_style(element, "width", "26px")
+      set_style(element, "height", "12px")
+      set_style(element, "min-width", "26px")
+      set_style(element, "line-height", "12px")
+      set_style(element, "color", "var(--mindmap-connector-color, #94b6db)")
+      set_style(
+        element, "background", "radial-gradient(circle at 8px 50%, currentColor 0 1.4px, transparent 1.6px), radial-gradient(circle at 13px 50%, currentColor 0 1.4px, transparent 1.6px), radial-gradient(circle at 18px 50%, currentColor 0 1.4px, transparent 1.6px), rgba(148, 182, 219, 0.16)",
+      )
+    }
     None => ()
   }
 }

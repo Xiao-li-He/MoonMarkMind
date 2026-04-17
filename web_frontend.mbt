@@ -2552,7 +2552,7 @@ fn build_node_note_dom(node : OutlineNode) -> @dom.Element? {
   button.setAttribute("data-action", "toggle-note")
   button.setAttribute("data-tip", "Note")
   button.setAttribute("aria-label", "Note")
-  button.setTextContent("N")
+  button.setTextContent("...")
   append_child(rail, button)
   match build_node_body_dom(node) {
     Some(body) => append_child(rail, body)
@@ -2984,7 +2984,7 @@ fn render_node_body(node : OutlineNode) -> String {
   if !node_has_note(node) {
     return ""
   }
-  let note_button = "<button type=\"button\" class=\"node-action node-action--note\" data-action=\"toggle-note\" data-tip=\"Note\" aria-label=\"Note\">N</button>"
+  let note_button = "<button type=\"button\" class=\"node-action node-action--note\" data-action=\"toggle-note\" data-tip=\"Note\" aria-label=\"Note\">...</button>"
   let body = if app_state.editing_note_node == node.flat_index {
     let value = escape_html(node.body.join("\n\n"))
     "<div class=\"node-body\"><textarea class=\"node-note-editor\" data-note-editor-for=\"\{node.flat_index}\" rows=\"4\">\{value}</textarea></div>"
