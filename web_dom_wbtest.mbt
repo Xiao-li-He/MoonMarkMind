@@ -95,6 +95,27 @@ test "export runtime script is inline safe" {
 }
 
 ///|
+test "selection index csv roundtrips collapsed note export state" {
+  let serialized = ints_to_csv([1, 3, 8])
+  assert_eq(serialized, "1,3,8")
+  assert_eq(parse_selection_indices(serialized), [1, 3, 8])
+}
+
+///|
+test "static export note title transform appends export shift once" {
+  assert_eq(static_export_note_title_transform(""), "translateY(6px)")
+  assert_eq(static_export_note_title_transform("none"), "translateY(6px)")
+  assert_eq(
+    static_export_note_title_transform("scale(1.1)"),
+    "scale(1.1) translateY(6px)",
+  )
+  assert_eq(
+    static_export_note_title_transform("translateY(4px)"),
+    "translateY(4px)",
+  )
+}
+
+///|
 test "branch line connector extension preserves anchors" {
   assert_eq(branch_line_connector_extension_by_kind(center=false), 22.0)
   assert_eq(branch_line_connector_extension_by_kind(center=true), 30.0)

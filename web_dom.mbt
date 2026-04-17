@@ -2955,12 +2955,14 @@ fn escape_inline_script(script : String) -> String {
 ///|
 fn build_mindmap_interactive_export_dom() -> @dom.Element {
   let saved_collapsed = app_state.collapsed
+  let saved_collapsed_note_nodes = app_state.collapsed_note_nodes
   let saved_hidden_nodes = app_state.hidden_nodes
   let saved_selected_node = app_state.selected_node
   let saved_selected_nodes = app_state.selected_nodes
   let saved_editing_node = app_state.editing_node
   let saved_editing_note_node = app_state.editing_note_node
   app_state.collapsed = []
+  app_state.collapsed_note_nodes = []
   app_state.hidden_nodes = []
   app_state.selected_node = -2
   app_state.selected_nodes = []
@@ -2969,6 +2971,10 @@ fn build_mindmap_interactive_export_dom() -> @dom.Element {
   let root = create_element("main", "mindmap-export")
   root.setAttribute("id", "mindmap-export")
   root.setAttribute("data-export-collapsed", ints_to_csv(saved_collapsed))
+  root.setAttribute(
+    "data-export-note-collapsed",
+    ints_to_csv(saved_collapsed_note_nodes),
+  )
   style_of(root).set_property("display", "inline-block")
   style_of(root).set_property("padding", "48px")
   style_of(root).set_property("background", "transparent")
@@ -2983,6 +2989,7 @@ fn build_mindmap_interactive_export_dom() -> @dom.Element {
   apply_mindmap_export_layout(mindmap)
   append_child(root, mindmap)
   app_state.collapsed = saved_collapsed
+  app_state.collapsed_note_nodes = saved_collapsed_note_nodes
   app_state.hidden_nodes = saved_hidden_nodes
   app_state.selected_node = saved_selected_node
   app_state.selected_nodes = saved_selected_nodes
@@ -3021,47 +3028,98 @@ fn current_bundle_src() -> String {
 let export_collapsed_nodes : @ref.Ref[Array[Int]] = @ref.Ref([])
 
 ///|
+let export_collapsed_note_nodes : @ref.Ref[Array[Int]] = @ref.Ref([])
+
+///|
 fn bind_export_mindmap_ui(export_root : @dom.Element) -> Unit {
   apply_export_page_theme()
   export_collapsed_nodes.val = parse_selection_indices(
     export_root.getAttribute("data-export-collapsed").unwrap_or(""),
   )
+  export_collapsed_note_nodes.val = parse_selection_indices(
+    export_root.getAttribute("data-export-note-collapsed").unwrap_or(""),
+  )
   export_root
   .as_event_target()
   .on("click", fn(raw) {
     let event : @dom.MouseEvent = raw.cast()
-    match event.target().closest("[data-action=\"toggle\"]") {
+    match event.target().closest("[data-action=\"toggle-note\"]") {
       Some(button) =>
-        match button.closest(".node[data-node-index]") {
-          Some(card) => {
-            let node_index = parse_int_or_default(
-              card.getAttribute("data-node-index").unwrap_or("-1"),
-              -1,
-            )
-            if node_index >= 0 {
-              event.preventDefault()
-              event.stopPropagation()
-              if contains_int(export_collapsed_nodes.val, node_index) {
-                export_collapsed_nodes.val = remove_int(
-                  export_collapsed_nodes.val,
-                  node_index,
-                )
-              } else {
-                export_collapsed_nodes.val.push(node_index)
-              }
-              apply_export_collapsed_state(export_root)
-            }
-          }
+        handle_export_note_toggle_click(export_root, event, button)
+      None =>
+        match event.target().closest("[data-action=\"toggle\"]") {
+          Some(button) =>
+            handle_export_node_toggle_click(export_root, event, button)
           None => ()
         }
-      None => ()
     }
   })
   @dom.window()
   .as_event_target()
   .on("resize", fn(_) { render_export_mindmap_connectors(export_root) })
   apply_export_collapsed_state(export_root)
+  apply_export_note_collapsed_state(export_root)
   schedule_export_mindmap_connectors(export_root)
+}
+
+///|
+fn handle_export_node_toggle_click(
+  export_root : @dom.Element,
+  event : @dom.MouseEvent,
+  button : @dom.Element,
+) -> Unit {
+  match button.closest(".node[data-node-index]") {
+    Some(card) => {
+      let node_index = parse_int_or_default(
+        card.getAttribute("data-node-index").unwrap_or("-1"),
+        -1,
+      )
+      if node_index >= 0 {
+        event.preventDefault()
+        event.stopPropagation()
+        if contains_int(export_collapsed_nodes.val, node_index) {
+          export_collapsed_nodes.val = remove_int(
+            export_collapsed_nodes.val,
+            node_index,
+          )
+        } else {
+          export_collapsed_nodes.val.push(node_index)
+        }
+        apply_export_collapsed_state(export_root)
+      }
+    }
+    None => ()
+  }
+}
+
+///|
+fn handle_export_note_toggle_click(
+  export_root : @dom.Element,
+  event : @dom.MouseEvent,
+  button : @dom.Element,
+) -> Unit {
+  match button.closest(".node[data-node-index]") {
+    Some(card) => {
+      let node_index = parse_int_or_default(
+        card.getAttribute("data-node-index").unwrap_or("-1"),
+        -1,
+      )
+      if node_index >= 0 {
+        event.preventDefault()
+        event.stopPropagation()
+        if contains_int(export_collapsed_note_nodes.val, node_index) {
+          export_collapsed_note_nodes.val = remove_int(
+            export_collapsed_note_nodes.val,
+            node_index,
+          )
+        } else {
+          export_collapsed_note_nodes.val.push(node_index)
+        }
+        apply_export_note_collapsed_state(export_root)
+      }
+    }
+    None => ()
+  }
 }
 
 ///|
@@ -3111,6 +3169,30 @@ fn apply_export_collapsed_state(export_root : @dom.Element) -> Unit {
         toggle_class(button, "node-action--collapsed", collapsed)
         button.setTextContent(if collapsed { hidden_count } else { "" })
       }
+      None => ()
+    }
+  }
+  schedule_export_mindmap_connectors(export_root)
+}
+
+///|
+fn apply_export_note_collapsed_state(export_root : @dom.Element) -> Unit {
+  let cards : Array[@dom.Element] = export_root.querySelectorAll(
+    ".node[data-node-index]",
+  )
+  for card in cards {
+    let node_index = parse_int_or_default(
+      card.getAttribute("data-node-index").unwrap_or("-1"),
+      -1,
+    )
+    let collapsed = contains_int(export_collapsed_note_nodes.val, node_index)
+    match card.querySelector("[data-action=\"toggle-note\"]") {
+      Some(button) =>
+        button.setAttribute("aria-expanded", (!collapsed).to_string())
+      None => ()
+    }
+    match card.querySelector("[data-note-preview-for]") {
+      Some(body) => apply_export_hidden_state(body, collapsed)
       None => ()
     }
   }
@@ -3356,6 +3438,7 @@ fn build_mindmap_export_svg_element() -> @dom.Element? {
       render_mindmap_connectors()
       let clone = @dom.Element::cast_from_node(mindmap.cloneNode(true))
       normalize_export_connector_styles(clone)
+      normalize_static_export_note_buttons(clone)
       let bounds = mindmap_export_bounds(mindmap)
       let svg = create_svg_element("svg", "")
       svg.setAttribute("xmlns", "http://www.w3.org/2000/svg")
@@ -3468,6 +3551,55 @@ fn normalize_export_connector_styles(mindmap : @dom.Element) -> Unit {
         None => ()
       }
     None => ()
+  }
+}
+
+///|
+fn normalize_static_export_note_buttons(mindmap : @dom.Element) -> Unit {
+  let buttons : Array[@dom.Element] = mindmap.querySelectorAll(
+    ".node-action--note",
+  )
+  for button in buttons {
+    button.setTextContent("")
+    button.removeAttribute("data-action")
+    button.removeAttribute("data-tip")
+    button.removeAttribute("aria-label")
+    button.removeAttribute("aria-expanded")
+    let button_style = style_of(button)
+    button_style.set_property("visibility", "hidden")
+    button_style.set_property("pointer-events", "none")
+    button_style.set_property("box-shadow", "none")
+    match button.closest(".node") {
+      Some(node) =>
+        match node.querySelector(".node-title") {
+          Some(title) => {
+            let title_style = style_of(title)
+            let current_transform = title_style
+              .get_property_value("transform")
+              .trim()
+              .to_string()
+            title_style.set_property(
+              "transform",
+              static_export_note_title_transform(current_transform),
+            )
+          }
+          None => ()
+        }
+      None => ()
+    }
+  }
+}
+
+///|
+fn static_export_note_title_transform(current_transform : String) -> String {
+  let normalized = current_transform.trim().to_string()
+  let export_shift = "translateY(6px)"
+  if normalized.length() == 0 || normalized == "none" {
+    export_shift
+  } else if normalized.contains("translateY") {
+    normalized
+  } else {
+    "\{normalized} \{export_shift}"
   }
 }
 
