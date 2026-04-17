@@ -28,6 +28,14 @@ fn rules_sample_fallback_markdown(sample_id : String) -> String {
 }
 
 ///|
+fn cache_busted_markdown_path(path : String) -> String {
+  let date = @global.global_this()._get("Date")
+  let stamp = date._call("now", []).to_string()
+  let separator = if path.contains("?".view()) { "&" } else { "?" }
+  "\{path}\{separator}v=\{stamp}"
+}
+
+///|
 fn fetch_markdown_asset(
   path : String,
   on_success : (String) -> Unit,
@@ -35,7 +43,7 @@ fn fetch_markdown_asset(
 ) -> Unit {
   ignore(
     @core.Promise::new(async fn(resolve, _reject) {
-      let response = @dom.window().fetch(path) catch {
+      let response = @dom.window().fetch(cache_busted_markdown_path(path)) catch {
         _ => {
           on_error()
           resolve(())
