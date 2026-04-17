@@ -2615,9 +2615,9 @@ fn style_node_body_block_editor_action(element : @dom.Element) -> Unit {
   set_style(element, "width", "28px")
   set_style(element, "height", "24px")
   set_style(element, "padding", "0")
-  set_style(element, "border", "1px solid rgba(54, 178, 112, 0.38)")
+  set_style(element, "border", "1px solid rgba(194,207,211,0.6)")
   set_style(element, "border-radius", "7px")
-  set_style(element, "background", "rgba(54, 178, 112, 0.12)")
+  set_style(element, "background", "rgba(255, 255, 255, 0.96)")
   set_style(element, "color", "#2ea86a")
   set_style(element, "font-size", "13px")
   set_style(element, "font-weight", "800")
@@ -2632,8 +2632,8 @@ fn style_node_body_block_editor_action(element : @dom.Element) -> Unit {
 fn style_node_body_block_editor_action_secondary(
   element : @dom.Element,
 ) -> Unit {
-  set_style(element, "border-color", "rgba(232, 83, 79, 0.38)")
-  set_style(element, "background", "rgba(232, 83, 79, 0.11)")
+  set_style(element, "border-color", "rgba(194,207,211,0.6)")
+  set_style(element, "background", "rgba(255, 255, 255, 0.96)")
   set_style(element, "color", "#d94d49")
 }
 
