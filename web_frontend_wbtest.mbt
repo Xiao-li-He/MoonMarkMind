@@ -271,6 +271,16 @@ test "markdown block renderer covers code task and table blocks" {
 }
 
 ///|
+test "markdown paragraph renderer collapses multiple blank lines" {
+  let html = render_markdown_blocks_html(["Alpha\n\n\nBeta"])
+  assert_eq(html.contains("Alpha\nBeta"), true)
+  assert_eq(html.contains("Alpha\n\nBeta"), false)
+
+  let code = render_markdown_blocks_html(["```txt\nAlpha\n\nBeta\n```"])
+  assert_eq(code.contains("Alpha\n\nBeta"), true)
+}
+
+///|
 test "markdown block renderer renders latex math" {
   let html = render_markdown_blocks_html(["$$\\frac{a_1}{b^2} + \\sqrt{x}$$"])
   assert_eq(html.contains("class=\"markdown-math markdown-math--block\""), true)

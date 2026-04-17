@@ -497,7 +497,12 @@ fn parse_markdown_blocks(blocks : Array[String]) -> Array[MarkdownBlock] {
                   } else {
                     match parse_markdown_task_line(trimmed) {
                       Some(task) => parsed.push(task)
-                      None => parsed.push(BlockParagraph(trimmed))
+                      None =>
+                        parsed.push(
+                          BlockParagraph(
+                            normalize_markdown_paragraph_display_text(trimmed),
+                          ),
+                        )
                     }
                   }
                 }
@@ -507,6 +512,18 @@ fn parse_markdown_blocks(blocks : Array[String]) -> Array[MarkdownBlock] {
     }
   }
   parsed
+}
+
+///|
+fn normalize_markdown_paragraph_display_text(text : String) -> String {
+  let lines = text.split("\n").map(line => line.to_string()).to_array()
+  let normalized = []
+  for line in lines {
+    if !is_blank_markdown_line(line) {
+      normalized.push(line)
+    }
+  }
+  normalized.join("\n")
 }
 
 ///|
