@@ -236,9 +236,14 @@ fn on_splitter_change(percent : Int) -> Unit {
 
 ///|
 fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
-  if event_editor_index_from_target(event.target()) >= 0 ||
-    event_note_editor_index_from_target(event.target()) >= 0 ||
-    event_body_editor_index_from_target(event.target()) >= 0 {
+  let action = event_action_from_point(event)
+  if action != "save-body-block" &&
+    action != "cancel-body-block" &&
+    (
+      event_editor_index_from_target(event.target()) >= 0 ||
+      event_note_editor_index_from_target(event.target()) >= 0 ||
+      event_body_editor_index_from_target(event.target()) >= 0
+    ) {
     return
   }
   match event.target().closest(".markdown-image") {
@@ -260,7 +265,6 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
     focus_mindmap()
     return
   }
-  let action = event_action_from_point(event)
   let node_index = event_node_index_from_point(event)
   if action == "" && node_index >= 0 {
     if event_click_count(event) >= 2 &&
@@ -2887,18 +2891,22 @@ fn append_body_image_editor_fields(
 ///|
 fn build_body_block_editor_actions(block_index : Int) -> @dom.Element {
   let actions = create_element("div", "node-body-block-editor-actions")
-  let save = create_element("button", "node-body-block-editor-action")
+  let save = create_element(
+    "button", "node-body-block-editor-action node-body-block-editor-action--save",
+  )
   save.setAttribute("type", "button")
   save.setAttribute("data-action", "save-body-block")
   save.setAttribute("data-body-block-index", block_index.to_string())
-  save.setTextContent("Save")
+  save.setAttribute("aria-label", "Save")
+  save.setTextContent("✔")
   let cancel = create_element(
     "button", "node-body-block-editor-action node-body-block-editor-action--secondary",
   )
   cancel.setAttribute("type", "button")
   cancel.setAttribute("data-action", "cancel-body-block")
   cancel.setAttribute("data-body-block-index", block_index.to_string())
-  cancel.setTextContent("Cancel")
+  cancel.setAttribute("aria-label", "Cancel")
+  cancel.setTextContent("❌")
   append_child(actions, save)
   append_child(actions, cancel)
   actions
@@ -3502,7 +3510,7 @@ fn render_body_block_editor(
     _ =>
       "<textarea class=\"node-body-block-textarea\" data-body-editor-value=\"raw\" rows=\"4\">\{escape_html(block)}</textarea>"
   }
-  let actions = "<div class=\"node-body-block-editor-actions\"><button type=\"button\" class=\"node-body-block-editor-action\" data-action=\"save-body-block\" data-body-block-index=\"\{block_index}\">Save</button><button type=\"button\" class=\"node-body-block-editor-action node-body-block-editor-action--secondary\" data-action=\"cancel-body-block\" data-body-block-index=\"\{block_index}\">Cancel</button></div>"
+  let actions = "<div class=\"node-body-block-editor-actions\"><button type=\"button\" class=\"node-body-block-editor-action node-body-block-editor-action--save\" data-action=\"save-body-block\" data-body-block-index=\"\{block_index}\" aria-label=\"Save\">✔</button><button type=\"button\" class=\"node-body-block-editor-action node-body-block-editor-action--secondary\" data-action=\"cancel-body-block\" data-body-block-index=\"\{block_index}\" aria-label=\"Cancel\">❌</button></div>"
   "<div class=\"node-body-block node-body-block--\{kind}\" data-body-block-index=\"\{block_index}\" data-body-block-kind=\"\{kind}\"><div class=\"node-body-block-editor node-body-block-editor--\{kind}\" data-body-editor-for=\"\{node.flat_index}\" data-body-editor-block=\"\{block_index}\" data-body-editor-kind=\"\{kind}\">\{fields}\{actions}</div></div>"
 }
 

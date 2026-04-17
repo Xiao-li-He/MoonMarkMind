@@ -2612,23 +2612,29 @@ fn style_node_body_block_editor_actions(element : @dom.Element) -> Unit {
 
 ///|
 fn style_node_body_block_editor_action(element : @dom.Element) -> Unit {
+  set_style(element, "width", "28px")
   set_style(element, "height", "24px")
-  set_style(element, "padding", "0 9px")
-  set_style(element, "border", "1px solid rgba(77, 119, 166, 0.42)")
+  set_style(element, "padding", "0")
+  set_style(element, "border", "1px solid rgba(54, 178, 112, 0.38)")
   set_style(element, "border-radius", "7px")
-  set_style(element, "background", "rgba(76, 139, 210, 0.13)")
-  set_style(element, "color", "#2c70ce")
-  set_style(element, "font-size", "11px")
+  set_style(element, "background", "rgba(54, 178, 112, 0.12)")
+  set_style(element, "color", "#2ea86a")
+  set_style(element, "font-size", "13px")
   set_style(element, "font-weight", "800")
+  set_style(element, "line-height", "1")
   set_style(element, "cursor", "pointer")
+  set_style(element, "display", "inline-flex")
+  set_style(element, "align-items", "center")
+  set_style(element, "justify-content", "center")
 }
 
 ///|
 fn style_node_body_block_editor_action_secondary(
   element : @dom.Element,
 ) -> Unit {
-  set_style(element, "background", "rgba(92, 122, 153, 0.08)")
-  set_style(element, "color", "#5c7a99")
+  set_style(element, "border-color", "rgba(232, 83, 79, 0.38)")
+  set_style(element, "background", "rgba(232, 83, 79, 0.11)")
+  set_style(element, "color", "#d94d49")
 }
 
 ///|

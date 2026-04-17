@@ -1005,6 +1005,8 @@ test "node body block editor renders one active block editor" {
   assert_eq(html.contains("data-body-editor-block=\"1\""), true)
   assert_eq(html.contains("data-action=\"save-body-block\""), true)
   assert_eq(html.contains("data-action=\"cancel-body-block\""), true)
+  assert_eq(html.contains("✔"), true)
+  assert_eq(html.contains("❌"), true)
 }
 
 ///|
