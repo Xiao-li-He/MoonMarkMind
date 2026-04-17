@@ -83,6 +83,90 @@ fn update_node_body(
 }
 
 ///|
+fn update_node_body_block(
+  markdown : String,
+  flat_index : Int,
+  block_index : Int,
+  block_text : String,
+) -> String {
+  let nodes = parse_markdown_nodes(markdown)
+  if flat_index < 0 || flat_index >= nodes.length() {
+    return markdown
+  }
+  let node = nodes[flat_index]
+  if block_index < 0 || block_index >= node.body.length() {
+    return markdown
+  }
+  let next_block = block_text.trim().to_string()
+  if next_block.length() == 0 {
+    return delete_node_body_block(markdown, flat_index, block_index)
+  }
+  let next_body = []
+  for index in 0..<node.body.length() {
+    if index == block_index {
+      next_body.push(next_block)
+    } else {
+      next_body.push(node.body[index])
+    }
+  }
+  replace_node_body_blocks(markdown, flat_index, next_body)
+}
+
+///|
+fn delete_node_body_block(
+  markdown : String,
+  flat_index : Int,
+  block_index : Int,
+) -> String {
+  let nodes = parse_markdown_nodes(markdown)
+  if flat_index < 0 || flat_index >= nodes.length() {
+    return markdown
+  }
+  let node = nodes[flat_index]
+  if block_index < 0 || block_index >= node.body.length() {
+    return markdown
+  }
+  let next_body = []
+  for index in 0..<node.body.length() {
+    if index != block_index {
+      next_body.push(node.body[index])
+    }
+  }
+  replace_node_body_blocks(markdown, flat_index, next_body)
+}
+
+///|
+fn replace_node_body_blocks(
+  markdown : String,
+  flat_index : Int,
+  next_body : Array[String],
+) -> String {
+  let nodes = parse_markdown_nodes(markdown)
+  if flat_index < 0 || flat_index >= nodes.length() {
+    return markdown
+  }
+  let updated = []
+  for i in 0..<nodes.length() {
+    let node = nodes[i]
+    if i == flat_index {
+      updated.push(MarkdownNode::{
+        kind: node.kind,
+        level: node.level,
+        title: node.title,
+        marker: node.marker,
+        body: next_body,
+        body_blank_lines: default_body_blank_lines(next_body),
+        leading_blank_lines: node.leading_blank_lines,
+        source_line: node.source_line,
+      })
+    } else {
+      updated.push(node)
+    }
+  }
+  render_markdown_nodes(updated)
+}
+
+///|
 fn normalize_note_editor_body_lines(lines : Array[String]) -> Array[String] {
   let normalized = []
   let mut index = 0

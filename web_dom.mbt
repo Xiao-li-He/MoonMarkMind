@@ -3851,7 +3851,7 @@ fn event_interaction_target(event : @dom.MouseEvent) -> @dom.Element {
   let target = event.target()
   match
     target.closest(
-      ".node, [data-action], [data-editor-for], [data-note-editor-for]",
+      ".node, [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for]",
     ) {
     Some(interactive) => interactive
     None =>
@@ -3868,7 +3868,7 @@ fn event_target_from_point(event : @dom.MouseEvent) -> @dom.Element {
   for element in @dom.document().elementsFromPoint(event.clientX, event.clientY) {
     match
       element.closest(
-        ".node, [data-action], [data-editor-for], [data-note-editor-for]",
+        ".node, [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for]",
       ) {
       Some(target) => return target
       None => ()
@@ -3885,7 +3885,7 @@ fn event_target_is_blank_stage_area(target : @dom.Element) -> Bool {
   match target.closest(".mindmap-stage, .mindmap-content, #mindmap") {
     Some(_) =>
       target.closest(
-        "[data-node-index], [data-action], [data-editor-for], [data-note-editor-for], [data-drop-target], [data-drop-parent]",
+        "[data-node-index], [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for], [data-drop-target], [data-drop-parent]",
       )
       is None
     None => false
@@ -3979,6 +3979,34 @@ fn event_note_editor_index_from_target(target : @dom.Element) -> Int {
       ) catch {
         _ => -1
       }
+    None => -1
+  }
+}
+
+///|
+fn event_body_editor_index_from_target(target : @dom.Element) -> Int {
+  match target.closest("[data-body-editor-for]") {
+    Some(node) =>
+      @strconv.parse_int(
+        node.getAttribute("data-body-editor-for").unwrap_or("-1"),
+      ) catch {
+        _ => -1
+      }
+    None => -1
+  }
+}
+
+///|
+fn event_body_block_index_from_target(target : @dom.Element) -> Int {
+  match target.closest("[data-body-block-index], [data-body-editor-block]") {
+    Some(block) => {
+      let value = block
+        .getAttribute("data-body-block-index")
+        .unwrap_or(block.getAttribute("data-body-editor-block").unwrap_or("-1"))
+      @strconv.parse_int(value) catch {
+        _ => -1
+      }
+    }
     None => -1
   }
 }

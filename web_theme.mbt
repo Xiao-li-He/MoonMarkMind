@@ -396,6 +396,34 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "node-body-preview") {
     style_node_body_preview(element)
   }
+  if has_class_name(element, "node-body-block") {
+    style_node_body_block(element)
+  }
+  if has_class_name(element, "node-body-block-actions") {
+    style_node_body_block_actions(element)
+  }
+  if has_class_name(element, "node-body-block-action") {
+    style_node_body_block_action(element)
+  }
+  if has_class_name(element, "node-body-block-action--delete") {
+    style_node_body_block_action_delete(element)
+  }
+  if has_class_name(element, "node-body-block-editor") {
+    style_node_body_block_editor(element)
+  }
+  if has_class_name(element, "node-body-block-input") ||
+    has_class_name(element, "node-body-block-textarea") {
+    style_node_body_block_editor_field(element)
+  }
+  if has_class_name(element, "node-body-block-editor-actions") {
+    style_node_body_block_editor_actions(element)
+  }
+  if has_class_name(element, "node-body-block-editor-action") {
+    style_node_body_block_editor_action(element)
+  }
+  if has_class_name(element, "node-body-block-editor-action--secondary") {
+    style_node_body_block_editor_action_secondary(element)
+  }
   if has_class_name(element, "markdown-blocks") {
     style_markdown_blocks(element)
   }
@@ -2458,6 +2486,101 @@ fn style_node_body_branch_line(element : @dom.Element) -> Unit {
 fn style_node_body_preview(element : @dom.Element) -> Unit {
   set_style(element, "cursor", "text")
   set_style(element, "text-align", "left")
+}
+
+///|
+fn style_node_body_block(element : @dom.Element) -> Unit {
+  set_style(element, "position", "relative")
+  set_style(element, "box-sizing", "border-box")
+  set_style(element, "width", "100%")
+  set_style(element, "padding", "4px 0")
+  set_style(element, "border-radius", "7px")
+}
+
+///|
+fn style_node_body_block_actions(element : @dom.Element) -> Unit {
+  set_style(element, "position", "absolute")
+  set_style(element, "top", "3px")
+  set_style(element, "right", "3px")
+  set_style(element, "display", "flex")
+  set_style(element, "gap", "4px")
+  set_style(element, "opacity", "0")
+  set_style(element, "pointer-events", "none")
+  set_style(element, "transition", "opacity 120ms ease")
+}
+
+///|
+fn style_node_body_block_action(element : @dom.Element) -> Unit {
+  set_style(element, "width", "22px")
+  set_style(element, "height", "18px")
+  set_style(element, "padding", "0")
+  set_style(element, "border", "1px solid rgba(148, 172, 198, 0.55)")
+  set_style(element, "border-radius", "6px")
+  set_style(element, "background", "rgba(255, 255, 255, 0.92)")
+  set_style(element, "color", "#5c7a99")
+  set_style(element, "font-size", "10px")
+  set_style(element, "font-weight", "800")
+  set_style(element, "line-height", "1")
+  set_style(element, "display", "inline-flex")
+  set_style(element, "align-items", "center")
+  set_style(element, "justify-content", "center")
+  set_style(element, "cursor", "pointer")
+}
+
+///|
+fn style_node_body_block_action_delete(element : @dom.Element) -> Unit {
+  set_style(element, "color", "#b94f5c")
+}
+
+///|
+fn style_node_body_block_editor(element : @dom.Element) -> Unit {
+  set_style(element, "display", "flex")
+  set_style(element, "flex-direction", "column")
+  set_style(element, "gap", "6px")
+  set_style(element, "width", "100%")
+}
+
+///|
+fn style_node_body_block_editor_field(element : @dom.Element) -> Unit {
+  set_style(element, "width", "100%")
+  set_style(element, "box-sizing", "border-box")
+  set_style(element, "padding", "7px 8px")
+  set_style(element, "border", "1px solid rgba(148, 172, 198, 0.54)")
+  set_style(element, "border-radius", "7px")
+  set_style(element, "background", "rgba(255, 255, 255, 0.86)")
+  set_style(element, "color", "#27415d")
+  set_style(element, "font", "inherit")
+  set_style(element, "font-size", "12px")
+  set_style(element, "line-height", "1.4")
+  set_style(element, "outline", "none")
+}
+
+///|
+fn style_node_body_block_editor_actions(element : @dom.Element) -> Unit {
+  set_style(element, "display", "flex")
+  set_style(element, "justify-content", "flex-end")
+  set_style(element, "gap", "6px")
+}
+
+///|
+fn style_node_body_block_editor_action(element : @dom.Element) -> Unit {
+  set_style(element, "height", "24px")
+  set_style(element, "padding", "0 9px")
+  set_style(element, "border", "1px solid rgba(77, 119, 166, 0.42)")
+  set_style(element, "border-radius", "7px")
+  set_style(element, "background", "rgba(76, 139, 210, 0.13)")
+  set_style(element, "color", "#2c70ce")
+  set_style(element, "font-size", "11px")
+  set_style(element, "font-weight", "800")
+  set_style(element, "cursor", "pointer")
+}
+
+///|
+fn style_node_body_block_editor_action_secondary(
+  element : @dom.Element,
+) -> Unit {
+  set_style(element, "background", "rgba(92, 122, 153, 0.08)")
+  set_style(element, "color", "#5c7a99")
 }
 
 ///|

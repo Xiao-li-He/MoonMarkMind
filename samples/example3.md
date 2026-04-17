@@ -1,26 +1,25 @@
 # 示例3 插入
-
 ## 笔记
-
 也就是正文
 
-* 在列表中也可以插入笔记
-与列表一起缩进
+* 列表中插入笔记
+  与列表一起缩进
 
-## 链接
+## 代码块
+```ts
+const title = "code block";
+function add(a: number, b: number) {
+  return a + b;
+}
+```
 
-在节点中插入[链接节点](https://example.com)
-
-* 在列表中插入链接
-[链接节点](https://example.com)
+## 表格
+| 功能 | 状态 | 说明 |
+|------|------|------|
+| md编辑区 | ✅ | 已完成 |
+| 脑图样式 | ✅ | 已完成 |
+| 导出功能 |  | 进行中 |
 
 ## 图片
-
-在节点中插入图片
-
-* 图片都是以url形式
-
-## 公式
-
-$$ r = a $$ $$ \\theta = b\\cdot z $$ $$ z = c\\cdot t $$
+![](https://markmap.js.org/favicon.png)
 

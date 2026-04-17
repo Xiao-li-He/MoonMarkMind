@@ -15,11 +15,15 @@ fn reset_frontend_test_state() -> Unit {
   app_state.started = false
   app_state.document_name = "notes.md"
   app_state.collapsed = []
+  app_state.collapsed_note_nodes = []
   app_state.hidden_nodes = []
   app_state.selected_node = -2
   app_state.selected_nodes = []
   app_state.selection_anchor_node = -2
   app_state.editing_node = -2
+  app_state.editing_note_node = -2
+  app_state.editing_body_node = -2
+  app_state.editing_body_block = -1
   app_state.root_split_count = 0
   app_state.reveal_selected_line = false
   app_state.drag_source_index = -1
@@ -35,11 +39,15 @@ fn reset_navigation_test_state() -> Unit {
   app_state.started = false
   app_state.document_name = "notes.md"
   app_state.collapsed = []
+  app_state.collapsed_note_nodes = []
   app_state.hidden_nodes = []
   app_state.selected_node = -2
   app_state.selected_nodes = []
   app_state.selection_anchor_node = -2
   app_state.editing_node = -2
+  app_state.editing_note_node = -2
+  app_state.editing_body_node = -2
+  app_state.editing_body_block = -1
   app_state.root_split_count = 0
   app_state.reveal_selected_line = false
   app_state.drag_source_index = -1
@@ -332,62 +340,83 @@ test "redo tooltip helper mentions shift z" {
 }
 
 ///|
-test "note editor undo stays local until commit" {
+test "body block edit save pushes one global undo entry" {
   reset_frontend_test_state()
-  begin_note_edit_node(1)
+  load_markdown("# Root\n## Alpha\nOld note\n\nSecond block\n## Beta", true)
+  select_single_node(1, false)
+  begin_body_block_edit_node(1, 0)
 
-  sync_note_editor_draft(1, "Alpha note 1")
-  sync_note_editor_draft(1, "Alpha note 12")
+  save_body_block_editor(1, 0, "New note")
+
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Alpha\nNew note\n\nSecond block\n## Beta",
+  )
+  assert_eq(app_state.editing_body_node, -2)
+  assert_eq(app_state.undo_stack.length(), 1)
+  handle_undo()
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Alpha\nOld note\n\nSecond block\n## Beta",
+  )
+  handle_redo()
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Alpha\nNew note\n\nSecond block\n## Beta",
+  )
+}
+
+///|
+test "body block edit cancel and unchanged save do not push undo" {
+  reset_frontend_test_state()
+  load_markdown("# Root\n## Alpha\nSame note\n## Beta", true)
+  select_single_node(1, false)
+
+  begin_body_block_edit_node(1, 0)
+  cancel_body_block_editor()
+  assert_eq(app_state.markdown, "# Root\n## Alpha\nSame note\n## Beta")
   assert_eq(app_state.undo_stack.length(), 0)
-  assert_eq(note_editor_undo_stack.val.length(), 2)
 
-  note_editor_undo(1)
-  assert_eq(note_editor_draft_markdown.val.contains("Alpha note 1"), true)
-  assert_eq(app_state.undo_stack.length(), 0)
-
-  note_editor_redo(1)
-  assert_eq(note_editor_draft_markdown.val.contains("Alpha note 12"), true)
+  begin_body_block_edit_node(1, 0)
+  save_body_block_editor(1, 0, "Same note")
+  assert_eq(app_state.markdown, "# Root\n## Alpha\nSame note\n## Beta")
   assert_eq(app_state.undo_stack.length(), 0)
 }
 
 ///|
-test "toolbar undo and redo route to active note editor" {
+test "body block delete removes only one block and is undoable" {
   reset_frontend_test_state()
-  begin_note_edit_node(1)
-  sync_note_editor_draft(1, "Alpha note 1")
-  sync_note_editor_draft(1, "Alpha note 12")
+  load_markdown("# Root\n## Alpha\nFirst block\n\nSecond block\n## Beta", true)
+  select_single_node(1, false)
 
-  on_toolbar_action("undo")
-  assert_eq(note_editor_draft_markdown.val.contains("Alpha note 1"), true)
-  on_toolbar_action("redo")
-  assert_eq(note_editor_draft_markdown.val.contains("Alpha note 12"), true)
+  delete_body_block(1, 0)
+
+  assert_eq(app_state.markdown, "# Root\n## Alpha\nSecond block\n## Beta")
+  assert_eq(app_state.undo_stack.length(), 1)
+  handle_undo()
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Alpha\nFirst block\n\nSecond block\n## Beta",
+  )
+  handle_redo()
+  assert_eq(app_state.markdown, "# Root\n## Alpha\nSecond block\n## Beta")
 }
 
 ///|
-test "active editor controls undo and redo availability" {
+test "body note button toggles collapsed body instead of editing" {
   reset_frontend_test_state()
-  begin_note_edit_node(1)
-  assert_eq(can_undo_action(), false)
-  assert_eq(can_redo_action(), false)
-  sync_note_editor_draft(1, "Alpha note 1")
-  assert_eq(can_undo_action(), true)
-  assert_eq(can_redo_action(), false)
-  note_editor_undo(1)
-  assert_eq(can_undo_action(), false)
-  assert_eq(can_redo_action(), true)
-}
+  load_markdown("# Root\n## Alpha\nAlpha note\n## Beta", true)
 
-///|
-test "toolbar undo works without a selected node while editing note body" {
-  reset_frontend_test_state()
-  begin_note_edit_node(1)
-  let initial_markdown = note_editor_draft_markdown.val
-  sync_note_editor_draft(1, "Alpha note 1")
-  app_state.selected_node = -2
-
-  assert_eq(can_toolbar_action("undo"), true)
-  on_toolbar_action("undo")
-  assert_eq(note_editor_draft_markdown.val, initial_markdown)
+  assert_eq(is_note_body_collapsed(1), false)
+  toggle_note_body(1)
+  assert_eq(is_note_body_collapsed(1), true)
+  assert_eq(app_state.editing_note_node, -2)
+  match find_node(app_state.root, 1) {
+    Some(node) => assert_eq(render_node_body(node).contains("node-body"), false)
+    None => fail("missing alpha node")
+  }
+  toggle_note_body(1)
+  assert_eq(is_note_body_collapsed(1), false)
 }
 
 ///|
@@ -842,12 +871,37 @@ test "node body preview keeps paragraph spacing" {
     synthetic: false,
     children: [],
   }
-  app_state.editing_note_node = 0
 
-  assert_eq(
-    render_node_body(node),
-    "<div class=\"node-note-rail\"><button type=\"button\" class=\"node-action node-action--note\" data-action=\"toggle-note\" data-tip=\"Note\" aria-label=\"Note\">...</button><div class=\"node-body\"><textarea class=\"node-note-editor\" data-note-editor-for=\"0\" rows=\"4\">First line\nSecond line\n\nThird line</textarea></div></div>",
-  )
+  let html = render_node_body(node)
+  assert_eq(html.contains("aria-expanded=\"true\""), true)
+  assert_eq(html.contains("data-body-block-index=\"0\""), true)
+  assert_eq(html.contains("data-body-block-index=\"1\""), true)
+  assert_eq(html.contains("First line"), true)
+  assert_eq(html.contains("Second line"), true)
+  assert_eq(html.contains("Third line"), true)
+}
+
+///|
+test "node body block editor renders one active block editor" {
+  let node = OutlineNode::{
+    flat_index: 0,
+    source_line: 0,
+    level: 1,
+    title: "Root",
+    marker: "",
+    body: ["First line", "Second line"],
+    kind: MarkdownNodeKind::Heading,
+    synthetic: false,
+    children: [],
+  }
+  app_state.editing_body_node = 0
+  app_state.editing_body_block = 1
+
+  let html = render_node_body(node)
+  assert_eq(html.contains("data-body-editor-for=\"0\""), true)
+  assert_eq(html.contains("data-body-editor-block=\"1\""), true)
+  assert_eq(html.contains("data-action=\"save-body-block\""), true)
+  assert_eq(html.contains("data-action=\"cancel-body-block\""), true)
 }
 
 ///|
@@ -890,13 +944,35 @@ test "normalize markdown body lines collapses blank separators" {
 }
 
 ///|
-test "insert body template appends a markdown paragraph block" {
+test "insert body template appends a markdown image block" {
   reset_frontend_test_state()
   select_single_node(1, false)
 
-  insert_node_body_template("formula")
+  insert_node_body_template("image")
 
-  assert_eq(app_state.markdown, "# Root\n## Alpha\n$$\nx = 1\n$$\n## Beta")
+  assert_eq(
+    app_state.markdown.contains("![") &&
+    app_state.markdown.contains("](image.png)"),
+    true,
+  )
+}
+
+///|
+test "body block image edit saves markdown image syntax" {
+  reset_frontend_test_state()
+  load_markdown("# Root\n## Alpha\n![old](old.png)\n## Beta", true)
+  select_single_node(1, false)
+  begin_body_block_edit_node(1, 0)
+
+  save_body_block_editor(1, 0, "![new alt](new.png)")
+
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Alpha\n![new alt](new.png)\n## Beta",
+  )
+  assert_eq(body_block_kind("![new alt](new.png)"), "image")
+  handle_undo()
+  assert_eq(app_state.markdown, "# Root\n## Alpha\n![old](old.png)\n## Beta")
 }
 
 ///|
@@ -926,58 +1002,63 @@ test "insert body template appends a markdown table block" {
 }
 
 ///|
-test "insert note opens editor and commits heading markdown body" {
+test "insert note appends note block without entering body editor" {
   reset_frontend_test_state()
   select_single_node(1, false)
 
   handle_insert_note()
-  assert_eq(app_state.editing_note_node, 1)
-
-  sync_note_editor_draft(1, "Alpha note")
-  assert_eq(app_state.markdown, "# Root\n## Alpha\nAlpha note\n## Beta")
-
-  save_note_editor(1, "Alpha note")
+  match find_node(app_state.root, 1) {
+    Some(node) => assert_eq(node.body.length(), 1)
+    None => fail("missing alpha node")
+  }
   assert_eq(app_state.editing_note_node, -2)
+  assert_eq(app_state.editing_body_node, -2)
   assert_eq(app_state.undo_stack.length(), 1)
 }
 
 ///|
-test "note editor duplicate save after commit does not push empty undo state" {
+test "body block duplicate save after commit does not push empty undo state" {
   reset_frontend_test_state()
   select_single_node(1, false)
   handle_insert_note()
 
-  sync_note_editor_draft(1, "Alpha note")
-  save_note_editor(1, "Alpha note")
-  save_note_editor(1, "Alpha note")
+  begin_body_block_edit_node(1, 0)
+  save_body_block_editor(1, 0, "Alpha note")
+  begin_body_block_edit_node(1, 0)
+  save_body_block_editor(1, 0, "Alpha note")
 
-  assert_eq(app_state.undo_stack.length(), 1)
+  assert_eq(app_state.undo_stack.length(), 2)
   handle_undo()
   assert_eq(app_state.markdown.length() > 0, true)
-  assert_eq(app_state.markdown, "# Root\n## Alpha\n## Beta")
+  match find_node(app_state.root, 1) {
+    Some(node) => assert_eq(node.body[0] != "Alpha note", true)
+    None => fail("missing alpha node")
+  }
 }
 
 ///|
-test "note editor newline becomes markdown blank separator" {
+test "body block edit preserves textarea newlines in one block" {
   reset_frontend_test_state()
   select_single_node(1, false)
 
   handle_insert_note()
-  sync_note_editor_draft(1, "First line\nSecond line")
+  begin_body_block_edit_node(1, 0)
+  save_body_block_editor(1, 0, "First line\nSecond line")
 
   assert_eq(
     app_state.markdown,
-    "# Root\n## Alpha\nFirst line\n\nSecond line\n## Beta",
+    "# Root\n## Alpha\nFirst line\nSecond line\n## Beta",
   )
 }
 
 ///|
-test "note editor preserves code block single newlines" {
+test "body block edit preserves code block single newlines" {
   reset_frontend_test_state()
   select_single_node(1, false)
 
-  handle_insert_note()
-  sync_note_editor_draft(1, "```ts\nconst a = 1\nconst b = 2\n```")
+  insert_node_body_template("code")
+  begin_body_block_edit_node(1, 0)
+  save_body_block_editor(1, 0, "```ts\nconst a = 1\nconst b = 2\n```")
 
   assert_eq(
     app_state.markdown,
@@ -986,12 +1067,13 @@ test "note editor preserves code block single newlines" {
 }
 
 ///|
-test "note editor preserves table single newlines" {
+test "body block edit preserves table single newlines" {
   reset_frontend_test_state()
   select_single_node(1, false)
 
-  handle_insert_note()
-  sync_note_editor_draft(1, "| A | B |\n|---|---|\n| 1 | 2 |")
+  insert_node_body_template("table")
+  begin_body_block_edit_node(1, 0)
+  save_body_block_editor(1, 0, "| A | B |\n|---|---|\n| 1 | 2 |")
 
   assert_eq(
     app_state.markdown,
@@ -1008,8 +1090,8 @@ test "insert note on list node preserves markdown indentation" {
 
   select_single_node(list_index, false)
   handle_insert_note()
-  sync_note_editor_draft(list_index, "List note")
-  save_note_editor(list_index, "List note")
+  begin_body_block_edit_node(list_index, 0)
+  save_body_block_editor(list_index, 0, "List note")
 
   assert_eq(
     app_state.markdown,

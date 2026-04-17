@@ -5,6 +5,7 @@ priv struct AppState {
   mut document_name : String
   mut root : OutlineNode
   mut collapsed : Array[Int]
+  mut collapsed_note_nodes : Array[Int]
   mut hidden_nodes : Array[Int]
   mut undo_stack : Array[String]
   mut redo_stack : Array[String]
@@ -13,6 +14,8 @@ priv struct AppState {
   mut selection_anchor_node : Int
   mut editing_node : Int
   mut editing_note_node : Int
+  mut editing_body_node : Int
+  mut editing_body_block : Int
   mut layout_mode : String
   mut style_mode : String
   mut detail_level : String
@@ -32,6 +35,7 @@ let app_state : AppState = AppState::{
   document_name: "notes.md",
   root: empty_outline(),
   collapsed: [],
+  collapsed_note_nodes: [],
   hidden_nodes: [],
   undo_stack: [],
   redo_stack: [],
@@ -40,6 +44,8 @@ let app_state : AppState = AppState::{
   selection_anchor_node: -2,
   editing_node: -2,
   editing_note_node: -2,
+  editing_body_node: -2,
+  editing_body_block: -1,
   layout_mode: "logic",
   style_mode: "full",
   detail_level: "all",
@@ -231,7 +237,8 @@ fn on_splitter_change(percent : Int) -> Unit {
 ///|
 fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
   if event_editor_index_from_target(event.target()) >= 0 ||
-    event_note_editor_index_from_target(event.target()) >= 0 {
+    event_note_editor_index_from_target(event.target()) >= 0 ||
+    event_body_editor_index_from_target(event.target()) >= 0 {
     return
   }
   if is_blank_mindmap_click_target(event.target()) {
@@ -302,7 +309,33 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
     }
     "toggle-note" => {
       event.stopPropagation()
-      toggle_note_editor(node_index)
+      toggle_note_body(node_index)
+    }
+    "edit-body-block" => {
+      event.stopPropagation()
+      begin_body_block_edit_node(
+        node_index,
+        event_body_block_index_from_target(event.target()),
+      )
+    }
+    "delete-body-block" => {
+      event.stopPropagation()
+      delete_body_block(
+        node_index,
+        event_body_block_index_from_target(event.target()),
+      )
+    }
+    "save-body-block" => {
+      event.stopPropagation()
+      save_body_block_editor(
+        node_index,
+        event_body_block_index_from_target(event.target()),
+        body_block_editor_value_from_target(event.target()),
+      )
+    }
+    "cancel-body-block" => {
+      event.stopPropagation()
+      cancel_body_block_editor()
     }
     _ =>
       if cleared_selection {
@@ -317,7 +350,7 @@ fn is_blank_mindmap_click_target(target : @dom.Element) -> Bool {
   match target.closest(".mindmap, .mindmap-content, .mindmap-stage") {
     Some(_) =>
       target.closest(
-        "[data-node-index], [data-action], [data-editor-for], [data-note-editor-for], [data-drop-target], [data-drop-parent]",
+        "[data-node-index], [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for], [data-drop-target], [data-drop-parent]",
       )
       is None
     None => false
@@ -362,14 +395,8 @@ fn on_mindmap_dblclick(event : @dom.MouseEvent) -> Unit {
   }
   let target = event.target()
   if event_note_preview_from_target(target) {
-    match target.closest("a") {
-      Some(_) => ()
-      None => {
-        event.stopPropagation()
-        select_single_node(node_index, true)
-        begin_note_edit_node(node_index)
-      }
-    }
+    event.stopPropagation()
+    select_single_node(node_index, true)
     return
   }
   match find_node(app_state.root, node_index) {
@@ -388,6 +415,14 @@ fn on_mindmap_dblclick(event : @dom.MouseEvent) -> Unit {
 
 ///|
 fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
+  let body_editor_index = event_body_editor_index_from_target(event.target())
+  if body_editor_index >= 0 {
+    if event_key(event) == "Escape" {
+      event.preventDefault()
+      cancel_body_block_editor()
+    }
+    return
+  }
   let note_editor_index = event_note_editor_index_from_target(event.target())
   if note_editor_index >= 0 {
     let command_key = event.ctrlKey || event.metaKey
@@ -998,18 +1033,7 @@ fn save_editor(node_index : Int, title : String) -> Unit {
 
 ///|
 fn handle_insert_note() -> Unit {
-  if app_state.selected_node < 0 {
-    return
-  }
-  match find_node(app_state.root, app_state.selected_node) {
-    Some(node) => {
-      if node.synthetic {
-        return
-      }
-      begin_note_edit_node(app_state.selected_node)
-    }
-    None => ()
-  }
+  insert_node_body_template("note")
 }
 
 ///|
@@ -1033,18 +1057,6 @@ fn begin_edit_node(node_index : Int) -> Unit {
 }
 
 ///|
-fn begin_note_edit_node(node_index : Int) -> Unit {
-  clear_editing_session()
-  note_editor_snapshot_node.val = node_index
-  note_editor_snapshot_markdown.val = app_state.markdown
-  note_editor_draft_markdown.val = app_state.markdown
-  note_editor_undo_stack.val = []
-  note_editor_redo_stack.val = []
-  app_state.editing_note_node = node_index
-  render_ui()
-}
-
-///|
 fn clear_editing_session() -> Unit {
   editor_snapshot_node.val = -1
   editor_snapshot_markdown.val = ""
@@ -1053,6 +1065,7 @@ fn clear_editing_session() -> Unit {
   editor_redo_stack.val = []
   editor_created_node.val = -2
   clear_note_editing_session()
+  clear_body_block_editing_session()
 }
 
 ///|
@@ -1063,6 +1076,12 @@ fn clear_note_editing_session() -> Unit {
   note_editor_undo_stack.val = []
   note_editor_redo_stack.val = []
   app_state.editing_note_node = -2
+}
+
+///|
+fn clear_body_block_editing_session() -> Unit {
+  app_state.editing_body_node = -2
+  app_state.editing_body_block = -1
 }
 
 ///|
@@ -1135,20 +1154,108 @@ fn sync_editor_draft(node_index : Int, title : String) -> Unit {
 }
 
 ///|
-fn toggle_note_editor(node_index : Int) -> Unit {
+fn toggle_note_body(node_index : Int) -> Unit {
   if node_index < 0 {
     return
   }
-  if app_state.editing_note_node == node_index {
-    canceled_note_editor_node.val = node_index
-    match find_node(app_state.root, node_index) {
-      Some(node) => save_note_editor(node_index, node.body.join("\n\n"))
-      None => ()
-    }
+  clear_body_block_editing_session()
+  if is_note_body_collapsed(node_index) {
+    app_state.collapsed_note_nodes = remove_int(
+      app_state.collapsed_note_nodes,
+      node_index,
+    )
+  } else {
+    app_state.collapsed_note_nodes = append_unique_int(
+      app_state.collapsed_note_nodes,
+      node_index,
+    )
+  }
+  select_single_node(node_index, false)
+  render_ui()
+}
+
+///|
+fn is_note_body_collapsed(node_index : Int) -> Bool {
+  contains_int(app_state.collapsed_note_nodes, node_index)
+}
+
+///|
+fn begin_body_block_edit_node(node_index : Int, block_index : Int) -> Unit {
+  if node_index < 0 || block_index < 0 {
     return
   }
-  select_single_node(node_index, true)
-  begin_note_edit_node(node_index)
+  match find_node(app_state.root, node_index) {
+    Some(node) => {
+      if block_index >= node.body.length() {
+        return
+      }
+      clear_editing_session()
+      clear_note_editing_session()
+      app_state.collapsed_note_nodes = remove_int(
+        app_state.collapsed_note_nodes,
+        node_index,
+      )
+      app_state.editing_body_node = node_index
+      app_state.editing_body_block = block_index
+      select_single_node(node_index, false)
+      render_ui()
+    }
+    None => ()
+  }
+}
+
+///|
+fn cancel_body_block_editor() -> Unit {
+  clear_body_block_editing_session()
+  render_ui()
+}
+
+///|
+fn save_body_block_editor(
+  node_index : Int,
+  block_index : Int,
+  block_text : String,
+) -> Unit {
+  if app_state.editing_body_node != node_index ||
+    app_state.editing_body_block != block_index {
+    return
+  }
+  let next_markdown = update_node_body_block(
+    app_state.markdown,
+    node_index,
+    block_index,
+    block_text,
+  )
+  clear_body_block_editing_session()
+  if next_markdown != app_state.markdown {
+    apply_markdown_change(next_markdown, false)
+    select_single_node(node_index, false)
+  } else {
+    render_ui()
+  }
+}
+
+///|
+fn delete_body_block(node_index : Int, block_index : Int) -> Unit {
+  if node_index < 0 || block_index < 0 {
+    return
+  }
+  let next_markdown = delete_node_body_block(
+    app_state.markdown,
+    node_index,
+    block_index,
+  )
+  clear_body_block_editing_session()
+  if next_markdown != app_state.markdown {
+    apply_markdown_change(next_markdown, false)
+    match find_node(app_state.root, node_index) {
+      Some(node) =>
+        if node_has_note(node) {
+          select_single_node(node_index, false)
+        }
+      None => ()
+    }
+  }
 }
 
 ///|
@@ -1618,6 +1725,7 @@ fn apply_markdown_state(
     app_state.editing_node = -2
     clear_selected_nodes()
     app_state.hidden_nodes = []
+    app_state.collapsed_note_nodes = []
   }
   app_state.markdown = markdown
   app_state.root = build_outline(markdown)
@@ -1626,6 +1734,7 @@ fn apply_markdown_state(
     app_state.root_split_count = default_root_split_count(app_state.root)
   } else {
     sanitize_collapsed_state()
+    sanitize_note_collapsed_state()
     sanitize_hidden_state()
     sanitize_selected_state()
     if app_state.root_split_count <= 0 ||
@@ -2009,6 +2118,10 @@ fn insert_node_body_template(kind : String) -> Unit {
       updated.push(node)
     }
   }
+  app_state.collapsed_note_nodes = remove_int(
+    app_state.collapsed_note_nodes,
+    app_state.selected_node,
+  )
   apply_markdown_change(render_markdown_nodes(updated), false)
 }
 
@@ -2513,28 +2626,187 @@ fn build_node_body_dom(node : OutlineNode) -> @dom.Element? {
   if !node_has_note(node) {
     return None
   }
-  let body = create_element("div", "node-body")
-  if app_state.editing_note_node == node.flat_index {
-    let textarea = create_element("textarea", "node-note-editor")
-    textarea.setAttribute("data-note-editor-for", node.flat_index.to_string())
-    textarea.setAttribute("rows", "4")
-    @dom.HTMLTextAreaElement::cast_from_element(textarea).value = node.body.join(
-      "\n\n",
-    )
-    append_child(body, textarea)
+  if is_note_body_collapsed(node.flat_index) {
+    return None
+  }
+  let line_tree_class = if is_branch_line_tree_mode() {
+    " node-body--line-tree"
   } else {
-    let line_tree_class = if is_branch_line_tree_mode() {
-      " node-body--line-tree"
-    } else {
-      ""
-    }
-    body.setClassName("node-body node-body-preview\{line_tree_class}")
-    apply_theme_to_element(body)
-    body.setAttribute("data-note-preview-for", node.flat_index.to_string())
-    body.setAttribute("data-tip", "Double-click to edit note")
-    append_child(body, build_markdown_blocks_dom(node.body))
+    ""
+  }
+  let body = create_element(
+    "div",
+    "node-body node-body-preview\{line_tree_class}",
+  )
+  apply_theme_to_element(body)
+  body.setAttribute("data-note-preview-for", node.flat_index.to_string())
+  for index in 0..<node.body.length() {
+    append_child(body, build_node_body_block_dom(node, index))
   }
   Some(body)
+}
+
+///|
+fn build_node_body_block_dom(
+  node : OutlineNode,
+  block_index : Int,
+) -> @dom.Element {
+  let block = node.body[block_index]
+  let kind = body_block_kind(block)
+  let is_editing = app_state.editing_body_node == node.flat_index &&
+    app_state.editing_body_block == block_index
+  let wrap = create_element("div", "node-body-block node-body-block--\{kind}")
+  wrap.setAttribute("data-body-block-index", block_index.to_string())
+  wrap.setAttribute("data-body-block-kind", kind)
+  if is_editing {
+    append_child(
+      wrap,
+      build_body_block_editor_dom(node, block_index, block, kind),
+    )
+  } else {
+    let controls = build_body_block_controls_dom(block_index)
+    bind_body_block_hover_controls(wrap, controls)
+    append_child(wrap, controls)
+    append_child(wrap, build_markdown_blocks_dom([block]))
+  }
+  wrap
+}
+
+///|
+fn bind_body_block_hover_controls(
+  block : @dom.Element,
+  controls : @dom.Element,
+) -> Unit {
+  let show = fn() {
+    let style = style_of(controls)
+    style.set_property("opacity", "1")
+    style.set_property("pointer-events", "auto")
+  }
+  let hide = fn() {
+    let style = style_of(controls)
+    style.set_property("opacity", "0")
+    style.set_property("pointer-events", "none")
+  }
+  block.as_event_target().on("mouseenter", fn(_) { show() })
+  block.as_event_target().on("mouseleave", fn(_) { hide() })
+  controls.as_event_target().on("focusin", fn(_) { show() })
+  controls.as_event_target().on("focusout", fn(_) { hide() })
+}
+
+///|
+fn build_body_block_controls_dom(block_index : Int) -> @dom.Element {
+  let controls = create_element("div", "node-body-block-actions")
+  controls.setAttribute("data-body-block-index", block_index.to_string())
+  let edit = create_element("button", "node-body-block-action")
+  edit.setAttribute("type", "button")
+  edit.setAttribute("data-action", "edit-body-block")
+  edit.setAttribute("data-body-block-index", block_index.to_string())
+  edit.setAttribute("data-tip", "Edit")
+  edit.setAttribute("aria-label", "Edit")
+  edit.setTextContent("E")
+  let delete = create_element(
+    "button", "node-body-block-action node-body-block-action--delete",
+  )
+  delete.setAttribute("type", "button")
+  delete.setAttribute("data-action", "delete-body-block")
+  delete.setAttribute("data-body-block-index", block_index.to_string())
+  delete.setAttribute("data-tip", "Delete")
+  delete.setAttribute("aria-label", "Delete")
+  delete.setTextContent("X")
+  append_child(controls, edit)
+  append_child(controls, delete)
+  controls
+}
+
+///|
+fn build_body_block_editor_dom(
+  node : OutlineNode,
+  block_index : Int,
+  block : String,
+  kind : String,
+) -> @dom.Element {
+  let editor = create_element(
+    "div",
+    "node-body-block-editor node-body-block-editor--\{kind}",
+  )
+  editor.setAttribute("data-body-editor-for", node.flat_index.to_string())
+  editor.setAttribute("data-body-editor-block", block_index.to_string())
+  editor.setAttribute("data-body-editor-kind", kind)
+  match kind {
+    "image" => append_body_image_editor_fields(editor, block)
+    "code" => append_body_code_editor_fields(editor, block)
+    _ => append_body_text_editor_field(editor, block)
+  }
+  append_child(editor, build_body_block_editor_actions(block_index))
+  editor
+}
+
+///|
+fn append_body_text_editor_field(editor : @dom.Element, block : String) -> Unit {
+  let textarea = create_element("textarea", "node-body-block-textarea")
+  textarea.setAttribute("data-body-editor-value", "raw")
+  textarea.setAttribute("rows", "4")
+  @dom.HTMLTextAreaElement::cast_from_element(textarea).value = block
+  append_child(editor, textarea)
+}
+
+///|
+fn append_body_code_editor_fields(
+  editor : @dom.Element,
+  block : String,
+) -> Unit {
+  let parsed = parse_code_body_block(block)
+  let lang = create_element("input", "node-body-block-input")
+  lang.setAttribute("type", "text")
+  lang.setAttribute("data-body-editor-value", "code-lang")
+  lang.setAttribute("placeholder", "language")
+  @dom.HTMLInputElement::cast_from_element(lang).value = parsed.0
+  let textarea = create_element("textarea", "node-body-block-textarea")
+  textarea.setAttribute("data-body-editor-value", "code-text")
+  textarea.setAttribute("rows", "5")
+  @dom.HTMLTextAreaElement::cast_from_element(textarea).value = parsed.1
+  append_child(editor, lang)
+  append_child(editor, textarea)
+}
+
+///|
+fn append_body_image_editor_fields(
+  editor : @dom.Element,
+  block : String,
+) -> Unit {
+  let parsed = parse_image_body_block(block)
+  let alt = create_element("input", "node-body-block-input")
+  alt.setAttribute("type", "text")
+  alt.setAttribute("data-body-editor-value", "image-alt")
+  alt.setAttribute("placeholder", "alt")
+  @dom.HTMLInputElement::cast_from_element(alt).value = parsed.0
+  let url = create_element("input", "node-body-block-input")
+  url.setAttribute("type", "text")
+  url.setAttribute("data-body-editor-value", "image-url")
+  url.setAttribute("placeholder", "url")
+  @dom.HTMLInputElement::cast_from_element(url).value = parsed.1
+  append_child(editor, alt)
+  append_child(editor, url)
+}
+
+///|
+fn build_body_block_editor_actions(block_index : Int) -> @dom.Element {
+  let actions = create_element("div", "node-body-block-editor-actions")
+  let save = create_element("button", "node-body-block-editor-action")
+  save.setAttribute("type", "button")
+  save.setAttribute("data-action", "save-body-block")
+  save.setAttribute("data-body-block-index", block_index.to_string())
+  save.setTextContent("Save")
+  let cancel = create_element(
+    "button", "node-body-block-editor-action node-body-block-editor-action--secondary",
+  )
+  cancel.setAttribute("type", "button")
+  cancel.setAttribute("data-action", "cancel-body-block")
+  cancel.setAttribute("data-body-block-index", block_index.to_string())
+  cancel.setTextContent("Cancel")
+  append_child(actions, save)
+  append_child(actions, cancel)
+  actions
 }
 
 ///|
@@ -2548,6 +2820,10 @@ fn build_node_note_dom(node : OutlineNode) -> @dom.Element? {
   button.setAttribute("data-action", "toggle-note")
   button.setAttribute("data-tip", "Note")
   button.setAttribute("aria-label", "Note")
+  button.setAttribute(
+    "aria-expanded",
+    (!is_note_body_collapsed(node.flat_index)).to_string(),
+  )
   button.setTextContent("...")
   append_child(rail, button)
   match build_node_body_dom(node) {
@@ -2604,6 +2880,98 @@ fn build_node_actions_dom(
   button.setTextContent(label)
   append_child(actions, button)
   Some(actions)
+}
+
+///|
+fn body_block_editor_value_from_target(target : @dom.Element) -> String {
+  match target.closest(".node-body-block-editor") {
+    Some(editor) => {
+      let kind = editor.getAttribute("data-body-editor-kind").unwrap_or("note")
+      match kind {
+        "image" => {
+          let alt = editor_text_input_value(editor, "image-alt")
+          let url = editor_text_input_value(editor, "image-url")
+          "![\{alt}](\{url})"
+        }
+        "code" => {
+          let lang = editor_text_input_value(editor, "code-lang")
+          let code = editor_textarea_value(editor, "code-text")
+          "```\{lang}\n\{code}\n```"
+        }
+        _ => editor_textarea_value(editor, "raw")
+      }
+    }
+    None => ""
+  }
+}
+
+///|
+fn editor_textarea_value(editor : @dom.Element, field : String) -> String {
+  match editor.querySelector("[data-body-editor-value=\"\{field}\"]") {
+    Some(element) => @dom.HTMLTextAreaElement::cast_from_element(element).value
+    None => ""
+  }
+}
+
+///|
+fn editor_text_input_value(editor : @dom.Element, field : String) -> String {
+  match editor.querySelector("[data-body-editor-value=\"\{field}\"]") {
+    Some(element) => @dom.HTMLInputElement::cast_from_element(element).value
+    None => ""
+  }
+}
+
+///|
+fn body_block_kind(block : String) -> String {
+  let trimmed = block.trim().to_string()
+  if parse_image_body_block(trimmed).2 {
+    "image"
+  } else if parse_code_body_block(trimmed).2 {
+    "code"
+  } else if parse_markdown_table(trimmed) is Some(_) {
+    "table"
+  } else {
+    "note"
+  }
+}
+
+///|
+fn parse_code_body_block(block : String) -> (String, String, Bool) {
+  let trimmed = block.trim().to_string()
+  if !trimmed.has_prefix("```") {
+    return ("", block, false)
+  }
+  let lines = trimmed.split("\n").map(line => line.to_string()).to_array()
+  if lines.length() < 2 ||
+    !lines[lines.length() - 1].trim().to_string().has_prefix("```") {
+    return ("", block, false)
+  }
+  let lang = lines[0][3:].to_string().trim().to_string()
+  let code = []
+  for index in 1..<(lines.length() - 1) {
+    code.push(lines[index])
+  }
+  (lang, code.join("\n"), true)
+}
+
+///|
+fn parse_image_body_block(block : String) -> (String, String, Bool) {
+  let trimmed = block.trim().to_string()
+  if !trimmed.has_prefix("![") || !trimmed.has_suffix(")") {
+    return ("", "", false)
+  }
+  match find_markdown_from(trimmed, "](", 2) {
+    Some(close_alt) => {
+      let alt = trimmed[2:close_alt].to_string()
+      let url_start = close_alt + 2
+      if url_start > trimmed.length() - 1 {
+        ("", "", false)
+      } else {
+        (alt, trimmed[url_start:trimmed.length() - 1].to_string(), true)
+      }
+    }
+    None => ("", "", false)
+  }
 }
 
 ///|
@@ -2980,19 +3348,60 @@ fn render_node_body(node : OutlineNode) -> String {
   if !node_has_note(node) {
     return ""
   }
-  let note_button = "<button type=\"button\" class=\"node-action node-action--note\" data-action=\"toggle-note\" data-tip=\"Note\" aria-label=\"Note\">...</button>"
-  let body = if app_state.editing_note_node == node.flat_index {
-    let value = escape_html(node.body.join("\n\n"))
-    "<div class=\"node-body\"><textarea class=\"node-note-editor\" data-note-editor-for=\"\{node.flat_index}\" rows=\"4\">\{value}</textarea></div>"
+  let expanded = (!is_note_body_collapsed(node.flat_index)).to_string()
+  let note_button = "<button type=\"button\" class=\"node-action node-action--note\" data-action=\"toggle-note\" data-tip=\"Note\" aria-label=\"Note\" aria-expanded=\"\{expanded}\">...</button>"
+  let body = if is_note_body_collapsed(node.flat_index) {
+    ""
   } else {
     let line_tree_class = if is_branch_line_tree_mode() {
       " node-body--line-tree"
     } else {
       ""
     }
-    "<div class=\"node-body node-body-preview\{line_tree_class}\" data-note-preview-for=\"\{node.flat_index}\" data-tip=\"Double-click to edit note\"><div class=\"markdown-blocks\">\{render_markdown_blocks_html(node.body)}</div></div>"
+    let blocks = []
+    for index in 0..<node.body.length() {
+      blocks.push(render_node_body_block(node, index))
+    }
+    let blocks_html = blocks.join("")
+    "<div class=\"node-body node-body-preview\{line_tree_class}\" data-note-preview-for=\"\{node.flat_index}\">\{blocks_html}</div>"
   }
   "<div class=\"node-note-rail\">\{note_button}\{body}</div>"
+}
+
+///|
+fn render_node_body_block(node : OutlineNode, block_index : Int) -> String {
+  let block = node.body[block_index]
+  let kind = body_block_kind(block)
+  if app_state.editing_body_node == node.flat_index &&
+    app_state.editing_body_block == block_index {
+    render_body_block_editor(node, block_index, block, kind)
+  } else {
+    let controls = "<div class=\"node-body-block-actions\" data-body-block-index=\"\{block_index}\"><button type=\"button\" class=\"node-body-block-action\" data-action=\"edit-body-block\" data-body-block-index=\"\{block_index}\" data-tip=\"Edit\" aria-label=\"Edit\">E</button><button type=\"button\" class=\"node-body-block-action node-body-block-action--delete\" data-action=\"delete-body-block\" data-body-block-index=\"\{block_index}\" data-tip=\"Delete\" aria-label=\"Delete\">X</button></div>"
+    "<div class=\"node-body-block node-body-block--\{kind}\" data-body-block-index=\"\{block_index}\" data-body-block-kind=\"\{kind}\">\{controls}<div class=\"markdown-blocks\">\{render_markdown_blocks_html([block])}</div></div>"
+  }
+}
+
+///|
+fn render_body_block_editor(
+  node : OutlineNode,
+  block_index : Int,
+  block : String,
+  kind : String,
+) -> String {
+  let fields = match kind {
+    "image" => {
+      let parsed = parse_image_body_block(block)
+      "<input class=\"node-body-block-input\" type=\"text\" data-body-editor-value=\"image-alt\" placeholder=\"alt\" value=\"\{escape_html_attribute(parsed.0)}\" /><input class=\"node-body-block-input\" type=\"text\" data-body-editor-value=\"image-url\" placeholder=\"url\" value=\"\{escape_html_attribute(parsed.1)}\" />"
+    }
+    "code" => {
+      let parsed = parse_code_body_block(block)
+      "<input class=\"node-body-block-input\" type=\"text\" data-body-editor-value=\"code-lang\" placeholder=\"language\" value=\"\{escape_html_attribute(parsed.0)}\" /><textarea class=\"node-body-block-textarea\" data-body-editor-value=\"code-text\" rows=\"5\">\{escape_html(parsed.1)}</textarea>"
+    }
+    _ =>
+      "<textarea class=\"node-body-block-textarea\" data-body-editor-value=\"raw\" rows=\"4\">\{escape_html(block)}</textarea>"
+  }
+  let actions = "<div class=\"node-body-block-editor-actions\"><button type=\"button\" class=\"node-body-block-editor-action\" data-action=\"save-body-block\" data-body-block-index=\"\{block_index}\">Save</button><button type=\"button\" class=\"node-body-block-editor-action node-body-block-editor-action--secondary\" data-action=\"cancel-body-block\" data-body-block-index=\"\{block_index}\">Cancel</button></div>"
+  "<div class=\"node-body-block node-body-block--\{kind}\" data-body-block-index=\"\{block_index}\" data-body-block-kind=\"\{kind}\"><div class=\"node-body-block-editor node-body-block-editor--\{kind}\" data-body-editor-for=\"\{node.flat_index}\" data-body-editor-block=\"\{block_index}\" data-body-editor-kind=\"\{kind}\">\{fields}\{actions}</div></div>"
 }
 
 ///|
@@ -3100,7 +3509,7 @@ fn contour_node_height(node : OutlineNode) -> Int {
 
 ///|
 fn contour_note_height(node : OutlineNode) -> Int {
-  if !node_has_note(node) {
+  if !node_has_note(node) || is_note_body_collapsed(node.flat_index) {
     return 0
   }
   let mut line_count = 0
@@ -3438,6 +3847,18 @@ fn sanitize_collapsed_state() -> Unit {
     }
   }
   app_state.collapsed = next
+}
+
+///|
+fn sanitize_note_collapsed_state() -> Unit {
+  let next = []
+  for node_index in app_state.collapsed_note_nodes {
+    match find_node(app_state.root, node_index) {
+      Some(node) => if node_has_note(node) { next.push(node_index) }
+      None => ()
+    }
+  }
+  app_state.collapsed_note_nodes = next
 }
 
 ///|
