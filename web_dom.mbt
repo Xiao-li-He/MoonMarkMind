@@ -3435,10 +3435,10 @@ fn build_mindmap_export_svg_element() -> @dom.Element? {
     Some(mindmap) => {
       let view_state = capture_mindmap_export_view_state(mindmap)
       apply_neutral_mindmap_export_view(mindmap)
+      normalize_static_export_note_buttons(mindmap)
       render_mindmap_connectors()
       let clone = @dom.Element::cast_from_node(mindmap.cloneNode(true))
       normalize_export_connector_styles(clone)
-      normalize_static_export_note_buttons(clone)
       let bounds = mindmap_export_bounds(mindmap)
       let svg = create_svg_element("svg", "")
       svg.setAttribute("xmlns", "http://www.w3.org/2000/svg")
@@ -3478,7 +3478,7 @@ fn build_mindmap_export_svg_element() -> @dom.Element? {
       foreign_object.as_node().appendChild(wrapper.as_node()) |> ignore
       svg.as_node().appendChild(foreign_object.as_node()) |> ignore
       restore_mindmap_export_view(mindmap, view_state)
-      render_mindmap_connectors()
+      render_ui()
       Some(svg)
     }
     None => None
@@ -3608,7 +3608,7 @@ fn static_export_note_body_margin_top_for_branch_line(
   is_branch_line : Bool,
 ) -> String {
   let _ = is_branch_line
-  "6px"
+  "4px"
 }
 
 ///|

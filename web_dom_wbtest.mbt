@@ -108,8 +108,8 @@ test "static export note title shift matches removed button height" {
 
 ///|
 test "static export note body margin compensates removed note button" {
-  assert_eq(static_export_note_body_margin_top_for_branch_line(false), "6px")
-  assert_eq(static_export_note_body_margin_top_for_branch_line(true), "6px")
+  assert_eq(static_export_note_body_margin_top_for_branch_line(false), "4px")
+  assert_eq(static_export_note_body_margin_top_for_branch_line(true), "4px")
 }
 
 ///|
