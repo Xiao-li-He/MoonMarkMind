@@ -120,6 +120,24 @@ test "markdown inline renderer previews image with empty alt" {
 }
 
 ///|
+test "image-only node body uses non scrolling body class" {
+  let node = OutlineNode::{
+    flat_index: 0,
+    source_line: 0,
+    level: 1,
+    title: "Image",
+    marker: "",
+    body: ["![](https://markmap.js.org/favicon.png)"],
+    kind: MarkdownNodeKind::Heading,
+    synthetic: false,
+    children: [],
+  }
+  let html = render_node_body(node)
+  assert_eq(html.contains("node-body--image-only"), true)
+  assert_eq(html.contains("markdown-image"), true)
+}
+
+///|
 test "markdown inline renderer degrades unsafe image sources" {
   let html = render_markdown_inline_html("![Bad](javascript:alert(1))")
   assert_eq(html.contains("<img"), false)

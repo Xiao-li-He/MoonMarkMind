@@ -3043,14 +3043,22 @@ fn bind_export_mindmap_ui(export_root : @dom.Element) -> Unit {
   .as_event_target()
   .on("click", fn(raw) {
     let event : @dom.MouseEvent = raw.cast()
-    match event.target().closest("[data-action=\"toggle-note\"]") {
-      Some(button) =>
-        handle_export_note_toggle_click(export_root, event, button)
+    match event.target().closest(".markdown-image") {
+      Some(image) => {
+        event.preventDefault()
+        event.stopPropagation()
+        show_markdown_image_preview(image)
+      }
       None =>
-        match event.target().closest("[data-action=\"toggle\"]") {
+        match event.target().closest("[data-action=\"toggle-note\"]") {
           Some(button) =>
-            handle_export_node_toggle_click(export_root, event, button)
-          None => ()
+            handle_export_note_toggle_click(export_root, event, button)
+          None =>
+            match event.target().closest("[data-action=\"toggle\"]") {
+              Some(button) =>
+                handle_export_node_toggle_click(export_root, event, button)
+              None => ()
+            }
         }
     }
   })
@@ -3138,6 +3146,59 @@ fn apply_export_page_theme() -> Unit {
         "font-family", "\"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
       )
     }
+    None => ()
+  }
+}
+
+///|
+fn show_markdown_image_preview(image : @dom.Element) -> Unit {
+  let src = image.getAttribute("src").unwrap_or("")
+  if src.length() == 0 {
+    return
+  }
+  close_markdown_image_preview()
+  let overlay = create_element("div", "image-preview-overlay")
+  overlay.setAttribute("role", "dialog")
+  overlay.setAttribute("aria-modal", "true")
+  overlay.setAttribute("tabindex", "-1")
+  let close = create_element("button", "image-preview-close")
+  close.setAttribute("type", "button")
+  close.setAttribute("aria-label", "Close")
+  close.setTextContent("x")
+  let preview = create_element("img", "image-preview")
+  preview.setAttribute("src", src)
+  preview.setAttribute("alt", image.getAttribute("alt").unwrap_or(""))
+  append_child(overlay, close)
+  append_child(overlay, preview)
+  overlay
+  .as_event_target()
+  .on("click", fn(raw) {
+    let event : @dom.MouseEvent = raw.cast()
+    match event.target().closest(".image-preview") {
+      Some(_) => ()
+      None => close_markdown_image_preview()
+    }
+  })
+  overlay
+  .as_event_target()
+  .on("keydown", fn(raw) {
+    let event : @dom.KeyboardEvent = raw.cast()
+    if event_key(event) == "Escape" {
+      event.preventDefault()
+      close_markdown_image_preview()
+    }
+  })
+  match @dom.document().body() {
+    Some(body) => append_child(body.as_element(), overlay)
+    None => append_child(@dom.document().documentElement(), overlay)
+  }
+  @dom.HTMLElement::cast_from_element(overlay).focus()
+}
+
+///|
+fn close_markdown_image_preview() -> Unit {
+  match get_element(".image-preview-overlay") {
+    Some(overlay) => overlay.remove()
     None => ()
   }
 }

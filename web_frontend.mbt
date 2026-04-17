@@ -241,6 +241,15 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
     event_body_editor_index_from_target(event.target()) >= 0 {
     return
   }
+  match event.target().closest(".markdown-image") {
+    Some(image) => {
+      event.preventDefault()
+      event.stopPropagation()
+      show_markdown_image_preview(image)
+      return
+    }
+    None => ()
+  }
   if is_blank_mindmap_click_target(event.target()) {
     if has_selected_nodes() {
       clear_editing_session()
@@ -2634,9 +2643,14 @@ fn build_node_body_dom(node : OutlineNode) -> @dom.Element? {
   } else {
     ""
   }
+  let image_only_class = if node_body_is_image_only(node) {
+    " node-body--image-only"
+  } else {
+    ""
+  }
   let body = create_element(
     "div",
-    "node-body node-body-preview\{line_tree_class}",
+    "node-body node-body-preview\{line_tree_class}\{image_only_class}",
   )
   apply_theme_to_element(body)
   body.setAttribute("data-note-preview-for", node.flat_index.to_string())
@@ -2644,6 +2658,14 @@ fn build_node_body_dom(node : OutlineNode) -> @dom.Element? {
     append_child(body, build_node_body_block_dom(node, index))
   }
   Some(body)
+}
+
+///|
+fn node_body_is_image_only(node : OutlineNode) -> Bool {
+  if node.body.length() != 1 {
+    return false
+  }
+  body_block_kind(node.body[0]) == "image"
 }
 
 ///|
@@ -3358,12 +3380,17 @@ fn render_node_body(node : OutlineNode) -> String {
     } else {
       ""
     }
+    let image_only_class = if node_body_is_image_only(node) {
+      " node-body--image-only"
+    } else {
+      ""
+    }
     let blocks = []
     for index in 0..<node.body.length() {
       blocks.push(render_node_body_block(node, index))
     }
     let blocks_html = blocks.join("")
-    "<div class=\"node-body node-body-preview\{line_tree_class}\" data-note-preview-for=\"\{node.flat_index}\">\{blocks_html}</div>"
+    "<div class=\"node-body node-body-preview\{line_tree_class}\{image_only_class}\" data-note-preview-for=\"\{node.flat_index}\">\{blocks_html}</div>"
   }
   "<div class=\"node-note-rail\">\{note_button}\{body}</div>"
 }

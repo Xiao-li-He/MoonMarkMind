@@ -448,6 +448,15 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "markdown-image") {
     style_markdown_image(element)
   }
+  if has_class_name(element, "image-preview-overlay") {
+    style_image_preview_overlay(element)
+  }
+  if has_class_name(element, "image-preview") {
+    style_image_preview(element)
+  }
+  if has_class_name(element, "image-preview-close") {
+    style_image_preview_close(element)
+  }
   if has_class_name(element, "markdown-code-block") {
     style_markdown_code_block(element)
   }
@@ -2427,6 +2436,10 @@ fn branch_line_title_font_size(node : @dom.Element) -> String {
 
 ///|
 fn style_node_body(element : @dom.Element) -> Unit {
+  if has_class_name(element, "node-body--image-only") {
+    style_node_body_image_only(element)
+    return
+  }
   if has_class_name(element, "node-body--line-tree") {
     style_node_body_branch_line(element)
     set_style(element, "width", "180px")
@@ -2460,6 +2473,30 @@ fn style_node_body(element : @dom.Element) -> Unit {
   set_style(element, "word-break", "break-word")
   set_style(element, "max-height", "120px")
   set_style(element, "overflow", "auto")
+  set_style(element, "font-weight", "500")
+}
+
+///|
+fn style_node_body_image_only(element : @dom.Element) -> Unit {
+  set_style(element, "display", "block")
+  set_style(element, "width", "100%")
+  set_style(element, "max-width", "100%")
+  set_style(element, "min-width", "0")
+  set_style(element, "box-sizing", "border-box")
+  set_style(element, "margin-top", "0")
+  set_style(element, "margin-left", "auto")
+  set_style(element, "margin-right", "auto")
+  set_style(element, "padding", "8px 10px")
+  set_style(element, "border-radius", "8px")
+  set_style(element, "background", "rgba(247, 250, 253, 0.84)")
+  set_style(element, "border", "1px solid rgba(214, 225, 237, 0.68)")
+  set_style(element, "color", "rgba(92, 122, 153, 0.95)")
+  set_style(element, "font-size", "12px")
+  set_style(element, "line-height", "1.45")
+  set_style(element, "white-space", "normal")
+  set_style(element, "word-break", "normal")
+  set_style(element, "max-height", "none")
+  set_style(element, "overflow", "hidden")
   set_style(element, "font-weight", "500")
 }
 
@@ -2640,9 +2677,56 @@ fn style_markdown_link(element : @dom.Element) -> Unit {
 fn style_markdown_image(element : @dom.Element) -> Unit {
   set_style(element, "display", "block")
   set_style(element, "max-width", "100%")
+  set_style(element, "max-height", "96px")
   set_style(element, "height", "auto")
+  set_style(element, "width", "auto")
+  set_style(element, "margin", "0 auto")
   set_style(element, "border-radius", "6px")
   set_style(element, "object-fit", "contain")
+  set_style(element, "cursor", "zoom-in")
+}
+
+///|
+fn style_image_preview_overlay(element : @dom.Element) -> Unit {
+  set_style(element, "position", "fixed")
+  set_style(element, "inset", "0")
+  set_style(element, "z-index", "9999")
+  set_style(element, "display", "flex")
+  set_style(element, "align-items", "center")
+  set_style(element, "justify-content", "center")
+  set_style(element, "padding", "32px")
+  set_style(element, "background", "rgba(8, 14, 20, 0.78)")
+  set_style(element, "backdrop-filter", "blur(3px)")
+  set_style(element, "cursor", "zoom-out")
+}
+
+///|
+fn style_image_preview(element : @dom.Element) -> Unit {
+  set_style(element, "display", "block")
+  set_style(element, "max-width", "92vw")
+  set_style(element, "max-height", "88vh")
+  set_style(element, "width", "auto")
+  set_style(element, "height", "auto")
+  set_style(element, "object-fit", "contain")
+  set_style(element, "border-radius", "10px")
+  set_style(element, "box-shadow", "0 18px 60px rgba(0, 0, 0, 0.42)")
+  set_style(element, "cursor", "default")
+}
+
+///|
+fn style_image_preview_close(element : @dom.Element) -> Unit {
+  set_style(element, "position", "absolute")
+  set_style(element, "top", "18px")
+  set_style(element, "right", "18px")
+  set_style(element, "width", "32px")
+  set_style(element, "height", "32px")
+  set_style(element, "border", "1px solid rgba(255, 255, 255, 0.42)")
+  set_style(element, "border-radius", "999px")
+  set_style(element, "background", "rgba(255, 255, 255, 0.14)")
+  set_style(element, "color", "#ffffff")
+  set_style(element, "font-size", "18px")
+  set_style(element, "line-height", "1")
+  set_style(element, "cursor", "pointer")
 }
 
 ///|
