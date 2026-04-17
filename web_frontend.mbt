@@ -346,9 +346,7 @@ fn on_toolbar_action(action : String) -> Unit {
       render_ui()
     }
     "insert-note" => handle_insert_note()
-    "insert-link" => insert_node_body_template("link")
     "insert-image" => insert_node_body_template("image")
-    "insert-formula" => insert_node_body_template("formula")
     "insert-code" => insert_node_body_template("code")
     "insert-table" => insert_node_body_template("table")
     _ => ()
@@ -1952,9 +1950,7 @@ fn can_toolbar_action(action : String) -> Bool {
             app_state.markdown
           "toggle-node" => selected_has_children()
           "insert-note" => selected_node_exists()
-          "insert-link" => selected_node_exists()
           "insert-image" => selected_node_exists()
-          "insert-formula" => selected_node_exists()
           "insert-code" => selected_node_exists()
           "insert-table" => selected_node_exists()
           _ => false

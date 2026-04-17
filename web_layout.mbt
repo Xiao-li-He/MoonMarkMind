@@ -720,20 +720,8 @@ fn build_primary_toolbar() -> @dom.Element {
           selected: false,
         },
         SelectOption::{
-          value: "insert-link",
-          label: "链接",
-          hidden: false,
-          selected: false,
-        },
-        SelectOption::{
           value: "insert-image",
           label: "图片",
-          hidden: false,
-          selected: false,
-        },
-        SelectOption::{
-          value: "insert-formula",
-          label: "公式",
           hidden: false,
           selected: false,
         },
@@ -1004,9 +992,7 @@ fn toolbar_icon_key(action : String) -> String {
     "move-down" => "down"
     "toggle-node" => "toggle"
     "insert-note" => "insert"
-    "insert-link" => "insert"
     "insert-image" => "insert"
-    "insert-formula" => "insert"
     "insert-code" => "insert"
     "insert-table" => "insert"
     _ => "branch"

@@ -1,10 +1,13 @@
 # 示例2 不同文本
 ## 文本样式
-- [链接节点](https://example.com)
-- **粗体节点**
-- _斜体节点_
-- `行内代码节点`
-- ~~删除线节点~~
+- [MoonMarkMind GitHub](https://github.com/Xiao-li-He/MoonMarkMind)
+- **加粗** ~~删除线~~ *斜体* ==高亮== _斜体_
+- 使用`行内代码`
+- 公式 $x = {-b \pm \sqrt{b^2-4ac} \over 2a}$  
+
+## 代办事项
+- [ ] 待办事项
+- [x] 已完成事项
 
 ## 代码块
 ```ts
@@ -13,9 +16,6 @@ function add(a: number, b: number) {
   return a + b;
 }
 ```
-## 代办事项
-- [ ] 待办事项
-- [x] 已完成事项
 
 ## 表格
 | 功能 | 状态 | 说明 |
@@ -23,3 +23,6 @@ function add(a: number, b: number) {
 | md编辑区 | ✅ | 已完成 |
 | 脑图样式 | ✅ | 已完成 |
 | 导出功能 |  | 进行中 |
+
+## 图片
+![](https://markmap.js.org/favicon.png)
