@@ -607,6 +607,10 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "collapsed-node") {
     style_collapsed_node(element)
   }
+  if has_class_name(element, "node-spacing-slot") {
+    style_node_spacing_slot(element)
+    style_single_right_node_spacing_slot(element)
+  }
   if has_class_name(element, "workspace-divider--dragging") {
     style_workspace_divider_dragging(element)
   }
@@ -3456,6 +3460,35 @@ fn style_mindmap_stage_svg_connectors(element : @dom.Element) -> Unit {
   }
   for node_small in element.querySelectorAll(".node small") {
     set_style(node_small, "display", "none")
+  }
+}
+
+///|
+fn is_single_right_node_spacing_slot(element : @dom.Element) -> Bool {
+  has_class_name(element, "node-spacing-slot--single-right") ||
+  element.closest(".mindmap-stage--single-right, .single-right-tree__node")
+  is Some(_)
+}
+
+///|
+fn style_node_spacing_slot(element : @dom.Element) -> Unit {
+  set_style(element, "width", "100%")
+  set_style(element, "min-height", "12px")
+  set_style(element, "pointer-events", "none")
+}
+
+///|
+fn style_single_right_node_spacing_slot(element : @dom.Element) -> Unit {
+  match is_single_right_node_spacing_slot(element) {
+    true => {
+      set_style(element, "width", "0")
+      set_style(element, "min-width", "0")
+      set_style(element, "min-height", "0")
+      set_style(element, "height", "0")
+      set_style(element, "overflow", "hidden")
+      set_style(element, "flex", "0 0 0")
+    }
+    false => ()
   }
 }
 

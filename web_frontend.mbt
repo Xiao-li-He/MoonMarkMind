@@ -2301,9 +2301,11 @@ fn build_root_branch_node_dom(
   branch.setAttribute("data-parent-index", parent_index.to_string())
   apply_node_visual_attrs(branch, node, tone_index)
   apply_root_weight_style(branch, offset, weight, total_weight)
+  append_child(branch, build_node_spacing_slot_dom())
   append_branch_logic_parts(
     branch, node, parent_index, false, direction, tone_index,
   )
+  append_child(branch, build_node_spacing_slot_dom())
   branch
 }
 
@@ -2356,9 +2358,11 @@ fn build_branch_node_dom(
   branch.setAttribute("data-node-index", node.flat_index.to_string())
   branch.setAttribute("data-parent-index", parent_index.to_string())
   apply_node_visual_attrs(branch, node, tone_index)
+  append_child(branch, build_node_spacing_slot_dom())
   append_branch_logic_parts(
     branch, node, parent_index, false, direction, tone_index,
   )
+  append_child(branch, build_node_spacing_slot_dom())
   branch
 }
 
@@ -2435,12 +2439,14 @@ fn build_vertical_tree_dom(
   let tree = create_element("div", vertical_tree_class(node))
   tree.setAttribute("data-node-index", node.flat_index.to_string())
   tree.setAttribute("data-parent-index", parent_index.to_string())
+  append_child(tree, build_node_spacing_slot_dom())
   append_child(
     tree,
     build_node_card_dom(
       node, parent_index, is_root, tone_index, "node-actions--bottom-center",
     ),
   )
+  append_child(tree, build_node_spacing_slot_dom())
   append_child(tree, build_vertical_children_dom(node, tone_index))
   tree
 }
@@ -2500,6 +2506,7 @@ fn build_single_right_tree_dom(
   tree.setAttribute("data-node-index", node.flat_index.to_string())
   tree.setAttribute("data-parent-index", parent_index.to_string())
   apply_node_visual_attrs(tree, node, tone_index)
+  append_child(tree, build_node_spacing_slot_dom())
   let head = create_element("div", "single-right-tree__head")
   append_child(
     head,
@@ -2508,6 +2515,7 @@ fn build_single_right_tree_dom(
     ),
   )
   append_child(tree, head)
+  append_child(tree, build_node_spacing_slot_dom())
   append_child(tree, build_single_right_children_dom(node, tone_index))
   tree
 }
@@ -3059,6 +3067,16 @@ fn build_hidden_marker_dom(
 }
 
 ///|
+fn build_node_spacing_slot_dom() -> @dom.Element {
+  let class_name = if app_state.layout_mode == "logic" {
+    "node-spacing-slot node-spacing-slot--single-right"
+  } else {
+    "node-spacing-slot"
+  }
+  create_element("div", class_name)
+}
+
+///|
 fn apply_node_visual_attrs(
   element : @dom.Element,
   node : OutlineNode,
@@ -3160,7 +3178,9 @@ fn render_branch_node(
   direction : String,
   tone_index : Int,
 ) -> String {
+  let before_slot = render_node_spacing_slot()
   let card = render_node_card(node, parent_index, false, tone_index)
+  let after_slot = render_node_spacing_slot()
   let children_html = render_branch_children(node, direction, tone_index)
   let branch_attrs = render_node_visual_attrs(node, tone_index)
   let body = if direction == "left" {
@@ -3168,7 +3188,7 @@ fn render_branch_node(
   } else {
     "<div class=\"single-right-tree__head single-right-tree__head--right\">\{card}</div>\{children_html}"
   }
-  "<div class=\"branch-item branch-item--\{direction} single-right-tree__node single-right-tree__node--\{direction}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{branch_attrs}>\{body}</div>"
+  "<div class=\"branch-item branch-item--\{direction} single-right-tree__node single-right-tree__node--\{direction}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{branch_attrs}>\{before_slot}\{body}\{after_slot}</div>"
 }
 
 ///|
@@ -3214,10 +3234,12 @@ fn render_vertical_tree(
   is_root : Bool,
   tone_index : Int,
 ) -> String {
+  let before_slot = render_node_spacing_slot()
   let card = render_node_card(node, parent_index, is_root, tone_index)
+  let after_slot = render_node_spacing_slot()
   let children_html = render_vertical_children(node, tone_index)
   let class_name = vertical_tree_class(node)
-  "<div class=\"\{class_name}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\">\{card}\{children_html}</div>"
+  "<div class=\"\{class_name}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\">\{before_slot}\{card}\{after_slot}\{children_html}</div>"
 }
 
 ///|
@@ -3259,10 +3281,12 @@ fn render_single_right_tree(
   is_root : Bool,
   tone_index : Int,
 ) -> String {
+  let before_slot = render_node_spacing_slot()
   let card = render_node_card(node, parent_index, is_root, tone_index)
+  let after_slot = render_node_spacing_slot()
   let children_html = render_single_right_children(node, tone_index)
   let node_attrs = render_node_visual_attrs(node, tone_index)
-  "<div class=\"single-right-tree__node\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{node_attrs}><div class=\"single-right-tree__head\">\{card}</div>\{children_html}</div>"
+  "<div class=\"single-right-tree__node\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{node_attrs}>\{before_slot}<div class=\"single-right-tree__head\">\{card}</div>\{after_slot}\{children_html}</div>"
 }
 
 ///|
@@ -3636,6 +3660,16 @@ fn single_child_chain_length(node : OutlineNode) -> Int {
   } else {
     1 + single_child_chain_length(node.children[0])
   }
+}
+
+///|
+fn render_node_spacing_slot() -> String {
+  let class_name = if app_state.layout_mode == "logic" {
+    "node-spacing-slot node-spacing-slot--single-right"
+  } else {
+    "node-spacing-slot"
+  }
+  "<div class=\"\{class_name}\"></div>"
 }
 
 ///|
