@@ -764,8 +764,21 @@ fn build_secondary_toolbar() -> @dom.Element {
     toolbar,
     build_aux_button(id="recenter-view", tip="居中视图", label="◎"),
   )
-  append_child(toolbar, build_aux_button(tip="帮助", label="?"))
+  append_child(toolbar, build_help_link())
   toolbar
+}
+
+///|
+fn build_help_link() -> @dom.Element {
+  let link = create_element("a", "mindmap-aux-button")
+  link.setAttribute("id", "help-action")
+  link.setAttribute("href", "help.html")
+  link.setAttribute("target", "_blank")
+  link.setAttribute("rel", "noopener noreferrer")
+  link.setAttribute("data-tip", "帮助")
+  link.setAttribute("aria-label", "帮助")
+  append_child(link, build_tool_icon("help", false))
+  link
 }
 
 ///|

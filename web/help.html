@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MoonMarkMind 帮助文档</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #22384f;
+        --muted: #5f7892;
+        --soft: rgba(255, 255, 255, 0.74);
+        --softer: rgba(249, 252, 255, 0.62);
+        --line: rgba(223, 233, 243, 0.9);
+        --accent: #4fa9e8;
+        --accent-strong: #2e74b5;
+        --shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88), 0 12px 28px rgba(120, 139, 164, 0.06);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: radial-gradient(circle at 12% 16%, rgba(116, 226, 255, 0.58) 0%, rgba(116, 226, 255, 0.34) 16%, rgba(116, 226, 255, 0.08) 30%, transparent 42%), radial-gradient(circle at 86% 14%, rgba(140, 255, 206, 0.46) 0%, rgba(140, 255, 206, 0.24) 14%, rgba(140, 255, 206, 0.06) 28%, transparent 40%), linear-gradient(180deg, #f6fcff 0%, #edf6ff 52%, #eef6ff 100%);
+        background-attachment: fixed;
+        letter-spacing: 0;
+      }
+
+      a {
+        color: var(--accent-strong);
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr);
+        gap: 18px;
+        width: 100%;
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 18px;
+        border: 1px solid rgba(221, 231, 241, 0.8);
+        border-radius: 36px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(247, 251, 255, 0.3));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82), 0 24px 60px rgba(120, 139, 164, 0.1);
+        backdrop-filter: blur(26px) saturate(125%);
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 18px;
+        z-index: 5;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 16px;
+        height: calc(100vh - 36px);
+        padding: 20px;
+        border: 1px solid rgba(222, 232, 242, 0.84);
+        border-radius: 32px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 251, 255, 0.84));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 18px 46px rgba(120, 139, 164, 0.09);
+        backdrop-filter: blur(22px) saturate(122%);
+        overflow: auto;
+      }
+
+      .brand {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        width: 100%;
+        min-width: 0;
+      }
+
+      .brand strong {
+        font-size: 22px;
+        line-height: 1.15;
+      }
+
+      .brand span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 38px;
+        padding: 0 15px;
+        border: 1px solid rgba(177, 202, 225, 0.72);
+        border-radius: 19px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(245, 249, 253, 0.42));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 8px 20px rgba(120, 139, 164, 0.08);
+        color: #416b92;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .hero {
+        margin-bottom: 18px;
+      }
+
+      .intro,
+      .toc,
+      .section,
+      .feature-card,
+      .shortcut-table,
+      .notice {
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(249, 252, 255, 0.62));
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(22px) saturate(122%);
+      }
+
+      .intro {
+        padding: 28px;
+        border-radius: 24px;
+      }
+
+      .intro h1 {
+        margin: 0 0 12px;
+        font-size: clamp(32px, 5vw, 54px);
+        line-height: 1.05;
+      }
+
+      .intro p {
+        max-width: 760px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.8;
+      }
+
+      .toc {
+        width: 100%;
+        padding: 20px;
+        border-radius: 24px;
+      }
+
+      .toc h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+
+      .toc ol {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding-left: 22px;
+      }
+
+      .toc a {
+        color: #416b92;
+        font-weight: 700;
+      }
+
+      .section {
+        margin-top: 18px;
+        padding: 24px 24px 18px;
+        border-radius: 24px;
+        scroll-margin-top: 18px;
+      }
+
+      .section h2 {
+        margin: 0 0 18px;
+        font-size: 25px;
+      }
+
+      .section > p {
+        margin: 0 0 18px;
+        color: var(--muted);
+        line-height: 1.75;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .feature-card {
+        padding: 18px;
+        border-radius: 16px;
+        background: rgba(247, 250, 253, 0.84);
+      }
+
+      .feature-card h3 {
+        margin: 0 0 9px;
+        font-size: 17px;
+      }
+
+      .feature-card p,
+      .feature-card li {
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .feature-card p {
+        margin: 0;
+      }
+
+      .feature-card ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .shortcut-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        overflow: hidden;
+        border-radius: 16px;
+        background: rgba(247, 250, 253, 0.84);
+      }
+
+      .shortcut-table th,
+      .shortcut-table td {
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(190, 211, 231, 0.58);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .shortcut-table th {
+        color: #3e668c;
+        font-size: 13px;
+        text-transform: uppercase;
+      }
+
+      .shortcut-table tr:last-child td {
+        border-bottom: 0;
+      }
+
+      code {
+        padding: 2px 6px;
+        border: 1px solid rgba(171, 199, 224, 0.56);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.7);
+        color: #2e5d8a;
+        font-family: "Cascadia Code", "Consolas", monospace;
+        font-size: 0.94em;
+      }
+
+      .section > .notice {
+        margin-top: 18px;
+        padding: 16px 18px;
+        border-radius: 16px;
+        color: var(--muted);
+        line-height: 1.7;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(249, 252, 255, 0.62));
+      }
+
+      @media (max-width: 820px) {
+        .shell {
+          display: block;
+          padding: 14px;
+          border-radius: 28px;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: static;
+          align-items: flex-start;
+          height: auto;
+          margin-bottom: 18px;
+        }
+
+        .intro,
+        .section {
+          padding: 20px;
+        }
+
+        .shortcut-table {
+          display: block;
+          overflow-x: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="sidebar" aria-label="帮助导航">
+        <div class="brand">
+          <strong>MoonMarkMind 帮助文档</strong>
+          <span>Markdown 源文件和脑图视图的双向编辑工具</span>
+        </div>
+        <a class="back-link" href="index.html">返回编辑器</a>
+
+        <nav class="toc" aria-label="帮助目录">
+          <h2>目录</h2>
+          <ol>
+            <li><a href="#workspace">界面与文件</a></li>
+            <li><a href="#markdown">Markdown 结构</a></li>
+            <li><a href="#mindmap">脑图视图</a></li>
+            <li><a href="#editing">节点编辑</a></li>
+            <li><a href="#dragging">拖拽移动</a></li>
+            <li><a href="#body">正文块和备注</a></li>
+            <li><a href="#export">导出与分享</a></li>
+            <li><a href="#shortcuts">快捷键</a></li>
+            <li><a href="#limits">边界和建议</a></li>
+          </ol>
+        </nav>
+      </aside>
+
+      <div class="content">
+        <header class="hero">
+          <section class="intro">
+            <h1>用 Markdown 写结构，用脑图编辑结构。</h1>
+            <p>
+              MoonMarkMind 是一个基于 MoonBit 实现的 Markdown 脑图可视化编辑工具。它把左侧 Markdown 文档解析为右侧脑图，
+              也允许你直接在脑图里新增、编辑、删除、移动节点，并实时回写到 Markdown 源文档。
+            </p>
+          </section>
+        </header>
+
+      <section class="section" id="workspace">
+        <h2>界面与文件</h2>
+        <p>主界面采用左侧 Markdown 编辑器、右侧脑图画布的双栏布局，中间分隔条可以拖动调整宽度。</p>
+        <div class="grid">
+          <article class="feature-card">
+            <h3>Markdown 编辑器</h3>
+            <p>左侧区域可以直接输入或修改 Markdown。选中脑图节点时，编辑器会高亮并滚动到对应源文档行。</p>
+          </article>
+          <article class="feature-card">
+            <h3>文件操作</h3>
+            <ul>
+              <li>新建文档：清空当前内容并重置为新文件。</li>
+              <li>上传 Markdown：从本地选择 <code>.md</code> 或 <code>.markdown</code> 文件。</li>
+              <li>下载 Markdown：把当前内容保存为 Markdown 文件。</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <h3>示例数据</h3>
+            <p>顶部示例菜单可切换内置示例，用于快速查看标题、列表、正文块、代码、表格、图片和数学公式的效果。</p>
+          </article>
+          <article class="feature-card">
+            <h3>双向同步</h3>
+            <p>修改左侧 Markdown 会重建右侧脑图；在脑图中进行结构编辑后，也会自动更新左侧 Markdown。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="markdown">
+        <h2>Markdown 结构</h2>
+        <p>MoonMarkMind 以 Markdown 为真实源文件，脑图只是它的交互视图。结构解析遵循标题优先、列表补充的规则。</p>
+        <div class="grid">
+          <article class="feature-card">
+            <h3>标题层级</h3>
+            <p><code>#</code> 到 <code>######</code> 分别表示第 1 到第 6 层脑图节点。标题文本会成为节点标题。</p>
+          </article>
+          <article class="feature-card">
+            <h3>列表层级</h3>
+            <p>列表项可以作为标题或列表节点的子节点。超过 6 层的深层结构会用列表继续表达，避免生成无效 Markdown 标题。</p>
+          </article>
+          <article class="feature-card">
+            <h3>正文内容</h3>
+            <p>非结构文本会作为节点正文保存，包括段落、任务项、代码块、表格、图片、链接、行内代码和数学公式等。</p>
+          </article>
+          <article class="feature-card">
+            <h3>安全渲染</h3>
+            <p>Markdown 中的 HTML 会被转义；不安全链接和图片地址会降级处理，减少预览时的安全风险。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="mindmap">
+        <h2>脑图视图</h2>
+        <p>右侧画布提供多布局、多样式、缩放、平移、折叠和定位能力，适合浏览大纲和调整结构。</p>
+        <div class="grid">
+          <article class="feature-card">
+            <h3>布局模式</h3>
+            <ul>
+              <li>思维图：中心向左右两侧发散。</li>
+              <li>逻辑图：从左向右组织结构。</li>
+              <li>树状图：按层级纵向展示。</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <h3>视觉样式</h3>
+            <ul>
+              <li>线条：轻量、清晰，适合梳理结构。</li>
+              <li>填充：节点边界更明确，适合展示和检查。</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <h3>层级视图</h3>
+            <p>可以选择精简、中等、全部层级。手动展开或收起后，层级菜单会进入自定义状态。</p>
+          </article>
+          <article class="feature-card">
+            <h3>画布操作</h3>
+            <p>支持鼠标拖动画布、滚轮缩放、适配视图、居中视图，以及双击画布快速居中。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="editing">
+        <h2>节点编辑</h2>
+        <p>选中节点后可以使用工具栏、快捷键或鼠标操作修改文档结构。</p>
+        <div class="grid">
+          <article class="feature-card">
+            <h3>新增节点</h3>
+            <ul>
+              <li>新建分支：在当前节点后创建同级节点。</li>
+              <li>新建子节点：在当前节点下创建子节点。</li>
+              <li>固定根节点会受到保护，避免误删或插入到错误位置。</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <h3>编辑标题</h3>
+            <p>双击节点或点击编辑按钮可进入标题编辑。保存后 Markdown 中对应标题或列表项会同步更新。</p>
+          </article>
+          <article class="feature-card">
+            <h3>删除节点</h3>
+            <p>删除会移除当前节点及其子树。固定根节点不能删除，避免整篇文档结构失去入口。</p>
+          </article>
+          <article class="feature-card">
+            <h3>撤销和重做</h3>
+            <p>结构编辑、正文块编辑和节点内容修改会进入撤销栈。可以通过工具栏或快捷键恢复。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="dragging">
+        <h2>拖拽移动</h2>
+        <p>节点可以用鼠标拖动到其他位置，支持同级重排和跨层级移动。</p>
+        <div class="grid">
+          <article class="feature-card">
+            <h3>投放位置</h3>
+            <ul>
+              <li>插入到上方：移动为目标节点前一个兄弟。</li>
+              <li>插入到下方：移动为目标节点后一个兄弟。</li>
+              <li>作为子节点：移动到目标节点内部。</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <h3>预览反馈</h3>
+            <p>拖动时会显示投放线、目标区域和提示文字。没有有效插入位置时，松开后会恢复原选择和样式。</p>
+          </article>
+          <article class="feature-card">
+            <h3>跨类型转换</h3>
+            <p>拖到标题区域时会按标题层级转换；拖到列表区域时整棵子树会规范化为列表，避免 Markdown 层级反转。</p>
+          </article>
+          <article class="feature-card">
+            <h3>自动平移</h3>
+            <p>拖动到画布边缘附近时，画布会自动平移，方便把节点移动到当前视窗之外的目标位置。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="body">
+        <h2>正文块和备注</h2>
+        <p>节点不仅可以有标题，还可以携带正文块。正文块会保留在 Markdown 源文档中。</p>
+        <div class="grid">
+          <article class="feature-card">
+            <h3>插入正文块</h3>
+            <ul>
+              <li>笔记：插入普通段落。</li>
+              <li>图片：插入 Markdown 图片语法。</li>
+              <li>代码：插入 fenced code block。</li>
+              <li>表格：插入 Markdown 表格模板。</li>
+            </ul>
+          </article>
+          <article class="feature-card">
+            <h3>编辑和删除</h3>
+            <p>正文块悬停时会出现编辑和删除按钮。短块按钮居中显示，高块按钮默认在块底部居中。</p>
+          </article>
+          <article class="feature-card">
+            <h3>正文折叠</h3>
+            <p>节点正文可以单独折叠或展开，不影响节点子树的折叠状态。</p>
+          </article>
+          <article class="feature-card">
+            <h3>图片预览</h3>
+            <p>点击 Markdown 图片可以打开预览层，便于检查图片内容。导出 PNG 时会尝试内联可访问图片。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="export">
+        <h2>导出与分享</h2>
+        <p>MoonMarkMind 支持导出源文档和脑图视图，适合存档、演示或分享。</p>
+        <div class="grid">
+          <article class="feature-card">
+            <h3>Markdown</h3>
+            <p>下载当前源文档，保留脑图编辑后的结构和正文块。</p>
+          </article>
+          <article class="feature-card">
+            <h3>PNG</h3>
+            <p>导出静态图片，适合放入文档、报告或演示文稿。</p>
+          </article>
+          <article class="feature-card">
+            <h3>SVG</h3>
+            <p>导出可缩放矢量图，适合后续排版和高清展示。</p>
+          </article>
+          <article class="feature-card">
+            <h3>HTML</h3>
+            <p>导出可交互 HTML，保留折叠、展开和图片预览等查看能力。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="shortcuts">
+        <h2>快捷键</h2>
+        <table class="shortcut-table">
+          <thead>
+            <tr>
+              <th>操作</th>
+              <th>快捷键</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>新建同级分支</td>
+              <td><code>Enter</code></td>
+              <td>在当前选中节点后方创建兄弟节点。</td>
+            </tr>
+            <tr>
+              <td>新建子节点</td>
+              <td><code>Tab</code></td>
+              <td>在当前选中节点下创建子节点。</td>
+            </tr>
+            <tr>
+              <td>提升节点</td>
+              <td><code>Shift</code> + <code>Tab</code></td>
+              <td>把当前节点向上提升一级。</td>
+            </tr>
+            <tr>
+              <td>删除节点</td>
+              <td><code>Delete</code> 或 <code>Backspace</code></td>
+              <td>删除当前节点及其子树，固定根节点除外。</td>
+            </tr>
+            <tr>
+              <td>折叠或展开</td>
+              <td><code>Space</code></td>
+              <td>切换当前节点子树的显示状态。</td>
+            </tr>
+            <tr>
+              <td>移动节点</td>
+              <td><code>Ctrl</code> + <code>↑</code> / <code>Ctrl</code> + <code>↓</code></td>
+              <td>按当前结构规则向上或向下移动节点。</td>
+            </tr>
+            <tr>
+              <td>键盘选择</td>
+              <td><code>←</code> <code>→</code> <code>↑</code> <code>↓</code></td>
+              <td>在脑图树中切换选中节点，并同步定位 Markdown 行。</td>
+            </tr>
+            <tr>
+              <td>撤销和重做</td>
+              <td><code>Ctrl</code> + <code>Z</code> / <code>Ctrl</code> + <code>Y</code></td>
+              <td>恢复或重放最近的编辑操作。</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section" id="limits">
+        <h2>边界和建议</h2>
+        <div class="grid">
+          <article class="feature-card">
+            <h3>结构建议</h3>
+            <p>推荐用标题表达主要章节，用列表表达深层细节。超过 6 层时系统会自动使用列表继续扩展。</p>
+          </article>
+          <article class="feature-card">
+            <h3>正文建议</h3>
+            <p>代码块、表格、图片和公式建议作为节点正文使用。复杂正文可以保留，但结构编辑主要作用于标题和列表节点。</p>
+          </article>
+          <article class="feature-card">
+            <h3>浏览器建议</h3>
+            <p>推荐使用最新版 Chrome、Edge 或 Firefox。导出 PNG 时，跨域图片可能受浏览器安全策略影响。</p>
+          </article>
+          <article class="feature-card">
+            <h3>保存建议</h3>
+            <p>重要修改后及时下载 Markdown。Markdown 是真实源文件，适合提交到 Git 或继续用其它编辑器处理。</p>
+          </article>
+        </div>
+        <p class="notice">
+          小提示：如果拖拽没有产生有效插入位置，MoonMarkMind 会恢复拖动前的选中状态。节点文字可以原生选中，点击节点外区域会清除浏览器蓝色文本选区。
+        </p>
+      </section>
+      </div>
+    </main>
+  </body>
+</html>
