@@ -996,6 +996,9 @@ fn can_drop_relative_to_node(
   if from_flat_index == target_index {
     return false
   }
+  if target_index == fixed_root_flat_index(nodes) {
+    return false
+  }
   let from_end = subtree_end(nodes, from_flat_index)
   target_index < from_flat_index || target_index >= from_end
 }

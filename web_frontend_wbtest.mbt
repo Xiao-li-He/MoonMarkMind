@@ -969,6 +969,9 @@ test "node drag target validation rejects source subtree" {
 
   assert_eq(is_valid_drag_drop_target(2, "inside"), false)
   assert_eq(is_valid_drag_drop_target(4, "before"), true)
+  assert_eq(is_valid_drag_drop_target(0, "before"), false)
+  assert_eq(is_valid_drag_drop_target(0, "after"), false)
+  assert_eq(is_valid_drag_drop_target(0, "inside"), true)
   assert_eq(is_valid_drag_drop_target(-1, "inside"), true)
   assert_eq(is_valid_drag_drop_target(-1, "before"), false)
 }
@@ -1328,6 +1331,19 @@ test "drop move rejects self subtree and preserves index map" {
   assert_eq(result.selected_node, 1)
   assert_eq(result.markdown, markdown)
   assert_eq(result.index_map, [0, 1, 2, 3])
+}
+
+///|
+test "drop move rejects before and after fixed root" {
+  let markdown = "# Root\n## A\n## B"
+
+  let before = move_node_to_drop_placement(markdown, 1, DropBefore(0))
+  let after = move_node_to_drop_placement(markdown, 2, DropAfter(0))
+
+  assert_eq(before.changed, false)
+  assert_eq(before.markdown, markdown)
+  assert_eq(after.changed, false)
+  assert_eq(after.markdown, markdown)
 }
 
 ///|

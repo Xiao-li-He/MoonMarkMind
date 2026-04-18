@@ -1033,6 +1033,9 @@ fn is_valid_drag_drop_target(target_index : Int, kind : String) -> Bool {
   if kind != "inside" && target_index < 0 {
     return false
   }
+  if kind != "inside" && is_fixed_root_node(target_index) {
+    return false
+  }
   if target_index == drag_source_node.val {
     return false
   }
@@ -1040,6 +1043,11 @@ fn is_valid_drag_drop_target(target_index : Int, kind : String) -> Bool {
     return false
   }
   kind == "before" || kind == "after" || kind == "inside"
+}
+
+///|
+fn is_fixed_root_node(node_index : Int) -> Bool {
+  !app_state.root.synthetic && node_index == app_state.root.flat_index
 }
 
 ///|
