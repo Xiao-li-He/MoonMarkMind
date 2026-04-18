@@ -127,6 +127,12 @@ let drag_start_x : @ref.Ref[Int] = @ref.Ref(0)
 let drag_start_y : @ref.Ref[Int] = @ref.Ref(0)
 
 ///|
+let drag_last_x : @ref.Ref[Int] = @ref.Ref(0)
+
+///|
+let drag_last_y : @ref.Ref[Int] = @ref.Ref(0)
+
+///|
 let drag_active : @ref.Ref[Bool] = @ref.Ref(false)
 
 ///|
@@ -134,6 +140,9 @@ let drag_drop_kind : @ref.Ref[String] = @ref.Ref("")
 
 ///|
 let drag_drop_target : @ref.Ref[Int] = @ref.Ref(-2)
+
+///|
+let drag_auto_pan_frame : @ref.Ref[Int] = @ref.Ref(0)
 
 ///|
 let drag_snapshot_selected_node : @ref.Ref[Int] = @ref.Ref(-2)
@@ -739,6 +748,8 @@ fn start_node_drag_candidate(event : @dom.MouseEvent) -> Unit {
   drag_source_node.val = node_index
   drag_start_x.val = event.clientX.to_int()
   drag_start_y.val = event.clientY.to_int()
+  drag_last_x.val = drag_start_x.val
+  drag_last_y.val = drag_start_y.val
   drag_active.val = false
   drag_drop_kind.val = ""
   drag_drop_target.val = -2
@@ -751,6 +762,8 @@ fn update_node_drag(event : @dom.MouseEvent) -> Unit {
   if drag_source_node.val < 0 {
     return
   }
+  drag_last_x.val = event.clientX.to_int()
+  drag_last_y.val = event.clientY.to_int()
   if !drag_active.val {
     if !mouse_delta_exceeds_pan_threshold(
         drag_start_x.val,
@@ -769,10 +782,11 @@ fn update_node_drag(event : @dom.MouseEvent) -> Unit {
     suppress_next_mindmap_click.val = true
     set_dragging_source_class(true)
     ensure_node_drag_ghost()
+    schedule_node_drag_auto_pan()
     mindmap_set_body_user_select("none")
   }
   event.preventDefault()
-  update_node_drag_target(event)
+  update_node_drag_target_at(event.clientX, event.clientY)
   update_node_drag_ghost()
 }
 
@@ -815,9 +829,12 @@ fn cancel_node_drag() -> Unit {
 
 ///|
 fn reset_node_drag_state() -> Unit {
+  cancel_node_drag_auto_pan()
   drag_source_node.val = -1
   drag_start_x.val = 0
   drag_start_y.val = 0
+  drag_last_x.val = 0
+  drag_last_y.val = 0
   drag_active.val = false
   drag_drop_kind.val = ""
   drag_drop_target.val = -2
@@ -957,14 +974,109 @@ fn node_drag_ghost_label(kind : String) -> String {
 }
 
 ///|
-fn update_node_drag_target(event : @dom.MouseEvent) -> Unit {
-  match drag_target_node_from_point(event) {
+fn schedule_node_drag_auto_pan() -> Unit {
+  if drag_auto_pan_frame.val != 0 {
+    return
+  }
+  let window = @dom.window()
+  drag_auto_pan_frame.val = window.requestAnimationFrame(fn(_) {
+    drag_auto_pan_frame.val = 0
+    if drag_active.val && drag_source_node.val >= 0 {
+      apply_node_drag_auto_pan()
+      schedule_node_drag_auto_pan()
+    }
+  })
+}
+
+///|
+fn cancel_node_drag_auto_pan() -> Unit {
+  if drag_auto_pan_frame.val != 0 {
+    @dom.window().cancelAnimationFrame(drag_auto_pan_frame.val)
+    drag_auto_pan_frame.val = 0
+  }
+}
+
+///|
+fn apply_node_drag_auto_pan() -> Unit {
+  match get_element("#mindmap") {
+    Some(mindmap) => {
+      let rect = element_rect(mindmap)
+      let delta_x = node_drag_auto_pan_delta(
+        drag_last_x.val.to_double(),
+        rect.left,
+        rect.right,
+      )
+      let delta_y = node_drag_auto_pan_delta(
+        drag_last_y.val.to_double(),
+        rect.top,
+        rect.bottom,
+      )
+      if delta_x == 0 && delta_y == 0 {
+        return
+      }
+      let current_pan_x = parse_int_or_default(
+        mindmap.getAttribute("data-pan-x").unwrap_or("0"),
+        0,
+      )
+      let current_pan_y = parse_int_or_default(
+        mindmap.getAttribute("data-pan-y").unwrap_or("0"),
+        0,
+      )
+      mindmap.setAttribute("data-pan-x", (current_pan_x + delta_x).to_string())
+      mindmap.setAttribute("data-pan-y", (current_pan_y + delta_y).to_string())
+      mindmap_sync_view(
+        mindmap,
+        get_element("#zoom-value"),
+        get_element("#zoom-edit"),
+      )
+      update_node_drag_target_at(
+        drag_last_x.val.to_double(),
+        drag_last_y.val.to_double(),
+      )
+      update_node_drag_ghost()
+    }
+    None => ()
+  }
+}
+
+///|
+fn node_drag_auto_pan_delta(
+  pointer : Double,
+  start : Double,
+  end : Double,
+) -> Int {
+  let margin = 72.0
+  let min_speed = 2.0
+  let max_speed = 18.0
+  if end <= start || pointer != pointer {
+    return 0
+  }
+  if pointer < start + margin {
+    let intensity = min_double(
+      1.0,
+      max_double(0.0, (start + margin - pointer) / margin),
+    )
+    return (min_speed + (max_speed - min_speed) * intensity).round().to_int()
+  }
+  if pointer > end - margin {
+    let intensity = min_double(
+      1.0,
+      max_double(0.0, (pointer - (end - margin)) / margin),
+    )
+    return -(min_speed + (max_speed - min_speed) * intensity).round().to_int()
+  }
+  0
+}
+
+///|
+fn update_node_drag_target_at(client_x : Double, client_y : Double) -> Unit {
+  match drag_target_node_from_point_at(client_x, client_y) {
     Some(target) => {
       let target_index = parse_int_or_default(
         target.getAttribute("data-node-index").unwrap_or("-2"),
         -2,
       )
-      let kind = drag_drop_kind_for_event(target, event)
+      let kind = drag_drop_kind_for_point(target, client_x, client_y)
       if is_valid_drag_drop_target(target_index, kind) {
         set_current_drag_drop(kind, target_index)
         render_node_drag_feedback(target_index, kind)
@@ -981,8 +1093,11 @@ fn update_node_drag_target(event : @dom.MouseEvent) -> Unit {
 }
 
 ///|
-fn drag_target_node_from_point(event : @dom.MouseEvent) -> @dom.Element? {
-  for element in @dom.document().elementsFromPoint(event.clientX, event.clientY) {
+fn drag_target_node_from_point_at(
+  client_x : Double,
+  client_y : Double,
+) -> @dom.Element? {
+  for element in @dom.document().elementsFromPoint(client_x, client_y) {
     match element.closest(".node[data-node-index]") {
       Some(node) => return Some(node)
       None => ()
@@ -992,23 +1107,24 @@ fn drag_target_node_from_point(event : @dom.MouseEvent) -> @dom.Element? {
 }
 
 ///|
-fn drag_drop_kind_for_event(
+fn drag_drop_kind_for_point(
   node : @dom.Element,
-  event : @dom.MouseEvent,
+  client_x : Double,
+  client_y : Double,
 ) -> String {
   let rect = element_rect(node)
   if app_state.layout_mode == "tree" {
     let ratio = if rect.width <= 0.0 {
       0.5
     } else {
-      (event.clientX - rect.left) / rect.width
+      (client_x - rect.left) / rect.width
     }
     drag_drop_kind_from_ratio(ratio)
   } else {
     let ratio = if rect.height <= 0.0 {
       0.5
     } else {
-      (event.clientY - rect.top) / rect.height
+      (client_y - rect.top) / rect.height
     }
     drag_drop_kind_from_ratio(ratio)
   }

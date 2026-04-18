@@ -955,6 +955,14 @@ test "node drag placement ratios follow layout axis" {
 }
 
 ///|
+test "node drag auto pan delta follows edge direction" {
+  assert_eq(node_drag_auto_pan_delta(100.0, 100.0, 500.0) > 0, true)
+  assert_eq(node_drag_auto_pan_delta(500.0, 100.0, 500.0) < 0, true)
+  assert_eq(node_drag_auto_pan_delta(300.0, 100.0, 500.0), 0)
+  assert_eq(node_drag_auto_pan_delta(100.0, 500.0, 100.0), 0)
+}
+
+///|
 test "node drag ghost labels describe placement" {
   assert_eq(node_drag_ghost_label("before"), "插入到上方")
   assert_eq(node_drag_ghost_label("after"), "插入到下方")
