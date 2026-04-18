@@ -1478,6 +1478,10 @@ fn handle_move_selected(move_down : Bool) -> Unit {
       app_state.selected_node,
     )
   }
+  if next_markdown == app_state.markdown {
+    return
+  }
+  suppress_next_render_mindmap_reveal.val = true
   apply_markdown_change(next_markdown, false)
   if next_selected_node >= 0 {
     select_single_node(next_selected_node, false)
