@@ -3155,7 +3155,7 @@ fn style_node_dragging(element : @dom.Element) -> Unit {
 fn style_node_drop_before(element : @dom.Element) -> Unit {
   set_style(element, "outline", "0")
   set_style(
-    element, "box-shadow", "inset 0 4px 0 var(--mindmap-connector-accent, #5c88a8), 0 0 0 2px rgba(92, 136, 168, 0.26)",
+    element, "box-shadow", "inset 0 8px 0 var(--mindmap-connector-accent, #5c88a8), 0 0 0 2px rgba(92, 136, 168, 0.26)",
   )
 }
 
@@ -3163,7 +3163,7 @@ fn style_node_drop_before(element : @dom.Element) -> Unit {
 fn style_node_drop_after(element : @dom.Element) -> Unit {
   set_style(element, "outline", "0")
   set_style(
-    element, "box-shadow", "inset 0 -4px 0 var(--mindmap-connector-accent, #5c88a8), 0 0 0 2px rgba(92, 136, 168, 0.26)",
+    element, "box-shadow", "inset 0 -8px 0 var(--mindmap-connector-accent, #5c88a8), 0 0 0 2px rgba(92, 136, 168, 0.26)",
   )
 }
 

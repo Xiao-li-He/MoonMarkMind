@@ -931,6 +931,14 @@ test "node drag placement ratios follow layout axis" {
 }
 
 ///|
+test "node drag ghost labels describe placement" {
+  assert_eq(node_drag_ghost_label("before"), "插入到上方")
+  assert_eq(node_drag_ghost_label("after"), "插入到下方")
+  assert_eq(node_drag_ghost_label("inside"), "作为子节点")
+  assert_eq(node_drag_ghost_label(""), "")
+}
+
+///|
 test "node drag target validation rejects source subtree" {
   reset_navigation_test_state()
   drag_source_node.val = 1

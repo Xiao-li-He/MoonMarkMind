@@ -771,8 +771,8 @@ fn update_node_drag(event : @dom.MouseEvent) -> Unit {
     mindmap_set_body_user_select("none")
   }
   event.preventDefault()
-  update_node_drag_ghost(event)
   update_node_drag_target(event)
+  update_node_drag_ghost()
 }
 
 ///|
@@ -892,11 +892,7 @@ fn ensure_node_drag_ghost() -> Unit {
     Some(_) => ()
     None => {
       let ghost = create_element("div", "node-drag-ghost")
-      let title = match find_node(app_state.root, drag_source_node.val) {
-        Some(node) => node.title
-        None => ""
-      }
-      ghost.setTextContent(title)
+      ghost.setTextContent("")
       let style = style_of(ghost)
       style.set_property("position", "fixed")
       style.set_property("left", "0")
@@ -909,6 +905,7 @@ fn ensure_node_drag_ghost() -> Unit {
       style.set_property("background", "rgba(35, 56, 77, 0.92)")
       style.set_property("color", "#ffffff")
       style.set_property("font-size", "13px")
+      style.set_property("font-weight", "800")
       style.set_property("box-shadow", "0 12px 28px rgba(66, 86, 108, 0.22)")
       match @dom.document().body() {
         Some(body) => append_child(body.as_element(), ghost)
@@ -919,16 +916,42 @@ fn ensure_node_drag_ghost() -> Unit {
 }
 
 ///|
-fn update_node_drag_ghost(event : @dom.MouseEvent) -> Unit {
+fn update_node_drag_ghost() -> Unit {
   match get_element(".node-drag-ghost") {
     Some(ghost) => {
+      let label = node_drag_ghost_label(drag_drop_kind.val)
       let style = style_of(ghost)
-      style.set_property(
-        "transform",
-        "translate(\{event.clientX.to_int() + 14}px, \{event.clientY.to_int() + 14}px)",
-      )
+      if label.length() == 0 || drag_drop_target.val < 0 {
+        style.set_property("visibility", "hidden")
+        return
+      }
+      ghost.setTextContent(label)
+      match get_element(".node[data-node-index=\"\{drag_drop_target.val}\"]") {
+        Some(target) => {
+          let rect = element_rect(target)
+          let x = rect.left + rect.width + 18.0
+          let y = match drag_drop_kind.val {
+            "before" => rect.top - 30.0
+            "after" => rect.top + rect.height + 10.0
+            _ => rect.top + rect.height / 2.0 - 17.0
+          }
+          style.set_property("visibility", "visible")
+          style.set_property("transform", "translate(\{x}px, \{y}px)")
+        }
+        None => style.set_property("visibility", "hidden")
+      }
     }
     None => ()
+  }
+}
+
+///|
+fn node_drag_ghost_label(kind : String) -> String {
+  match kind {
+    "before" => "插入到上方"
+    "after" => "插入到下方"
+    "inside" => "作为子节点"
+    _ => ""
   }
 }
 
