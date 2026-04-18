@@ -182,8 +182,36 @@ pub fn start_web_app() -> Unit {
     on_mindmap_editor_input,
   )
   bind_node_drag_ui()
+  bind_native_text_selection_clear_ui()
   bind_input_listener(on_input_change, on_input_selected_headings_change)
   load_rules_sample(rules_sample_default_id(), true)
+}
+
+///|
+fn bind_native_text_selection_clear_ui() -> Unit {
+  @dom.window()
+  .as_event_target()
+  .addEventListener("mousedown", fn(raw) {
+    let event : @dom.MouseEvent = raw.cast()
+    if should_keep_native_text_selection(event.target()) {
+      return
+    }
+    clear_native_text_selection()
+  })
+}
+
+///|
+fn should_keep_native_text_selection(target : @dom.Element) -> Bool {
+  target.closest(
+    ".node, input, textarea, select, [contenteditable], [data-editor-for], [data-note-editor-for], [data-body-editor-for]",
+  )
+  is Some(_)
+}
+
+///|
+fn clear_native_text_selection() -> Unit {
+  @dom.window().as_any()._call("getSelection", [])._call("removeAllRanges", [])
+  |> ignore
 }
 
 ///|

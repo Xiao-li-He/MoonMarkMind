@@ -2226,8 +2226,8 @@ fn style_node(element : @dom.Element) -> Unit {
   )
   set_style(element, "color", "#23384d")
   set_style(element, "text-align", "center")
-  set_style(element, "user-select", "none")
-  set_style(element, "-webkit-user-select", "none")
+  set_style(element, "user-select", "text")
+  set_style(element, "-webkit-user-select", "text")
 }
 
 ///|
@@ -2400,8 +2400,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
     set_style(element, "color", "inherit")
     set_style(element, "white-space", "normal")
     set_style(element, "word-break", "break-word")
-    set_style(element, "user-select", "none")
-    set_style(element, "-webkit-user-select", "none")
+    set_style(element, "user-select", "text")
+    set_style(element, "-webkit-user-select", "text")
     return
   }
   match element.closest(".node") {
@@ -2414,8 +2414,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
         set_style(element, "color", "inherit")
         set_style(element, "white-space", "normal")
         set_style(element, "word-break", "break-word")
-        set_style(element, "user-select", "none")
-        set_style(element, "-webkit-user-select", "none")
+        set_style(element, "user-select", "text")
+        set_style(element, "-webkit-user-select", "text")
         return
       }
       if has_class_name(node, "node--fill") {
@@ -2425,8 +2425,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
           set_style(element, "line-height", "1.35")
           set_style(element, "font-weight", "700")
           set_style(element, "color", "inherit")
-          set_style(element, "user-select", "none")
-          set_style(element, "-webkit-user-select", "none")
+          set_style(element, "user-select", "text")
+          set_style(element, "-webkit-user-select", "text")
           return
         }
         if node.getAttribute("data-depth").unwrap_or("0") == "1" {
@@ -2435,8 +2435,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
           set_style(element, "line-height", "1.35")
           set_style(element, "font-weight", "700")
           set_style(element, "color", "inherit")
-          set_style(element, "user-select", "none")
-          set_style(element, "-webkit-user-select", "none")
+          set_style(element, "user-select", "text")
+          set_style(element, "-webkit-user-select", "text")
           return
         }
         set_style(element, "display", "block")
@@ -2444,8 +2444,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
         set_style(element, "line-height", "1.35")
         set_style(element, "font-weight", "600")
         set_style(element, "color", "inherit")
-        set_style(element, "user-select", "none")
-        set_style(element, "-webkit-user-select", "none")
+        set_style(element, "user-select", "text")
+        set_style(element, "-webkit-user-select", "text")
         return
       }
       if has_class_name(node, "node--center") {
@@ -2454,8 +2454,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
         set_style(element, "line-height", "1.35")
         set_style(element, "font-weight", "700")
         set_style(element, "color", "inherit")
-        set_style(element, "user-select", "none")
-        set_style(element, "-webkit-user-select", "none")
+        set_style(element, "user-select", "text")
+        set_style(element, "-webkit-user-select", "text")
         return
       }
     }
@@ -2466,8 +2466,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
   set_style(element, "line-height", "1.3")
   set_style(element, "font-weight", "700")
   set_style(element, "color", "inherit")
-  set_style(element, "user-select", "none")
-  set_style(element, "-webkit-user-select", "none")
+  set_style(element, "user-select", "text")
+  set_style(element, "-webkit-user-select", "text")
 }
 
 ///|
