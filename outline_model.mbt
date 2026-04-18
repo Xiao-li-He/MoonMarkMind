@@ -651,12 +651,24 @@ pub fn delete_heading(markdown : String, flat_index : Int) -> String {
   if flat_index < 0 || flat_index >= nodes.length() {
     return markdown
   }
+  if flat_index == fixed_root_flat_index(nodes) {
+    return markdown
+  }
   let end_index = subtree_end(nodes, flat_index)
   let rebuilt = concat_nodes(
     slice_nodes(nodes, 0, flat_index),
     slice_nodes(nodes, end_index, nodes.length()),
   )
   render_markdown_nodes(rebuilt)
+}
+
+///|
+fn fixed_root_flat_index(nodes : Array[MarkdownNode]) -> Int {
+  if nodes.length() == 0 {
+    -1
+  } else {
+    0
+  }
 }
 
 ///|

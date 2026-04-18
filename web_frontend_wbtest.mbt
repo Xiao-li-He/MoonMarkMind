@@ -915,6 +915,30 @@ test "double click intent edits node title instead of note body" {
 }
 
 ///|
+test "fixed root cannot be deleted from frontend" {
+  reset_navigation_test_state()
+  select_single_node(0, false)
+  let markdown = app_state.markdown
+
+  assert_eq(can_delete_selected(), false)
+  handle_delete(0)
+
+  assert_eq(app_state.markdown, markdown)
+  assert_eq(can_toolbar_action("delete-node"), false)
+}
+
+///|
+test "non root node can still be deleted from frontend" {
+  reset_navigation_test_state()
+  select_single_node(1, false)
+
+  assert_eq(can_delete_selected(), true)
+  handle_delete(1)
+
+  assert_eq(app_state.markdown, "# Root\n## Other")
+}
+
+///|
 test "node drag can only start from non-root visible nodes" {
   reset_navigation_test_state()
 

@@ -1301,7 +1301,7 @@ fn add_balanced_first_layer_heading(title : String) -> (String, Int) {
 
 ///|
 fn handle_delete(node_index : Int) -> Unit {
-  if node_index < 0 {
+  if !can_delete_node(node_index) {
     return
   }
   undo_expand_node.val = match locate_tree_context(app_state.root, node_index) {
@@ -2232,6 +2232,25 @@ fn selected_node_exists() -> Bool {
 }
 
 ///|
+fn can_delete_selected() -> Bool {
+  can_delete_node(app_state.selected_node)
+}
+
+///|
+fn can_delete_node(node_index : Int) -> Bool {
+  if node_index < 0 {
+    return false
+  }
+  if !app_state.root.synthetic && node_index == app_state.root.flat_index {
+    return false
+  }
+  match find_node(app_state.root, node_index) {
+    Some(node) => !node.synthetic
+    None => false
+  }
+}
+
+///|
 fn selected_has_children() -> Bool {
   if app_state.selected_node < 0 {
     return false
@@ -2635,7 +2654,7 @@ fn can_toolbar_action(action : String) -> Bool {
         match action {
           "new-branch" => can_add_sibling_selected()
           "new-child" => selected_node_exists()
-          "delete-node" => selected_node_exists()
+          "delete-node" => can_delete_selected()
           "edit-node" => selected_node_exists()
           "move-up" => can_move_selected(false)
           "move-down" => can_move_selected(true)

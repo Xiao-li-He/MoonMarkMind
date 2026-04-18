@@ -47,6 +47,11 @@ test "delete heading subtree" {
 }
 
 ///|
+test "delete keeps fixed root heading" {
+  inspect(delete_heading(sample_markdown(), 0), content=sample_markdown())
+}
+
+///|
 test "add sibling heading after subtree" {
   inspect(
     add_sibling_heading(sample_markdown(), 1, "Tokenizer", true),
