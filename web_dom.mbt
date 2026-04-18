@@ -3169,6 +3169,7 @@ fn bind_export_mindmap_ui(export_root : @dom.Element) -> Unit {
   @dom.window()
   .as_event_target()
   .on("resize", fn(_) { render_export_mindmap_connectors(export_root) })
+  bind_export_mindmap_connector_reflows(export_root)
   apply_export_collapsed_state(export_root)
   apply_export_note_collapsed_state(export_root)
   schedule_export_mindmap_connectors(export_root)
@@ -3392,6 +3393,49 @@ fn schedule_export_mindmap_connectors(export_root : @dom.Element) -> Unit {
 }
 
 ///|
+fn schedule_export_mindmap_connector_reflow_series(
+  export_root : @dom.Element,
+) -> Unit {
+  schedule_export_mindmap_connectors(export_root)
+  let window = @dom.window()
+  ignore(
+    window.setTimeout(
+      fn() { render_export_mindmap_connectors(export_root) },
+      80,
+    ),
+  )
+  ignore(
+    window.setTimeout(
+      fn() { render_export_mindmap_connectors(export_root) },
+      240,
+    ),
+  )
+  ignore(
+    window.setTimeout(
+      fn() { render_export_mindmap_connectors(export_root) },
+      640,
+    ),
+  )
+}
+
+///|
+fn bind_export_mindmap_connector_reflows(export_root : @dom.Element) -> Unit {
+  @dom.window()
+  .as_event_target()
+  .on("load", fn(_) {
+    schedule_export_mindmap_connector_reflow_series(export_root)
+  })
+  let images : Array[@dom.Element] = export_root.querySelectorAll("img")
+  for image in images {
+    image
+    .as_event_target()
+    .on("load", fn(_) {
+      schedule_export_mindmap_connector_reflow_series(export_root)
+    })
+  }
+}
+
+///|
 fn export_parent_index(card : @dom.Element) -> Int {
   parse_int_or_default(
     card.getAttribute("data-parent-index").unwrap_or("-1"),
@@ -3440,6 +3484,9 @@ fn export_parent_of(cards : Array[@dom.Element], node_index : Int) -> Int {
 fn render_export_mindmap_connectors(export_root : @dom.Element) -> Unit {
   match export_root.querySelector(".mindmap-stage") {
     Some(stage) => {
+      apply_export_mindmap_layout(stage)
+      ensure_export_mindmap_visible_bounds(export_root, stage)
+      apply_export_mindmap_layout(stage)
       match stage.querySelector(".mindmap-connector-layer") {
         Some(layer) => layer.remove()
         None => ()
@@ -3509,6 +3556,48 @@ fn render_export_mindmap_connectors(export_root : @dom.Element) -> Unit {
       stage.as_any()._call("prepend", [svg.as_any()]) |> ignore
     }
     None => ()
+  }
+}
+
+///|
+fn ensure_export_mindmap_visible_bounds(
+  export_root : @dom.Element,
+  stage : @dom.Element,
+) -> Unit {
+  match mindmap_node_bounds(stage) {
+    Some((left, _, right, _)) => {
+      let stage_rect = element_rect(stage)
+      let base_padding = 48.0
+      let margin = 48.0
+      let extra_left = max_double(0.0, stage_rect.left - left + margin)
+      let extra_right = max_double(0.0, right - stage_rect.right + margin)
+      let root_style = style_of(export_root)
+      root_style.set_property(
+        "padding-left",
+        "\{(base_padding + extra_left).ceil().to_int()}px",
+      )
+      root_style.set_property(
+        "padding-right",
+        "\{(base_padding + extra_right).ceil().to_int()}px",
+      )
+    }
+    None => ()
+  }
+}
+
+///|
+fn apply_export_mindmap_layout(stage : @dom.Element) -> Unit {
+  if has_class_name(stage, "mindmap-stage--radial") {
+    apply_root_column_packing(
+      stage.querySelector(".branch-column--left"),
+      16,
+      1.0,
+    )
+    apply_root_column_packing(
+      stage.querySelector(".branch-column--right"),
+      16,
+      1.0,
+    )
   }
 }
 
