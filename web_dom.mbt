@@ -3607,6 +3607,7 @@ fn build_mindmap_export_svg_element() -> @dom.Element? {
       render_mindmap_connectors()
       let clone = @dom.Element::cast_from_node(mindmap.cloneNode(true))
       normalize_export_connector_styles(clone)
+      normalize_static_export_selection_styles(clone)
       let bounds = mindmap_export_bounds(mindmap)
       let svg = create_svg_element("svg", "")
       svg.setAttribute("xmlns", "http://www.w3.org/2000/svg")
@@ -3719,6 +3720,16 @@ fn normalize_export_connector_styles(mindmap : @dom.Element) -> Unit {
         None => ()
       }
     None => ()
+  }
+}
+
+///|
+fn normalize_static_export_selection_styles(mindmap : @dom.Element) -> Unit {
+  let selected_nodes : Array[@dom.Element] = mindmap.querySelectorAll(
+    ".node.is-selected",
+  )
+  for node in selected_nodes {
+    toggle_class(node, "is-selected", false)
   }
 }
 
