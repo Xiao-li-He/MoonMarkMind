@@ -1113,6 +1113,18 @@ test "keyboard tree navigation only needs render when expanding collapsed node" 
 }
 
 ///|
+test "keyboard tree navigation reveals selected markdown line" {
+  reset_navigation_test_state()
+  select_single_node(1, false)
+  app_state.reveal_selected_line = false
+
+  handle_keyboard_tree_navigation("ArrowDown", 1)
+
+  assert_eq(app_state.selected_node, 4)
+  assert_eq(app_state.reveal_selected_line, true)
+}
+
+///|
 test "move heading prev keeps sibling subtree stable" {
   let markdown = "# Root\n\nThis is the root note.\n\n## Section A\n\nIntro text.\n\n- title list entry\n- sibling list entry\n- another list entry\n### Section A1\n#### Section A1-1\n##### Section A1-1-1\n###### Section A1-1-1-1\n\nmore text\n\n- deep list a\n  - deep list b\n    - deep list c\n\n### Section A2\n\n- list A2-1\n- list A2-2\n  - child A2-2-1\n    - child A2-2-1-1"
   let outline = build_outline(markdown)

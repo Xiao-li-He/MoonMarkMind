@@ -1493,6 +1493,7 @@ fn handle_keyboard_tree_navigation(
     direction, fallback_node_index,
   )
   if handle_tree_navigation(direction, fallback_node_index) {
+    app_state.reveal_selected_line = true
     if needs_render {
       render_ui()
     } else {
