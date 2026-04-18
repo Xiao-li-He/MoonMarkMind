@@ -595,7 +595,7 @@ fn render_latex_math_sqrt_radical(tall : Bool) -> SafeHtml {
       safe_html_element(
         "svg",
         class_name="markdown-math-sqrt__svg",
-        attrs=" viewBox=\"\{view_box}\" preserveAspectRatio=\"xMinYMin slice\" aria-hidden=\"true\" focusable=\"false\"",
+        attrs=" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"\{view_box}\" preserveAspectRatio=\"xMinYMin slice\" aria-hidden=\"true\" focusable=\"false\"",
         children=[
           safe_html_element(
             "path",

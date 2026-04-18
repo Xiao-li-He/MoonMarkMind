@@ -176,6 +176,7 @@ test "markdown inline renderer renders common latex formula subset" {
   assert_eq(html.contains("class=\"markdown-math-sqrt\""), true)
   assert_eq(html.contains("markdown-math-sqrt__radical"), true)
   assert_eq(html.contains("markdown-math-sqrt__svg"), true)
+  assert_eq(html.contains("xmlns=\"http://www.w3.org/2000/svg\""), true)
   assert_eq(html.contains("markdown-math-sqrt__path"), true)
   assert_eq(html.contains("markdown-math-sqrt__radicand"), true)
   assert_eq(html.contains("&radic;"), false)
