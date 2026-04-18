@@ -3565,7 +3565,7 @@ fn ensure_export_mindmap_visible_bounds(
   stage : @dom.Element,
 ) -> Unit {
   match mindmap_node_bounds(stage) {
-    Some((left, _, right, _)) => {
+    Some((left, top, right, bottom)) => {
       let stage_rect = element_rect(stage)
       let base_padding = 48.0
       let margin = 48.0
@@ -3579,6 +3579,14 @@ fn ensure_export_mindmap_visible_bounds(
       root_style.set_property(
         "padding-right",
         "\{(base_padding + extra_right).ceil().to_int()}px",
+      )
+      let trim_top = max_double(0.0, top - stage_rect.top - margin)
+      let trim_bottom = max_double(0.0, stage_rect.bottom - bottom - margin)
+      let stage_style = style_of(stage)
+      stage_style.set_property("margin-top", "-\{trim_top.ceil().to_int()}px")
+      stage_style.set_property(
+        "margin-bottom",
+        "-\{trim_bottom.ceil().to_int()}px",
       )
     }
     None => ()
