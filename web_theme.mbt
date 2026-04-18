@@ -805,6 +805,8 @@ fn style_app_shell(element : @dom.Element) -> Unit {
   )
   set_style(element, "backdrop-filter", "blur(26px) saturate(125%)")
   set_style(element, "overflow", "hidden")
+  set_style(element, "user-select", "none")
+  set_style(element, "-webkit-user-select", "none")
 }
 
 ///|
@@ -841,6 +843,8 @@ fn style_workspace(element : @dom.Element) -> Unit {
   set_style(element, "min-width", "0")
   set_style(element, "gap", "8px")
   set_style(element, "align-items", "stretch")
+  set_style(element, "user-select", "none")
+  set_style(element, "-webkit-user-select", "none")
 }
 
 ///|
@@ -1676,6 +1680,8 @@ fn style_editor_textarea(element : @dom.Element) -> Unit {
   set_style(element, "caret-color", "#5e86b5")
   set_style(element, "tab-size", "2")
   set_style(element, "outline", "none")
+  set_style(element, "user-select", "text")
+  set_style(element, "-webkit-user-select", "text")
 }
 
 ///|
@@ -2220,6 +2226,8 @@ fn style_node(element : @dom.Element) -> Unit {
   )
   set_style(element, "color", "#23384d")
   set_style(element, "text-align", "center")
+  set_style(element, "user-select", "none")
+  set_style(element, "-webkit-user-select", "none")
 }
 
 ///|
@@ -2392,6 +2400,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
     set_style(element, "color", "inherit")
     set_style(element, "white-space", "normal")
     set_style(element, "word-break", "break-word")
+    set_style(element, "user-select", "none")
+    set_style(element, "-webkit-user-select", "none")
     return
   }
   match element.closest(".node") {
@@ -2404,6 +2414,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
         set_style(element, "color", "inherit")
         set_style(element, "white-space", "normal")
         set_style(element, "word-break", "break-word")
+        set_style(element, "user-select", "none")
+        set_style(element, "-webkit-user-select", "none")
         return
       }
       if has_class_name(node, "node--fill") {
@@ -2413,6 +2425,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
           set_style(element, "line-height", "1.35")
           set_style(element, "font-weight", "700")
           set_style(element, "color", "inherit")
+          set_style(element, "user-select", "none")
+          set_style(element, "-webkit-user-select", "none")
           return
         }
         if node.getAttribute("data-depth").unwrap_or("0") == "1" {
@@ -2421,6 +2435,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
           set_style(element, "line-height", "1.35")
           set_style(element, "font-weight", "700")
           set_style(element, "color", "inherit")
+          set_style(element, "user-select", "none")
+          set_style(element, "-webkit-user-select", "none")
           return
         }
         set_style(element, "display", "block")
@@ -2428,6 +2444,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
         set_style(element, "line-height", "1.35")
         set_style(element, "font-weight", "600")
         set_style(element, "color", "inherit")
+        set_style(element, "user-select", "none")
+        set_style(element, "-webkit-user-select", "none")
         return
       }
       if has_class_name(node, "node--center") {
@@ -2436,6 +2454,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
         set_style(element, "line-height", "1.35")
         set_style(element, "font-weight", "700")
         set_style(element, "color", "inherit")
+        set_style(element, "user-select", "none")
+        set_style(element, "-webkit-user-select", "none")
         return
       }
     }
@@ -2446,6 +2466,8 @@ fn style_node_title(element : @dom.Element) -> Unit {
   set_style(element, "line-height", "1.3")
   set_style(element, "font-weight", "700")
   set_style(element, "color", "inherit")
+  set_style(element, "user-select", "none")
+  set_style(element, "-webkit-user-select", "none")
 }
 
 ///|
@@ -2652,6 +2674,8 @@ fn style_node_body_block_editor_field(element : @dom.Element) -> Unit {
   set_style(element, "font-size", "12px")
   set_style(element, "line-height", "1.4")
   set_style(element, "outline", "none")
+  set_style(element, "user-select", "text")
+  set_style(element, "-webkit-user-select", "text")
 }
 
 ///|
@@ -3111,6 +3135,8 @@ fn style_node_note_editor(element : @dom.Element) -> Unit {
   set_style(element, "font", "inherit")
   set_style(element, "line-height", "1.5")
   set_style(element, "outline", "none")
+  set_style(element, "user-select", "text")
+  set_style(element, "-webkit-user-select", "text")
 }
 
 ///|
@@ -3122,6 +3148,8 @@ fn style_node_editor(element : @dom.Element) -> Unit {
   set_style(element, "font", "inherit")
   set_style(element, "background", "rgba(248, 251, 254, 0.92)")
   set_style(element, "box-sizing", "border-box")
+  set_style(element, "user-select", "text")
+  set_style(element, "-webkit-user-select", "text")
 }
 
 ///|

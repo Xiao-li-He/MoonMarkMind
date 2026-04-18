@@ -735,6 +735,7 @@ fn start_node_drag_candidate(event : @dom.MouseEvent) -> Unit {
   if !can_start_node_drag(node_index) {
     return
   }
+  event.preventDefault()
   drag_source_node.val = node_index
   drag_start_x.val = event.clientX.to_int()
   drag_start_y.val = event.clientY.to_int()
