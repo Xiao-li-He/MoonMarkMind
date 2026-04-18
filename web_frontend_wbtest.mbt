@@ -1251,6 +1251,39 @@ test "drop move heading to list area converts root to list item" {
 }
 
 ///|
+test "drop move heading inside list converts whole subtree to list items" {
+  let markdown = "# Root\n## A\n### A1\n#### A2\n## B\n- one"
+
+  let result = move_node_to_drop_placement(markdown, 1, DropInside(5))
+
+  assert_eq(result.changed, true)
+  assert_eq(result.selected_node, 3)
+  assert_eq(result.markdown, "# Root\n## B\n- one\n  - A\n    - A1\n      - A2")
+}
+
+///|
+test "drop move heading before list converts heading descendants to list" {
+  let markdown = "# Root\n## A\n### A1\n## B\n- one"
+
+  let result = move_node_to_drop_placement(markdown, 1, DropBefore(4))
+
+  assert_eq(result.changed, true)
+  assert_eq(result.selected_node, 2)
+  assert_eq(result.markdown, "# Root\n## B\n- A\n  - A1\n- one")
+}
+
+///|
+test "drop move mixed heading subtree to list keeps list structure" {
+  let markdown = "# Root\n## A\n### A1\n- nested\n## B\n- one"
+
+  let result = move_node_to_drop_placement(markdown, 1, DropBefore(5))
+
+  assert_eq(result.changed, true)
+  assert_eq(result.selected_node, 2)
+  assert_eq(result.markdown, "# Root\n## B\n- A\n  - A1\n    - nested\n- one")
+}
+
+///|
 test "drop move list item to heading area converts root to heading" {
   let markdown = "# Root\n## A\n- one\n- two\n## B"
 

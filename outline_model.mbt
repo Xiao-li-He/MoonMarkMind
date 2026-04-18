@@ -323,7 +323,7 @@ fn move_node_to_drop_placement(
     slice_nodes(nodes, from_flat_index, from_end),
     target_level - nodes[from_flat_index].level,
   )
-  let normalized_moved = normalize_moved_root_kind(
+  let normalized_moved = normalize_moved_subtree_for_drop_target(
     moved, target_kind, target_marker, target_level,
   )
   let remaining = concat_nodes(
@@ -1277,6 +1277,47 @@ fn normalize_moved_root_kind(
   let rebuilt = [next_root]
   for index in 1..<moved.length() {
     rebuilt.push(moved[index])
+  }
+  rebuilt
+}
+
+///|
+fn normalize_moved_subtree_for_drop_target(
+  moved : Array[MarkdownNode],
+  target_kind : MarkdownNodeKind,
+  target_marker : String,
+  target_level : Int,
+) -> Array[MarkdownNode] {
+  match target_kind {
+    MarkdownNodeKind::Heading =>
+      normalize_moved_root_kind(moved, target_kind, target_marker, target_level)
+    MarkdownNodeKind::ListItem =>
+      normalize_moved_subtree_as_list(moved, target_marker)
+  }
+}
+
+///|
+fn normalize_moved_subtree_as_list(
+  moved : Array[MarkdownNode],
+  target_marker : String,
+) -> Array[MarkdownNode] {
+  let rebuilt = []
+  for index in 0..<moved.length() {
+    let node = moved[index]
+    rebuilt.push(MarkdownNode::{
+      kind: MarkdownNodeKind::ListItem,
+      level: node.level,
+      title: node.title,
+      marker: if index == 0 {
+        normalized_marker(target_marker, node.level)
+      } else {
+        normalized_marker(node.marker, node.level)
+      },
+      body: node.body,
+      body_blank_lines: node.body_blank_lines,
+      leading_blank_lines: node.leading_blank_lines,
+      source_line: node.source_line,
+    })
   }
   rebuilt
 }
