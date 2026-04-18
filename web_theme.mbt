@@ -396,6 +396,18 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "is-selected") {
     style_node_selected(element)
   }
+  if has_class_name(element, "is-dragging") {
+    style_node_dragging(element)
+  }
+  if has_class_name(element, "drop-before") {
+    style_node_drop_before(element)
+  }
+  if has_class_name(element, "drop-after") {
+    style_node_drop_after(element)
+  }
+  if has_class_name(element, "drop-inside") {
+    style_node_drop_inside(element)
+  }
   if tag == "SMALL" {
     style_node_kicker(element)
   }
@@ -3131,6 +3143,35 @@ fn style_node_selected(element : @dom.Element) -> Unit {
   set_style(element, "border-color", "rgba(44, 112, 206, 0.95)")
   set_style(
     element, "box-shadow", "inset 0 0 0 1px rgba(255, 255, 255, 0.8), 0 0 0 2px rgba(44, 112, 206, 0.42)",
+  )
+}
+
+///|
+fn style_node_dragging(element : @dom.Element) -> Unit {
+  set_style(element, "opacity", "0.45")
+}
+
+///|
+fn style_node_drop_before(element : @dom.Element) -> Unit {
+  set_style(element, "outline", "0")
+  set_style(
+    element, "box-shadow", "inset 0 4px 0 var(--mindmap-connector-accent, #5c88a8), 0 0 0 2px rgba(92, 136, 168, 0.26)",
+  )
+}
+
+///|
+fn style_node_drop_after(element : @dom.Element) -> Unit {
+  set_style(element, "outline", "0")
+  set_style(
+    element, "box-shadow", "inset 0 -4px 0 var(--mindmap-connector-accent, #5c88a8), 0 0 0 2px rgba(92, 136, 168, 0.26)",
+  )
+}
+
+///|
+fn style_node_drop_inside(element : @dom.Element) -> Unit {
+  set_style(element, "border-color", "rgba(92, 136, 168, 0.95)")
+  set_style(
+    element, "box-shadow", "inset 0 0 0 2px rgba(92, 136, 168, 0.28), 0 0 0 3px rgba(92, 136, 168, 0.18)",
   )
 }
 

@@ -115,6 +115,27 @@ let editor_created_node : @ref.Ref[Int] = @ref.Ref(-2)
 let suppress_next_render_mindmap_reveal : @ref.Ref[Bool] = @ref.Ref(false)
 
 ///|
+let suppress_next_mindmap_click : @ref.Ref[Bool] = @ref.Ref(false)
+
+///|
+let drag_source_node : @ref.Ref[Int] = @ref.Ref(-1)
+
+///|
+let drag_start_x : @ref.Ref[Int] = @ref.Ref(0)
+
+///|
+let drag_start_y : @ref.Ref[Int] = @ref.Ref(0)
+
+///|
+let drag_active : @ref.Ref[Bool] = @ref.Ref(false)
+
+///|
+let drag_drop_kind : @ref.Ref[String] = @ref.Ref("")
+
+///|
+let drag_drop_target : @ref.Ref[Int] = @ref.Ref(-2)
+
+///|
 pub fn start_web_app() -> Unit {
   match get_element("#mindmap-export") {
     Some(export_root) => {
@@ -139,6 +160,7 @@ pub fn start_web_app() -> Unit {
     on_mindmap_click, on_mindmap_dblclick, on_mindmap_keydown, on_mindmap_focusout,
     on_mindmap_editor_input,
   )
+  bind_node_drag_ui()
   bind_input_listener(on_input_change, on_input_selected_headings_change)
   load_rules_sample(rules_sample_default_id(), true)
 }
@@ -243,6 +265,12 @@ fn on_splitter_change(percent : Int) -> Unit {
 
 ///|
 fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
+  if suppress_next_mindmap_click.val {
+    suppress_next_mindmap_click.val = false
+    event.preventDefault()
+    event.stopPropagation()
+    return
+  }
   let action = event_action_from_point(event)
   if action != "save-body-block" &&
     action != "cancel-body-block" &&
@@ -435,6 +463,11 @@ fn on_mindmap_dblclick(event : @dom.MouseEvent) -> Unit {
 
 ///|
 fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
+  if drag_source_node.val >= 0 && event_key(event) == "Escape" {
+    event.preventDefault()
+    cancel_node_drag()
+    return
+  }
   let body_editor_index = event_body_editor_index_from_target(event.target())
   if body_editor_index >= 0 {
     if event_key(event) == "Escape" {
@@ -651,6 +684,409 @@ fn on_mindmap_editor_input(event : @dom.Event) -> Unit {
     return
   }
   sync_editor_draft(node_index, event_editor_value_from_target(event.target()))
+}
+
+///|
+fn bind_node_drag_ui() -> Unit {
+  match get_element("#mindmap") {
+    Some(mindmap) => {
+      let window = @dom.window()
+      mindmap
+      .as_event_target()
+      .on("mousedown", fn(raw) {
+        let event : @dom.MouseEvent = raw.cast()
+        start_node_drag_candidate(event)
+      })
+      window
+      .as_event_target()
+      .on("mousemove", fn(raw) {
+        let event : @dom.MouseEvent = raw.cast()
+        update_node_drag(event)
+      })
+      window
+      .as_event_target()
+      .on("mouseup", fn(raw) {
+        let event : @dom.MouseEvent = raw.cast()
+        finish_node_drag(event)
+      })
+    }
+    None => ()
+  }
+}
+
+///|
+fn start_node_drag_candidate(event : @dom.MouseEvent) -> Unit {
+  if mouse_event_button(event) != 0 {
+    return
+  }
+  let node_index = drag_source_index_from_target(event.target())
+  if !can_start_node_drag(node_index) {
+    return
+  }
+  drag_source_node.val = node_index
+  drag_start_x.val = event.clientX.to_int()
+  drag_start_y.val = event.clientY.to_int()
+  drag_active.val = false
+  drag_drop_kind.val = ""
+  drag_drop_target.val = -2
+  focus_mindmap()
+}
+
+///|
+fn update_node_drag(event : @dom.MouseEvent) -> Unit {
+  if drag_source_node.val < 0 {
+    return
+  }
+  if !drag_active.val {
+    if !mouse_delta_exceeds_pan_threshold(
+        drag_start_x.val,
+        drag_start_y.val,
+        event.clientX.to_int(),
+        event.clientY.to_int(),
+      ) {
+      return
+    }
+    clear_editing_session()
+    clear_note_editing_session()
+    clear_body_block_editing_session()
+    select_single_node(drag_source_node.val, false)
+    sync_selection_ui()
+    drag_active.val = true
+    suppress_next_mindmap_click.val = true
+    set_dragging_source_class(true)
+    ensure_node_drag_ghost()
+    mindmap_set_body_user_select("none")
+  }
+  event.preventDefault()
+  update_node_drag_ghost(event)
+  update_node_drag_target(event)
+}
+
+///|
+fn finish_node_drag(event : @dom.MouseEvent) -> Unit {
+  if drag_source_node.val < 0 {
+    return
+  }
+  let was_active = drag_active.val
+  let placement = current_node_drag_placement()
+  if was_active {
+    event.preventDefault()
+  }
+  clear_node_drag_visuals()
+  if was_active {
+    suppress_next_mindmap_click.val = true
+    match placement {
+      Some(drop) => apply_node_drag_drop(drop)
+      None => ()
+    }
+  }
+  reset_node_drag_state()
+  mindmap_clear_body_user_select()
+}
+
+///|
+fn cancel_node_drag() -> Unit {
+  clear_node_drag_visuals()
+  reset_node_drag_state()
+  mindmap_clear_body_user_select()
+}
+
+///|
+fn reset_node_drag_state() -> Unit {
+  drag_source_node.val = -1
+  drag_start_x.val = 0
+  drag_start_y.val = 0
+  drag_active.val = false
+  drag_drop_kind.val = ""
+  drag_drop_target.val = -2
+}
+
+///|
+fn drag_source_index_from_target(target : @dom.Element) -> Int {
+  if target.closest(
+      "button, input, textarea, select, [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for], .node-body, .node-note-rail, .markdown-image",
+    )
+    is Some(_) {
+    return -1
+  }
+  match target.closest(".node[data-node-index]") {
+    Some(node) =>
+      parse_int_or_default(
+        node.getAttribute("data-node-index").unwrap_or("-1"),
+        -1,
+      )
+    None => -1
+  }
+}
+
+///|
+fn can_start_node_drag(node_index : Int) -> Bool {
+  if node_index < 0 || node_index == app_state.root.flat_index {
+    return false
+  }
+  match find_node(app_state.root, node_index) {
+    Some(node) => !node.synthetic
+    None => false
+  }
+}
+
+///|
+fn mouse_event_button(event : @dom.MouseEvent) -> Int {
+  parse_int_or_default(event.as_any()._get("button").to_string(), 0)
+}
+
+///|
+fn ensure_node_drag_ghost() -> Unit {
+  match get_element(".node-drag-ghost") {
+    Some(_) => ()
+    None => {
+      let ghost = create_element("div", "node-drag-ghost")
+      let title = match find_node(app_state.root, drag_source_node.val) {
+        Some(node) => node.title
+        None => ""
+      }
+      ghost.setTextContent(title)
+      let style = style_of(ghost)
+      style.set_property("position", "fixed")
+      style.set_property("left", "0")
+      style.set_property("top", "0")
+      style.set_property("z-index", "9999")
+      style.set_property("pointer-events", "none")
+      style.set_property("transform", "translate(-9999px, -9999px)")
+      style.set_property("padding", "8px 12px")
+      style.set_property("border-radius", "10px")
+      style.set_property("background", "rgba(35, 56, 77, 0.92)")
+      style.set_property("color", "#ffffff")
+      style.set_property("font-size", "13px")
+      style.set_property("box-shadow", "0 12px 28px rgba(66, 86, 108, 0.22)")
+      match @dom.document().body() {
+        Some(body) => append_child(body.as_element(), ghost)
+        None => append_child(@dom.document().documentElement(), ghost)
+      }
+    }
+  }
+}
+
+///|
+fn update_node_drag_ghost(event : @dom.MouseEvent) -> Unit {
+  match get_element(".node-drag-ghost") {
+    Some(ghost) => {
+      let style = style_of(ghost)
+      style.set_property(
+        "transform",
+        "translate(\{event.clientX.to_int() + 14}px, \{event.clientY.to_int() + 14}px)",
+      )
+    }
+    None => ()
+  }
+}
+
+///|
+fn update_node_drag_target(event : @dom.MouseEvent) -> Unit {
+  match drag_target_node_from_point(event) {
+    Some(target) => {
+      let target_index = parse_int_or_default(
+        target.getAttribute("data-node-index").unwrap_or("-2"),
+        -2,
+      )
+      let kind = drag_drop_kind_for_event(target, event)
+      if is_valid_drag_drop_target(target_index, kind) {
+        set_current_drag_drop(kind, target_index)
+        render_node_drag_feedback(target_index, kind)
+      } else {
+        clear_current_drag_drop()
+        clear_node_drop_feedback()
+      }
+    }
+    None => {
+      clear_current_drag_drop()
+      clear_node_drop_feedback()
+    }
+  }
+}
+
+///|
+fn drag_target_node_from_point(event : @dom.MouseEvent) -> @dom.Element? {
+  for element in @dom.document().elementsFromPoint(event.clientX, event.clientY) {
+    match element.closest(".node[data-node-index]") {
+      Some(node) => return Some(node)
+      None => ()
+    }
+  }
+  None
+}
+
+///|
+fn drag_drop_kind_for_event(
+  node : @dom.Element,
+  event : @dom.MouseEvent,
+) -> String {
+  let rect = element_rect(node)
+  if app_state.layout_mode == "tree" {
+    let ratio = if rect.width <= 0.0 {
+      0.5
+    } else {
+      (event.clientX - rect.left) / rect.width
+    }
+    drag_drop_kind_from_ratio(ratio)
+  } else {
+    let ratio = if rect.height <= 0.0 {
+      0.5
+    } else {
+      (event.clientY - rect.top) / rect.height
+    }
+    drag_drop_kind_from_ratio(ratio)
+  }
+}
+
+///|
+fn drag_drop_kind_from_ratio(ratio : Double) -> String {
+  if ratio < 0.30 {
+    "before"
+  } else if ratio > 0.70 {
+    "after"
+  } else {
+    "inside"
+  }
+}
+
+///|
+fn is_valid_drag_drop_target(target_index : Int, kind : String) -> Bool {
+  if drag_source_node.val < 0 {
+    return false
+  }
+  if kind != "inside" && target_index < 0 {
+    return false
+  }
+  if target_index == drag_source_node.val {
+    return false
+  }
+  if target_index >= 0 && drag_target_inside_source_subtree(target_index) {
+    return false
+  }
+  kind == "before" || kind == "after" || kind == "inside"
+}
+
+///|
+fn drag_target_inside_source_subtree(target_index : Int) -> Bool {
+  match find_node(app_state.root, drag_source_node.val) {
+    Some(source) => outline_contains_node(source, target_index)
+    None => false
+  }
+}
+
+///|
+fn outline_contains_node(node : OutlineNode, target_index : Int) -> Bool {
+  if node.flat_index == target_index {
+    return true
+  }
+  for child in node.children {
+    if outline_contains_node(child, target_index) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn set_current_drag_drop(kind : String, target_index : Int) -> Unit {
+  drag_drop_kind.val = kind
+  drag_drop_target.val = target_index
+}
+
+///|
+fn clear_current_drag_drop() -> Unit {
+  drag_drop_kind.val = ""
+  drag_drop_target.val = -2
+}
+
+///|
+fn current_node_drag_placement() -> DropPlacement? {
+  match drag_drop_kind.val {
+    "before" => Some(DropBefore(drag_drop_target.val))
+    "after" => Some(DropAfter(drag_drop_target.val))
+    "inside" => Some(DropInside(drag_drop_target.val))
+    _ => None
+  }
+}
+
+///|
+fn render_node_drag_feedback(target_index : Int, kind : String) -> Unit {
+  clear_node_drop_feedback()
+  match get_element(".node[data-node-index=\"\{target_index}\"]") {
+    Some(node) => {
+      let class_name = match kind {
+        "before" => "drop-before"
+        "after" => "drop-after"
+        "inside" => "drop-inside"
+        _ => ""
+      }
+      if class_name.length() > 0 {
+        toggle_class(node, class_name, true)
+      }
+    }
+    None => ()
+  }
+}
+
+///|
+fn clear_node_drop_feedback() -> Unit {
+  for
+    node in @dom.document().querySelectorAll(
+      ".node.drop-before, .node.drop-after, .node.drop-inside",
+    ) {
+    toggle_class(node, "drop-before", false)
+    toggle_class(node, "drop-after", false)
+    toggle_class(node, "drop-inside", false)
+  }
+}
+
+///|
+fn clear_node_drag_visuals() -> Unit {
+  set_dragging_source_class(false)
+  clear_node_drop_feedback()
+  match get_element(".node-drag-ghost") {
+    Some(ghost) => ghost.remove()
+    None => ()
+  }
+}
+
+///|
+fn set_dragging_source_class(enabled : Bool) -> Unit {
+  if drag_source_node.val < 0 {
+    return
+  }
+  match get_element(".node[data-node-index=\"\{drag_source_node.val}\"]") {
+    Some(node) => toggle_class(node, "is-dragging", enabled)
+    None => ()
+  }
+}
+
+///|
+fn apply_node_drag_drop(placement : DropPlacement) -> Unit {
+  let source_index = drag_source_node.val
+  if source_index < 0 {
+    return
+  }
+  let drop_kind = drag_drop_kind.val
+  let drop_target = drag_drop_target.val
+  let result = move_node_to_drop_placement(
+    app_state.markdown,
+    source_index,
+    placement,
+  )
+  if !result.changed {
+    return
+  }
+  suppress_next_render_mindmap_reveal.val = true
+  apply_markdown_change(result.markdown, false)
+  select_single_node(result.selected_node, false)
+  if drop_kind == "inside" && drop_target >= 0 {
+    let mapped_target = result.index_map.get(drop_target).unwrap_or(drop_target)
+    expand_node(mapped_target)
+  }
+  expand_node_path(result.selected_node)
+  render_ui()
 }
 
 ///|

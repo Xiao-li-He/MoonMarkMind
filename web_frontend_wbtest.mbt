@@ -28,6 +28,7 @@ fn reset_frontend_test_state() -> Unit {
   app_state.reveal_selected_line = false
   app_state.sample_variant = "custom"
   suppress_next_render_mindmap_reveal.val = false
+  reset_node_drag_state()
   load_markdown(frontend_test_markdown(), true)
 }
 
@@ -51,6 +52,7 @@ fn reset_navigation_test_state() -> Unit {
   app_state.reveal_selected_line = false
   app_state.sample_variant = "custom"
   suppress_next_render_mindmap_reveal.val = false
+  reset_node_drag_state()
   load_markdown(navigation_test_markdown(), true)
 }
 
@@ -913,6 +915,69 @@ test "double click intent edits node title instead of note body" {
 }
 
 ///|
+test "node drag can only start from non-root visible nodes" {
+  reset_navigation_test_state()
+
+  assert_eq(can_start_node_drag(0), false)
+  assert_eq(can_start_node_drag(1), true)
+  assert_eq(can_start_node_drag(-1), false)
+}
+
+///|
+test "node drag placement ratios follow layout axis" {
+  assert_eq(drag_drop_kind_from_ratio(0.1), "before")
+  assert_eq(drag_drop_kind_from_ratio(0.5), "inside")
+  assert_eq(drag_drop_kind_from_ratio(0.9), "after")
+}
+
+///|
+test "node drag target validation rejects source subtree" {
+  reset_navigation_test_state()
+  drag_source_node.val = 1
+
+  assert_eq(is_valid_drag_drop_target(2, "inside"), false)
+  assert_eq(is_valid_drag_drop_target(4, "before"), true)
+  assert_eq(is_valid_drag_drop_target(-1, "inside"), true)
+  assert_eq(is_valid_drag_drop_target(-1, "before"), false)
+}
+
+///|
+test "node drag inside collapsed target expands after drop" {
+  reset_navigation_test_state()
+  drag_source_node.val = 4
+  drag_drop_kind.val = "inside"
+  drag_drop_target.val = 1
+  app_state.collapsed = [1]
+
+  apply_node_drag_drop(DropInside(1))
+
+  assert_eq(app_state.selected_node, 4)
+  assert_eq(title_at(app_state.selected_node), "Other")
+  assert_eq(is_collapsed(1), false)
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Parent\n### Child A\n### Child B\n### Other",
+  )
+}
+
+///|
+test "node drag reset clears state without changing markdown" {
+  reset_navigation_test_state()
+  let markdown = app_state.markdown
+  drag_source_node.val = 1
+  drag_active.val = true
+  drag_drop_kind.val = "after"
+  drag_drop_target.val = 4
+
+  reset_node_drag_state()
+
+  assert_eq(app_state.markdown, markdown)
+  assert_eq(drag_source_node.val, -1)
+  assert_eq(drag_active.val, false)
+  assert_eq(drag_drop_kind.val, "")
+}
+
+///|
 test "tree navigation moves between parents children and siblings" {
   reset_navigation_test_state()
 
@@ -1106,6 +1171,62 @@ test "moving heading carries surrounding blank lines with subtree" {
     move_heading_next(markdown, 1),
     "# Root\n\n\n## Beta\n\n## Alpha\n\nAlpha note\n\n### Child\n\nChild note",
   )
+}
+
+///|
+test "drop move heading inside target appends as last child" {
+  let markdown = "# Root\n## A\n### A1\n## B\n### B1"
+
+  let result = move_node_to_drop_placement(markdown, 1, DropInside(3))
+
+  assert_eq(result.changed, true)
+  assert_eq(result.selected_node, 3)
+  assert_eq(result.markdown, "# Root\n## B\n### B1\n### A\n#### A1")
+}
+
+///|
+test "drop move heading before child keeps target parent" {
+  let markdown = "# Root\n## A\n### A1\n## B\n### B1"
+
+  let result = move_node_to_drop_placement(markdown, 4, DropBefore(2))
+
+  assert_eq(result.changed, true)
+  assert_eq(result.selected_node, 2)
+  assert_eq(result.markdown, "# Root\n## A\n### B1\n### A1\n## B")
+}
+
+///|
+test "drop move heading to list area converts root to list item" {
+  let markdown = "# Root\n## A\n- one\n- two\n## B"
+
+  let result = move_node_to_drop_placement(markdown, 4, DropBefore(2))
+
+  assert_eq(result.changed, true)
+  assert_eq(result.selected_node, 2)
+  assert_eq(result.markdown, "# Root\n## A\n- B\n- one\n- two")
+}
+
+///|
+test "drop move list item to heading area converts root to heading" {
+  let markdown = "# Root\n## A\n- one\n- two\n## B"
+
+  let result = move_node_to_drop_placement(markdown, 3, DropAfter(4))
+
+  assert_eq(result.changed, true)
+  assert_eq(result.selected_node, 4)
+  assert_eq(result.markdown, "# Root\n## A\n- one\n## B\n## two")
+}
+
+///|
+test "drop move rejects self subtree and preserves index map" {
+  let markdown = "# Root\n## A\n### A1\n## B"
+
+  let result = move_node_to_drop_placement(markdown, 1, DropInside(2))
+
+  assert_eq(result.changed, false)
+  assert_eq(result.selected_node, 1)
+  assert_eq(result.markdown, markdown)
+  assert_eq(result.index_map, [0, 1, 2, 3])
 }
 
 ///|

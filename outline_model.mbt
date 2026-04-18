@@ -228,6 +228,127 @@ fn is_note_list_body_line(line : String) -> Bool {
 }
 
 ///|
+priv enum DropPlacement {
+  DropBefore(Int)
+  DropAfter(Int)
+  DropInside(Int)
+}
+
+///|
+priv struct MoveNodeResult {
+  markdown : String
+  selected_node : Int
+  changed : Bool
+  index_map : Array[Int]
+}
+
+///|
+fn unchanged_move_node_result(
+  markdown : String,
+  nodes : Array[MarkdownNode],
+  selected_node : Int,
+) -> MoveNodeResult {
+  MoveNodeResult::{
+    markdown,
+    selected_node,
+    changed: false,
+    index_map: identity_index_map(nodes.length()),
+  }
+}
+
+///|
+fn move_node_to_drop_placement(
+  markdown : String,
+  from_flat_index : Int,
+  placement : DropPlacement,
+) -> MoveNodeResult {
+  let nodes = parse_markdown_nodes(markdown)
+  if from_flat_index < 0 || from_flat_index >= nodes.length() {
+    return unchanged_move_node_result(markdown, nodes, from_flat_index)
+  }
+  let from_end = subtree_end(nodes, from_flat_index)
+  let moved_length = from_end - from_flat_index
+  let (raw_insert_at, target_kind, target_marker, target_level) = match
+    placement {
+    DropBefore(target_index) => {
+      if !can_drop_relative_to_node(nodes, from_flat_index, target_index) {
+        return unchanged_move_node_result(markdown, nodes, from_flat_index)
+      }
+      let target = nodes[target_index]
+      (target_index, target.kind, target.marker, target.level)
+    }
+    DropAfter(target_index) => {
+      if !can_drop_relative_to_node(nodes, from_flat_index, target_index) {
+        return unchanged_move_node_result(markdown, nodes, from_flat_index)
+      }
+      let target = nodes[target_index]
+      (
+        subtree_end(nodes, target_index),
+        target.kind,
+        target.marker,
+        target.level,
+      )
+    }
+    DropInside(parent_index) => {
+      if !can_drop_inside_node(nodes, from_flat_index, parent_index) {
+        return unchanged_move_node_result(markdown, nodes, from_flat_index)
+      }
+      if parent_index < 0 {
+        (nodes.length(), MarkdownNodeKind::Heading, "", 1)
+      } else {
+        let parent = nodes[parent_index]
+        let child_level = parent.level + 1
+        (
+          subtree_end(nodes, parent_index),
+          normalized_node_kind(parent.kind, child_level),
+          normalized_marker(parent.marker, child_level),
+          child_level,
+        )
+      }
+    }
+  }
+  let insert_at = adjusted_insert_index_after_removal(
+    from_flat_index, from_end, raw_insert_at,
+  )
+  if insert_at == from_flat_index &&
+    move_node_target_matches_source(
+      nodes[from_flat_index],
+      target_kind,
+      target_marker,
+      target_level,
+    ) {
+    return unchanged_move_node_result(markdown, nodes, from_flat_index)
+  }
+  let moved = relevel_subtree(
+    slice_nodes(nodes, from_flat_index, from_end),
+    target_level - nodes[from_flat_index].level,
+  )
+  let normalized_moved = normalize_moved_root_kind(
+    moved, target_kind, target_marker, target_level,
+  )
+  let remaining = concat_nodes(
+    slice_nodes(nodes, 0, from_flat_index),
+    slice_nodes(nodes, from_end, nodes.length()),
+  )
+  let rebuilt = insert_nodes_at(remaining, insert_at, normalized_moved)
+  let next_markdown = render_markdown_nodes(rebuilt)
+  if next_markdown == markdown {
+    return unchanged_move_node_result(markdown, nodes, from_flat_index)
+  }
+  MoveNodeResult::{
+    markdown: next_markdown,
+    selected_node: insert_at,
+    changed: true,
+    index_map: move_node_index_map(
+      nodes.length(),
+      from_flat_index,
+      moved_length,
+      insert_at,
+    ),
+  }
+}
+
+///|
 pub fn move_heading(
   markdown : String,
   from_flat_index : Int,
@@ -846,6 +967,107 @@ fn can_move_heading(
   }
   let from_end = subtree_end(nodes, from_flat_index)
   to_flat_index < from_flat_index || to_flat_index >= from_end
+}
+
+///|
+fn can_drop_relative_to_node(
+  nodes : Array[MarkdownNode],
+  from_flat_index : Int,
+  target_index : Int,
+) -> Bool {
+  if from_flat_index < 0 ||
+    target_index < 0 ||
+    from_flat_index >= nodes.length() ||
+    target_index >= nodes.length() {
+    return false
+  }
+  if from_flat_index == target_index {
+    return false
+  }
+  let from_end = subtree_end(nodes, from_flat_index)
+  target_index < from_flat_index || target_index >= from_end
+}
+
+///|
+fn can_drop_inside_node(
+  nodes : Array[MarkdownNode],
+  from_flat_index : Int,
+  parent_index : Int,
+) -> Bool {
+  if from_flat_index < 0 || from_flat_index >= nodes.length() {
+    return false
+  }
+  if parent_index < 0 {
+    return true
+  }
+  if parent_index >= nodes.length() || parent_index == from_flat_index {
+    return false
+  }
+  let from_end = subtree_end(nodes, from_flat_index)
+  parent_index < from_flat_index || parent_index >= from_end
+}
+
+///|
+fn adjusted_insert_index_after_removal(
+  from_flat_index : Int,
+  from_end : Int,
+  raw_insert_at : Int,
+) -> Int {
+  if from_flat_index < raw_insert_at {
+    raw_insert_at - (from_end - from_flat_index)
+  } else {
+    raw_insert_at
+  }
+}
+
+///|
+fn move_node_target_matches_source(
+  source : MarkdownNode,
+  target_kind : MarkdownNodeKind,
+  target_marker : String,
+  target_level : Int,
+) -> Bool {
+  source.level == target_level &&
+  node_kind_name(source.kind) == node_kind_name(target_kind) &&
+  normalized_marker(source.marker, target_level) ==
+  normalized_marker(target_marker, target_level)
+}
+
+///|
+fn identity_index_map(length : Int) -> Array[Int] {
+  let map = []
+  for index in 0..<length {
+    map.push(index)
+  }
+  map
+}
+
+///|
+fn move_node_index_map(
+  length : Int,
+  from_flat_index : Int,
+  moved_length : Int,
+  insert_at : Int,
+) -> Array[Int] {
+  let map = []
+  let from_end = from_flat_index + moved_length
+  for index in 0..<length {
+    if index >= from_flat_index && index < from_end {
+      map.push(insert_at + index - from_flat_index)
+    } else {
+      let remaining_index = if index >= from_end {
+        index - moved_length
+      } else {
+        index
+      }
+      if remaining_index >= insert_at {
+        map.push(remaining_index + moved_length)
+      } else {
+        map.push(remaining_index)
+      }
+    }
+  }
+  map
 }
 
 ///|
