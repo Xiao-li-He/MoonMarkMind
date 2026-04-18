@@ -580,30 +580,22 @@ fn on_mindmap_keydown(event : @dom.KeyboardEvent) -> Unit {
     "ArrowLeft" => {
       event.preventDefault()
       event.stopPropagation()
-      if handle_tree_navigation("ArrowLeft", target_node_index) {
-        render_ui()
-      }
+      handle_keyboard_tree_navigation("ArrowLeft", target_node_index)
     }
     "ArrowRight" => {
       event.preventDefault()
       event.stopPropagation()
-      if handle_tree_navigation("ArrowRight", target_node_index) {
-        render_ui()
-      }
+      handle_keyboard_tree_navigation("ArrowRight", target_node_index)
     }
     "ArrowUp" => {
       event.preventDefault()
       event.stopPropagation()
-      if handle_tree_navigation("ArrowUp", target_node_index) {
-        render_ui()
-      }
+      handle_keyboard_tree_navigation("ArrowUp", target_node_index)
     }
     "ArrowDown" => {
       event.preventDefault()
       event.stopPropagation()
-      if handle_tree_navigation("ArrowDown", target_node_index) {
-        render_ui()
-      }
+      handle_keyboard_tree_navigation("ArrowDown", target_node_index)
     }
     "Enter" => {
       event.preventDefault()
@@ -1489,6 +1481,45 @@ fn handle_tree_navigation(
     "ArrowUp" => move_to_tree_sibling(current_index, false)
     "ArrowDown" => move_to_tree_sibling(current_index, true)
     _ => false
+  }
+}
+
+///|
+fn handle_keyboard_tree_navigation(
+  direction : String,
+  fallback_node_index : Int,
+) -> Unit {
+  let needs_render = tree_navigation_needs_render(
+    direction, fallback_node_index,
+  )
+  if handle_tree_navigation(direction, fallback_node_index) {
+    if needs_render {
+      render_ui()
+    } else {
+      sync_selection_ui()
+    }
+  }
+}
+
+///|
+fn tree_navigation_needs_render(
+  direction : String,
+  fallback_node_index : Int,
+) -> Bool {
+  if direction != "ArrowRight" {
+    return false
+  }
+  let current_index = if app_state.selected_node >= 0 {
+    app_state.selected_node
+  } else {
+    fallback_node_index
+  }
+  if current_index < 0 || !is_collapsed(current_index) {
+    return false
+  }
+  match find_node(app_state.root, current_index) {
+    Some(node) => node.children.length() > 0
+    None => false
   }
 }
 

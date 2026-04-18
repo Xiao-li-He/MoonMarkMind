@@ -1095,6 +1095,24 @@ test "tree navigation right expands collapsed node and selects first child" {
 }
 
 ///|
+test "keyboard tree navigation only needs render when expanding collapsed node" {
+  reset_navigation_test_state()
+  select_single_node(1, false)
+
+  assert_eq(tree_navigation_needs_render("ArrowLeft", 1), false)
+  assert_eq(tree_navigation_needs_render("ArrowUp", 1), false)
+  assert_eq(tree_navigation_needs_render("ArrowDown", 1), false)
+  assert_eq(tree_navigation_needs_render("ArrowRight", 1), false)
+
+  app_state.collapsed = [1]
+  assert_eq(tree_navigation_needs_render("ArrowRight", 1), true)
+
+  select_single_node(2, false)
+  app_state.collapsed = [2]
+  assert_eq(tree_navigation_needs_render("ArrowRight", 2), false)
+}
+
+///|
 test "move heading prev keeps sibling subtree stable" {
   let markdown = "# Root\n\nThis is the root note.\n\n## Section A\n\nIntro text.\n\n- title list entry\n- sibling list entry\n- another list entry\n### Section A1\n#### Section A1-1\n##### Section A1-1-1\n###### Section A1-1-1-1\n\nmore text\n\n- deep list a\n  - deep list b\n    - deep list c\n\n### Section A2\n\n- list A2-1\n- list A2-2\n  - child A2-2-1\n    - child A2-2-1-1"
   let outline = build_outline(markdown)
