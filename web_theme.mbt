@@ -1788,7 +1788,7 @@ fn style_mindmap_toolbar(element : @dom.Element) -> Unit {
   set_style(element, "justify-content", "space-between")
   set_style(element, "column-gap", "8px")
   set_style(element, "row-gap", "10px")
-  set_style(element, "padding", "0 15px 4px")
+  set_style(element, "padding", "0 0 4px")
   set_style(element, "position", "relative")
   set_style(element, "z-index", "3")
   set_style(element, "min-width", "0")
