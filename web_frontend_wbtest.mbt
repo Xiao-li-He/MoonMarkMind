@@ -949,8 +949,9 @@ test "node drag inside collapsed target expands after drop" {
   drag_drop_target.val = 1
   app_state.collapsed = [1]
 
-  apply_node_drag_drop(DropInside(1))
+  let changed = apply_node_drag_drop(DropInside(1))
 
+  assert_eq(changed, true)
   assert_eq(app_state.selected_node, 4)
   assert_eq(title_at(app_state.selected_node), "Other")
   assert_eq(is_collapsed(1), false)
@@ -958,6 +959,41 @@ test "node drag inside collapsed target expands after drop" {
     app_state.markdown,
     "# Root\n## Parent\n### Child A\n### Child B\n### Other",
   )
+}
+
+///|
+test "node drag unchanged drop keeps dragged source selected" {
+  reset_navigation_test_state()
+  select_single_node(4, false)
+  capture_node_drag_selection()
+  select_single_node(1, false)
+  drag_source_node.val = 1
+  drag_drop_kind.val = "before"
+  drag_drop_target.val = 1
+  let markdown = app_state.markdown
+
+  let changed = apply_node_drag_drop(DropBefore(1))
+  if !changed {
+    select_node_drag_source()
+  }
+
+  assert_eq(changed, false)
+  assert_eq(app_state.markdown, markdown)
+  assert_eq(app_state.selected_node, 1)
+  assert_eq(app_state.selected_nodes, [1])
+}
+
+///|
+test "node drag reset clears selection snapshot" {
+  reset_navigation_test_state()
+  select_single_node(4, false)
+  capture_node_drag_selection()
+
+  reset_node_drag_state()
+
+  assert_eq(drag_snapshot_selected_node.val, -2)
+  assert_eq(drag_snapshot_selected_nodes.val, [])
+  assert_eq(drag_snapshot_selection_anchor_node.val, -2)
 }
 
 ///|

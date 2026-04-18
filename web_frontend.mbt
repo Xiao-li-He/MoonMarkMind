@@ -136,6 +136,18 @@ let drag_drop_kind : @ref.Ref[String] = @ref.Ref("")
 let drag_drop_target : @ref.Ref[Int] = @ref.Ref(-2)
 
 ///|
+let drag_snapshot_selected_node : @ref.Ref[Int] = @ref.Ref(-2)
+
+///|
+let drag_snapshot_selected_nodes : @ref.Ref[Array[Int]] = @ref.Ref([])
+
+///|
+let drag_snapshot_selection_anchor_node : @ref.Ref[Int] = @ref.Ref(-2)
+
+///|
+let drag_snapshot_reveal_selected_line : @ref.Ref[Bool] = @ref.Ref(false)
+
+///|
 pub fn start_web_app() -> Unit {
   match get_element("#mindmap-export") {
     Some(export_root) => {
@@ -729,6 +741,7 @@ fn start_node_drag_candidate(event : @dom.MouseEvent) -> Unit {
   drag_active.val = false
   drag_drop_kind.val = ""
   drag_drop_target.val = -2
+  capture_node_drag_selection()
   focus_mindmap()
 }
 
@@ -773,12 +786,16 @@ fn finish_node_drag(event : @dom.MouseEvent) -> Unit {
     event.preventDefault()
   }
   clear_node_drag_visuals()
+  let mut moved = false
   if was_active {
     suppress_next_mindmap_click.val = true
     match placement {
-      Some(drop) => apply_node_drag_drop(drop)
+      Some(drop) => moved = apply_node_drag_drop(drop)
       None => ()
     }
+  }
+  if was_active && !moved {
+    select_node_drag_source()
   }
   reset_node_drag_state()
   mindmap_clear_body_user_select()
@@ -786,7 +803,11 @@ fn finish_node_drag(event : @dom.MouseEvent) -> Unit {
 
 ///|
 fn cancel_node_drag() -> Unit {
+  let was_active = drag_active.val
   clear_node_drag_visuals()
+  if was_active {
+    restore_node_drag_selection()
+  }
   reset_node_drag_state()
   mindmap_clear_body_user_select()
 }
@@ -799,6 +820,36 @@ fn reset_node_drag_state() -> Unit {
   drag_active.val = false
   drag_drop_kind.val = ""
   drag_drop_target.val = -2
+  drag_snapshot_selected_node.val = -2
+  drag_snapshot_selected_nodes.val = []
+  drag_snapshot_selection_anchor_node.val = -2
+  drag_snapshot_reveal_selected_line.val = false
+}
+
+///|
+fn capture_node_drag_selection() -> Unit {
+  drag_snapshot_selected_node.val = app_state.selected_node
+  drag_snapshot_selected_nodes.val = copy_ints(app_state.selected_nodes)
+  drag_snapshot_selection_anchor_node.val = app_state.selection_anchor_node
+  drag_snapshot_reveal_selected_line.val = app_state.reveal_selected_line
+}
+
+///|
+fn restore_node_drag_selection() -> Unit {
+  app_state.selected_node = drag_snapshot_selected_node.val
+  app_state.selected_nodes = copy_ints(drag_snapshot_selected_nodes.val)
+  app_state.selection_anchor_node = drag_snapshot_selection_anchor_node.val
+  app_state.reveal_selected_line = drag_snapshot_reveal_selected_line.val
+  sync_selection_ui()
+}
+
+///|
+fn select_node_drag_source() -> Unit {
+  if drag_source_node.val < 0 {
+    return
+  }
+  select_single_node(drag_source_node.val, false)
+  sync_selection_ui()
 }
 
 ///|
@@ -1038,6 +1089,7 @@ fn clear_node_drop_feedback() -> Unit {
     toggle_class(node, "drop-before", false)
     toggle_class(node, "drop-after", false)
     toggle_class(node, "drop-inside", false)
+    restore_node_drag_visual_style(node)
   }
 }
 
@@ -1057,16 +1109,27 @@ fn set_dragging_source_class(enabled : Bool) -> Unit {
     return
   }
   match get_element(".node[data-node-index=\"\{drag_source_node.val}\"]") {
-    Some(node) => toggle_class(node, "is-dragging", enabled)
+    Some(node) => {
+      toggle_class(node, "is-dragging", enabled)
+      if !enabled {
+        restore_node_drag_visual_style(node)
+      }
+    }
     None => ()
   }
 }
 
 ///|
-fn apply_node_drag_drop(placement : DropPlacement) -> Unit {
+fn restore_node_drag_visual_style(node : @dom.Element) -> Unit {
+  style_of(node).set_property("opacity", "1")
+  apply_theme_to_element(node)
+}
+
+///|
+fn apply_node_drag_drop(placement : DropPlacement) -> Bool {
   let source_index = drag_source_node.val
   if source_index < 0 {
-    return
+    return false
   }
   let drop_kind = drag_drop_kind.val
   let drop_target = drag_drop_target.val
@@ -1076,7 +1139,7 @@ fn apply_node_drag_drop(placement : DropPlacement) -> Unit {
     placement,
   )
   if !result.changed {
-    return
+    return false
   }
   suppress_next_render_mindmap_reveal.val = true
   apply_markdown_change(result.markdown, false)
@@ -1087,6 +1150,7 @@ fn apply_node_drag_drop(placement : DropPlacement) -> Unit {
   }
   expand_node_path(result.selected_node)
   render_ui()
+  true
 }
 
 ///|
