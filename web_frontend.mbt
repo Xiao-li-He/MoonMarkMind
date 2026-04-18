@@ -1845,6 +1845,11 @@ fn body_block_uses_centered_actions(block : String) -> Bool {
 }
 
 ///|
+fn body_block_compact_action_height_threshold() -> Double {
+  52.0
+}
+
+///|
 fn node_body_block_layout_class(block : String) -> String {
   if body_block_uses_centered_actions(block) {
     " node-body-block--single-line"
@@ -3433,6 +3438,7 @@ fn bind_body_block_hover_controls(
   controls : @dom.Element,
 ) -> Unit {
   let show = fn() {
+    update_body_block_controls_position(block, controls)
     let style = style_of(controls)
     style.set_property("opacity", "1")
     style.set_property("pointer-events", "auto")
@@ -3446,6 +3452,28 @@ fn bind_body_block_hover_controls(
   block.as_event_target().on("mouseleave", fn(_) { hide() })
   controls.as_event_target().on("focusin", fn(_) { show() })
   controls.as_event_target().on("focusout", fn(_) { hide() })
+}
+
+///|
+fn update_body_block_controls_position(
+  block : @dom.Element,
+  controls : @dom.Element,
+) -> Unit {
+  let kind = block.getAttribute("data-body-block-kind").unwrap_or("")
+  let height = element_rect(block).height
+  let compact = kind != "image" &&
+    height > 0.0 &&
+    height <= body_block_compact_action_height_threshold()
+  let style = style_of(controls)
+  if compact {
+    style.set_property("top", "50%")
+    style.set_property("bottom", "auto")
+    style.set_property("transform", "translate(-50%, -50%)")
+  } else {
+    style.set_property("top", "auto")
+    style.set_property("bottom", "8px")
+    style.set_property("transform", "translateX(-50%)")
+  }
 }
 
 ///|
