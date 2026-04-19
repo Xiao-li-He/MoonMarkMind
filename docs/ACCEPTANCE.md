@@ -51,17 +51,17 @@ https://xiao-li-he.github.io/MoonMarkMind/
 
 ### 模块职责
 
-- `heading_parser.mbt`：Markdown 标题、列表和结构线索解析。
-- `outline_tree.mbt`：把扁平解析结果组织为层级树。
-- `outline_model.mbt`：维护脑图模型，提供节点增删改移、折叠、隐藏、缩进、提升和 Markdown 回写。
-- `markdown_render.mbt`：处理节点正文中的 Markdown 富文本渲染。
-- `latex_math_render.mbt`：处理 LaTeX 公式渲染。
-- `sample_data.mbt`：集中维护内置示例。
-- `web_layout.mbt`：生成页面结构和工具栏。
-- `web_dom.mbt`：封装 DOM 读取、写入、下载、导出、编辑器联动等操作。
-- `web_frontend.mbt`：组织前端状态、事件绑定和视图刷新。
-- `web_mindmap_bindings.mbt`：处理脑图视图、缩放、拖拽和节点定位。
-- `web_theme.mbt`：集中管理界面与脑图主题样式。
+- `src/heading_parser.mbt`：Markdown 标题、列表和结构线索解析。
+- `src/outline_tree.mbt`：把扁平解析结果组织为层级树。
+- `src/outline_model.mbt`：维护脑图模型，提供节点增删改移、折叠、隐藏、缩进、提升和 Markdown 回写。
+- `src/markdown_render.mbt`：处理节点正文中的 Markdown 富文本渲染。
+- `src/latex_math_render.mbt`：处理 LaTeX 公式渲染。
+- `src/sample_data.mbt`：集中维护内置示例。
+- `src/web_layout.mbt`：生成页面结构和工具栏。
+- `src/web_dom.mbt`：封装 DOM 读取、写入、下载、导出、编辑器联动等操作。
+- `src/web_frontend.mbt`：组织前端状态、事件绑定和视图刷新。
+- `src/web_mindmap_bindings.mbt`：处理脑图视图、缩放、拖拽和节点定位。
+- `src/web_theme.mbt`：集中管理界面与脑图主题样式。
 
 这些模块形成了可替换边界：解析/模型逻辑可脱离浏览器验证，Web 视图层可围绕同一模型接口演进，主题与布局逻辑可独立调整。
 

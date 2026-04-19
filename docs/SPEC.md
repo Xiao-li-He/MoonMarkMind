@@ -6,12 +6,12 @@
 
 ```text
 Markdown 文本
-  -> heading_parser.mbt 解析结构线索
-  -> outline_tree.mbt 构建层级树
-  -> outline_model.mbt 维护可编辑模型
-  -> web_frontend.mbt / web_mindmap_bindings.mbt 渲染和交互
-  -> outline_model.mbt 回写 Markdown
-  -> web_dom.mbt 导出 PNG / SVG / HTML
+  -> src/heading_parser.mbt 解析结构线索
+  -> src/outline_tree.mbt 构建层级树
+  -> src/outline_model.mbt 维护可编辑模型
+  -> src/web_frontend.mbt / src/web_mindmap_bindings.mbt 渲染和交互
+  -> src/outline_model.mbt 回写 Markdown
+  -> src/web_dom.mbt 导出 PNG / SVG / HTML
 ```
 
 Markdown 是主数据源。脑图中的结构编辑最终应能回写为可读 Markdown。
@@ -189,5 +189,5 @@ HTML 导出用于独立打开和演示，应保留必要的运行时逻辑，在
 
 - 完成度：README 和 ACCEPTANCE 中的关键功能路径可触发声明范围。
 - 工程质量：MoonBit 模块按解析、模型、渲染、Web 交互、导出拆分。
-- 可解释性：本文档解释核心规则，DEVELOPMENT 解释开发历程和取舍。
+- 可解释性：本文档解释核心规则，README 和验收说明解释运行方式、模块边界与关键功能路径。
 - 用户体验：Web 页面提供直接编辑、实时预览、示例加载和导出能力。

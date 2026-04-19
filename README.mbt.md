@@ -82,28 +82,27 @@ powershell -ExecutionPolicy Bypass -File .\build-web.ps1
 - 使用内置示例加载不同 Markdown 文档。
 - 导出 PNG、SVG、HTML，并检查导出结果可打开。
 
-更完整的MoonMarkMind 规则说明见[SPEC.md](SPEC.md)，验收说明见 [ACCEPTANCE.md](ACCEPTANCE.md)。
+更完整的 MoonMarkMind 规则说明见 [docs/SPEC.md](docs/SPEC.md)，验收说明见 [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md)。
 
 ## 项目结构
 
-- `heading_parser.mbt`：解析 Markdown 标题和文档结构。
-- `outline_tree.mbt`：构建层级树。
-- `outline_model.mbt`：处理节点增删改移、隐藏、折叠和 Markdown 回写。
-- `markdown_render.mbt`：渲染节点中的 Markdown 内容。
-- `latex_math_render.mbt`：渲染 LaTeX 公式。
-- `sample_data.mbt`：提供内置示例文档。
-- `web_api.mbt`：提供 Web 侧调用的 API。
-- `web_layout.mbt`：构建页面布局和工具栏。
-- `web_dom.mbt`：处理 DOM 操作、编辑器联动、导出和下载。
-- `web_frontend.mbt`：管理前端状态、交互事件和脑图渲染。
-- `web_mindmap_bindings.mbt`：处理脑图视图、缩放、拖拽和节点定位。
-- `web_theme.mbt`：定义 Web 界面和脑图样式。
+- `src/heading_parser.mbt`：解析 Markdown 标题和文档结构。
+- `src/outline_tree.mbt`：构建层级树。
+- `src/outline_model.mbt`：处理节点增删改移、隐藏、折叠和 Markdown 回写。
+- `src/markdown_render.mbt`：渲染节点中的 Markdown 内容。
+- `src/latex_math_render.mbt`：渲染 LaTeX 公式。
+- `src/sample_data.mbt`：提供内置示例文档。
+- `src/web_layout.mbt`：构建页面布局和工具栏。
+- `src/web_dom.mbt`：处理 DOM 操作、编辑器联动、导出和下载。
+- `src/web_frontend.mbt`：管理前端状态、交互事件和脑图渲染。
+- `src/web_mindmap_bindings.mbt`：处理脑图视图、缩放、拖拽和节点定位。
+- `src/web_theme.mbt`：定义 Web 界面和脑图样式。
 - `web/index.html`：Web 入口页面。
 - `build-web.ps1`：构建并预览 Web 版本。
 
 ## 工程质量
 
-本项目按 MoonBit package 组织源码，根目录为核心库，`cmd/main` 暴露可运行入口。修改代码后请优先运行：
+本项目按 MoonBit package 组织源码，`moon.mod.json` 通过 `source: "src"` 指向源码目录，`src` 为核心库，`src/cmd/main` 暴露可运行入口。修改代码后请优先运行：
 
 ```powershell
 moon check
