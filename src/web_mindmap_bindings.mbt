@@ -1,4 +1,8 @@
 ///|
+/// Low-level mind-map viewport bindings.
+///
+/// These helpers handle zoom, pan, connector reflow, and geometry measurement
+/// without changing the Markdown model.
 fn mindmap_set_body_user_select(user_select : String) -> Unit {
   match @dom.document().body() {
     Some(body) => {
@@ -786,6 +790,8 @@ fn bind_mindmap_ui(
   focusout_callback : (@dom.FocusEvent) -> Unit,
   input_callback : (@dom.Event) -> Unit,
 ) -> Unit {
+  // Viewport gestures mutate only DOM transform state. The outline model stays
+  // untouched so zooming and panning are purely presentational.
   match get_element("#mindmap") {
     Some(mindmap) => {
       mindmap.setAttribute("tabindex", "0")

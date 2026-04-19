@@ -1,4 +1,5 @@
 ///|
+/// Built-in Markdown used by the CLI bridge, tests, and the initial browser demo.
 pub fn sample_markdown() -> String {
   (
     #|# MoonMarkMind Demo

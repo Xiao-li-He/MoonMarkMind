@@ -1,4 +1,8 @@
 ///|
+/// Browser DOM and export helpers used by the MoonBit frontend.
+///
+/// This module isolates direct DOM access, editor line measurement, file I/O,
+/// downloads, and static export generation from the application state machine.
 fn get_element(selector : String) -> @dom.Element? {
   @dom.document().querySelector(selector)
 }
@@ -847,6 +851,8 @@ let input_last_selected_headings_key : @ref.Ref[String] = @ref.Ref("__init__")
 
 ///|
 fn sync_editor_chrome() -> Unit {
+  // Keep textarea overlays aligned with the real browser layout. This depends
+  // on measured font metrics, so it lives outside the pure outline model.
   match get_element("#input") {
     Some(input_element) => {
       let input = @dom.HTMLTextAreaElement::cast_from_element(input_element)
@@ -2980,6 +2986,8 @@ fn focus_note_editor(node_index : Int) -> Unit {
 
 ///|
 fn pick_markdown_file(callback : (String, String) -> Unit) -> Unit {
+  // File input is created on demand to avoid keeping browser-only state in the
+  // core model. The callback receives both filename and text contents.
   let input = create_element("input", "")
   let file_input = @dom.HTMLInputElement::cast_from_element(input)
   file_input.setType("file")
@@ -3030,6 +3038,8 @@ fn download_link_from_data_url(filename : String, data_url : String) -> Unit {
 
 ///|
 fn download_text(filename : String, content : String) -> Unit {
+  // Text downloads use a generated link so the same path works for Markdown,
+  // SVG text, and HTML exports across supported browsers.
   download_link_from_data_url(
     filename,
     "data:text/plain;charset=utf-8,\{@global.encodeURIComponent(content)}",
@@ -3065,6 +3075,8 @@ async fn fetch_current_bundle_text() -> String {
 
 ///|
 fn build_mindmap_export_html(bundle : String) -> String {
+  // Interactive exports embed the current map shell and either inline or link
+  // the app bundle so the resulting file can be opened independently.
   let export_dom = build_mindmap_interactive_export_dom()
   let script_tag = build_export_runtime_script(bundle)
   (
@@ -3105,6 +3117,8 @@ fn escape_inline_script(script : String) -> String {
 
 ///|
 fn build_mindmap_interactive_export_dom() -> @dom.Element {
+  // Clone only the mind-map experience, not editor chrome, so exported HTML is
+  // focused on reading and presenting the current map.
   let saved_collapsed = app_state.collapsed
   let saved_collapsed_note_nodes = app_state.collapsed_note_nodes
   let saved_hidden_nodes = app_state.hidden_nodes
@@ -3673,6 +3687,8 @@ fn export_visible_node_cards(export_root : @dom.Element) -> Array[@dom.Element] 
 
 ///|
 fn build_mindmap_export_svg() -> String {
+  // SVG export delegates to a neutralized snapshot element so the live viewport
+  // can be restored after serialization.
   match build_mindmap_export_svg_element() {
     Some(svg) => serialize_svg_export_element(svg)
     None => ""

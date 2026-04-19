@@ -1,4 +1,8 @@
 ///|
+/// Static page layout builders for the browser application.
+///
+/// Dynamic behavior is bound later by `web_frontend.mbt`; this file keeps the
+/// initial shell and controls declarative.
 priv struct SelectOption {
   value : String
   label : String
@@ -8,6 +12,8 @@ priv struct SelectOption {
 
 ///|
 fn mount_app_shell() -> Unit {
+  // Mounting rebuilds the static shell, then later sync passes attach stateful
+  // values and event handlers.
   apply_page_theme()
   match get_element_by_id("app") {
     Some(app) => {

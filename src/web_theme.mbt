@@ -1,4 +1,8 @@
 ///|
+/// Imperative style sheet for the browser UI.
+///
+/// Styles are grouped by app shell, editor, mind-map canvas, node cards, and
+/// Markdown/LaTeX content to keep generated DOM class names centralized.
 fn apply_page_theme() -> Unit {
   let html = @dom.document().documentElement()
   let html_style = style_of(html)
@@ -1383,6 +1387,8 @@ fn style_tool_select_option_selected(element : @dom.Element) -> Unit {
 
 ///|
 fn style_editor_panel(element : @dom.Element) -> Unit {
+  // Editor styles include the textarea and overlay layers for line numbers,
+  // active-line highlighting, and node linkage hints.
   set_style(element, "display", "grid")
   set_style(element, "grid-template-rows", "minmax(0, 1fr)")
   set_style(element, "min-width", "0")
@@ -1764,6 +1770,8 @@ fn style_workspace_divider_handle(element : @dom.Element) -> Unit {
 
 ///|
 fn style_mindmap_panel(element : @dom.Element) -> Unit {
+  // The mind-map panel hosts the toolbar, viewport surface, connector layer, and
+  // transient interaction controls such as zoom and drag/drop affordances.
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "min-width", "0")
@@ -2211,6 +2219,8 @@ fn style_single_right_tree_children_right(element : @dom.Element) -> Unit {
 
 ///|
 fn style_node(element : @dom.Element) -> Unit {
+  // Base node styling is layout-neutral; center, fill, line, and branch-line
+  // helpers refine the shared card shape for each visual mode.
   set_style(element, "position", "relative")
   set_style(element, "display", "inline-flex")
   set_style(element, "flex-direction", "column")
@@ -2727,6 +2737,8 @@ fn style_node_body_block_editor_action_secondary(
 
 ///|
 fn style_markdown_blocks(element : @dom.Element) -> Unit {
+  // Markdown body styles are scoped under node cards so exported maps preserve
+  // rich content without depending on global browser defaults.
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "gap", "6px")

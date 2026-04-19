@@ -1,4 +1,8 @@
 ///|
+/// Minimal Markdown renderer for node titles and bodies.
+///
+/// It supports the subset needed inside mind-map nodes and emits either DOM
+/// nodes or escaped `SafeHtml` for export paths.
 priv enum MarkdownInline {
   InlineText(String)
   InlineStrong(String)
@@ -20,6 +24,7 @@ priv enum MarkdownBlock {
 }
 
 ///|
+/// Wrapper used to make unsafe string/HTML boundaries explicit.
 priv struct SafeHtml {
   value : String
 }
@@ -65,6 +70,8 @@ fn append_markdown_inline_dom(parent : @dom.Element, source : String) -> Unit {
 
 ///|
 fn build_markdown_inline_piece_dom(inline : MarkdownInline) -> @dom.Element {
+  // Links and images fall back to plain text when their URLs are unsafe for
+  // direct browser rendering, preserving readable text without script URLs.
   match inline {
     InlineText(text) => {
       let span = create_element("span", "markdown-text")
@@ -166,6 +173,8 @@ fn render_markdown_title_html(source : String) -> String {
 
 ///|
 fn render_markdown_inline_safe_html(source : String) -> SafeHtml {
+  // Exported HTML cannot rely on DOM text setters, so every inline renderer
+  // returns escaped fragments wrapped in SafeHtml.
   let parts = []
   for inline in parse_markdown_inline(source) {
     parts.push(render_markdown_inline_piece_safe_html(inline))
@@ -468,6 +477,8 @@ fn safe_html_element(
 
 ///|
 fn parse_markdown_blocks(blocks : Array[String]) -> Array[MarkdownBlock] {
+  // Body blocks arrive from the outline parser already separated by blank-line
+  // runs. Classify each block once so DOM and HTML renderers share behavior.
   let parsed = []
   for block in blocks {
     let trimmed = block.trim().to_string()
@@ -666,6 +677,8 @@ fn parse_markdown_task_line(line : String) -> MarkdownBlock? {
 
 ///|
 fn parse_markdown_inline(source : String) -> Array[MarkdownInline] {
+  // Prefer preserving literal text over guessing when delimiters are incomplete.
+  // That keeps pasted Markdown readable even when it is not fully well-formed.
   let pieces = []
   let mut cursor = 0
   while cursor < source.length() {

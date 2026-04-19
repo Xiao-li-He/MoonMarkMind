@@ -1,4 +1,8 @@
 ///|
+/// Small LaTeX math AST used by the Markdown renderer.
+///
+/// This is not a full TeX engine; it covers common inline/block math constructs
+/// that can be rendered safely inside a mind-map node.
 priv enum LatexMathNode {
   MathRow(Array[LatexMathNode])
   MathText(String)
@@ -13,6 +17,8 @@ priv enum LatexMathNode {
 
 ///|
 fn render_latex_math_inline_html(source : String) -> SafeHtml {
+  // Normalize before parsing so copied formulas with line breaks still render
+  // as compact inline math.
   let normalized = normalize_latex_inline_source(source)
   let nodes = parse_latex_math_nodes(normalized.trim().to_string())
   SafeHtml::{ value: render_latex_math_nodes(nodes, inline=true) }
@@ -59,6 +65,8 @@ fn parse_latex_until(
   start : Int,
   stop : UInt16?,
 ) -> (Array[LatexMathNode], Int) {
+  // Recursive descent stops at matching delimiters. Unknown or malformed input
+  // is kept as text so a bad formula does not break the whole node render.
   let nodes = []
   let mut cursor = start
   while cursor < source.length() {
@@ -205,6 +213,8 @@ fn parse_latex_command_node(
   command : String,
   after_command : Int,
 ) -> (LatexMathNode, Int)? {
+  // Commands that affect layout are parsed into structured nodes; simple symbol
+  // commands are mapped here, and unsupported commands degrade to text upstream.
   match command {
     "frac" =>
       match read_latex_group_source(source, after_command) {

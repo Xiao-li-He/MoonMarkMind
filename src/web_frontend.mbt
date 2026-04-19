@@ -1,4 +1,8 @@
 ///|
+/// Browser application state and event orchestration.
+///
+/// Core Markdown transformations live in the model layer; this file coordinates
+/// UI state, keyboard/mouse events, rendering, and DOM synchronization.
 priv struct NodeWidthOverride {
   node_index : Int
   width : Int
@@ -199,6 +203,7 @@ let resize_width_snapshot : @ref.Ref[HistorySnapshot?] = @ref.Ref(None)
 let resize_width_connector_frame : @ref.Ref[Int] = @ref.Ref(0)
 
 ///|
+/// Initialize the browser UI, bind event handlers, and render the initial map.
 pub fn start_web_app() -> Unit {
   match get_element("#mindmap-export") {
     Some(export_root) => {
@@ -956,6 +961,8 @@ fn start_node_drag_candidate(event : @dom.MouseEvent) -> Unit {
 
 ///|
 fn update_node_drag(event : @dom.MouseEvent) -> Unit {
+  // Dragging is visual-first: the ghost and hover target update continuously,
+  // while Markdown changes only when a valid drop is applied.
   if drag_source_node.val < 0 {
     return
   }
@@ -1481,6 +1488,8 @@ fn restore_node_drag_visual_style(node : @dom.Element) -> Unit {
 
 ///|
 fn apply_node_drag_drop(placement : DropPlacement) -> Bool {
+  // Commit a drag by delegating structural validation and Markdown rewriting to
+  // outline_model.mbt, then refresh selection through the returned index map.
   let source_index = drag_source_node.val
   if source_index < 0 {
     return false
@@ -2627,6 +2636,8 @@ fn handle_redo_action() -> Unit {
 
 ///|
 fn apply_markdown_change(markdown : String, reset_ui : Bool) -> Unit {
+  // Every user-facing edit funnels through this function so history, outline
+  // parsing, and selection state stay in sync.
   if markdown == app_state.markdown {
     if reset_ui {
       apply_markdown_state(markdown, true, false)
@@ -2965,6 +2976,8 @@ fn current_document_name() -> String {
 
 ///|
 fn render_ui() -> Unit {
+  // Rendering is string-based for the main canvas, followed by focused DOM sync
+  // for selection, connectors, editor overlays, and transient controls.
   if !app_state.started {
     suppress_next_render_mindmap_reveal.val = false
     return
@@ -4497,6 +4510,8 @@ fn render_branch_node(
   direction : String,
   tone_index : Int,
 ) -> String {
+  // Recursive branch rendering covers the radial mind-map layout. Other layout
+  // modes reuse the same node-card renderer with different container structure.
   let before_slot = render_node_spacing_slot()
   let card = render_node_card(node, parent_index, false, tone_index)
   let after_slot = render_node_spacing_slot()
@@ -4642,6 +4657,8 @@ fn render_node_card(
   is_center : Bool,
   tone_index : Int,
 ) -> String {
+  // Node cards are the shared visual unit across layouts; data attributes carry
+  // flat indices back to event handlers for model operations.
   let has_children = node.children.length() > 0
   let editable = !node.synthetic
   let is_editing = app_state.editing_node == node.flat_index

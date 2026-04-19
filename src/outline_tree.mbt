@@ -1,4 +1,8 @@
 ///|
+/// Tree node used by the browser-facing outline JSON.
+///
+/// `flat_index` keeps every rendered node tied back to the parser stream so UI
+/// actions can rewrite the original Markdown through `outline_model.mbt`.
 priv struct OutlineNode {
   flat_index : Int
   source_line : Int
@@ -13,6 +17,8 @@ priv struct OutlineNode {
 
 ///|
 fn build_outline(markdown : String) -> OutlineNode {
+  // The parser may return zero roots, one real root, or multiple top-level
+  // siblings. A synthetic root gives downstream renderers one stable entry.
   let nodes = parse_markdown_nodes(markdown)
   build_outline_from_nodes(nodes)
 }

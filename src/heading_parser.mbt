@@ -1,4 +1,6 @@
 ///|
+/// Parses Markdown headings and structural list items into a flat outline stream.
+/// Later modules rebuild this stream into trees, JSON, and round-trippable Markdown.
 priv enum MarkdownNodeKind {
   Heading
   ListItem
@@ -31,6 +33,10 @@ priv struct ParseContext {
 }
 
 ///|
+/// Extract public heading tuples for simple command-line and test consumers.
+///
+/// The richer parser keeps list items and body blocks, but this public helper
+/// intentionally exposes only Markdown heading levels and titles.
 pub fn parse_headings(markdown : String) -> Array[(Int, String)] {
   let headings = []
   for node in parse_markdown_nodes(markdown) {
@@ -44,6 +50,8 @@ pub fn parse_headings(markdown : String) -> Array[(Int, String)] {
 
 ///|
 fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
+  // A context stack keeps the most recent heading/list ancestors so mixed
+  // headings and lists can be flattened without losing parent levels.
   let nodes = []
   let mut stack : Array[ParseContext] = []
   let mut body_lines : Array[String] = []
@@ -243,6 +251,8 @@ fn attach_markdown_body(
   node : MarkdownNode,
   body_lines : Array[String],
 ) -> (MarkdownNode, Int) {
+  // Body blocks stay separate from structural nodes so node edits can
+  // round-trip explanatory Markdown without treating it as children.
   let parsed = normalize_markdown_body(body_lines)
   (
     MarkdownNode::{

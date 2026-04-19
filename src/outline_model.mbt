@@ -1,4 +1,8 @@
 ///|
+/// Convert Markdown into the JSON outline consumed by the browser app.
+///
+/// Empty or multi-root documents are wrapped in a synthetic document node so
+/// Web rendering always starts from a single root.
 pub fn outline_json(markdown : String) -> String {
   let root = build_outline(markdown)
   if root.children.length() == 0 && root.synthetic {
@@ -14,11 +18,17 @@ pub fn outline_json(markdown : String) -> String {
 }
 
 ///|
+/// Rename the node at a flat parser index while preserving its body and subtree.
+///
+/// Invalid indices and empty replacement titles are treated as no-ops so UI
+/// edits can be applied optimistically without corrupting the Markdown source.
 pub fn rename_heading(
   markdown : String,
   flat_index : Int,
   title : String,
 ) -> String {
+  // Node notes are edited as plain text, then normalized back into body blocks
+  // that can be rendered below the heading/list item during Markdown export.
   let nodes = parse_markdown_nodes(markdown)
   if flat_index < 0 || flat_index >= nodes.length() {
     return markdown
@@ -262,6 +272,10 @@ fn move_node_to_drop_placement(
   from_flat_index : Int,
   placement : DropPlacement,
 ) -> MoveNodeResult {
+  // Drag-and-drop works on the flat parser stream, but the target placement is
+  // tree-shaped: before/after siblings or inside a parent. This function removes
+  // the source subtree, normalizes its levels, inserts it, and returns an index
+  // map so selection can follow the moved node.
   let nodes = parse_markdown_nodes(markdown)
   if from_flat_index < 0 || from_flat_index >= nodes.length() {
     return unchanged_move_node_result(markdown, nodes, from_flat_index)
@@ -349,6 +363,10 @@ fn move_node_to_drop_placement(
 }
 
 ///|
+/// Move a node subtree near another node.
+///
+/// `place_after=false` inserts before/inside the target depending on node kind;
+/// `place_after=true` inserts after the target subtree. Invalid drops are no-ops.
 pub fn move_heading(
   markdown : String,
   from_flat_index : Int,
@@ -399,16 +417,19 @@ pub fn move_heading(
 }
 
 ///|
+/// Move the selected node to the previous compatible sibling.
 pub fn move_heading_prev(markdown : String, flat_index : Int) -> String {
   move_heading_in_direction(markdown, flat_index, false)
 }
 
 ///|
+/// Move the selected node to the next compatible sibling.
 pub fn move_heading_next(markdown : String, flat_index : Int) -> String {
   move_heading_in_direction(markdown, flat_index, true)
 }
 
 ///|
+/// Move to the previous compatible sibling and return the updated selection.
 pub fn move_heading_prev_with_selection(
   markdown : String,
   flat_index : Int,
@@ -417,6 +438,7 @@ pub fn move_heading_prev_with_selection(
 }
 
 ///|
+/// Move to the next compatible sibling and return the updated selection.
 pub fn move_heading_next_with_selection(
   markdown : String,
   flat_index : Int,
@@ -425,6 +447,7 @@ pub fn move_heading_next_with_selection(
 }
 
 ///|
+/// Move a node within its sibling group while preserving the moved subtree.
 pub fn move_heading_among_siblings(
   markdown : String,
   flat_index : Int,
@@ -534,6 +557,7 @@ fn move_heading_in_direction_with_selection(
 }
 
 ///|
+/// Demote the selected node under the previous sibling, if that creates a valid tree.
 pub fn indent_heading(markdown : String, flat_index : Int) -> String {
   let nodes = parse_markdown_nodes(markdown)
   if flat_index <= 0 || flat_index >= nodes.length() {
@@ -551,6 +575,7 @@ pub fn indent_heading(markdown : String, flat_index : Int) -> String {
 }
 
 ///|
+/// Promote the selected node one level toward its grandparent, if possible.
 pub fn promote_heading(markdown : String, flat_index : Int) -> String {
   let nodes = parse_markdown_nodes(markdown)
   if flat_index < 0 || flat_index >= nodes.length() {
@@ -563,6 +588,7 @@ pub fn promote_heading(markdown : String, flat_index : Int) -> String {
 }
 
 ///|
+/// Add a child node under the selected parent and return normalized Markdown.
 pub fn add_child_heading(
   markdown : String,
   parent_flat_index : Int,
@@ -610,6 +636,7 @@ pub fn add_child_heading(
 }
 
 ///|
+/// Add a sibling node before or after the selected subtree.
 pub fn add_sibling_heading(
   markdown : String,
   flat_index : Int,
@@ -646,6 +673,10 @@ pub fn add_sibling_heading(
 }
 
 ///|
+/// Delete the selected node subtree.
+///
+/// A fixed document root is protected so accidental root deletion leaves the
+/// Markdown unchanged.
 pub fn delete_heading(markdown : String, flat_index : Int) -> String {
   let nodes = parse_markdown_nodes(markdown)
   if flat_index < 0 || flat_index >= nodes.length() {
@@ -673,6 +704,8 @@ fn fixed_root_flat_index(nodes : Array[MarkdownNode]) -> Int {
 
 ///|
 fn render_markdown_nodes(nodes : Array[MarkdownNode]) -> String {
+  // Rendering is the inverse of parsing: structural nodes become headings up to
+  // level six and lists afterwards, while body blocks are reattached verbatim.
   render_flat_markdown_nodes(nodes)
 }
 
