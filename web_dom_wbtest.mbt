@@ -163,6 +163,61 @@ test "branch line connector extension preserves anchors" {
   assert_eq(branch_line_stroke_width_by_kind(center=true, depth=0), 1.8)
   assert_eq(branch_line_stroke_width_by_kind(center=false, depth=1), 1.5)
   assert_eq(branch_line_stroke_width_by_kind(center=false, depth=2), 1.25)
+  assert_eq(export_tree_branch_line_bottom_connector_offset(), 15.0)
+}
+
+///|
+test "static svg export uses full canvas foreignObject to avoid clipping nodes" {
+  let bounds = MindmapExportBounds::{
+    width: 640,
+    height: 480,
+    mindmap_x: 48.5,
+    mindmap_y: 52.25,
+    mindmap_width: 320,
+    mindmap_height: 240,
+  }
+
+  assert_eq(
+    mindmap_export_foreign_object_attrs(bounds),
+    ("0", "0", "640", "480"),
+  )
+}
+
+///|
+test "static svg export uses visual margin for rasterizer clipping" {
+  assert_eq(mindmap_static_export_visual_margin(), 48.0)
+}
+
+///|
+test "static svg export positions cloned mindmap inside full canvas" {
+  let bounds = MindmapExportBounds::{
+    width: 640,
+    height: 480,
+    mindmap_x: 48.5,
+    mindmap_y: 52.25,
+    mindmap_width: 320,
+    mindmap_height: 240,
+  }
+
+  assert_eq(
+    mindmap_export_mindmap_frame_attrs(bounds),
+    ("48.5", "52.25", "320", "240"),
+  )
+}
+
+///|
+test "static svg export positions connector layer at exported stage origin" {
+  assert_eq(
+    mindmap_export_connector_layer_attrs(
+      export_left=100.0,
+      export_top=200.0,
+      stage_left=130.0,
+      stage_top=240.0,
+      stage_width=280,
+      stage_height=180,
+    ),
+    ("30", "40", "280", "180"),
+  )
 }
 
 ///|

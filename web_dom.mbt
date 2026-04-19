@@ -551,6 +551,53 @@ fn connector_node_bottom_y(
 }
 
 ///|
+fn export_tree_connector_parent_anchor_y(
+  rect : @dom.DOMRect,
+  node : @dom.Element,
+) -> Double {
+  match export_tree_connector_toggle_center_y(node) {
+    Some(y) => y
+    None => rect.bottom + export_tree_connector_bottom_offset(node)
+  }
+}
+
+///|
+fn export_tree_connector_child_anchor_y(
+  rect : @dom.DOMRect,
+  node : @dom.Element,
+) -> Double {
+  let _ = node
+  rect.top
+}
+
+///|
+fn export_tree_connector_toggle_center_y(node : @dom.Element) -> Double? {
+  match
+    node.querySelector(".node-actions--bottom-center .node-action--toggle") {
+    Some(toggle) => Some(rect_center_y(element_rect(toggle)))
+    None =>
+      match node.querySelector(".node-actions--bottom-center") {
+        Some(actions) => Some(rect_center_y(element_rect(actions)))
+        None => None
+      }
+  }
+}
+
+///|
+fn export_tree_connector_bottom_offset(node : @dom.Element) -> Double {
+  if has_class_name(node, "node--branch-line") {
+    export_tree_branch_line_bottom_connector_offset()
+  } else {
+    0.0
+  }
+}
+
+///|
+fn export_tree_branch_line_bottom_connector_offset() -> Double {
+  15.0
+}
+
+///|
 fn build_connector_path(
   parent_node : @dom.Element,
   node : @dom.Element,
@@ -3714,43 +3761,202 @@ fn build_mindmap_export_svg_element() -> @dom.Element? {
       svg.setAttribute("height", bounds.height.to_string())
       svg.setAttribute("viewBox", "0 0 \{bounds.width} \{bounds.height}")
       let foreign_object = create_svg_element("foreignObject", "")
-      foreign_object.setAttribute("width", "100%")
-      foreign_object.setAttribute("height", "100%")
+      let (foreign_x, foreign_y, foreign_width, foreign_height) = mindmap_export_foreign_object_attrs(
+        bounds,
+      )
+      foreign_object.setAttribute("x", foreign_x)
+      foreign_object.setAttribute("y", foreign_y)
+      foreign_object.setAttribute("width", foreign_width)
+      foreign_object.setAttribute("height", foreign_height)
+      style_of(foreign_object).set_property("overflow", "visible")
       let wrapper = create_element("div", "")
       wrapper.setAttribute("xmlns", "http://www.w3.org/1999/xhtml")
       let wrapper_style = style_of(wrapper)
-      wrapper_style.set_property("width", "\{bounds.mindmap_width}px")
-      wrapper_style.set_property("height", "\{bounds.mindmap_height}px")
+      wrapper_style.set_property("position", "relative")
+      wrapper_style.set_property("width", "\{bounds.width}px")
+      wrapper_style.set_property("height", "\{bounds.height}px")
       wrapper_style.set_property("background", "transparent")
-      wrapper_style.set_property(
-        "transform",
-        "translate(\{bounds.mindmap_x}px, \{bounds.mindmap_y}px)",
-      )
       wrapper_style.set_property("overflow", "visible")
+      let (mindmap_x, mindmap_y, mindmap_width, mindmap_height) = mindmap_export_mindmap_frame_attrs(
+        bounds,
+      )
       let mindmap_style = style_of(clone)
-      mindmap_style.set_property("width", "\{bounds.mindmap_width}px")
-      mindmap_style.set_property("height", "\{bounds.mindmap_height}px")
-      mindmap_style.set_property("min-height", "\{bounds.mindmap_height}px")
+      mindmap_style.set_property("position", "absolute")
+      mindmap_style.set_property("left", "\{mindmap_x}px")
+      mindmap_style.set_property("top", "\{mindmap_y}px")
+      mindmap_style.set_property("width", "\{mindmap_width}px")
+      mindmap_style.set_property("height", "\{mindmap_height}px")
+      mindmap_style.set_property("min-height", "\{mindmap_height}px")
       mindmap_style.set_property("overflow", "visible")
       mindmap_style.set_property("background", "transparent")
       mindmap_style.set_property("--pan-x", "0px")
       mindmap_style.set_property("--pan-y", "0px")
       mindmap_style.set_property("--zoom", "1")
-      match
-        build_mindmap_export_connector_group(mindmap, bounds.left, bounds.top) {
-        Some(connectors) =>
-          svg.as_node().appendChild(connectors.as_node()) |> ignore
-        None => ()
-      }
       wrapper.as_node().appendChild(clone.as_node()) |> ignore
       foreign_object.as_node().appendChild(wrapper.as_node()) |> ignore
       svg.as_node().appendChild(foreign_object.as_node()) |> ignore
+      let measure_host = attach_mindmap_export_measure_host(svg)
+      match build_mindmap_export_connector_layer(svg, clone) {
+        Some(connectors) =>
+          svg
+          .as_any()
+          ._call("insertBefore", [connectors.as_any(), foreign_object.as_any()])
+          |> ignore
+        None => ()
+      }
+      measure_host.remove()
       restore_mindmap_export_view(mindmap, view_state)
       render_ui()
       Some(svg)
     }
     None => None
   }
+}
+
+///|
+fn attach_mindmap_export_measure_host(svg : @dom.Element) -> @dom.Element {
+  let host = create_element("div", "")
+  let style = style_of(host)
+  style.set_property("position", "fixed")
+  style.set_property("left", "-100000px")
+  style.set_property("top", "-100000px")
+  style.set_property("width", "0")
+  style.set_property("height", "0")
+  style.set_property("overflow", "visible")
+  style.set_property("opacity", "0")
+  style.set_property("pointer-events", "none")
+  style.set_property("z-index", "-1")
+  append_child(host, svg)
+  match @dom.document().body() {
+    Some(body) => append_child(body.as_element(), host)
+    None => append_child(@dom.document().documentElement(), host)
+  }
+  host
+}
+
+///|
+fn build_mindmap_export_connector_layer(
+  export_svg : @dom.Element,
+  mindmap : @dom.Element,
+) -> @dom.Element? {
+  match mindmap.querySelector(".mindmap-stage") {
+    Some(stage) => {
+      let nodes : Array[@dom.Element] = stage.querySelectorAll(
+        ".node[data-node-index]",
+      )
+      if nodes.length() <= 1 {
+        return None
+      }
+      let export_rect = element_rect(export_svg)
+      let stage_rect = element_rect(stage)
+      let width = max_double(1.0, stage_rect.width).ceil().to_int()
+      let height = max_double(1.0, stage_rect.height).ceil().to_int()
+      let (layer_x, layer_y, layer_width, layer_height) = mindmap_export_connector_layer_attrs(
+        export_left=export_rect.left,
+        export_top=export_rect.top,
+        stage_left=stage_rect.left,
+        stage_top=stage_rect.top,
+        stage_width=width,
+        stage_height=height,
+      )
+      let svg = create_svg_element("svg", "mindmap-export-connectors")
+      svg.setAttribute("x", layer_x)
+      svg.setAttribute("y", layer_y)
+      svg.setAttribute("width", width.to_string())
+      svg.setAttribute("height", height.to_string())
+      svg.setAttribute("viewBox", "0 0 \{layer_width} \{layer_height}")
+      let svg_style = style_of(svg)
+      svg_style.set_property("overflow", "visible")
+      svg_style.set_property("pointer-events", "none")
+      svg_style.set_property("mix-blend-mode", "multiply")
+      svg_style.set_property("opacity", "0.92")
+      let layout = stage_layout_kind(stage)
+      let color = export_connector_color(stage)
+      for node in nodes {
+        match
+          build_branch_line_node_baseline(
+            layout,
+            node,
+            element_rect(node),
+            stage_rect.left,
+            stage_rect.top,
+            1.0,
+            color,
+          ) {
+          Some(path) => append_child(svg, path)
+          None => ()
+        }
+      }
+      for node in nodes {
+        let parent_index = parse_int_or_default(
+          node.getAttribute("data-parent-index").unwrap_or("-1"),
+          -1,
+        )
+        if parent_index < 0 {
+          continue
+        }
+        match find_node_by_index(nodes, parent_index) {
+          Some(parent) =>
+            match
+              export_connector_geometry(
+                layout,
+                element_rect(parent),
+                element_rect(node),
+                parent,
+                node,
+                stage_rect.left,
+                stage_rect.top,
+              ) {
+              Some(path_data) =>
+                append_child(
+                  svg,
+                  build_export_connector_path(parent, node, path_data, color),
+                )
+              None => ()
+            }
+          None => ()
+        }
+      }
+      Some(svg)
+    }
+    None => None
+  }
+}
+
+///|
+fn mindmap_export_connector_layer_attrs(
+  export_left~ : Double,
+  export_top~ : Double,
+  stage_left~ : Double,
+  stage_top~ : Double,
+  stage_width~ : Int,
+  stage_height~ : Int,
+) -> (String, String, String, String) {
+  (
+    double_to_svg_number(stage_left - export_left),
+    double_to_svg_number(stage_top - export_top),
+    stage_width.to_string(),
+    stage_height.to_string(),
+  )
+}
+
+///|
+fn mindmap_export_foreign_object_attrs(
+  bounds : MindmapExportBounds,
+) -> (String, String, String, String) {
+  ("0", "0", bounds.width.to_string(), bounds.height.to_string())
+}
+
+///|
+fn mindmap_export_mindmap_frame_attrs(
+  bounds : MindmapExportBounds,
+) -> (String, String, String, String) {
+  (
+    double_to_svg_number(bounds.mindmap_x),
+    double_to_svg_number(bounds.mindmap_y),
+    bounds.mindmap_width.to_string(),
+    bounds.mindmap_height.to_string(),
+  )
 }
 
 ///|
@@ -3762,8 +3968,6 @@ fn remove_node_width_resize_handles(root : @dom.Element) -> Unit {
 
 ///|
 priv struct MindmapExportBounds {
-  left : Double
-  top : Double
   width : Int
   height : Int
   mindmap_x : Double
@@ -3774,12 +3978,12 @@ priv struct MindmapExportBounds {
 
 ///|
 fn mindmap_export_bounds(mindmap : @dom.Element) -> MindmapExportBounds {
-  let margin = 48.0
+  let margin = mindmap_static_export_visual_margin()
   let mindmap_rect = element_rect(mindmap)
   let (content_left, content_top, content_right, content_bottom) = match
     mindmap.querySelector(".mindmap-stage") {
     Some(stage) =>
-      match mindmap_node_bounds(stage) {
+      match mindmap_export_visual_bounds(stage) {
         Some(bounds) => bounds
         None =>
           (
@@ -3806,14 +4010,63 @@ fn mindmap_export_bounds(mindmap : @dom.Element) -> MindmapExportBounds {
     .ceil()
     .to_int()
   MindmapExportBounds::{
-    left,
-    top,
     width,
     height,
     mindmap_x: mindmap_rect.left - left,
     mindmap_y: mindmap_rect.top - top,
     mindmap_width: max_double(1.0, mindmap_rect.width).ceil().to_int(),
     mindmap_height: max_double(1.0, mindmap_rect.height).ceil().to_int(),
+  }
+}
+
+///|
+fn mindmap_static_export_visual_margin() -> Double {
+  48.0
+}
+
+///|
+fn mindmap_export_visual_bounds(
+  stage : @dom.Element,
+) -> (Double, Double, Double, Double)? {
+  match mindmap_node_bounds(stage) {
+    Some(bounds) => {
+      let nodes : Array[@dom.Element] = stage.querySelectorAll(
+        ".node[data-node-index]",
+      )
+      let mut visual_bounds = bounds
+      for node in nodes {
+        visual_bounds = expand_export_bounds_with_element(visual_bounds, node)
+      }
+      for
+        affordance in stage.querySelectorAll(
+          ".node-actions, .node-action, .node-width-resize-handle",
+        ) {
+        visual_bounds = expand_export_bounds_with_element(
+          visual_bounds, affordance,
+        )
+      }
+      Some(visual_bounds)
+    }
+    None => None
+  }
+}
+
+///|
+fn expand_export_bounds_with_element(
+  bounds : (Double, Double, Double, Double),
+  element : @dom.Element,
+) -> (Double, Double, Double, Double) {
+  let rect = element_rect(element)
+  if rect.width <= 0.0 && rect.height <= 0.0 {
+    bounds
+  } else {
+    let (left, top, right, bottom) = bounds
+    (
+      min_double(left, rect.left),
+      min_double(top, rect.top),
+      max_double(right, rect.right),
+      max_double(bottom, rect.bottom),
+    )
   }
 }
 
@@ -3902,76 +4155,6 @@ fn static_export_note_title_shift() -> String {
 }
 
 ///|
-fn build_mindmap_export_connector_group(
-  mindmap : @dom.Element,
-  export_left : Double,
-  export_top : Double,
-) -> @dom.Element? {
-  match mindmap.querySelector(".mindmap-stage") {
-    Some(stage) => {
-      let nodes : Array[@dom.Element] = stage.querySelectorAll(
-        ".node[data-node-index]",
-      )
-      if nodes.length() <= 1 {
-        return None
-      }
-      let layout = stage_layout_kind(stage)
-      let color = export_connector_color(stage)
-      let group = create_svg_element("g", "mindmap-export-connectors")
-      group.setAttribute("fill", "none")
-      group.setAttribute("opacity", "0.92")
-      for node in nodes {
-        match
-          build_branch_line_node_baseline(
-            layout,
-            node,
-            element_rect(node),
-            export_left,
-            export_top,
-            1.0,
-            color,
-          ) {
-          Some(path) => append_child(group, path)
-          None => ()
-        }
-      }
-      for node in nodes {
-        let parent_index = parse_int_or_default(
-          node.getAttribute("data-parent-index").unwrap_or("-1"),
-          -1,
-        )
-        if parent_index < 0 {
-          continue
-        }
-        match find_node_by_index(nodes, parent_index) {
-          Some(parent) =>
-            match
-              export_connector_geometry(
-                layout,
-                element_rect(parent),
-                element_rect(node),
-                parent,
-                node,
-                export_left,
-                export_top,
-              ) {
-              Some(path_data) =>
-                append_child(
-                  group,
-                  build_export_connector_path(parent, node, path_data, color),
-                )
-              None => ()
-            }
-          None => ()
-        }
-      }
-      Some(group)
-    }
-    None => None
-  }
-}
-
-///|
 fn export_connector_geometry(
   layout : StageLayoutKind,
   parent_rect : @dom.DOMRect,
@@ -3981,9 +4164,37 @@ fn export_connector_geometry(
   export_left : Double,
   export_top : Double,
 ) -> ConnectorPathData? {
-  connector_geometry(
-    layout, parent_rect, node_rect, parent_node, node, export_left, export_top, 1.0,
-  )
+  if layout is StageLayoutKind::Tree {
+    let start_x = stage_local_x(rect_center_x(parent_rect), export_left, 1.0)
+    let start_y = stage_local_y(
+      export_tree_connector_parent_anchor_y(parent_rect, parent_node),
+      export_top,
+      1.0,
+    )
+    let end_x = stage_local_x(rect_center_x(node_rect), export_left, 1.0)
+    let end_y = stage_local_y(
+      export_tree_connector_child_anchor_y(node_rect, node),
+      export_top,
+      1.0,
+    )
+    let span_y = abs_double(end_y - start_y)
+    let bend = min_double(44.0, max_double(16.0, span_y * 0.4))
+    Some(ConnectorPathData::{
+      start_x,
+      start_y,
+      control1_x: start_x,
+      control1_y: start_y + bend,
+      control2_x: end_x,
+      control2_y: end_y - bend,
+      end_x,
+      end_y,
+    })
+  } else {
+    connector_geometry(
+      layout, parent_rect, node_rect, parent_node, node, export_left, export_top,
+      1.0,
+    )
+  }
 }
 
 ///|
