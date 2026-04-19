@@ -595,6 +595,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "node-actions--branch-line") {
     style_node_actions_branch_line(element)
   }
+  if has_class_name(element, "node-width-resize-handle") {
+    style_node_width_resize_handle(element)
+  }
   if has_class_name(element, "node-action") {
     style_node_action(element)
   }
@@ -2351,9 +2354,8 @@ fn style_node_branch_line(element : @dom.Element) -> Unit {
     }
   }
   if has_class_name(element, "node--line-tree-note") {
-    set_style(element, "width", "200px")
     set_style(element, "min-width", "200px")
-    set_style(element, "max-width", "200px")
+    set_style(element, "max-width", "360px")
   }
 }
 
@@ -2508,9 +2510,10 @@ fn style_node_body(element : @dom.Element) -> Unit {
   }
   if has_class_name(element, "node-body--line-tree") {
     style_node_body_branch_line(element)
-    set_style(element, "width", "180px")
-    set_style(element, "max-width", "180px")
-    set_style(element, "max-height", "128px")
+    set_style(element, "width", "100%")
+    set_style(element, "max-width", "100%")
+    set_style(element, "max-height", node_body_natural_height_max_height())
+    set_style(element, "overflow", node_body_natural_height_overflow())
     return
   }
   match element.closest(".node--branch-line") {
@@ -2537,9 +2540,19 @@ fn style_node_body(element : @dom.Element) -> Unit {
   set_style(element, "line-height", "1.45")
   set_style(element, "white-space", "pre-wrap")
   set_style(element, "word-break", "break-word")
-  set_style(element, "max-height", "120px")
-  set_style(element, "overflow", "auto")
+  set_style(element, "max-height", node_body_natural_height_max_height())
+  set_style(element, "overflow", node_body_natural_height_overflow())
   set_style(element, "font-weight", "500")
+}
+
+///|
+fn node_body_natural_height_max_height() -> String {
+  "none"
+}
+
+///|
+fn node_body_natural_height_overflow() -> String {
+  "visible"
 }
 
 ///|
@@ -2561,8 +2574,8 @@ fn style_node_body_image_only(element : @dom.Element) -> Unit {
   set_style(element, "line-height", "1.45")
   set_style(element, "white-space", "normal")
   set_style(element, "word-break", "normal")
-  set_style(element, "max-height", "none")
-  set_style(element, "overflow", "hidden")
+  set_style(element, "max-height", node_body_natural_height_max_height())
+  set_style(element, "overflow", node_body_natural_height_overflow())
   set_style(element, "font-weight", "500")
 }
 
@@ -2583,8 +2596,8 @@ fn style_node_body_branch_line(element : @dom.Element) -> Unit {
   set_style(element, "line-height", "1.35")
   set_style(element, "white-space", "pre-wrap")
   set_style(element, "word-break", "break-word")
-  set_style(element, "max-height", "160px")
-  set_style(element, "overflow", "auto")
+  set_style(element, "max-height", node_body_natural_height_max_height())
+  set_style(element, "overflow", node_body_natural_height_overflow())
   set_style(element, "font-weight", "400")
 }
 
@@ -3291,6 +3304,25 @@ fn style_node_actions_corner(element : @dom.Element) -> Unit {
   set_style(element, "left", "auto")
   set_style(element, "bottom", "auto")
   set_style(element, "transform", "none")
+}
+
+///|
+fn style_node_width_resize_handle(element : @dom.Element) -> Unit {
+  set_style(element, "position", "absolute")
+  set_style(element, "right", "2px")
+  set_style(element, "top", "4px")
+  set_style(element, "bottom", "4px")
+  set_style(element, "width", "18px")
+  set_style(element, "min-height", "24px")
+  set_style(element, "display", "block")
+  set_style(element, "transform", "none")
+  set_style(element, "border-radius", "999px")
+  set_style(element, "background", "rgba(44, 112, 206, 0.72)")
+  set_style(element, "box-shadow", "0 4px 12px rgba(44, 112, 206, 0.22)")
+  set_style(element, "cursor", "ew-resize")
+  set_style(element, "pointer-events", "auto")
+  set_style(element, "touch-action", "none")
+  set_style(element, "z-index", "4")
 }
 
 ///|

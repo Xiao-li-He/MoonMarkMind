@@ -27,6 +27,7 @@ fn reset_frontend_test_state() -> Unit {
   app_state.root_split_count = 0
   app_state.reveal_selected_line = false
   app_state.sample_variant = "custom"
+  app_state.node_width_overrides = []
   suppress_next_render_mindmap_reveal.val = false
   reset_node_drag_state()
   load_markdown(frontend_test_markdown(), true)
@@ -51,6 +52,7 @@ fn reset_navigation_test_state() -> Unit {
   app_state.root_split_count = 0
   app_state.reveal_selected_line = false
   app_state.sample_variant = "custom"
+  app_state.node_width_overrides = []
   suppress_next_render_mindmap_reveal.val = false
   reset_node_drag_state()
   load_markdown(navigation_test_markdown(), true)
@@ -623,6 +625,108 @@ test "body note button toggles collapsed body instead of editing" {
 }
 
 ///|
+test "node width overrides clamp and update in place" {
+  reset_frontend_test_state()
+
+  set_node_width_override(1, 12)
+  assert_eq(node_width_override_value(1), Some(96))
+  assert_eq(app_state.node_width_overrides.length(), 1)
+
+  set_node_width_override(1, 999)
+  assert_eq(node_width_override_value(1), Some(520))
+  assert_eq(app_state.node_width_overrides.length(), 1)
+}
+
+///|
+test "node width handle renders only for selected non editing node" {
+  reset_frontend_test_state()
+  assert_eq(should_show_node_width_resize_handle(1, false), false)
+  assert_eq(should_show_node_width_resize_handle(1, true), true)
+  match find_node(app_state.root, 1) {
+    Some(node) => {
+      let unselected = render_node_card(node, 0, false, -1)
+      assert_eq(unselected.contains("node-width-resize-handle"), false)
+      select_single_node(1, false)
+      let selected = render_node_card(node, 0, false, -1)
+      assert_eq(selected.contains("node-width-resize-handle"), true)
+      app_state.editing_node = 1
+      assert_eq(should_show_node_width_resize_handle(1, true), false)
+      let editing = render_node_card(node, 0, false, -1)
+      assert_eq(editing.contains("node-width-resize-handle"), false)
+    }
+    None => fail("missing alpha node")
+  }
+}
+
+///|
+test "node width handle does not start node sorting drag" {
+  assert_eq(
+    node_drag_blocked_target_selector().contains(".node-width-resize-handle"),
+    true,
+  )
+}
+
+///|
+test "node width undo redo restores visual state without markdown change" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+  let markdown = app_state.markdown
+  let before = current_history_snapshot()
+
+  set_node_width_override(1, 220)
+  push_undo_snapshot(before, 1, 1)
+  clear_redo_history()
+
+  assert_eq(app_state.undo_stack.length(), 1)
+  assert_eq(app_state.redo_stack.length(), 0)
+  handle_undo()
+  assert_eq(app_state.markdown, markdown)
+  assert_eq(node_width_override_value(1), None)
+  assert_eq(app_state.redo_stack.length(), 1)
+
+  handle_redo()
+  assert_eq(app_state.markdown, markdown)
+  assert_eq(node_width_override_value(1), Some(220))
+}
+
+///|
+test "markdown history snapshots restore node width overrides" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+  set_node_width_override(1, 240)
+
+  apply_markdown_change("# Root\n## Alpha Renamed\n## Beta", false)
+  set_node_width_override(1, 300)
+
+  handle_undo()
+
+  assert_eq(app_state.markdown, frontend_test_markdown())
+  assert_eq(node_width_override_value(1), Some(240))
+}
+
+///|
+test "fill node width override renders after style mode changes" {
+  reset_frontend_test_state()
+  app_state.style_mode = "full"
+  select_single_node(1, false)
+  set_node_width_override(1, 260)
+  match find_node(app_state.root, 1) {
+    Some(node) => {
+      let card = render_node_card(node, 0, false, -1)
+      assert_eq(card.contains("width:260px"), true)
+      assert_eq(card.contains("max-width:260px"), true)
+    }
+    None => fail("missing alpha node")
+  }
+}
+
+///|
+test "node body styles expand without scroll clipping" {
+  assert_eq(node_body_natural_height_max_height(), "none")
+  assert_eq(node_body_natural_height_overflow(), "visible")
+}
+
+///|
 test "body block edit button selects node without inline editor" {
   reset_frontend_test_state()
   load_markdown("# Root\n## Alpha\nAlpha note\n## Beta", true)
@@ -684,7 +788,7 @@ test "node editor commit adds single global undo entry" {
   assert_eq(app_state.editing_node, -2)
   assert_eq(title_at(1), "Alpha12")
   assert_eq(app_state.undo_stack.length(), 1)
-  assert_eq(app_state.undo_stack[0].contains("## Alpha"), true)
+  assert_eq(app_state.undo_stack[0].markdown.contains("## Alpha"), true)
 
   handle_undo()
   assert_eq(title_at(1), "Alpha")

@@ -1,4 +1,17 @@
 ///|
+priv struct NodeWidthOverride {
+  node_index : Int
+  width : Int
+}
+
+///|
+priv struct HistorySnapshot {
+  markdown : String
+  node_width_overrides : Array[NodeWidthOverride]
+  selected_node : Int
+}
+
+///|
 priv struct AppState {
   mut started : Bool
   mut markdown : String
@@ -7,8 +20,8 @@ priv struct AppState {
   mut collapsed : Array[Int]
   mut collapsed_note_nodes : Array[Int]
   mut hidden_nodes : Array[Int]
-  mut undo_stack : Array[String]
-  mut redo_stack : Array[String]
+  mut undo_stack : Array[HistorySnapshot]
+  mut redo_stack : Array[HistorySnapshot]
   mut selected_node : Int
   mut selected_nodes : Array[Int]
   mut selection_anchor_node : Int
@@ -24,6 +37,7 @@ priv struct AppState {
   mut root_split_count : Int
   mut reveal_selected_line : Bool
   mut sample_variant : String
+  mut node_width_overrides : Array[NodeWidthOverride]
 }
 
 ///|
@@ -52,6 +66,7 @@ let app_state : AppState = AppState::{
   root_split_count: 0,
   reveal_selected_line: false,
   sample_variant: rules_sample_default_id(),
+  node_width_overrides: [],
 }
 
 ///|
@@ -155,6 +170,21 @@ let drag_snapshot_selection_anchor_node : @ref.Ref[Int] = @ref.Ref(-2)
 
 ///|
 let drag_snapshot_reveal_selected_line : @ref.Ref[Bool] = @ref.Ref(false)
+
+///|
+let resize_width_node_index : @ref.Ref[Int] = @ref.Ref(-1)
+
+///|
+let resize_width_start_x : @ref.Ref[Int] = @ref.Ref(0)
+
+///|
+let resize_width_start_width : @ref.Ref[Int] = @ref.Ref(0)
+
+///|
+let resize_width_active : @ref.Ref[Bool] = @ref.Ref(false)
+
+///|
+let resize_width_snapshot : @ref.Ref[HistorySnapshot?] = @ref.Ref(None)
 
 ///|
 pub fn start_web_app() -> Unit {
@@ -736,22 +766,130 @@ fn bind_node_drag_ui() -> Unit {
       .as_event_target()
       .on("mousedown", fn(raw) {
         let event : @dom.MouseEvent = raw.cast()
+        if start_node_width_resize_candidate(event) {
+          return
+        }
         start_node_drag_candidate(event)
       })
       window
       .as_event_target()
       .on("mousemove", fn(raw) {
         let event : @dom.MouseEvent = raw.cast()
+        if update_node_width_resize(event) {
+          return
+        }
         update_node_drag(event)
       })
       window
       .as_event_target()
       .on("mouseup", fn(raw) {
         let event : @dom.MouseEvent = raw.cast()
+        if finish_node_width_resize(event) {
+          return
+        }
         finish_node_drag(event)
       })
     }
     None => ()
+  }
+}
+
+///|
+fn start_node_width_resize_candidate(event : @dom.MouseEvent) -> Bool {
+  if mouse_event_button(event) != 0 {
+    return false
+  }
+  match event.target().closest(".node-width-resize-handle") {
+    Some(handle) => {
+      let node_index = parse_int_or_default(
+        handle.getAttribute("data-resize-node-index").unwrap_or("-1"),
+        -1,
+      )
+      if node_index < 0 || !is_selected_node(node_index) {
+        return false
+      }
+      match handle.closest(".node[data-node-index]") {
+        Some(node) => {
+          event.preventDefault()
+          event.stopPropagation()
+          resize_width_node_index.val = node_index
+          resize_width_start_x.val = event.clientX.to_int()
+          resize_width_start_width.val = current_node_width_for_resize(node)
+          resize_width_active.val = true
+          resize_width_snapshot.val = Some(current_history_snapshot())
+          mindmap_set_body_user_select("none")
+          set_body_drag_style("ew-resize", "none")
+          true
+        }
+        None => false
+      }
+    }
+    None => false
+  }
+}
+
+///|
+fn update_node_width_resize(event : @dom.MouseEvent) -> Bool {
+  if !resize_width_active.val || resize_width_node_index.val < 0 {
+    return false
+  }
+  event.preventDefault()
+  let width = normalize_node_width(
+    resize_width_start_width.val +
+    event.clientX.to_int() -
+    resize_width_start_x.val,
+  )
+  set_node_width_override(resize_width_node_index.val, width)
+  apply_node_width_to_dom(resize_width_node_index.val, width)
+  schedule_contour_layout()
+  true
+}
+
+///|
+fn finish_node_width_resize(event : @dom.MouseEvent) -> Bool {
+  if !resize_width_active.val || resize_width_node_index.val < 0 {
+    return false
+  }
+  event.preventDefault()
+  let node_index = resize_width_node_index.val
+  let width = node_width_override_value(node_index).unwrap_or(
+    resize_width_start_width.val,
+  )
+  match resize_width_snapshot.val {
+    Some(snapshot) =>
+      if width != resize_width_start_width.val {
+        push_undo_snapshot(snapshot, node_index, node_index)
+        clear_redo_history()
+      }
+    None => ()
+  }
+  reset_node_width_resize_state()
+  mindmap_clear_body_user_select()
+  clear_body_drag_style()
+  sync_selection_toolbar()
+  true
+}
+
+///|
+fn reset_node_width_resize_state() -> Unit {
+  resize_width_node_index.val = -1
+  resize_width_start_x.val = 0
+  resize_width_start_width.val = 0
+  resize_width_active.val = false
+  resize_width_snapshot.val = None
+}
+
+///|
+fn current_node_width_for_resize(node : @dom.Element) -> Int {
+  match
+    node_width_override_value(
+      parse_int_or_default(
+        node.getAttribute("data-node-index").unwrap_or("-1"),
+        -1,
+      ),
+    ) {
+    Some(width) => width
+    None => normalize_node_width(element_rect(node).width.round().to_int())
   }
 }
 
@@ -862,6 +1000,7 @@ fn reset_node_drag_state() -> Unit {
   drag_snapshot_selected_nodes.val = []
   drag_snapshot_selection_anchor_node.val = -2
   drag_snapshot_reveal_selected_line.val = false
+  reset_node_width_resize_state()
 }
 
 ///|
@@ -892,10 +1031,7 @@ fn select_node_drag_source() -> Unit {
 
 ///|
 fn drag_source_index_from_target(target : @dom.Element) -> Int {
-  if target.closest(
-      "button, input, textarea, select, [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for], .node-body, .node-note-rail, .markdown-image",
-    )
-    is Some(_) {
+  if target.closest(node_drag_blocked_target_selector()) is Some(_) {
     return -1
   }
   match target.closest(".node[data-node-index]") {
@@ -906,6 +1042,11 @@ fn drag_source_index_from_target(target : @dom.Element) -> Int {
       )
     None => -1
   }
+}
+
+///|
+fn node_drag_blocked_target_selector() -> String {
+  "button, input, textarea, select, [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for], .node-width-resize-handle, .node-body, .node-note-rail, .markdown-image"
 }
 
 ///|
@@ -1291,6 +1432,11 @@ fn set_dragging_source_class(enabled : Bool) -> Unit {
 fn restore_node_drag_visual_style(node : @dom.Element) -> Unit {
   style_of(node).set_property("opacity", "1")
   apply_theme_to_element(node)
+  let node_index = parse_int_or_default(
+    node.getAttribute("data-node-index").unwrap_or("-1"),
+    -1,
+  )
+  restore_node_width_override_style(node, node_index)
 }
 
 ///|
@@ -2224,15 +2370,23 @@ fn handle_undo() -> Unit {
   let previous = app_state.undo_stack[last_index]
   let expanded_node = undo_expand_stack.val[last_index]
   let redo_expanded_node = undo_redo_expand_stack.val[last_index]
-  app_state.undo_stack = slice_strings(app_state.undo_stack, 0, last_index)
+  app_state.undo_stack = slice_history_snapshots(
+    app_state.undo_stack,
+    0,
+    last_index,
+  )
   undo_expand_stack.val = slice_ints(undo_expand_stack.val, 0, last_index)
   undo_redo_expand_stack.val = slice_ints(
     undo_redo_expand_stack.val,
     0,
     last_index,
   )
-  push_redo_history(app_state.markdown, redo_expanded_node, expanded_node)
-  load_markdown(previous, false)
+  push_redo_snapshot(
+    current_history_snapshot(),
+    redo_expanded_node,
+    expanded_node,
+  )
+  restore_history_snapshot(previous, expanded_node)
   expand_node_path(expanded_node)
   sync_detail_customized()
   if app_state.started {
@@ -2246,18 +2400,26 @@ fn handle_redo() -> Unit {
     return
   }
   let last_index = app_state.redo_stack.length() - 1
-  let next_markdown = app_state.redo_stack[last_index]
+  let next_snapshot = app_state.redo_stack[last_index]
   let expanded_node = redo_expand_stack.val[last_index]
   let undo_expanded_node = redo_undo_expand_stack.val[last_index]
-  app_state.redo_stack = slice_strings(app_state.redo_stack, 0, last_index)
+  app_state.redo_stack = slice_history_snapshots(
+    app_state.redo_stack,
+    0,
+    last_index,
+  )
   redo_expand_stack.val = slice_ints(redo_expand_stack.val, 0, last_index)
   redo_undo_expand_stack.val = slice_ints(
     redo_undo_expand_stack.val,
     0,
     last_index,
   )
-  push_undo_history(app_state.markdown, undo_expanded_node, expanded_node)
-  load_markdown(next_markdown, false)
+  push_undo_snapshot(
+    current_history_snapshot(),
+    undo_expanded_node,
+    expanded_node,
+  )
+  restore_history_snapshot(next_snapshot, expanded_node)
   expand_node_path(expanded_node)
   sync_detail_customized()
   if app_state.started {
@@ -2329,7 +2491,26 @@ fn push_undo_history(
   undo_expand_target : Int,
   redo_expand_target : Int,
 ) -> Unit {
-  app_state.undo_stack.push(markdown)
+  push_undo_snapshot(
+    HistorySnapshot::{
+      markdown,
+      node_width_overrides: copy_node_width_overrides(
+        app_state.node_width_overrides,
+      ),
+      selected_node: app_state.selected_node,
+    },
+    undo_expand_target,
+    redo_expand_target,
+  )
+}
+
+///|
+fn push_undo_snapshot(
+  snapshot : HistorySnapshot,
+  undo_expand_target : Int,
+  redo_expand_target : Int,
+) -> Unit {
+  app_state.undo_stack.push(copy_history_snapshot(snapshot))
   undo_expand_stack.val = append_int(undo_expand_stack.val, undo_expand_target)
   undo_redo_expand_stack.val = append_int(
     undo_redo_expand_stack.val,
@@ -2338,12 +2519,12 @@ fn push_undo_history(
 }
 
 ///|
-fn push_redo_history(
-  markdown : String,
+fn push_redo_snapshot(
+  snapshot : HistorySnapshot,
   redo_expand_target : Int,
   undo_expand_target : Int,
 ) -> Unit {
-  app_state.redo_stack.push(markdown)
+  app_state.redo_stack.push(copy_history_snapshot(snapshot))
   redo_expand_stack.val = append_int(redo_expand_stack.val, redo_expand_target)
   redo_undo_expand_stack.val = append_int(
     redo_undo_expand_stack.val,
@@ -2356,6 +2537,49 @@ fn clear_redo_history() -> Unit {
   app_state.redo_stack = []
   redo_expand_stack.val = []
   redo_undo_expand_stack.val = []
+}
+
+///|
+fn current_history_snapshot() -> HistorySnapshot {
+  HistorySnapshot::{
+    markdown: app_state.markdown,
+    node_width_overrides: copy_node_width_overrides(
+      app_state.node_width_overrides,
+    ),
+    selected_node: app_state.selected_node,
+  }
+}
+
+///|
+fn copy_history_snapshot(snapshot : HistorySnapshot) -> HistorySnapshot {
+  HistorySnapshot::{
+    markdown: snapshot.markdown,
+    node_width_overrides: copy_node_width_overrides(
+      snapshot.node_width_overrides,
+    ),
+    selected_node: snapshot.selected_node,
+  }
+}
+
+///|
+fn restore_history_snapshot(
+  snapshot : HistorySnapshot,
+  fallback_selected : Int,
+) -> Unit {
+  load_markdown(snapshot.markdown, false)
+  app_state.node_width_overrides = sanitize_node_width_overrides(
+    snapshot.node_width_overrides,
+  )
+  let selected = if snapshot.selected_node >= 0 {
+    snapshot.selected_node
+  } else {
+    fallback_selected
+  }
+  if selected >= 0 && find_node(app_state.root, selected) is Some(_) {
+    select_single_node(selected, false)
+  } else {
+    clear_selected_nodes()
+  }
 }
 
 ///|
@@ -2523,6 +2747,12 @@ fn apply_markdown_state(
   app_state.markdown = markdown
   app_state.root = build_outline(markdown)
   if reset_ui {
+    app_state.node_width_overrides = []
+  }
+  app_state.node_width_overrides = sanitize_node_width_overrides(
+    app_state.node_width_overrides,
+  )
+  if reset_ui {
     apply_detail_preset()
     app_state.root_split_count = default_root_split_count(app_state.root)
   } else {
@@ -2652,10 +2882,39 @@ fn sync_mindmap_selected_nodes() -> Unit {
           node.getAttribute("data-node-index").unwrap_or("-1"),
           -1,
         )
-        toggle_class(node, "is-selected", is_selected_node(node_index))
+        let selected = is_selected_node(node_index)
+        toggle_class(node, "is-selected", selected)
+        restore_node_width_override_style(node, node_index)
+        sync_node_width_resize_handle(node, node_index, selected)
       }
     None => ()
   }
+}
+
+///|
+fn sync_node_width_resize_handle(
+  node : @dom.Element,
+  node_index : Int,
+  selected : Bool,
+) -> Unit {
+  match node.querySelector(".node-width-resize-handle") {
+    Some(handle) =>
+      if !should_show_node_width_resize_handle(node_index, selected) {
+        handle.remove()
+      }
+    None =>
+      if should_show_node_width_resize_handle(node_index, selected) {
+        append_child(node, build_node_width_resize_handle_dom(node_index))
+      }
+  }
+}
+
+///|
+fn should_show_node_width_resize_handle(
+  node_index : Int,
+  selected : Bool,
+) -> Bool {
+  selected && node_index >= 0 && app_state.editing_node != node_index
 }
 
 ///|
@@ -2783,6 +3042,115 @@ fn copy_ints(values : Array[Int]) -> Array[Int] {
     next.push(value)
   }
   next
+}
+
+///|
+fn copy_node_width_overrides(
+  values : Array[NodeWidthOverride],
+) -> Array[NodeWidthOverride] {
+  let next = []
+  for value in values {
+    next.push(NodeWidthOverride::{
+      node_index: value.node_index,
+      width: value.width,
+    })
+  }
+  next
+}
+
+///|
+fn sanitize_node_width_overrides(
+  values : Array[NodeWidthOverride],
+) -> Array[NodeWidthOverride] {
+  let next = []
+  for value in values {
+    if find_node(app_state.root, value.node_index) is Some(_) {
+      next.push(NodeWidthOverride::{
+        node_index: value.node_index,
+        width: normalize_node_width(value.width),
+      })
+    }
+  }
+  next
+}
+
+///|
+fn normalize_node_width(width : Int) -> Int {
+  if width < 96 {
+    96
+  } else if width > 520 {
+    520
+  } else {
+    width
+  }
+}
+
+///|
+fn node_width_override_value(node_index : Int) -> Int? {
+  for value in app_state.node_width_overrides {
+    if value.node_index == node_index {
+      return Some(value.width)
+    }
+  }
+  None
+}
+
+///|
+fn set_node_width_override(node_index : Int, width : Int) -> Unit {
+  let normalized = normalize_node_width(width)
+  let next = []
+  let mut found = false
+  for value in app_state.node_width_overrides {
+    if value.node_index == node_index {
+      next.push(NodeWidthOverride::{ node_index, width: normalized })
+      found = true
+    } else {
+      next.push(value)
+    }
+  }
+  if !found {
+    next.push(NodeWidthOverride::{ node_index, width: normalized })
+  }
+  app_state.node_width_overrides = next
+}
+
+///|
+fn apply_node_width_to_dom(node_index : Int, width : Int) -> Unit {
+  match get_element(".node[data-node-index=\"\{node_index}\"]") {
+    Some(node) => apply_node_width_style(node, width)
+    None => ()
+  }
+}
+
+///|
+fn restore_node_width_override_style(
+  element : @dom.Element,
+  node_index : Int,
+) -> Unit {
+  match node_width_override_value(node_index) {
+    Some(width) => apply_node_width_style(element, width)
+    None => ()
+  }
+}
+
+///|
+fn apply_node_width_style(element : @dom.Element, width : Int) -> Unit {
+  let style = style_of(element)
+  let value = "\{normalize_node_width(width)}px"
+  style.set_property("width", value)
+  style.set_property("min-width", value)
+  style.set_property("max-width", value)
+}
+
+///|
+fn render_node_width_style_attr(node_index : Int) -> String {
+  match node_width_override_value(node_index) {
+    Some(width) => {
+      let value = "\{normalize_node_width(width)}px"
+      " style=\"width:\{value};min-width:\{value};max-width:\{value};\""
+    }
+    None => ""
+  }
 }
 
 ///|
@@ -3309,6 +3677,10 @@ fn build_node_card_dom(
   card.setAttribute("data-node-index", node.flat_index.to_string())
   card.setAttribute("data-parent-index", parent_index.to_string())
   apply_node_visual_attrs(card, node, tone_index)
+  match node_width_override_value(node.flat_index) {
+    Some(width) => apply_node_width_style(card, width)
+    None => ()
+  }
   append_child(card, build_node_title_dom(node, is_editing))
   match build_node_note_dom(node) {
     Some(note) => append_child(card, note)
@@ -3320,7 +3692,22 @@ fn build_node_card_dom(
       None => ()
     }
   }
+  if should_show_node_width_resize_handle(
+      node.flat_index,
+      is_selected_node(node.flat_index),
+    ) &&
+    !is_editing {
+    append_child(card, build_node_width_resize_handle_dom(node.flat_index))
+  }
   card
+}
+
+///|
+fn build_node_width_resize_handle_dom(node_index : Int) -> @dom.Element {
+  let handle = create_element("span", "node-width-resize-handle")
+  handle.setAttribute("data-resize-node-index", node_index.to_string())
+  handle.setAttribute("aria-hidden", "true")
+  handle
 }
 
 ///|
@@ -4099,7 +4486,22 @@ fn render_node_card(
     node, has_children, editable, is_center,
   )
   let visual_attrs = render_node_visual_attrs(node, tone_index)
-  "<div class=\"\{class_name}\" data-level=\"\{node.level}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{visual_attrs}>\{title_html}\{note_html}\{action_html}</div>"
+  let width_style = render_node_width_style_attr(node.flat_index)
+  let resize_handle = if should_show_node_width_resize_handle(
+      node.flat_index,
+      is_selected_node(node.flat_index),
+    ) &&
+    !is_editing {
+    render_node_width_resize_handle(node.flat_index)
+  } else {
+    ""
+  }
+  "<div class=\"\{class_name}\" data-level=\"\{node.level}\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\"\{visual_attrs}\{width_style}>\{title_html}\{note_html}\{action_html}\{resize_handle}</div>"
+}
+
+///|
+fn render_node_width_resize_handle(node_index : Int) -> String {
+  "<span class=\"node-width-resize-handle\" data-resize-node-index=\"\{node_index}\" aria-hidden=\"true\"></span>"
 }
 
 ///|
@@ -4729,6 +5131,19 @@ fn slice_strings(
   let sliced = []
   for index in start..<end_ {
     sliced.push(values[index])
+  }
+  sliced
+}
+
+///|
+fn slice_history_snapshots(
+  values : Array[HistorySnapshot],
+  start : Int,
+  end_ : Int,
+) -> Array[HistorySnapshot] {
+  let sliced = []
+  for index in start..<end_ {
+    sliced.push(copy_history_snapshot(values[index]))
   }
   sliced
 }
