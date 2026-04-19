@@ -19,6 +19,8 @@ $sampleSourceDir = Join-Path $root "samples"
 $sampleOutputDir = Join-Path $webDir "samples"
 $source = Join-Path $root "_build/js/release/build/cmd/main/main.js"
 $output = Join-Path $webDir "main.bundle.js"
+$logoSource = Join-Path $root "logo.png"
+$logoOutput = Join-Path $webDir "logo.png"
 $apiName = "MoonMarkMind"
 
 moon build --target js --release
@@ -32,6 +34,10 @@ if (Test-Path $sampleSourceDir) {
     New-Item -ItemType Directory -Path $sampleOutputDir | Out-Null
   }
   Copy-Item (Join-Path $sampleSourceDir "*.md") $sampleOutputDir -Force
+}
+
+if (Test-Path $logoSource) {
+  Copy-Item $logoSource $logoOutput -Force
 }
 
 function Find-LocalExportSymbol {
