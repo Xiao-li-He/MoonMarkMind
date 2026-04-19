@@ -187,6 +187,9 @@ let resize_width_active : @ref.Ref[Bool] = @ref.Ref(false)
 let resize_width_snapshot : @ref.Ref[HistorySnapshot?] = @ref.Ref(None)
 
 ///|
+let resize_width_connector_frame : @ref.Ref[Int] = @ref.Ref(0)
+
+///|
 pub fn start_web_app() -> Unit {
   match get_element("#mindmap-export") {
     Some(export_root) => {
@@ -841,7 +844,7 @@ fn update_node_width_resize(event : @dom.MouseEvent) -> Bool {
   )
   set_node_width_override(resize_width_node_index.val, width)
   apply_node_width_to_dom(resize_width_node_index.val, width)
-  schedule_contour_layout()
+  schedule_node_width_resize_layout()
   true
 }
 
@@ -866,6 +869,7 @@ fn finish_node_width_resize(event : @dom.MouseEvent) -> Bool {
   reset_node_width_resize_state()
   mindmap_clear_body_user_select()
   clear_body_drag_style()
+  schedule_node_width_resize_layout()
   sync_selection_toolbar()
   true
 }
@@ -890,6 +894,32 @@ fn current_node_width_for_resize(node : @dom.Element) -> Int {
     ) {
     Some(width) => width
     None => normalize_node_width(element_rect(node).width.round().to_int())
+  }
+}
+
+///|
+fn schedule_node_width_resize_layout() -> Unit {
+  schedule_render_mindmap_connectors_soon()
+  schedule_contour_layout()
+}
+
+///|
+fn schedule_render_mindmap_connectors_soon() -> Unit {
+  let window = @dom.window()
+  if resize_width_connector_frame.val != 0 {
+    window.cancelAnimationFrame(resize_width_connector_frame.val)
+  }
+  resize_width_connector_frame.val = window.requestAnimationFrame(fn(_) {
+    resize_width_connector_frame.val = 0
+    render_mindmap_connectors()
+  })
+}
+
+///|
+fn cancel_node_width_resize_connector_frame() -> Unit {
+  if resize_width_connector_frame.val != 0 {
+    @dom.window().cancelAnimationFrame(resize_width_connector_frame.val)
+    resize_width_connector_frame.val = 0
   }
 }
 
@@ -988,6 +1018,7 @@ fn cancel_node_drag() -> Unit {
 ///|
 fn reset_node_drag_state() -> Unit {
   cancel_node_drag_auto_pan()
+  cancel_node_width_resize_connector_frame()
   drag_source_node.val = -1
   drag_start_x.val = 0
   drag_start_y.val = 0
