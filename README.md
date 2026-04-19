@@ -18,7 +18,7 @@ MoonMarkMind 是一个用 MoonBit 编写的 Markdown 脑图编辑器。它把 Ma
 - **导出能力**：支持导出 `.PNG`、`.SVG` 和 `.HTML`。
 - **本地示例**：内置示例文档，便于快速查看不同 Markdown 结构的渲染效果。
 
-## 使用方式
+## 快速开始
 
 ### 在线使用
 
@@ -41,7 +41,6 @@ powershell -ExecutionPolicy Bypass -File .\build-web.ps1
 - 使用 MoonBit 构建 JS 产物。
 - 将产物写入 `web/main.bundle.js`。
 - 将 `samples/*.md` 复制到 `web/samples/`。
-- 将根目录 `logo.png` 复制到 `web/logo.png`，作为网页图标资源。
 - 启动本地预览服务。
 
 默认预览地址：
@@ -50,35 +49,40 @@ powershell -ExecutionPolicy Bypass -File .\build-web.ps1
 http://127.0.0.1:8000/index.html
 ```
 
-如果只想构建、不启动服务：
+只构建、不启动服务：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\build-web.ps1 -NoServe
 ```
 
-如果只想构建并启动服务、但不自动打开浏览器：
+构建并启动服务、但不自动打开浏览器：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\build-web.ps1 -NoOpenBrowser
 ```
 
-## 常用命令
+## 验收入口
+
+建议验收时按以下顺序执行：
 
 ```powershell
 moon check
 moon test
 moon info
 moon fmt
+powershell -ExecutionPolicy Bypass -File .\build-web.ps1
 ```
 
-建议在提交前运行：
+关键功能路径：
 
-```powershell
-moon check
-moon test
-moon info
-moon fmt
-```
+- 打开在线或本地页面。
+- 在左侧编辑 Markdown，确认右侧脑图实时更新。
+- 切换布局、主题、详情级别。
+- 选择节点，执行新增子节点、新增同级节点、删除、上移、下移、缩进、提升、折叠、隐藏。
+- 使用内置示例加载不同 Markdown 文档。
+- 导出 PNG、SVG、HTML，并检查导出结果可打开。
+
+更完整的MoonMarkMind 规则说明见[SPEC.md](SPEC.md)，验收说明见 [ACCEPTANCE.md](ACCEPTANCE.md)。
 
 ## 项目结构
 
@@ -97,19 +101,9 @@ moon fmt
 - `web/index.html`：Web 入口页面。
 - `build-web.ps1`：构建并预览 Web 版本。
 
-## 导出说明
+## 工程质量
 
-MoonMarkMind 支持三种导出格式：
-
-- `.PNG`：适合用于图片分享、文档插图和演示材料。
-- `.SVG`：保留矢量图形，适合继续编辑或高清展示。
-- `.HTML`：导出可独立打开可交互的网页版本。
-
-PNG/SVG 导出会使用静态导出路径，尽量保留当前脑图的视觉布局、节点样式和树状图连接线锚点。HTML 导出会保留运行时能力，并在页面加载后重新计算连接线。
-
-## 开发说明
-
-本项目是 MoonBit 项目，源码按 MoonBit package 组织。修改代码后请优先运行：
+本项目按 MoonBit package 组织源码，根目录为核心库，`cmd/main` 暴露可运行入口。修改代码后请优先运行：
 
 ```powershell
 moon check
@@ -126,7 +120,7 @@ moon fmt
 如果修改 Web 入口、样式、导出逻辑或前端交互，请重新构建 Web bundle：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\build-web.ps1 -NoOpenBrowser
+powershell -ExecutionPolicy Bypass -File .\build-web.ps1
 ```
 
 ## 许可证

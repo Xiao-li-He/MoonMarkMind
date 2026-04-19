@@ -21,5 +21,5 @@ function add(a: number, b: number) {
 | 导出功能 |  | 进行中 |
 
 ## 图片
-![](https://markmap.js.org/favicon.png)
+![](https://xiao-li-he.github.io/MoonMarkMind/logo.png)
 

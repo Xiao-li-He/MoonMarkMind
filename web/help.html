@@ -90,8 +90,8 @@
       }
 
       .brand strong {
-        font-size: 22px;
-        line-height: 1.15;
+        font-size: 21px;
+        line-height: 1.3;
       }
 
       .brand span {
@@ -143,7 +143,7 @@
       }
 
       .intro p {
-        max-width: 760px;
+        
         margin: 0;
         color: var(--muted);
         font-size: 17px;
@@ -304,7 +304,7 @@
       <aside class="sidebar" aria-label="帮助导航">
         <div class="brand">
           <strong>MoonMarkMind 帮助文档</strong>
-          <span>Markdown 源文件和脑图视图的双向编辑工具</span>
+          <span>Markdown 文件和脑图视图的双向编辑工具</span>
         </div>
         <a class="back-link" href="index.html">返回编辑器</a>
 
@@ -327,16 +327,14 @@
       <div class="content">
         <header class="hero">
           <section class="intro">
-            <h1>用 Markdown 写结构，用脑图编辑结构。</h1>
-            <p>
-              MoonMarkMind 是一个基于 MoonBit 实现的 Markdown 脑图可视化编辑工具。它把左侧 Markdown 文档解析为右侧脑图，
-              也允许你直接在脑图里新增、编辑、删除、移动节点，并实时回写到 Markdown 源文档。
-            </p>
+            <h1>用 Markdown 写内容，用脑图展示</h1>
+            <p>MoonMarkMind 是一个基于 MoonBit 实现的 Markdown 脑图可视化编辑工具。</p>
+            <p>左侧 Markdown 文档解析为右侧脑图，可直接在脑图里新增、编辑、删除、移动节点，并实时回写到 Markdown 文档中。</p>
           </section>
         </header>
 
       <section class="section" id="workspace">
-        <h2>界面与文件</h2>
+        <h2>界面布局</h2>
         <p>主界面采用左侧 Markdown 编辑器、右侧脑图画布的双栏布局，中间分隔条可以拖动调整宽度。</p>
         <div class="grid">
           <article class="feature-card">
@@ -347,24 +345,24 @@
             <h3>文件操作</h3>
             <ul>
               <li>新建文档：清空当前内容并重置为新文件。</li>
-              <li>上传 Markdown：从本地选择 <code>.md</code> 或 <code>.markdown</code> 文件。</li>
+              <li>上传 Markdown：从本地选择 <code>.md</code> 文件。</li>
               <li>下载 Markdown：把当前内容保存为 Markdown 文件。</li>
             </ul>
           </article>
           <article class="feature-card">
-            <h3>示例数据</h3>
-            <p>顶部示例菜单可切换内置示例，用于快速查看标题、列表、正文块、代码、表格、图片和数学公式的效果。</p>
+            <h3>示例文档</h3>
+            <p>顶部示例菜单可切换内置示例，用于快速查看标题、列表、文本样式、数学公式、正文块、代码、表格、图片的效果。</p>
           </article>
           <article class="feature-card">
             <h3>双向同步</h3>
-            <p>修改左侧 Markdown 会重建右侧脑图；在脑图中进行结构编辑后，也会自动更新左侧 Markdown。</p>
+            <p>修改左侧 Markdown 会更新右侧脑图；在脑图中进行结构编辑后，也会自动更新左侧 Markdown。</p>
           </article>
         </div>
       </section>
 
       <section class="section" id="markdown">
-        <h2>Markdown 结构</h2>
-        <p>MoonMarkMind 以 Markdown 为真实源文件，脑图只是它的交互视图。结构解析遵循标题优先、列表补充的规则。</p>
+        <h2>Markdown 语法</h2>
+        <p>MoonMarkMind 以 Markdown 为真实源文件，脑图只是它的交互视图。语法结构解析遵循标题优先、列表补充的规则。</p>
         <div class="grid">
           <article class="feature-card">
             <h3>标题层级</h3>
@@ -376,7 +374,7 @@
           </article>
           <article class="feature-card">
             <h3>正文内容</h3>
-            <p>非结构文本会作为节点正文保存，包括段落、任务项、代码块、表格、图片、链接、行内代码和数学公式等。</p>
+            <p>非结构文本作为节点正文保存，包括段落、代码块、表格、图片、链接、行内代码和数学公式等。其中，链接、行内代码和数学公式也可作为标题或列表文本。</p>
           </article>
           <article class="feature-card">
             <h3>安全渲染</h3>
@@ -417,7 +415,7 @@
 
       <section class="section" id="editing">
         <h2>节点编辑</h2>
-        <p>选中节点后可以使用工具栏、快捷键或鼠标操作修改文档结构。</p>
+        <p>选中节点后可以使用工具栏、快捷键或鼠标操作修改节点宽度和文档结构。</p>
         <div class="grid">
           <article class="feature-card">
             <h3>新增节点</h3>
@@ -434,6 +432,14 @@
           <article class="feature-card">
             <h3>删除节点</h3>
             <p>删除会移除当前节点及其子树。固定根节点不能删除，避免整篇文档结构失去入口。</p>
+          </article>
+          <article class="feature-card">
+            <h3>上移/下移节点</h3>
+            <p>调整节点在兄弟节点之间的位置，支持同级重排，不可跨级移动；若想实现跨层级移动，参见拖拽移动。</p>
+          </article>
+          <article class="feature-card">
+            <h3>展开/收起节点</h3>
+            <p>点击节点圆点，可展开/收起其子树，并在圆点中显示子树节点个数。</p>
           </article>
           <article class="feature-card">
             <h3>撤销和重做</h3>
@@ -542,24 +548,19 @@
               <td>在当前选中节点下创建子节点。</td>
             </tr>
             <tr>
-              <td>提升节点</td>
-              <td><code>Shift</code> + <code>Tab</code></td>
-              <td>把当前节点向上提升一级。</td>
-            </tr>
-            <tr>
               <td>删除节点</td>
               <td><code>Delete</code> 或 <code>Backspace</code></td>
               <td>删除当前节点及其子树，固定根节点除外。</td>
             </tr>
             <tr>
+              <td>移动节点</td>
+              <td><code>Ctrl</code> + <code>↑</code> / <code>Ctrl</code> + <code>↓</code></td>
+              <td>在同级节点中向上或向下移动节点。</td>
+            </tr>
+            <tr>
               <td>折叠或展开</td>
               <td><code>Space</code></td>
               <td>切换当前节点子树的显示状态。</td>
-            </tr>
-            <tr>
-              <td>移动节点</td>
-              <td><code>Ctrl</code> + <code>↑</code> / <code>Ctrl</code> + <code>↓</code></td>
-              <td>按当前结构规则向上或向下移动节点。</td>
             </tr>
             <tr>
               <td>键盘选择</td>
@@ -570,6 +571,26 @@
               <td>撤销和重做</td>
               <td><code>Ctrl</code> + <code>Z</code> / <code>Ctrl</code> + <code>Y</code></td>
               <td>恢复或重放最近的编辑操作。</td>
+            </tr>
+            <tr>
+              <td>编辑节点</td>
+              <td><code>双击节点</code></td>
+              <td>节点进入可编辑状态。</td>
+            </tr>
+            <tr>
+              <td>居中视图</td>
+              <td><code>双击画布空白处</code></td>
+              <td>根节点回到视图最佳位置。</td>
+            </tr>
+            <tr>
+              <td>适配视图</td>
+              <td><code>单击适配视图按钮</code></td>
+              <td>画布中展示整个脑图，最小缩放尺寸为40%，最佳缩放尺寸为100%。</td>
+            </tr>
+            <tr>
+              <td>最佳视图</td>
+              <td><code>双击适配视图按钮</code></td>
+              <td>快速将画布缩放尺寸为100%。</td>
             </tr>
           </tbody>
         </table>
