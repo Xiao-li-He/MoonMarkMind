@@ -29,6 +29,7 @@ fn reset_frontend_test_state() -> Unit {
   app_state.sample_variant = "custom"
   app_state.node_width_overrides = []
   suppress_next_render_mindmap_reveal.val = false
+  clear_created_body_block()
   reset_node_drag_state()
   load_markdown(frontend_test_markdown(), true)
 }
@@ -54,6 +55,7 @@ fn reset_navigation_test_state() -> Unit {
   app_state.sample_variant = "custom"
   app_state.node_width_overrides = []
   suppress_next_render_mindmap_reveal.val = false
+  clear_created_body_block()
   reset_node_drag_state()
   load_markdown(navigation_test_markdown(), true)
 }
@@ -201,7 +203,7 @@ test "markdown inline renderer renders latex over fractions" {
 ///|
 test "markdown inline renderer exposes latex math subtree classes" {
   let html0 = render_markdown_inline_html(
-    "公式 $x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}$",
+    "鍏紡 $x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}$",
   )
   let _ = html0
   let html = render_markdown_inline_html(
@@ -1664,6 +1666,42 @@ test "insert body template appends a markdown image block" {
 }
 
 ///|
+test "cancel unchanged inserted image removes the image block" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+  let before = app_state.markdown
+
+  insert_node_body_template("image")
+  cancel_body_block_editor()
+
+  assert_eq(app_state.markdown, before)
+  match find_node(app_state.root, 1) {
+    Some(node) => assert_eq(node.body.length(), 0)
+    None => fail("missing alpha node")
+  }
+  assert_eq(app_state.editing_body_node, -2)
+}
+
+///|
+test "cancel existing image edit keeps the image block" {
+  reset_frontend_test_state()
+  load_markdown("# Root\n## Alpha\n![old](old.png)\n## Beta", true)
+  select_single_node(1, false)
+
+  begin_body_block_edit_node(1, 0)
+  cancel_body_block_editor()
+
+  assert_eq(app_state.markdown, "# Root\n## Alpha\n![old](old.png)\n## Beta")
+  match find_node(app_state.root, 1) {
+    Some(node) => {
+      assert_eq(node.body.length(), 1)
+      assert_eq(body_block_kind(node.body[0]), "image")
+    }
+    None => fail("missing alpha node")
+  }
+}
+
+///|
 test "body block image edit saves markdown image syntax" {
   reset_frontend_test_state()
   load_markdown("# Root\n## Alpha\n![old](old.png)\n## Beta", true)
@@ -1679,6 +1717,22 @@ test "body block image edit saves markdown image syntax" {
   assert_eq(body_block_kind("![new alt](new.png)"), "image")
   handle_undo()
   assert_eq(app_state.markdown, "# Root\n## Alpha\n![old](old.png)\n## Beta")
+}
+
+///|
+test "saved inserted image is not removed by later cancel" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+
+  insert_node_body_template("image")
+  save_body_block_editor(1, 0, "![new alt](new.png)")
+  begin_body_block_edit_node(1, 0)
+  cancel_body_block_editor()
+
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Alpha\n![new alt](new.png)\n## Beta",
+  )
 }
 
 ///|
@@ -1723,9 +1777,66 @@ test "insert note appends note block and records undo" {
 }
 
 ///|
-test "insert note edits existing body instead of appending" {
+test "insert note appends after image when no note block exists" {
   reset_frontend_test_state()
   load_markdown("# Root\n## Alpha\n![old](old.png)\n## Beta", true)
+  select_single_node(1, false)
+
+  handle_insert_note()
+
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Alpha\n![old](old.png)\n\n笔记：\n## Beta",
+  )
+  match find_node(app_state.root, 1) {
+    Some(node) => {
+      assert_eq(node.body.length(), 2)
+      assert_eq(body_block_kind(node.body[0]), "image")
+      assert_eq(body_block_kind(node.body[1]), "note")
+    }
+    None => fail("missing alpha node")
+  }
+  assert_eq(app_state.editing_body_node, -2)
+}
+
+///|
+test "insert note after code appends note instead of editing code" {
+  reset_frontend_test_state()
+  load_markdown("# Root\n## Alpha\n```ts\nconst value = 1\n```\n## Beta", true)
+  select_single_node(1, false)
+
+  handle_insert_note()
+
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Alpha\n```ts\nconst value = 1\n```\n\n笔记：\n## Beta",
+  )
+  assert_eq(app_state.editing_body_node, -2)
+}
+
+///|
+test "insert note after table appends note instead of editing table" {
+  reset_frontend_test_state()
+  load_markdown(
+    "# Root\n## Alpha\n| A | B |\n|---|---|\n| 1 | 2 |\n## Beta", true,
+  )
+  select_single_node(1, false)
+
+  handle_insert_note()
+
+  assert_eq(
+    app_state.markdown,
+    "# Root\n## Alpha\n| A | B |\n|---|---|\n| 1 | 2 |\n\n笔记：\n## Beta",
+  )
+  assert_eq(app_state.editing_body_node, -2)
+}
+
+///|
+test "insert note targets existing note before code block" {
+  reset_frontend_test_state()
+  load_markdown(
+    "# Root\n## Alpha\nAlpha note\n\n```ts\nconst value = 1\n```\n## Beta", true,
+  )
   select_single_node(1, false)
   let before = app_state.markdown
   let undo_count = app_state.undo_stack.length()
@@ -1736,13 +1847,12 @@ test "insert note edits existing body instead of appending" {
   assert_eq(app_state.undo_stack.length(), undo_count)
   match find_node(app_state.root, 1) {
     Some(node) => {
-      assert_eq(node.body.length(), 1)
-      assert_eq(body_block_kind(node.body[0]), "image")
+      assert_eq(node.body.length(), 2)
+      assert_eq(body_block_kind(node.body[0]), "note")
+      assert_eq(body_block_kind(node.body[1]), "code")
     }
     None => fail("missing alpha node")
   }
-  assert_eq(app_state.editing_body_node, 1)
-  assert_eq(app_state.editing_body_block, 0)
 }
 
 ///|

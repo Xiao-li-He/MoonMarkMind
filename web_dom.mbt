@@ -3090,6 +3090,7 @@ fn build_mindmap_interactive_export_dom() -> @dom.Element {
   style_of(mindmap).set_property("height", "auto")
   style_of(mindmap).set_property("overflow", "visible")
   append_child(mindmap, build_mindmap_dom())
+  remove_node_width_resize_handles(mindmap)
   apply_mindmap_export_layout(mindmap)
   append_child(root, mindmap)
   app_state.collapsed = saved_collapsed
@@ -3703,6 +3704,7 @@ fn build_mindmap_export_svg_element() -> @dom.Element? {
       normalize_static_export_note_buttons(mindmap)
       render_mindmap_connectors()
       let clone = @dom.Element::cast_from_node(mindmap.cloneNode(true))
+      remove_node_width_resize_handles(clone)
       normalize_export_connector_styles(clone)
       normalize_static_export_selection_styles(clone)
       let bounds = mindmap_export_bounds(mindmap)
@@ -3748,6 +3750,13 @@ fn build_mindmap_export_svg_element() -> @dom.Element? {
       Some(svg)
     }
     None => None
+  }
+}
+
+///|
+fn remove_node_width_resize_handles(root : @dom.Element) -> Unit {
+  for handle in root.querySelectorAll(".node-width-resize-handle") {
+    handle.remove()
   }
 }
 

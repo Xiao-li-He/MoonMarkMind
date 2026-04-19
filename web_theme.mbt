@@ -3312,7 +3312,7 @@ fn style_node_width_resize_handle(element : @dom.Element) -> Unit {
   set_style(element, "right", "2px")
   set_style(element, "top", "4px")
   set_style(element, "bottom", "4px")
-  set_style(element, "width", "18px")
+  set_style(element, "width", "9px")
   set_style(element, "min-height", "24px")
   set_style(element, "display", "block")
   set_style(element, "transform", "none")

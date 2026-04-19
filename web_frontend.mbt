@@ -127,6 +127,15 @@ let redo_undo_expand_stack : @ref.Ref[Array[Int]] = @ref.Ref([])
 let editor_created_node : @ref.Ref[Int] = @ref.Ref(-2)
 
 ///|
+let body_block_created_node : @ref.Ref[Int] = @ref.Ref(-2)
+
+///|
+let body_block_created_index : @ref.Ref[Int] = @ref.Ref(-1)
+
+///|
+let body_block_created_template : @ref.Ref[String] = @ref.Ref("")
+
+///|
 let suppress_next_render_mindmap_reveal : @ref.Ref[Bool] = @ref.Ref(false)
 
 ///|
@@ -1882,13 +1891,138 @@ fn handle_insert_note() -> Unit {
   }
   match find_node(app_state.root, app_state.selected_node) {
     Some(node) =>
-      if node.body.length() > 0 {
-        begin_body_block_edit_node(app_state.selected_node, 0)
-        return
+      match first_note_body_block_index(node) {
+        Some(block_index) => {
+          begin_body_block_edit_node(app_state.selected_node, block_index)
+          return
+        }
+        None => ()
       }
     None => return
   }
   insert_node_body_template("note")
+}
+
+///|
+fn first_note_body_block_index(node : OutlineNode) -> Int? {
+  for index in 0..<node.body.length() {
+    if body_block_kind(node.body[index]) == "note" {
+      return Some(index)
+    }
+  }
+  None
+}
+
+///|
+fn mark_created_body_block(
+  node_index : Int,
+  block_index : Int,
+  template : String,
+) -> Unit {
+  body_block_created_node.val = node_index
+  body_block_created_index.val = block_index
+  body_block_created_template.val = template
+}
+
+///|
+fn clear_created_body_block() -> Unit {
+  body_block_created_node.val = -2
+  body_block_created_index.val = -1
+  body_block_created_template.val = ""
+}
+
+///|
+fn is_created_body_block(node_index : Int, block_index : Int) -> Bool {
+  body_block_created_node.val == node_index &&
+  body_block_created_index.val == block_index
+}
+
+///|
+fn created_body_block_still_template(
+  node_index : Int,
+  block_index : Int,
+) -> Bool {
+  if !is_created_body_block(node_index, block_index) {
+    return false
+  }
+  match find_node(app_state.root, node_index) {
+    Some(node) =>
+      block_index >= 0 &&
+      block_index < node.body.length() &&
+      node.body[block_index] == body_block_created_template.val
+    None => false
+  }
+}
+
+///|
+fn cancel_created_body_block_if_unchanged(
+  node_index : Int,
+  block_index : Int,
+) -> Bool {
+  if !created_body_block_still_template(node_index, block_index) {
+    return false
+  }
+  let next_markdown = delete_node_body_block(
+    app_state.markdown,
+    node_index,
+    block_index,
+  )
+  clear_created_body_block()
+  clear_body_block_editing_session()
+  if next_markdown != app_state.markdown {
+    apply_markdown_change(next_markdown, false)
+    select_single_node(node_index, false)
+  } else {
+    render_ui()
+  }
+  true
+}
+
+///|
+fn should_track_created_body_block(kind : String) -> Bool {
+  kind == "image"
+}
+
+///|
+fn edit_inserted_body_block_after_insert(
+  kind : String,
+  node_index : Int,
+  block_index : Int,
+  template : String,
+) -> Unit {
+  if should_track_created_body_block(kind) {
+    mark_created_body_block(node_index, block_index, template)
+  } else {
+    clear_created_body_block()
+  }
+  if kind == "note" {
+    select_single_node(node_index, false)
+    clear_body_block_editing_session()
+    sync_selection_ui()
+    match find_node(app_state.root, node_index) {
+      Some(node) =>
+        match node_body_block_line_range(node, block_index) {
+          Some((start_line, end_line)) =>
+            if app_state.started {
+              focus_input_line_range(start_line, end_line)
+            }
+          None => ()
+        }
+      None => ()
+    }
+  } else {
+    begin_body_block_edit_node(node_index, block_index)
+  }
+}
+
+///|
+fn clear_created_body_block_if_matches(
+  node_index : Int,
+  block_index : Int,
+) -> Unit {
+  if is_created_body_block(node_index, block_index) {
+    clear_created_body_block()
+  }
 }
 
 ///|
@@ -2153,6 +2287,11 @@ fn begin_body_block_edit_node(node_index : Int, block_index : Int) -> Unit {
 
 ///|
 fn cancel_body_block_editor() -> Unit {
+  let node_index = app_state.editing_body_node
+  let block_index = app_state.editing_body_block
+  if cancel_created_body_block_if_unchanged(node_index, block_index) {
+    return
+  }
   clear_body_block_editing_session()
   render_ui()
 }
@@ -2173,6 +2312,7 @@ fn save_body_block_editor(
     block_index,
     block_text,
   )
+  clear_created_body_block_if_matches(node_index, block_index)
   clear_body_block_editing_session()
   if next_markdown != app_state.markdown {
     apply_markdown_change(next_markdown, false)
@@ -2192,6 +2332,7 @@ fn delete_body_block(node_index : Int, block_index : Int) -> Unit {
     node_index,
     block_index,
   )
+  clear_created_body_block_if_matches(node_index, block_index)
   clear_body_block_editing_session()
   if next_markdown != app_state.markdown {
     apply_markdown_change(next_markdown, false)
@@ -3322,7 +3463,12 @@ fn insert_node_body_template(kind : String) -> Unit {
     node_index,
   )
   apply_markdown_change(render_markdown_nodes(updated), false)
-  begin_body_block_edit_node(node_index, inserted_block_index)
+  edit_inserted_body_block_after_insert(
+    kind,
+    node_index,
+    inserted_block_index,
+    template_body[0],
+  )
 }
 
 ///|
