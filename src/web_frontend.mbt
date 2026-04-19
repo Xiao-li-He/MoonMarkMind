@@ -440,10 +440,11 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
     }
     "toggle" => {
       event.stopPropagation()
-      toggle_collapsed(node_index)
-      sync_detail_customized()
-      focus_mindmap()
-      render_ui()
+      handle_toggle_collapsed(
+        node_index,
+        preserve_screen_position=true,
+        restore_focus=true,
+      )
     }
     "toggle-hide" => {
       event.stopPropagation()
@@ -517,11 +518,12 @@ fn on_toolbar_action(action : String) -> Unit {
     "move-down" => handle_move_selected(true)
     "indent-node" => handle_relevel_selected(true)
     "promote-node" => handle_relevel_selected(false)
-    "toggle-node" => {
-      toggle_collapsed(app_state.selected_node)
-      sync_detail_customized()
-      render_ui()
-    }
+    "toggle-node" =>
+      handle_toggle_collapsed(
+        app_state.selected_node,
+        preserve_screen_position=true,
+        restore_focus=false,
+      )
     "insert-note" => handle_insert_note()
     "insert-image" => insert_node_body_template("image")
     "insert-code" => insert_node_body_template("code")
@@ -1587,6 +1589,31 @@ fn handle_add_sibling(node_index : Int, place_after : Bool) -> Unit {
     return
   }
   render_ui()
+}
+
+///|
+fn handle_toggle_collapsed(
+  node_index : Int,
+  preserve_screen_position~ : Bool,
+  restore_focus~ : Bool,
+) -> Unit {
+  // Collapse changes subtree size, so keep the clicked card visually anchored
+  // by compensating with the mind-map pan after the DOM is rebuilt.
+  let node_origin = if preserve_screen_position {
+    capture_mindmap_node_origin(node_index)
+  } else {
+    None
+  }
+  suppress_next_render_mindmap_reveal.val = preserve_screen_position
+  toggle_collapsed(node_index)
+  sync_detail_customized()
+  if restore_focus {
+    focus_mindmap()
+  }
+  render_ui()
+  if preserve_screen_position {
+    preserve_mindmap_node_origin_now(node_index, node_origin)
+  }
 }
 
 ///|
