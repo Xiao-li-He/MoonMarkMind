@@ -1301,7 +1301,7 @@ fn parse_double_or_default(raw : String, fallback : Double) -> Double {
   if raw.length() == 0 {
     fallback
   } else {
-    @strconv.parse_double(raw.view()) catch {
+    @string.parse_double(raw.view()) catch {
       _ => fallback
     }
   }
@@ -1554,8 +1554,8 @@ fn input_line_metrics(input : @dom.HTMLTextAreaElement) -> InputLineMetrics {
   }
   let heights = parse_int_list(parts[0])
   let tops = parse_int_list(parts[1])
-  let line_height = parse_int_or_default(parts[2].to_string(), 28)
-  let padding_top = parse_int_or_default(parts[3].to_string(), 18)
+  let line_height = parse_int_or_default(parts[2].to_owned(), 28)
+  let padding_top = parse_int_or_default(parts[3].to_owned(), 18)
   InputLineMetrics::{
     heights: if heights.length() > 0 {
       heights
@@ -1600,7 +1600,7 @@ fn parse_int_list(raw : StringView) -> Array[Int] {
     if trimmed.is_empty() {
       continue
     }
-    let parsed = @strconv.parse_int(trimmed) catch { _ => -1 }
+    let parsed = @string.parse_int(trimmed) catch { _ => -1 }
     if parsed >= 0 {
       values.push(parsed)
     }
@@ -1653,7 +1653,7 @@ fn measure_input_line_metrics_raw(input : @dom.HTMLTextAreaElement) -> String {
   let vertical_padding = padding_top + padding_bottom
   let mut current_top = padding_top
   for line in lines {
-    let raw_line = line.to_string()
+    let raw_line = line.to_owned()
     mirror.value = if raw_line.length() > 0 { raw_line } else { " " }
     let total_height = text_area_scroll_height(mirror)
     let height = if total_height > vertical_padding {
@@ -1948,7 +1948,7 @@ fn parse_selection_indices(serialized : String) -> Array[Int] {
     if trimmed.is_empty() {
       continue
     }
-    let parsed = @strconv.parse_int(trimmed) catch { _ => -1 }
+    let parsed = @string.parse_int(trimmed) catch { _ => -1 }
     if parsed >= 0 && !values.contains(parsed) {
       values.push(parsed)
     }
@@ -2167,7 +2167,7 @@ fn toggle_class(
   let tokens : Array[String] = element
     .className()
     .split(" ")
-    .map(token => token.to_string())
+    .map(token => token.to_owned())
     .filter(token => token.length() > 0 && token != class_name)
     .to_array()
   let next = if enabled {
@@ -2190,7 +2190,7 @@ fn has_class_name(element : @dom.Element, class_name : String) -> Bool {
     .getAttribute("class")
     .unwrap_or("")
     .split(" ")
-    .map(token => token.to_string())
+    .map(token => token.to_owned())
     .filter(token => token.length() > 0)
     .to_array()
   tokens.contains(class_name)
@@ -2683,7 +2683,7 @@ fn parse_css_pixels(
   name : String,
   fallback : Double,
 ) -> Double {
-  let raw = style.get_property_value(name).trim().to_string()
+  let raw = style.get_property_value(name).trim().to_owned()
   let value = parse_float(raw.replace(old="px", new=""))
   if value != value {
     fallback
@@ -3200,7 +3200,7 @@ fn bundle_directory_path(pathname : String) -> String {
   if slash < 0 {
     "/"
   } else {
-    pathname[0:slash + 1].to_string()
+    pathname[0:slash + 1].to_owned()
   }
 }
 
@@ -4355,7 +4355,7 @@ async fn inline_png_export_images(svg_element : @dom.Element) -> Unit {
 
 ///|
 fn should_inline_png_export_image_src(src : String) -> Bool {
-  let trimmed = src.trim().to_string()
+  let trimmed = src.trim().to_owned()
   if trimmed.length() == 0 {
     return false
   }
@@ -4424,22 +4424,22 @@ fn close_svg_void_elements(source : String) -> String {
     match find_svg_void_tag_start(source, cursor) {
       Some(start) => {
         if start > cursor {
-          parts.push(source[cursor:start].to_string())
+          parts.push(source[cursor:start].to_owned())
         }
         let end_ = find_tag_end(source, start)
         if end_ < 0 {
-          parts.push(source[start:].to_string())
+          parts.push(source[start:].to_owned())
           return parts.join("")
         }
         if end_ > start && source[end_ - 1] == '/' {
-          parts.push(source[start:end_ + 1].to_string())
+          parts.push(source[start:end_ + 1].to_owned())
         } else {
-          parts.push(source[start:end_].to_string() + " />")
+          parts.push(source[start:end_].to_owned() + " />")
         }
         cursor = end_ + 1
       }
       None => {
-        parts.push(source[cursor:].to_string())
+        parts.push(source[cursor:].to_owned())
         cursor = source.length()
       }
     }
@@ -4475,7 +4475,7 @@ fn match_svg_void_tag(source : String, start : Int) -> String? {
     let tag_start = start + 1
     let tag_end = tag_start + tag.length()
     if tag_end <= source.length() &&
-      source[tag_start:tag_end].to_string() == tag &&
+      source[tag_start:tag_end].to_owned() == tag &&
       (tag_end == source.length() || is_tag_name_boundary(source[tag_end])) {
       return Some(tag)
     }
@@ -4567,7 +4567,7 @@ fn event_target_is_blank_stage_area(target : @dom.Element) -> Bool {
 fn event_node_index_from_target(target : @dom.Element) -> Int {
   match target.closest(".node") {
     Some(node) =>
-      @strconv.parse_int(node.getAttribute("data-node-index").unwrap_or("-1")) catch {
+      @string.parse_int(node.getAttribute("data-node-index").unwrap_or("-1")) catch {
         _ => -1
       }
     None => -1
@@ -4588,7 +4588,7 @@ fn event_keyboard_node_index(event : @dom.KeyboardEvent) -> Int {
 fn event_editor_index_from_target(target : @dom.Element) -> Int {
   match target.closest("[data-editor-for]") {
     Some(node) =>
-      @strconv.parse_int(node.getAttribute("data-editor-for").unwrap_or("-1")) catch {
+      @string.parse_int(node.getAttribute("data-editor-for").unwrap_or("-1")) catch {
         _ => -1
       }
     None => -1
@@ -4599,7 +4599,7 @@ fn event_editor_index_from_target(target : @dom.Element) -> Int {
 fn event_note_editor_index_from_target(target : @dom.Element) -> Int {
   match target.closest("[data-note-editor-for]") {
     Some(node) =>
-      @strconv.parse_int(
+      @string.parse_int(
         node.getAttribute("data-note-editor-for").unwrap_or("-1"),
       ) catch {
         _ => -1
@@ -4612,7 +4612,7 @@ fn event_note_editor_index_from_target(target : @dom.Element) -> Int {
 fn event_body_editor_index_from_target(target : @dom.Element) -> Int {
   match target.closest("[data-body-editor-for]") {
     Some(node) =>
-      @strconv.parse_int(
+      @string.parse_int(
         node.getAttribute("data-body-editor-for").unwrap_or("-1"),
       ) catch {
         _ => -1
@@ -4628,7 +4628,7 @@ fn event_body_block_index_from_target(target : @dom.Element) -> Int {
       let value = block
         .getAttribute("data-body-block-index")
         .unwrap_or(block.getAttribute("data-body-editor-block").unwrap_or("-1"))
-      @strconv.parse_int(value) catch {
+      @string.parse_int(value) catch {
         _ => -1
       }
     }
@@ -4674,7 +4674,7 @@ fn event_shift_key(event : @dom.MouseEvent) -> Bool {
 
 ///|
 fn event_click_count(event : @dom.MouseEvent) -> Int {
-  @strconv.parse_int(event.as_any()._get("detail").to_string()) catch {
+  @string.parse_int(event.as_any()._get("detail").to_string()) catch {
     _ => 1
   }
 }

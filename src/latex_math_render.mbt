@@ -20,14 +20,14 @@ fn render_latex_math_inline_html(source : String) -> SafeHtml {
   // Normalize before parsing so copied formulas with line breaks still render
   // as compact inline math.
   let normalized = normalize_latex_inline_source(source)
-  let nodes = parse_latex_math_nodes(normalized.trim().to_string())
+  let nodes = parse_latex_math_nodes(normalized.trim().to_owned())
   SafeHtml::{ value: render_latex_math_nodes(nodes, inline=true) }
 }
 
 ///|
 fn render_latex_math_block_html(source : String) -> SafeHtml {
   let normalized = normalize_latex_block_source(source)
-  let nodes = parse_latex_math_nodes(normalized.trim().to_string())
+  let nodes = parse_latex_math_nodes(normalized.trim().to_owned())
   SafeHtml::{ value: render_latex_math_block_nodes(nodes) }
 }
 
@@ -91,7 +91,7 @@ fn parse_latex_until(
           cursor = after_script
         }
         None => {
-          nodes.push(MathText(source[cursor:cursor + 1].to_string()))
+          nodes.push(MathText(source[cursor:cursor + 1].to_owned()))
           cursor += 1
         }
       }
@@ -203,7 +203,7 @@ fn read_latex_script_atom(
       }
     }
   } else {
-    Some((MathText(source[cursor:cursor + 1].to_string()), cursor + 1))
+    Some((MathText(source[cursor:cursor + 1].to_owned()), cursor + 1))
   }
 }
 
@@ -271,7 +271,7 @@ fn read_latex_delimiter(source : String, start : Int) -> (LatexMathNode, Int)? {
       None => Some((MathText("\\\{command}"), after_command))
     }
   } else {
-    Some((MathText(source[cursor:cursor + 1].to_string()), cursor + 1))
+    Some((MathText(source[cursor:cursor + 1].to_owned()), cursor + 1))
   }
 }
 
@@ -289,7 +289,7 @@ fn read_latex_group_source(source : String, start : Int) -> (String, Int)? {
     } else if source[index] == '}' {
       depth -= 1
       if depth == 0 {
-        return Some((source[cursor + 1:index].to_string(), index + 1))
+        return Some((source[cursor + 1:index].to_owned(), index + 1))
       }
     }
     index += 1
@@ -311,7 +311,7 @@ fn read_latex_optional_bracket(source : String, start : Int) -> (String?, Int) {
     } else if source[index] == ']' {
       depth -= 1
       if depth == 0 {
-        return (Some(source[cursor + 1:index].to_string()), index + 1)
+        return (Some(source[cursor + 1:index].to_owned()), index + 1)
       }
     }
     index += 1
@@ -326,9 +326,9 @@ fn read_latex_command_name(source : String, start : Int) -> (String, Int) {
     cursor += 1
   }
   if cursor == start && cursor < source.length() {
-    return (source[cursor:cursor + 1].to_string(), cursor + 1)
+    return (source[cursor:cursor + 1].to_owned(), cursor + 1)
   }
-  (source[start:cursor].to_string(), cursor)
+  (source[start:cursor].to_owned(), cursor)
 }
 
 ///|
@@ -344,7 +344,7 @@ fn read_latex_plain_text(source : String, start : Int) -> (String, Int) {
         source[cursor] != '\n' {
     cursor += 1
   }
-  (source[start:cursor].to_string(), cursor)
+  (source[start:cursor].to_owned(), cursor)
 }
 
 ///|

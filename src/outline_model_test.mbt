@@ -1,8 +1,18 @@
 ///|
 test "parse headings from markdown" {
-  inspect(
+  debug_inspect(
     parse_headings(sample_markdown()),
-    content="[(1, \"MoonMarkMind Demo\"), (2, \"Parser\"), (3, \"Heading extraction\"), (3, \"Level mapping\"), (2, \"Renderer\"), (3, \"Tree preview\"), (3, \"Round-trip preview\")]",
+    content=(
+      #|[
+      #|  (1, "MoonMarkMind Demo"),
+      #|  (2, "Parser"),
+      #|  (3, "Heading extraction"),
+      #|  (3, "Level mapping"),
+      #|  (2, "Renderer"),
+      #|  (3, "Tree preview"),
+      #|  (3, "Round-trip preview"),
+      #|]
+    ),
   )
 }
 

@@ -2993,7 +2993,7 @@ fn normalize_document_name(filename : String) -> String {
   if trimmed.length() == 0 {
     return "notes.md"
   }
-  trimmed.to_string()
+  trimmed.to_owned()
 }
 
 ///|
@@ -4359,7 +4359,7 @@ fn editor_text_input_value(editor : @dom.Element, field : String) -> String {
 
 ///|
 fn body_block_kind(block : String) -> String {
-  let trimmed = block.trim().to_string()
+  let trimmed = block.trim().to_owned()
   if parse_image_body_block(trimmed).2 {
     "image"
   } else if parse_code_body_block(trimmed).2 {
@@ -4373,16 +4373,16 @@ fn body_block_kind(block : String) -> String {
 
 ///|
 fn parse_code_body_block(block : String) -> (String, String, Bool) {
-  let trimmed = block.trim().to_string()
+  let trimmed = block.trim().to_owned()
   if !trimmed.has_prefix("```") {
     return ("", block, false)
   }
-  let lines = trimmed.split("\n").map(line => line.to_string()).to_array()
+  let lines = trimmed.split("\n").map(line => line.to_owned()).to_array()
   if lines.length() < 2 ||
-    !lines[lines.length() - 1].trim().to_string().has_prefix("```") {
+    !lines[lines.length() - 1].trim().to_owned().has_prefix("```") {
     return ("", block, false)
   }
-  let lang = lines[0][3:].to_string().trim().to_string()
+  let lang = lines[0][3:].to_owned().trim().to_owned()
   let code = []
   for index in 1..<(lines.length() - 1) {
     code.push(lines[index])
@@ -4392,18 +4392,18 @@ fn parse_code_body_block(block : String) -> (String, String, Bool) {
 
 ///|
 fn parse_image_body_block(block : String) -> (String, String, Bool) {
-  let trimmed = block.trim().to_string()
+  let trimmed = block.trim().to_owned()
   if !trimmed.has_prefix("![") || !trimmed.has_suffix(")") {
     return ("", "", false)
   }
   match find_markdown_from(trimmed, "](", 2) {
     Some(close_alt) => {
-      let alt = trimmed[2:close_alt].to_string()
+      let alt = trimmed[2:close_alt].to_owned()
       let url_start = close_alt + 2
       if url_start > trimmed.length() - 1 {
         ("", "", false)
       } else {
-        (alt, trimmed[url_start:trimmed.length() - 1].to_string(), true)
+        (alt, trimmed[url_start:trimmed.length() - 1].to_owned(), true)
       }
     }
     None => ("", "", false)

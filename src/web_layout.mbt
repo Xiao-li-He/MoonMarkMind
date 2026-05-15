@@ -49,8 +49,8 @@ fn read_workspace_split() -> Int? {
       if raw.length() == 0 {
         None
       } else {
-        let cleaned = raw.replace(old="%", new="").trim().to_string()
-        Some(@strconv.parse_int(cleaned) catch { _ => -1 })
+        let cleaned = raw.replace(old="%", new="").trim().to_owned()
+        Some(@string.parse_int(cleaned) catch { _ => -1 })
       }
     }
     None => None

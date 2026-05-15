@@ -69,7 +69,7 @@ fn update_node_body(
     return markdown
   }
   let body_lines = normalize_note_editor_body_lines(
-    body_text.split("\n").map(fn(line) { line.to_string() }).to_array(),
+    body_text.split("\n").map(fn(line) { line.to_owned() }).to_array(),
   )
   let updated = []
   for i in 0..<nodes.length() {
@@ -107,7 +107,7 @@ fn update_node_body_block(
   if block_index < 0 || block_index >= node.body.length() {
     return markdown
   }
-  let next_block = block_text.trim().to_string()
+  let next_block = block_text.trim().to_owned()
   if next_block.length() == 0 {
     return delete_node_body_block(markdown, flat_index, block_index)
   }
@@ -221,7 +221,7 @@ fn normalize_note_editor_body_lines(lines : Array[String]) -> Array[String] {
 
 ///|
 fn is_markdown_code_fence_line(line : String) -> Bool {
-  line.trim().to_string().has_prefix("```")
+  line.trim().to_owned().has_prefix("```")
 }
 
 ///|
@@ -233,7 +233,7 @@ fn starts_markdown_table_block(lines : Array[String], index : Int) -> Bool {
 
 ///|
 fn is_note_list_body_line(line : String) -> Bool {
-  let trimmed = line.trim_start().to_string()
+  let trimmed = line.trim_start().to_owned()
   parse_list_line(trimmed[:]) is Some(_)
 }
 
@@ -772,7 +772,7 @@ fn append_rendered_body_lines(
       line in indent_markdown_block(node.body[index], prefix)
       .split("\n")
       .to_array() {
-      lines.push(line.to_string())
+      lines.push(line.to_owned())
     }
   }
 }

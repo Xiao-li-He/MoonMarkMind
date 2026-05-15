@@ -119,7 +119,7 @@ test "export runtime script is inline safe" {
 test "selection index csv roundtrips collapsed note export state" {
   let serialized = ints_to_csv([1, 3, 8])
   assert_eq(serialized, "1,3,8")
-  assert_eq(parse_selection_indices(serialized), [1, 3, 8])
+  assert_true(parse_selection_indices(serialized) == [1, 3, 8])
 }
 
 ///|
@@ -177,9 +177,8 @@ test "static svg export uses full canvas foreignObject to avoid clipping nodes" 
     mindmap_height: 240,
   }
 
-  assert_eq(
-    mindmap_export_foreign_object_attrs(bounds),
-    ("0", "0", "640", "480"),
+  assert_true(
+    mindmap_export_foreign_object_attrs(bounds) == ("0", "0", "640", "480"),
   )
 }
 
@@ -199,15 +198,15 @@ test "static svg export positions cloned mindmap inside full canvas" {
     mindmap_height: 240,
   }
 
-  assert_eq(
-    mindmap_export_mindmap_frame_attrs(bounds),
+  assert_true(
+    mindmap_export_mindmap_frame_attrs(bounds) ==
     ("48.5", "52.25", "320", "240"),
   )
 }
 
 ///|
 test "static svg export positions connector layer at exported stage origin" {
-  assert_eq(
+  assert_true(
     mindmap_export_connector_layer_attrs(
       export_left=100.0,
       export_top=200.0,
@@ -215,7 +214,7 @@ test "static svg export positions connector layer at exported stage origin" {
       stage_top=240.0,
       stage_width=280,
       stage_height=180,
-    ),
+    ) ==
     ("30", "40", "280", "180"),
   )
 }

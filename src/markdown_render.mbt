@@ -100,7 +100,7 @@ fn build_markdown_inline_piece_dom(inline : MarkdownInline) -> @dom.Element {
     }
     InlineLink(text, href) =>
       if is_safe_markdown_href(href) {
-        let safe_href = href.trim().to_string()
+        let safe_href = href.trim().to_owned()
         let link = create_element("a", "markdown-link")
         link.setAttribute("href", safe_href)
         link.setAttribute("target", "_blank")
@@ -115,7 +115,7 @@ fn build_markdown_inline_piece_dom(inline : MarkdownInline) -> @dom.Element {
     InlineImage(alt, src) =>
       if is_safe_markdown_image_src(src) {
         let image = create_element("img", "markdown-image")
-        image.setAttribute("src", src.trim().to_string())
+        image.setAttribute("src", src.trim().to_owned())
         image.setAttribute("alt", alt)
         image.setAttribute("loading", "lazy")
         image
@@ -204,7 +204,7 @@ fn render_markdown_inline_piece_safe_html(inline : MarkdownInline) -> SafeHtml {
       ])
     InlineLink(text, href) =>
       if is_safe_markdown_href(href) {
-        let safe_href = href.trim().to_string()
+        let safe_href = href.trim().to_owned()
         safe_html_element(
           "a",
           class_name="markdown-link",
@@ -219,7 +219,7 @@ fn render_markdown_inline_piece_safe_html(inline : MarkdownInline) -> SafeHtml {
         safe_html_element(
           "img",
           class_name="markdown-image",
-          attrs=" src=\"\{escape_html_attribute(src.trim().to_string())}\" alt=\"\{escape_html_attribute(alt)}\" loading=\"lazy\"",
+          attrs=" src=\"\{escape_html_attribute(src.trim().to_owned())}\" alt=\"\{escape_html_attribute(alt)}\" loading=\"lazy\"",
           children=[],
         )
       } else {
@@ -481,7 +481,7 @@ fn parse_markdown_blocks(blocks : Array[String]) -> Array[MarkdownBlock] {
   // runs. Classify each block once so DOM and HTML renderers share behavior.
   let parsed = []
   for block in blocks {
-    let trimmed = block.trim().to_string()
+    let trimmed = block.trim().to_owned()
     if trimmed.length() == 0 {
       ()
     } else {
@@ -496,7 +496,7 @@ fn parse_markdown_blocks(blocks : Array[String]) -> Array[MarkdownBlock] {
                 None => {
                   let lines = trimmed
                     .split("\n")
-                    .map(line => line.to_string())
+                    .map(line => line.to_owned())
                     .to_array()
                   if lines.length() > 1 && all_markdown_task_lines(lines) {
                     for line in lines {
@@ -527,7 +527,7 @@ fn parse_markdown_blocks(blocks : Array[String]) -> Array[MarkdownBlock] {
 
 ///|
 fn normalize_markdown_paragraph_display_text(text : String) -> String {
-  let lines = text.split("\n").map(line => line.to_string()).to_array()
+  let lines = text.split("\n").map(line => line.to_owned()).to_array()
   let normalized = []
   for line in lines {
     if !is_blank_markdown_line(line) {
@@ -543,7 +543,7 @@ fn parse_markdown_math_block(block : String) -> MarkdownBlock? {
     return None
   }
   let content = if block.length() >= 4 {
-    block[2:block.length() - 2].to_string().trim().to_string()
+    block[2:block.length() - 2].to_owned().trim().to_owned()
   } else {
     ""
   }
@@ -559,12 +559,12 @@ fn parse_markdown_code_block(block : String) -> MarkdownBlock? {
   if !block.has_prefix("```") {
     return None
   }
-  let lines = block.split("\n").map(line => line.to_string()).to_array()
+  let lines = block.split("\n").map(line => line.to_owned()).to_array()
   if lines.length() < 2 ||
-    !lines[lines.length() - 1].trim().to_string().has_prefix("```") {
+    !lines[lines.length() - 1].trim().to_owned().has_prefix("```") {
     return None
   }
-  let lang = lines[0][3:].to_string().trim().to_string()
+  let lang = lines[0][3:].to_owned().trim().to_owned()
   let code_lines = []
   for index in 1..<(lines.length() - 1) {
     code_lines.push(lines[index])
@@ -574,7 +574,7 @@ fn parse_markdown_code_block(block : String) -> MarkdownBlock? {
 
 ///|
 fn parse_markdown_table(block : String) -> MarkdownBlock? {
-  let lines = block.split("\n").map(line => line.to_string()).to_array()
+  let lines = block.split("\n").map(line => line.to_owned()).to_array()
   if lines.length() < 2 ||
     !is_markdown_table_row(lines[0]) ||
     !is_markdown_table_separator(lines[1]) {
@@ -600,7 +600,7 @@ fn parse_markdown_table(block : String) -> MarkdownBlock? {
 
 ///|
 fn is_markdown_table_row(line : String) -> Bool {
-  let trimmed = line.trim().to_string()
+  let trimmed = line.trim().to_owned()
   trimmed.has_prefix("|") && trimmed.has_suffix("|")
 }
 
@@ -611,7 +611,7 @@ fn is_markdown_table_separator(line : String) -> Bool {
     return false
   }
   for cell in cells {
-    let text = cell.trim().to_string()
+    let text = cell.trim().to_owned()
     if text.length() == 0 {
       return false
     }
@@ -626,15 +626,15 @@ fn is_markdown_table_separator(line : String) -> Bool {
 
 ///|
 fn split_markdown_table_row(line : String) -> Array[String] {
-  let trimmed = line.trim().to_string()
+  let trimmed = line.trim().to_owned()
   let inner = if trimmed.length() >= 2 &&
     trimmed.has_prefix("|") &&
     trimmed.has_suffix("|") {
-    trimmed[1:trimmed.length() - 1].to_string()
+    trimmed[1:trimmed.length() - 1].to_owned()
   } else {
     trimmed
   }
-  inner.split("|").map(cell => cell.to_string().trim().to_string()).to_array()
+  inner.split("|").map(cell => cell.to_owned().trim().to_owned()).to_array()
 }
 
 ///|
@@ -661,15 +661,15 @@ fn all_markdown_task_lines(lines : Array[String]) -> Bool {
 
 ///|
 fn parse_markdown_task_line(line : String) -> MarkdownBlock? {
-  let trimmed = line.trim().to_string()
+  let trimmed = line.trim().to_owned()
   if trimmed.has_prefix("- [ ] ") {
-    Some(BlockTask(false, trimmed[6:].to_string()))
+    Some(BlockTask(false, trimmed[6:].to_owned()))
   } else if trimmed.has_prefix("- [x] ") || trimmed.has_prefix("- [X] ") {
-    Some(BlockTask(true, trimmed[6:].to_string()))
+    Some(BlockTask(true, trimmed[6:].to_owned()))
   } else if trimmed.has_prefix("[ ] ") {
-    Some(BlockTask(false, trimmed[4:].to_string()))
+    Some(BlockTask(false, trimmed[4:].to_owned()))
   } else if trimmed.has_prefix("[x] ") || trimmed.has_prefix("[X] ") {
-    Some(BlockTask(true, trimmed[4:].to_string()))
+    Some(BlockTask(true, trimmed[4:].to_owned()))
   } else {
     None
   }
@@ -685,13 +685,13 @@ fn parse_markdown_inline(source : String) -> Array[MarkdownInline] {
     match next_markdown_inline(source, cursor) {
       Some((start, stop, inline)) => {
         if start > cursor {
-          pieces.push(InlineText(source[cursor:start].to_string()))
+          pieces.push(InlineText(source[cursor:start].to_owned()))
         }
         pieces.push(inline)
         cursor = stop
       }
       None => {
-        pieces.push(InlineText(source[cursor:].to_string()))
+        pieces.push(InlineText(source[cursor:].to_owned()))
         cursor = source.length()
       }
     }
@@ -724,8 +724,8 @@ fn parse_markdown_inline_at(
     match find_markdown_from(source, "$", cursor + 1) {
       Some(end_) =>
         if end_ > cursor + 1 {
-          let math_source = source[cursor + 1:end_].to_string()
-          if math_source.trim().to_string().length() > 0 {
+          let math_source = source[cursor + 1:end_].to_owned()
+          if math_source.trim().to_owned().length() > 0 {
             return Some((end_ + 1, InlineMath(math_source)))
           }
         }
@@ -737,7 +737,7 @@ fn parse_markdown_inline_at(
       Some(end_) =>
         if end_ > cursor + 1 {
           return Some(
-            (end_ + 1, InlineCode(source[cursor + 1:end_].to_string())),
+            (end_ + 1, InlineCode(source[cursor + 1:end_].to_owned())),
           )
         }
       None => ()
@@ -748,7 +748,7 @@ fn parse_markdown_inline_at(
       Some(end_) =>
         if end_ > cursor + 2 {
           return Some(
-            (end_ + 2, InlineStrong(source[cursor + 2:end_].to_string())),
+            (end_ + 2, InlineStrong(source[cursor + 2:end_].to_owned())),
           )
         }
       None => ()
@@ -759,7 +759,7 @@ fn parse_markdown_inline_at(
       Some(end_) =>
         if end_ > cursor + 2 {
           return Some(
-            (end_ + 2, InlineStrike(source[cursor + 2:end_].to_string())),
+            (end_ + 2, InlineStrike(source[cursor + 2:end_].to_owned())),
           )
         }
       None => ()
@@ -770,7 +770,7 @@ fn parse_markdown_inline_at(
       Some(end_) =>
         if end_ > cursor + 1 {
           return Some(
-            (end_ + 1, InlineEmphasis(source[cursor + 1:end_].to_string())),
+            (end_ + 1, InlineEmphasis(source[cursor + 1:end_].to_owned())),
           )
         }
       None => ()
@@ -781,7 +781,7 @@ fn parse_markdown_inline_at(
       Some(end_) =>
         if end_ > cursor + 1 {
           return Some(
-            (end_ + 1, InlineEmphasis(source[cursor + 1:end_].to_string())),
+            (end_ + 1, InlineEmphasis(source[cursor + 1:end_].to_owned())),
           )
         }
       None => ()
@@ -813,8 +813,8 @@ fn parse_markdown_image_at(
       match find_markdown_from(source, ")", src_start) {
         Some(close_src) =>
           if close_alt >= cursor + 2 && close_src > src_start {
-            let alt = source[cursor + 2:close_alt].to_string()
-            let src = source[src_start:close_src].to_string()
+            let alt = source[cursor + 2:close_alt].to_owned()
+            let src = source[src_start:close_src].to_owned()
             Some((close_src + 1, InlineImage(alt, src)))
           } else {
             None
@@ -837,8 +837,8 @@ fn parse_markdown_link_at(
       match find_markdown_from(source, ")", href_start) {
         Some(close_href) =>
           if close_label > cursor + 1 && close_href > href_start {
-            let label = source[cursor + 1:close_label].to_string()
-            let href = source[href_start:close_href].to_string()
+            let label = source[cursor + 1:close_label].to_owned()
+            let href = source[href_start:close_href].to_owned()
             Some((close_href + 1, InlineLink(label, href)))
           } else {
             None
@@ -854,7 +854,7 @@ fn parse_markdown_link_at(
 fn has_markdown_at(source : String, start : Int, needle : String) -> Bool {
   start >= 0 &&
   start + needle.length() <= source.length() &&
-  source[start:start + needle.length()].to_string() == needle
+  source[start:start + needle.length()].to_owned() == needle
 }
 
 ///|
@@ -862,7 +862,7 @@ fn find_markdown_from(source : String, needle : String, start : Int) -> Int? {
   if start >= source.length() {
     return None
   }
-  match source[start:].to_string().find(needle) {
+  match source[start:].to_owned().find(needle) {
     Some(offset) => Some(start + offset)
     None => None
   }
@@ -870,7 +870,7 @@ fn find_markdown_from(source : String, needle : String, start : Int) -> Int? {
 
 ///|
 fn is_safe_markdown_href(href : String) -> Bool {
-  let trimmed = href.trim().to_string().to_lower()
+  let trimmed = href.trim().to_owned().to_lower()
   trimmed.has_prefix("https://") ||
   trimmed.has_prefix("http://") ||
   trimmed.has_prefix("mailto:") ||
@@ -879,7 +879,7 @@ fn is_safe_markdown_href(href : String) -> Bool {
 
 ///|
 fn is_safe_markdown_image_src(src : String) -> Bool {
-  let trimmed = src.trim().to_string()
+  let trimmed = src.trim().to_owned()
   if trimmed.length() == 0 {
     return false
   }

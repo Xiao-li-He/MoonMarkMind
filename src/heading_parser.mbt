@@ -134,11 +134,11 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
               Some(node) =>
                 match node.kind {
                   MarkdownNodeKind::ListItem =>
-                    body_lines.push(line.trim_start().to_string())
-                  _ => body_lines.push(line.to_string())
+                    body_lines.push(line.trim_start().to_owned())
+                  _ => body_lines.push(line.to_owned())
                 }
               None =>
-                if is_blank_markdown_line(line.to_string()) {
+                if is_blank_markdown_line(line.to_owned()) {
                   pending_leading_blank_lines += 1
                 }
             }
@@ -238,12 +238,12 @@ fn count_leading_spaces(line : StringView) -> Int {
 
 ///|
 fn view_tail_to_string(line : StringView, start : Int) -> String {
-  line[start:].to_string()
+  line[start:].to_owned()
 }
 
 ///|
 fn view_slice_to_string(line : StringView, start : Int, end_ : Int) -> String {
-  line[start:end_].to_string()
+  line[start:end_].to_owned()
 }
 
 ///|

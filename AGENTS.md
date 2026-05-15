@@ -25,6 +25,8 @@ This is a [MoonBit](https://docs.moonbitlang.com) project.
 
 ## Tooling
 
+- use moonbit skills in "C:\Users\hxl\.codex\skills\moonbit-agent-guide"
+
 - `moon fmt` is used to format your code properly.
 
 - `moon info` is used to update the generated interface of the package, each

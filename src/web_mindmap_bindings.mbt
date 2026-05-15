@@ -177,7 +177,7 @@ fn mindmap_parse_zoom_input(raw : String) -> Double? {
   if trimmed.length() == 0 {
     return None
   }
-  let numeric = parse_float(trimmed.to_string().replace(old="%", new=""))
+  let numeric = parse_float(trimmed.to_owned().replace(old="%", new=""))
   if numeric != numeric {
     None
   } else if trimmed.contains("%") || numeric > 10.0 {
@@ -940,12 +940,12 @@ fn bind_mindmap_ui(
         suppress_click.val = false
         start_x.val = event.clientX.to_int()
         start_y.val = event.clientY.to_int()
-        start_pan_x.val = @strconv.parse_int(
+        start_pan_x.val = @string.parse_int(
           mindmap.getAttribute("data-pan-x").unwrap_or("0"),
         ) catch {
           _ => 0
         }
-        start_pan_y.val = @strconv.parse_int(
+        start_pan_y.val = @string.parse_int(
           mindmap.getAttribute("data-pan-y").unwrap_or("0"),
         ) catch {
           _ => 0

@@ -397,18 +397,18 @@ test "contour pack positions centers siblings without overlap" {
 
 ///|
 test "contour pack positions keeps single and paired children centered" {
-  assert_eq(contour_pack_positions([80], 120, 24), [20])
-  assert_eq(contour_pack_positions([40, 40], 140, 20), [20, 80])
+  assert_true(contour_pack_positions([80], 120, 24) == [20])
+  assert_true(contour_pack_positions([40, 40], 140, 20) == [20, 80])
 }
 
 ///|
 test "contour anchor pack positions centers odd and even siblings around the parent axis" {
-  assert_eq(
-    contour_anchor_pack_positions([20, 20, 20, 20, 20, 20, 20], 100, 200, 10),
+  assert_true(
+    contour_anchor_pack_positions([20, 20, 20, 20, 20, 20, 20], 100, 200, 10) ==
     [0, 30, 60, 90, 120, 150, 180],
   )
-  assert_eq(
-    contour_anchor_pack_positions([20, 20, 20, 20, 20, 20], 100, 170, 10),
+  assert_true(
+    contour_anchor_pack_positions([20, 20, 20, 20, 20, 20], 100, 170, 10) ==
     [15, 45, 75, 105, 135, 165],
   )
 }
@@ -631,11 +631,11 @@ test "node width overrides clamp and update in place" {
   reset_frontend_test_state()
 
   set_node_width_override(1, 12)
-  assert_eq(node_width_override_value(1), Some(96))
+  assert_true(node_width_override_value(1) == Some(96))
   assert_eq(app_state.node_width_overrides.length(), 1)
 
   set_node_width_override(1, 999)
-  assert_eq(node_width_override_value(1), Some(520))
+  assert_true(node_width_override_value(1) == Some(520))
   assert_eq(app_state.node_width_overrides.length(), 1)
 }
 
@@ -683,12 +683,12 @@ test "node width undo redo restores visual state without markdown change" {
   assert_eq(app_state.redo_stack.length(), 0)
   handle_undo()
   assert_eq(app_state.markdown, markdown)
-  assert_eq(node_width_override_value(1), None)
+  assert_true(node_width_override_value(1) == None)
   assert_eq(app_state.redo_stack.length(), 1)
 
   handle_redo()
   assert_eq(app_state.markdown, markdown)
-  assert_eq(node_width_override_value(1), Some(220))
+  assert_true(node_width_override_value(1) == Some(220))
 }
 
 ///|
@@ -703,7 +703,7 @@ test "markdown history snapshots restore node width overrides" {
   handle_undo()
 
   assert_eq(app_state.markdown, frontend_test_markdown())
-  assert_eq(node_width_override_value(1), Some(240))
+  assert_true(node_width_override_value(1) == Some(240))
 }
 
 ///|
@@ -1130,7 +1130,7 @@ test "node drag unchanged drop keeps dragged source selected" {
   assert_eq(changed, false)
   assert_eq(app_state.markdown, markdown)
   assert_eq(app_state.selected_node, 1)
-  assert_eq(app_state.selected_nodes, [1])
+  assert_true(app_state.selected_nodes == [1])
 }
 
 ///|
@@ -1142,7 +1142,7 @@ test "node drag reset clears selection snapshot" {
   reset_node_drag_state()
 
   assert_eq(drag_snapshot_selected_node.val, -2)
-  assert_eq(drag_snapshot_selected_nodes.val, [])
+  assert_true(drag_snapshot_selected_nodes.val == [])
   assert_eq(drag_snapshot_selection_anchor_node.val, -2)
 }
 
@@ -1475,7 +1475,7 @@ test "drop move rejects self subtree and preserves index map" {
   assert_eq(result.changed, false)
   assert_eq(result.selected_node, 1)
   assert_eq(result.markdown, markdown)
-  assert_eq(result.index_map, [0, 1, 2, 3])
+  assert_true(result.index_map == [0, 1, 2, 3])
 }
 
 ///|
