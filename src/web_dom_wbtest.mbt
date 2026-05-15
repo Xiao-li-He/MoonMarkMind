@@ -221,6 +221,14 @@ test "static svg export positions connector layer at exported stage origin" {
 }
 
 ///|
+test "html export bundle path stays under current page directory" {
+  assert_eq(bundle_directory_path("/MoonMarkMind/index.html"), "/MoonMarkMind/")
+  assert_eq(bundle_directory_path("/MoonMarkMind/"), "/MoonMarkMind/")
+  assert_eq(bundle_directory_path("/index.html"), "/")
+  assert_eq(bundle_directory_path("index.html"), "/")
+}
+
+///|
 test "svg export void elements are xml self closing" {
   let source = "<svg><foreignObject><div><input class=\"markdown-task__check\" type=\"checkbox\"><span>Done</span><br></div></foreignObject></svg>"
   let fixed = close_svg_void_elements(source)

@@ -3186,8 +3186,34 @@ fn current_bundle_src() -> String {
   if origin == "null" || origin.length() == 0 {
     "main.bundle.js"
   } else {
-    "\{origin}/main.bundle.js"
+    let pathname = location._get("pathname").to_string()
+    "\{origin}\{bundle_directory_path(pathname)}main.bundle.js"
   }
+}
+
+///|
+fn bundle_directory_path(pathname : String) -> String {
+  if pathname.length() == 0 {
+    return "/"
+  }
+  let slash = last_slash_index(pathname)
+  if slash < 0 {
+    "/"
+  } else {
+    pathname[0:slash + 1].to_string()
+  }
+}
+
+///|
+fn last_slash_index(source : String) -> Int {
+  let mut index = source.length() - 1
+  while index >= 0 {
+    if source[index] == '/' {
+      return index
+    }
+    index -= 1
+  }
+  -1
 }
 
 ///|
