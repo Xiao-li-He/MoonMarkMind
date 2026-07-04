@@ -6,12 +6,12 @@
 
 ```text
 Markdown 文本
-  -> src/heading_parser.mbt 解析结构线索
-  -> src/outline_tree.mbt 构建层级树
-  -> src/outline_model.mbt 维护可编辑模型
-  -> src/web_frontend.mbt / src/web_mindmap_bindings.mbt 渲染和交互
-  -> src/outline_model.mbt 回写 Markdown
-  -> src/web_dom.mbt 导出 PNG / SVG / HTML
+  -> app/web/heading_parser.mbt 解析结构线索
+  -> app/web/outline_tree.mbt 构建层级树
+  -> app/web/outline_model.mbt 维护可编辑模型
+  -> app/web/web_frontend.mbt / app/web/web_mindmap_bindings.mbt 渲染和交互
+  -> app/web/outline_model.mbt 回写 Markdown
+  -> app/web/web_dom.mbt 导出 PNG / SVG / HTML
 ```
 
 Markdown 是主数据源。脑图中的结构编辑最终应能回写为可读 Markdown。
