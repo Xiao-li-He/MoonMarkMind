@@ -126,7 +126,9 @@ fn build_markdown_inline_piece_dom(inline : MarkdownInline) -> @dom.Element {
       }
     InlineMath(source) => {
       let math = create_element("span", "markdown-math markdown-math--inline")
-      math.setInnerHTML(render_latex_math_inline_html(source).value)
+      math.setInnerHTML(
+        @latex_math_render.render_latex_math_inline_html(source),
+      )
       apply_theme_to_subtree(math)
       math
     }
@@ -230,7 +232,11 @@ fn render_markdown_inline_piece_safe_html(inline : MarkdownInline) -> SafeHtml {
         "span",
         class_name="markdown-math markdown-math--inline",
         attrs="",
-        children=[render_latex_math_inline_html(source)],
+        children=[
+          SafeHtml::{
+            value: @latex_math_render.render_latex_math_inline_html(source),
+          },
+        ],
       )
   }
 }
@@ -279,7 +285,7 @@ fn build_markdown_block_dom(block : MarkdownBlock) -> @dom.Element {
     BlockTable(header, rows) => build_markdown_table_dom(header, rows)
     BlockMath(source) => {
       let math = create_element("div", "markdown-math markdown-math--block")
-      math.setInnerHTML(render_latex_math_block_html(source).value)
+      math.setInnerHTML(@latex_math_render.render_latex_math_block_html(source))
       apply_theme_to_subtree(math)
       math
     }
@@ -401,7 +407,11 @@ fn render_markdown_block_safe_html(block : MarkdownBlock) -> SafeHtml {
         "div",
         class_name="markdown-math markdown-math--block",
         attrs="",
-        children=[render_latex_math_block_html(source)],
+        children=[
+          SafeHtml::{
+            value: @latex_math_render.render_latex_math_block_html(source),
+          },
+        ],
       )
   }
 }
