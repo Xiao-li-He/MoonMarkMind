@@ -86,6 +86,10 @@ powershell -ExecutionPolicy Bypass -File .\build-web.ps1
 
 ## 项目结构
 
+- `src/lib/outline_parser`：可复用的 Markdown 大纲解析、`OutlineNode` 树构建、结构编辑和 Markdown 回写包。
+- `src/lib/latex_math_render`：可复用的 LaTeX 行内/块级公式 HTML 渲染包，后续可扩展 SVG 输出。
+- `src/lib/mindmap_renderer`：可复用的 `OutlineNode` 到静态 HTML/SVG 脑图渲染包，定义 layout/style/layer 选项。
+- `src/cmd/cli`：命令行导出入口，参数对齐 Web 布局、样式和详情级别。
 - `src/heading_parser.mbt`：解析 Markdown 标题和文档结构。
 - `src/outline_tree.mbt`：构建层级树。
 - `src/outline_model.mbt`：处理节点增删改移、隐藏、折叠和 Markdown 回写。
@@ -102,7 +106,7 @@ powershell -ExecutionPolicy Bypass -File .\build-web.ps1
 
 ## 工程质量
 
-本项目按 MoonBit package 组织源码，`moon.mod.json` 通过 `source: "src"` 指向源码目录，`src` 为核心库，`src/cmd/main` 暴露可运行入口。修改代码后请优先运行：
+本项目按 MoonBit package 组织源码，`moon.mod` 通过 `source: "src"` 指向源码目录。根包保留现有浏览器应用集成能力，`src/lib/*` 提供可发布复用包，`src/cmd/main` 暴露 Web bundle 入口，`src/cmd/cli` 暴露命令行入口。修改代码后请优先运行：
 
 ```powershell
 moon check

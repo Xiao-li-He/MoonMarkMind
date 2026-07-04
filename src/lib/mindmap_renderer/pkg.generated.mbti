@@ -1,0 +1,56 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Xiao-li-He/MoonMarkMind/lib/mindmap_renderer"
+
+import {
+  "Xiao-li-He/MoonMarkMind/lib/outline_parser",
+}
+
+// Values
+pub fn default_render_options() -> RenderOptions
+
+pub fn layer_to_detail_select(MindmapLayer) -> String
+
+pub fn normalize_layer(String) -> MindmapLayer
+
+pub fn normalize_layout(String) -> MindmapLayout
+
+pub fn normalize_style(String) -> MindmapStyle
+
+pub fn render_markdown_html(String, options? : RenderOptions) -> String
+
+pub fn render_markdown_svg(String, options? : RenderOptions) -> String
+
+pub fn render_outline_html(@outline_parser.OutlineNode, options? : RenderOptions) -> String
+
+pub fn render_outline_svg(@outline_parser.OutlineNode, options? : RenderOptions) -> String
+
+// Errors
+
+// Types and methods
+pub(all) enum MindmapLayer {
+  Root
+  Layer2
+  Full
+}
+
+pub(all) enum MindmapLayout {
+  Logic
+  Mindmap
+  Tree
+}
+
+pub(all) enum MindmapStyle {
+  Full
+  Line
+}
+
+pub(all) struct RenderOptions {
+  layout : MindmapLayout
+  style : MindmapStyle
+  layer : MindmapLayer
+}
+
+// Type aliases
+
+// Traits
+

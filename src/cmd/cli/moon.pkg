@@ -1,0 +1,9 @@
+import {
+  "moonbitlang/core/argparse",
+  "moonbitlang/core/env",
+  "Xiao-li-He/MoonMarkMind/lib/mindmap_renderer" @renderer,
+}
+
+options(
+  "is-main": true,
+)

@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Xiao-li-He/MoonMarkMind/lib/latex_math_render"
+
+// Values
+pub fn render_latex_math_block_html(String) -> String
+
+pub fn render_latex_math_block_safe_html(String) -> SafeHtml
+
+pub fn render_latex_math_block_svg(String) -> String
+
+pub fn render_latex_math_inline_html(String) -> String
+
+pub fn render_latex_math_inline_safe_html(String) -> SafeHtml
+
+pub fn render_latex_math_inline_svg(String) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct SafeHtml {
+  value : String
+}
+
+// Type aliases
+
+// Traits
+

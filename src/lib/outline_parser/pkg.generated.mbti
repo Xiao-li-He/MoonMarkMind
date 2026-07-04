@@ -1,0 +1,104 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Xiao-li-He/MoonMarkMind/lib/outline_parser"
+
+// Values
+pub fn add_child_heading(String, Int, String) -> String
+
+pub fn add_sibling_heading(String, Int, String, Bool) -> String
+
+pub fn build_outline(String) -> OutlineNode
+
+pub fn build_outline_from_nodes(Array[MarkdownNode]) -> OutlineNode
+
+pub fn default_body_blank_lines(Array[String]) -> Array[Int]
+
+pub fn delete_heading(String, Int) -> String
+
+pub fn delete_node_body_block(String, Int, Int) -> String
+
+pub fn empty_outline() -> OutlineNode
+
+pub fn indent_heading(String, Int) -> String
+
+pub fn move_heading(String, Int, Int, Bool) -> String
+
+pub fn move_heading_among_siblings(String, Int, Bool) -> String
+
+pub fn move_heading_next(String, Int) -> String
+
+pub fn move_heading_next_with_selection(String, Int) -> (String, Int)
+
+pub fn move_heading_prev(String, Int) -> String
+
+pub fn move_heading_prev_with_selection(String, Int) -> (String, Int)
+
+pub fn move_node_to_drop_placement(String, Int, DropPlacement) -> MoveNodeResult
+
+pub fn normalize_markdown_body_lines(Array[String]) -> Array[String]
+
+pub fn outline_json(String) -> String
+
+pub fn parse_headings(String) -> Array[(Int, String)]
+
+pub fn parse_markdown_nodes(String) -> Array[MarkdownNode]
+
+pub fn promote_heading(String, Int) -> String
+
+pub fn rename_heading(String, Int, String) -> String
+
+pub fn render_markdown_nodes(Array[MarkdownNode]) -> String
+
+pub fn sample_markdown() -> String
+
+pub fn update_node_body(String, Int, String) -> String
+
+pub fn update_node_body_block(String, Int, Int, String) -> String
+
+// Errors
+
+// Types and methods
+pub(all) enum DropPlacement {
+  DropBefore(Int)
+  DropAfter(Int)
+  DropInside(Int)
+}
+
+pub(all) struct MarkdownNode {
+  kind : MarkdownNodeKind
+  level : Int
+  title : String
+  marker : String
+  body : Array[String]
+  body_blank_lines : Array[Int]
+  leading_blank_lines : Int
+  source_line : Int
+}
+
+pub(all) enum MarkdownNodeKind {
+  Heading
+  ListItem
+}
+
+pub(all) struct MoveNodeResult {
+  markdown : String
+  selected_node : Int
+  changed : Bool
+  index_map : Array[Int]
+}
+
+pub(all) struct OutlineNode {
+  flat_index : Int
+  source_line : Int
+  level : Int
+  title : String
+  marker : String
+  body : Array[String]
+  kind : MarkdownNodeKind
+  synthetic : Bool
+  children : Array[OutlineNode]
+}
+
+// Type aliases
+
+// Traits
+
