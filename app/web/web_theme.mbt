@@ -2893,202 +2893,137 @@ fn branch_line_vertical_context(element : @dom.Element) -> Bool {
 
 ///|
 fn style_markdown_math(element : @dom.Element) -> Unit {
-  set_style(
-    element, "font-family", "\"Cambria Math\", \"Times New Roman\", serif",
-  )
-  set_style(element, "color", "#24384f")
-  set_style(element, "line-height", "1.35")
-  set_style(element, "max-width", "100%")
-  set_style(element, "box-sizing", "border-box")
+  apply_latex_math_style_rule(element, "markdown-math")
 }
 
 ///|
 fn style_markdown_math_inline(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-flex")
-  set_style(element, "align-items", "center")
-  set_style(element, "vertical-align", "middle")
-  set_style(element, "padding", "0 2px")
+  apply_latex_math_style_rule(element, "markdown-math--inline")
 }
 
 ///|
 fn style_markdown_math_block(element : @dom.Element) -> Unit {
-  set_style(element, "display", "flex")
-  set_style(element, "justify-content", "center")
-  set_style(element, "width", "100%")
-  set_style(element, "padding", "6px 4px")
-  set_style(element, "text-align", "center")
-  set_style(element, "overflow-x", "auto")
-  set_style(element, "overflow-y", "hidden")
-  set_style(element, "font-size", "1.05em")
+  apply_latex_math_style_rule(element, "markdown-math--block")
 }
 
 ///|
 fn style_markdown_math_frac(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-flex")
-  set_style(element, "flex-direction", "column")
-  set_style(element, "align-items", "stretch")
-  set_style(element, "vertical-align", "middle")
-  set_style(element, "margin", "0 2px")
-  set_style(element, "line-height", "1.1")
+  apply_latex_math_style_rule(element, "markdown-math-frac")
 }
 
 ///|
 fn style_markdown_math_frac_num(element : @dom.Element) -> Unit {
-  set_style(element, "border-bottom", "1px solid currentColor")
-  set_style(element, "padding", "0 4px 2px")
-  set_style(element, "text-align", "center")
+  apply_latex_math_style_rule(element, "markdown-math-frac__num")
 }
 
 ///|
 fn style_markdown_math_frac_den(element : @dom.Element) -> Unit {
-  set_style(element, "padding", "2px 4px 0")
-  set_style(element, "text-align", "center")
+  apply_latex_math_style_rule(element, "markdown-math-frac__den")
 }
 
 ///|
 fn style_markdown_math_sqrt(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-block")
-  set_style(element, "position", "relative")
-  set_style(element, "vertical-align", "-0.1em")
-  set_style(element, "margin", "0 2px")
-  set_style(element, "line-height", "1")
+  apply_latex_math_style_rule(element, "markdown-math-sqrt")
 }
 
 ///|
 fn style_markdown_math_sqrt_symbol(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-block")
-  set_style(element, "font-size", "1.5em")
-  set_style(element, "line-height", "0.72")
-  set_style(element, "padding-right", "0")
-  set_style(element, "transform", "translateY(0.1em) scaleX(0.9)")
-  set_style(element, "transform-origin", "right bottom")
+  apply_latex_math_style_rule(element, "markdown-math-sqrt__symbol")
 }
 
 ///|
 fn style_markdown_math_sqrt_radical(element : @dom.Element) -> Unit {
-  set_style(element, "position", "absolute")
-  set_style(element, "left", "0")
-  set_style(element, "right", "0")
-  set_style(element, "top", "0")
-  set_style(element, "bottom", "0")
-  set_style(element, "overflow", "hidden")
-  set_style(element, "pointer-events", "none")
+  apply_latex_math_style_rule(element, "markdown-math-sqrt__radical")
 }
 
 ///|
 fn style_markdown_math_sqrt_svg(element : @dom.Element) -> Unit {
-  set_style(element, "display", "block")
-  set_style(element, "width", "400em")
-  set_style(element, "height", "1.12em")
-  set_style(element, "max-width", "none")
-  match element.closest(".markdown-math-sqrt--tall") {
-    Some(_) => set_style(element, "height", "2.25em")
-    None => ()
-  }
+  apply_latex_math_style_rule(element, "markdown-math-sqrt__svg")
 }
 
 ///|
 fn style_markdown_math_sqrt_path(element : @dom.Element) -> Unit {
-  set_style(element, "fill", "currentColor")
+  apply_latex_math_style_rule(element, "markdown-math-sqrt__path")
 }
 
 ///|
 fn style_markdown_math_sqrt_radicand(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-block")
-  set_style(element, "position", "relative")
-  set_style(element, "padding", "0.18em 0.12em 0 0.86em")
-  set_style(element, "line-height", "1")
-  set_style(element, "z-index", "1")
-  match element.closest(".markdown-math-sqrt--tall") {
-    Some(_) => set_style(element, "padding", "0.32em 0.14em 0 0.96em")
-    None => ()
-  }
+  apply_latex_math_style_rule(element, "markdown-math-sqrt__radicand")
 }
 
 ///|
 fn style_markdown_math_lines(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-flex")
-  set_style(element, "flex-direction", "column")
-  set_style(element, "align-items", "center")
-  set_style(element, "gap", "4px")
-  set_style(element, "max-width", "100%")
+  apply_latex_math_style_rule(element, "markdown-math-lines")
 }
 
 ///|
 fn style_markdown_math_row(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-flex")
-  set_style(element, "align-items", "center")
-  set_style(element, "justify-content", "center")
-  set_style(element, "white-space", "nowrap")
+  apply_latex_math_style_rule(element, "markdown-math-row")
 }
 
 ///|
 fn style_markdown_math_row_aligned(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-grid")
-  set_style(element, "grid-auto-flow", "column")
-  set_style(element, "grid-auto-columns", "max-content")
-  set_style(element, "column-gap", "6px")
-  set_style(element, "align-items", "center")
-  set_style(element, "justify-content", "center")
+  apply_latex_math_style_rule(element, "markdown-math-row--aligned")
 }
 
 ///|
 fn style_markdown_math_align_cell(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-flex")
-  set_style(element, "align-items", "center")
-  set_style(element, "white-space", "nowrap")
+  apply_latex_math_style_rule(element, "markdown-math-align-cell")
 }
 
 ///|
 fn style_markdown_math_scripted(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-flex")
-  set_style(element, "align-items", "baseline")
-  set_style(element, "vertical-align", "middle")
-  set_style(element, "line-height", "1")
+  apply_latex_math_style_rule(element, "markdown-math-scripted")
 }
 
 ///|
 fn style_markdown_math_sup(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-block")
-  set_style(element, "font-size", "0.68em")
-  set_style(element, "line-height", "1")
-  set_style(element, "vertical-align", "baseline")
-  set_style(element, "transform", "translateY(-0.48em)")
-  set_style(element, "margin-left", "1px")
+  apply_latex_math_style_rule(element, "sup")
 }
 
 ///|
 fn style_markdown_math_sub(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-block")
-  set_style(element, "font-size", "0.68em")
-  set_style(element, "line-height", "1")
-  set_style(element, "vertical-align", "baseline")
-  set_style(element, "transform", "translateY(0.28em)")
-  set_style(element, "margin-left", "1px")
+  apply_latex_math_style_rule(element, "sub")
 }
 
 ///|
 fn style_markdown_math_sqrt_index(element : @dom.Element) -> Unit {
-  set_style(element, "position", "absolute")
-  set_style(element, "left", "-0.34em")
-  set_style(element, "top", "-0.34em")
-  set_style(element, "font-size", "0.62em")
-  set_style(element, "line-height", "1")
-  set_style(element, "align-self", "flex-start")
-  set_style(element, "z-index", "2")
+  apply_latex_math_style_rule(element, "markdown-math-sqrt__index")
 }
 
 ///|
 fn style_markdown_math_text(element : @dom.Element) -> Unit {
-  set_style(element, "font-family", "inherit")
-  set_style(element, "font-style", "normal")
+  apply_latex_math_style_rule(element, "markdown-math-text")
 }
 
 ///|
 fn style_markdown_math_op(element : @dom.Element) -> Unit {
-  set_style(element, "font-family", "inherit")
-  set_style(element, "font-style", "normal")
-  set_style(element, "padding", "0 1px")
+  apply_latex_math_style_rule(element, "markdown-math-op")
+}
+
+///|
+fn apply_latex_math_style_rule(
+  element : @dom.Element,
+  class_name : String,
+) -> Unit {
+  for rule in @latex_math_render.math_style_rules() {
+    if rule.class_name == class_name && latex_math_rule_matches(element, rule) {
+      for declaration in rule.declarations {
+        set_style(element, declaration.property, declaration.value)
+      }
+    }
+  }
+}
+
+///|
+fn latex_math_rule_matches(
+  element : @dom.Element,
+  rule : @latex_math_render.MathStyleRule,
+) -> Bool {
+  match rule.ancestor_class {
+    Some(ancestor_class) => element.closest(".\{ancestor_class}") is Some(_)
+    None => true
+  }
 }
 
 ///|

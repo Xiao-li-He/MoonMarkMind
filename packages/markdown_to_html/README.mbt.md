@@ -43,6 +43,8 @@ test {
 - `render_inline(source : String) -> String`: render inline Markdown to an HTML fragment.
 - `render_title(source : String) -> String`: render a node title, including task markers.
 - `render_blocks(blocks : Array[String]) -> String`: render pre-split Markdown body blocks.
+- `render_math_style_css() -> String`: render the shared math visual rules as CSS.
+- `render_style_element() -> String`: render a `<style>` element for standalone HTML documents.
 
 ## Notes
 
@@ -50,3 +52,4 @@ test {
 - This package covers the Markdown subset used by MoonMarkMind nodes.
 - Text is escaped, and unsafe links or image sources degrade to safe text.
 - LaTeX formulas are rendered through `lib/latex_math_render`.
+- Standalone HTML documents can include `render_style_element()` so fractions, radicals, and scripts use the same visual rules as the Web mind map.

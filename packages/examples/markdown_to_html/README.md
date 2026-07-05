@@ -48,5 +48,5 @@ test {
 ## Notes
 
 - `render_rich_markdown_html()` returns an HTML fragment for tests and documentation.
-- Running the example package writes a minimal complete HTML document.
+- Running the example package writes a minimal complete HTML document with the shared math style rules from `lib/latex_math_render`.
 - Browser DOM rendering and export behavior remain in `app/web`.

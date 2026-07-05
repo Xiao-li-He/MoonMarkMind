@@ -9,6 +9,16 @@ fn example_output_path() -> String {
 }
 
 ///|
+pub fn rich_markdown() -> String {
+  "# Markdown to HTML\n\nHello **MoonBit**, `code`, and inline math $x^2$.\n\n$$\\frac{a}{\\sqrt{b}}$$"
+}
+
+///|
+pub fn render_rich_markdown_html() -> String {
+  @to_html.render(rich_markdown())
+}
+
+///|
 fn render_html_document(body : String) -> String {
   (
     $|<!doctype html>
@@ -17,6 +27,7 @@ fn render_html_document(body : String) -> String {
     $|  <meta charset="utf-8">
     $|  <meta name="viewport" content="width=device-width, initial-scale=1">
     $|  <title>MoonMarkMind Markdown to HTML Example</title>
+    $|  \{@to_html.render_style_element()}
     $|</head>
     $|<body>
     $|\{body}

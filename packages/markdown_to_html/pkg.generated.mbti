@@ -8,6 +8,10 @@ pub fn render_blocks(Array[String]) -> String
 
 pub fn render_inline(String) -> String
 
+pub fn render_math_style_css() -> String
+
+pub fn render_style_element() -> String
+
 pub fn render_title(String) -> String
 
 // Errors

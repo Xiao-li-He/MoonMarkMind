@@ -1,10 +1,10 @@
 # MoonMarkMind Markdown to HTML example
 
 This paragraph includes **strong text**, _emphasis_, ~~deleted text~~,
-`inline code`, a [safe link](https://example.com/docs), and an inline
+`inline code`, a [mooncakes.io link](https://mooncakes.io/), and an inline
 formula $x^2 + \alpha$.
 
-![MoonMarkMind logo](../../../web/logo.png)
+![mooncakes.io icon](https://mooncakes.io/favicon.svg)
 
 ## Tasks
 

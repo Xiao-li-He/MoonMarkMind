@@ -32,3 +32,14 @@ test "render blocks keeps unsafe html escaped" {
   assert_true(html.contains("&lt;script&gt;alert(1)&lt;/script&gt;"))
   assert_true(html.contains("&lt;img src=x onerror=alert(1)&gt;"))
 }
+
+///|
+test "render math style css for standalone documents" {
+  let css = render_math_style_css()
+  assert_true(css.contains(".markdown-math-frac"))
+  assert_true(css.contains(".markdown-math-sqrt__svg"))
+  assert_true(css.contains(".markdown-math--block"))
+  let style = render_style_element()
+  assert_true(style.contains("<style>"))
+  assert_true(style.contains(".markdown-math sup"))
+}

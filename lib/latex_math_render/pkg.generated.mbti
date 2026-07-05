@@ -2,6 +2,10 @@
 package "Xiao-li-He/MoonMarkMind/lib/latex_math_render"
 
 // Values
+pub fn math_style_css() -> String
+
+pub fn math_style_rules() -> Array[MathStyleRule]
+
 pub fn render_latex_math_block_html(String) -> String
 
 pub fn render_latex_math_block_safe_html(String) -> SafeHtml
@@ -17,6 +21,18 @@ pub fn render_latex_math_inline_svg(String) -> String
 // Errors
 
 // Types and methods
+pub(all) struct MathStyleDeclaration {
+  property : String
+  value : String
+}
+
+pub(all) struct MathStyleRule {
+  selector : String
+  class_name : String
+  ancestor_class : String?
+  declarations : Array[MathStyleDeclaration]
+}
+
 pub(all) struct SafeHtml {
   value : String
 }

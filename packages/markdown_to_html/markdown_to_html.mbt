@@ -30,6 +30,18 @@ pub fn render_blocks(blocks : Array[String]) -> String {
 }
 
 ///|
+/// Render the CSS needed by math fragments emitted from this package.
+pub fn render_math_style_css() -> String {
+  @math.math_style_css()
+}
+
+///|
+/// Render a style element for standalone HTML documents.
+pub fn render_style_element() -> String {
+  "<style>\{render_math_style_css()}</style>"
+}
+
+///|
 fn render_heading_block(block : String) -> String? {
   let trimmed = block.trim().to_owned()
   let mut level = 0

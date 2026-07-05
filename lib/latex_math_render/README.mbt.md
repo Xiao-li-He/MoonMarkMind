@@ -61,6 +61,17 @@ test {
 }
 ```
 
+### Math visual style
+
+```mbt check
+///|
+test {
+  let css = math_style_css()
+  assert_true(css.contains("markdown-math-frac"))
+  assert_true(css.contains("markdown-math-sqrt__svg"))
+}
+```
+
 ## SafeHtml
 
 如果调用方希望显式区分“已转义/可嵌入”的 HTML，可以使用 `SafeHtml` 版本：
