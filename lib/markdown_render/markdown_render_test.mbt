@@ -141,3 +141,49 @@ test "body block renderer keeps hash text as paragraph" {
     html.contains("<p class=\"markdown-paragraph\"># Body heading</p>"),
   )
 }
+
+///|
+test "collapsible markdown nests heading sections" {
+  let html = render_markdown_collapsible_html(
+    "Intro\n\n# A **bold** $x^2$\nText\n## B\nMore\n# C",
+  )
+  assert_true(html.contains("<p class=\"markdown-paragraph\">Intro</p>"))
+  assert_true(
+    html.contains(
+      "<details class=\"markdown-section markdown-section--h1\" open>",
+    ),
+  )
+  assert_true(
+    html.contains(
+      "<summary class=\"markdown-section__summary markdown-heading markdown-heading--h1\">A <span class=\"markdown-strong\">bold</span> <span class=\"markdown-math markdown-math--inline\">",
+    ),
+  )
+  assert_true(
+    html.contains(
+      "<div class=\"markdown-section__body\"><p class=\"markdown-paragraph\">Text</p><details class=\"markdown-section markdown-section--h2\" open>",
+    ),
+  )
+  assert_true(
+    html.contains(
+      "<summary class=\"markdown-section__summary markdown-heading markdown-heading--h2\">B</summary>",
+    ),
+  )
+  assert_true(
+    html.contains(
+      "<summary class=\"markdown-section__summary markdown-heading markdown-heading--h1\">C</summary>",
+    ),
+  )
+}
+
+///|
+test "collapsible markdown supports all heading levels and escapes titles" {
+  let html = render_markdown_collapsible_html(
+    "# <script>\n## H2\n### H3\n#### H4\n##### H5\n###### H6",
+  )
+  assert_false(html.contains("<script>"))
+  assert_true(html.contains("&lt;script&gt;"))
+  for level in 1..<=6 {
+    assert_true(html.contains("markdown-section--h\{level}"))
+    assert_true(html.contains("markdown-heading--h\{level}"))
+  }
+}

@@ -51,6 +51,12 @@ priv struct ParsedMarkdownListLine {
 }
 
 ///|
+priv struct ParsedMarkdownHeading {
+  level : Int
+  title : String
+}
+
+///|
 
 ///|
 pub fn render_markdown_html(markdown : String) -> String {
@@ -62,6 +68,13 @@ pub fn render_markdown_html(markdown : String) -> String {
     }
   }
   parts.join("")
+}
+
+///|
+pub fn render_markdown_collapsible_html(markdown : String) -> String {
+  let blocks = split_markdown_document_blocks(markdown)
+  let (html, _) = render_markdown_collapsible_range(blocks, 0, 0)
+  html
 }
 
 ///|
@@ -188,6 +201,73 @@ pub fn render_markdown_blocks_html(blocks : Array[String]) -> String {
 
 ///|
 fn render_markdown_heading_safe_html(block : String) -> String? {
+  match parse_markdown_heading_block(block) {
+    Some(heading) =>
+      Some(
+        "<h\{heading.level} class=\"markdown-heading markdown-heading--h\{heading.level}\">\{render_markdown_title_html(heading.title)}</h\{heading.level}>",
+      )
+    None => None
+  }
+}
+
+///|
+fn render_markdown_collapsible_range(
+  blocks : Array[String],
+  start : Int,
+  parent_level : Int,
+) -> (String, Int) {
+  let parts = []
+  let mut index = start
+  while index < blocks.length() {
+    match parse_markdown_heading_block(blocks[index]) {
+      Some(heading) => {
+        if heading.level <= parent_level {
+          break
+        }
+        let (body_html, next) = render_markdown_collapsible_range(
+          blocks,
+          index + 1,
+          heading.level,
+        )
+        parts.push(render_markdown_section_safe_html(heading, body_html).value)
+        index = next
+      }
+      None => {
+        parts.push(render_markdown_blocks_html([blocks[index]]))
+        index += 1
+      }
+    }
+  }
+  (parts.join(""), index)
+}
+
+///|
+fn render_markdown_section_safe_html(
+  heading : ParsedMarkdownHeading,
+  body_html : String,
+) -> SafeHtml {
+  safe_html_element(
+    "details",
+    class_name="markdown-section markdown-section--h\{heading.level}",
+    attrs=" open",
+    children=[
+      safe_html_element(
+        "summary",
+        class_name="markdown-section__summary markdown-heading markdown-heading--h\{heading.level}",
+        attrs="",
+        children=[
+          SafeHtml::{ value: render_markdown_title_html(heading.title) },
+        ],
+      ),
+      safe_html_element("div", class_name="markdown-section__body", attrs="", children=[
+        SafeHtml::{ value: body_html },
+      ]),
+    ],
+  )
+}
+
+///|
+fn parse_markdown_heading_block(block : String) -> ParsedMarkdownHeading? {
   let trimmed = block.trim().to_owned()
   let mut level = 0
   while level < trimmed.length() &&
@@ -204,9 +284,7 @@ fn render_markdown_heading_safe_html(block : String) -> String? {
   if title.length() == 0 {
     None
   } else {
-    Some(
-      "<h\{level} class=\"markdown-heading markdown-heading--h\{level}\">\{render_markdown_title_html(title)}</h\{level}>",
-    )
+    Some(ParsedMarkdownHeading::{ level, title })
   }
 }
 

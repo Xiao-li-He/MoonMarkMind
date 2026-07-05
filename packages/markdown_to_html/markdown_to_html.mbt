@@ -5,6 +5,12 @@ pub fn render(markdown : String) -> String {
 }
 
 ///|
+/// Render Markdown as a collapsible HTML fragment grouped by headings.
+pub fn render_collapsible(markdown : String) -> String {
+  @markdown.render_markdown_collapsible_html(markdown)
+}
+
+///|
 /// Render inline Markdown to a safe HTML fragment.
 pub fn render_inline(source : String) -> String {
   @markdown.render_markdown_inline_html(source)

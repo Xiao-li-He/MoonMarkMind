@@ -19,6 +19,11 @@ pub fn render_rich_markdown_html() -> String {
 }
 
 ///|
+pub fn render_rich_markdown_collapsible_html() -> String {
+  @to_html.render_collapsible(rich_markdown())
+}
+
+///|
 fn render_html_document(body : String) -> String {
   (
     $|<!doctype html>
@@ -39,7 +44,7 @@ fn render_html_document(body : String) -> String {
 ///|
 async fn render_example_file() -> String {
   let markdown = @fs.read_file(example_input_path()).text()
-  let html = render_html_document(@to_html.render(markdown))
+  let html = render_html_document(@to_html.render_collapsible(markdown))
   @fs.write_file(example_output_path(), html)
   html
 }

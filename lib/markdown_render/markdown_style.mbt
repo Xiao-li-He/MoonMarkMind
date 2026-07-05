@@ -63,6 +63,27 @@ pub fn markdown_style_rules() -> Array[MarkdownStyleRule] {
     markdown_rule(".markdown-heading--h6", "markdown-heading--h6", None, None, [
       markdown_decl("font-size", "1.05em"),
     ]),
+    markdown_rule(".markdown-section", "markdown-section", None, None, [
+      markdown_decl("margin", "0 0 0.75em"),
+    ]),
+    markdown_rule(
+      ".markdown-section__summary",
+      "markdown-section__summary",
+      None,
+      None,
+      [markdown_decl("cursor", "pointer"), markdown_decl("user-select", "none")],
+    ),
+    markdown_rule(
+      ".markdown-section__body",
+      "markdown-section__body",
+      None,
+      None,
+      [
+        markdown_decl("margin", "0.45em 0 0"),
+        markdown_decl("padding-left", "0.75em"),
+        markdown_decl("border-left", "2px solid rgba(167, 190, 214, 0.45)"),
+      ],
+    ),
     markdown_rule(".markdown-paragraph", "markdown-paragraph", None, None, [
       markdown_decl("margin", "0 0 0.75em"),
       markdown_decl("white-space", "normal"),

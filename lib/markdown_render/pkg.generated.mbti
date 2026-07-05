@@ -24,6 +24,8 @@ pub fn parse_markdown_task_line(String) -> MarkdownBlock?
 
 pub fn render_markdown_blocks_html(Array[String]) -> String
 
+pub fn render_markdown_collapsible_html(String) -> String
+
 pub fn render_markdown_html(String) -> String
 
 pub fn render_markdown_inline_html(String) -> String

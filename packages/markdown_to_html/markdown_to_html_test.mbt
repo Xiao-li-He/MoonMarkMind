@@ -18,6 +18,23 @@ test "render heading followed by text without blank line" {
 }
 
 ///|
+test "render collapsible markdown body to html" {
+  let html = render_collapsible("# Root\nBody\n## Child")
+  assert_true(html.contains("<details"))
+  assert_true(html.contains("<summary"))
+  assert_true(html.contains("open"))
+  assert_true(html.contains("markdown-section--h1"))
+  assert_true(html.contains("markdown-section--h2"))
+  assert_true(html.contains("markdown-heading--h1"))
+  assert_true(html.contains("markdown-heading--h2"))
+  assert_true(
+    html.contains(
+      "<div class=\"markdown-section__body\"><p class=\"markdown-paragraph\">Body</p><details",
+    ),
+  )
+}
+
+///|
 test "render inline markdown to html" {
   let html = render_inline("Value $x^2$ and `code`")
   assert_true(html.contains("markdown-math--inline"))

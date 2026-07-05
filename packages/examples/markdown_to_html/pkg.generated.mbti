@@ -2,6 +2,8 @@
 package "Xiao-li-He/MoonMarkMind/packages/examples/markdown_to_html"
 
 // Values
+pub fn render_rich_markdown_collapsible_html() -> String
+
 pub fn render_rich_markdown_html() -> String
 
 pub fn rich_markdown() -> String
