@@ -109,6 +109,7 @@ fn build_markdown_inline_piece_dom(inline : MarkdownInline) -> @dom.Element {
       apply_theme_to_subtree(math)
       math
     }
+    InlineLineBreak => create_element("br", "markdown-line-break")
   }
 }
 
@@ -170,6 +171,7 @@ fn build_markdown_block_dom(block : MarkdownBlock) -> @dom.Element {
       append_child(item, label)
       item
     }
+    BlockList(list) => build_markdown_list_dom(list)
     BlockTable(header, rows) => build_markdown_table_dom(header, rows)
     BlockMath(source) => {
       let math = create_element("div", "markdown-math markdown-math--block")
@@ -178,6 +180,28 @@ fn build_markdown_block_dom(block : MarkdownBlock) -> @dom.Element {
       math
     }
   }
+}
+
+///|
+fn build_markdown_list_dom(
+  list_block : @markdown_render.MarkdownListBlock,
+) -> @dom.Element {
+  let tag = if list_block.ordered { "ol" } else { "ul" }
+  let class_name = if list_block.ordered {
+    "markdown-list markdown-list--ordered"
+  } else {
+    "markdown-list markdown-list--unordered"
+  }
+  let list = create_element(tag, class_name)
+  for item in list_block.items {
+    let li = create_element("li", "markdown-list__item")
+    append_markdown_inline_dom(li, item.text)
+    for child in item.children {
+      append_child(li, build_markdown_list_dom(child))
+    }
+    append_child(list, li)
+  }
+  list
 }
 
 ///|

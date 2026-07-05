@@ -46,13 +46,16 @@ pub fn render_markdown_style_css() -> String {
     $|.markdown-heading--h4,
     $|.markdown-heading--h5,
     $|.markdown-heading--h6 { font-size: 1.05em; }
-    $|.markdown-paragraph { margin: 0 0 0.75em; white-space: pre-wrap; }
+    $|.markdown-paragraph { margin: 0 0 0.75em; white-space: normal; }
     $|.markdown-strong { font-weight: 800; }
     $|.markdown-emphasis { font-style: italic; }
     $|.markdown-inline-code { display: inline-block; padding: 1px 4px; border-radius: 5px; background: rgba(32, 57, 82, 0.1); color: #28415d; font-family: "Cascadia Mono", Consolas, monospace; font-size: 0.92em; }
     $|.markdown-strike { text-decoration: line-through; opacity: 0.74; }
     $|.markdown-link { color: #2c70ce; text-decoration: underline; text-underline-offset: 2px; }
-    $|.markdown-image { display: block; max-width: 100%; max-height: 96px; height: auto; width: auto; margin: 0 auto; border-radius: 6px; object-fit: contain; }
+    $|.markdown-image { display: block; max-width: 100%; max-height: 96px; height: auto; width: auto; margin: 0; border-radius: 6px; object-fit: contain; }
+    $|.markdown-list { margin: 0 0 0.75em; padding-left: 1.35em; }
+    $|.markdown-list .markdown-list { margin: 0.18em 0 0; }
+    $|.markdown-list__item { margin: 0.12em 0; }
     $|.markdown-task { display: flex; align-items: flex-start; gap: 6px; margin: 0 0 0.75em; }
     $|.markdown-task--title { display: inline-flex; align-items: center; margin: 0; }
     $|.markdown-task__check { width: 13px; height: 13px; margin: 2px 0 0 0; flex: 0 0 auto; }
@@ -114,6 +117,12 @@ fn split_markdown_blocks(markdown : String) -> Array[String] {
     } else if trimmed.has_prefix("$$") {
       current.push(owned)
       in_math = !in_math
+    } else if is_markdown_heading_line(trimmed) && !in_code && !in_math {
+      if current.length() > 0 {
+        blocks.push(current.join("\n"))
+        current.clear()
+      }
+      blocks.push(owned)
     } else if trimmed.length() == 0 && !in_code && !in_math {
       if current.length() > 0 {
         blocks.push(current.join("\n"))
@@ -127,4 +136,17 @@ fn split_markdown_blocks(markdown : String) -> Array[String] {
     blocks.push(current.join("\n"))
   }
   blocks
+}
+
+///|
+fn is_markdown_heading_line(line : String) -> Bool {
+  let mut level = 0
+  while level < line.length() &&
+        level < 6 &&
+        line[level].to_int().unsafe_to_char() == '#' {
+    level += 1
+  }
+  level > 0 &&
+  level < line.length() &&
+  line[level].to_int().unsafe_to_char() == ' '
 }

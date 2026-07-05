@@ -12,6 +12,7 @@ pub(all) enum MarkdownInline {
   InlineLink(String, String)
   InlineImage(String, String)
   InlineMath(String)
+  InlineLineBreak
 }
 
 ///|
@@ -19,14 +20,34 @@ pub(all) enum MarkdownBlock {
   BlockParagraph(String)
   BlockCode(String, String)
   BlockTask(Bool, String)
+  BlockList(MarkdownListBlock)
   BlockTable(Array[String], Array[Array[String]])
   BlockMath(String)
+}
+
+///|
+pub(all) struct MarkdownListBlock {
+  ordered : Bool
+  items : Array[MarkdownListItem]
+}
+
+///|
+pub(all) struct MarkdownListItem {
+  text : String
+  children : Array[MarkdownListBlock]
 }
 
 ///|
 /// Wrapper used to make unsafe string/HTML boundaries explicit.
 pub(all) struct SafeHtml {
   value : String
+}
+
+///|
+priv struct ParsedMarkdownListLine {
+  indent : Int
+  ordered : Bool
+  text : String
 }
 
 ///|
@@ -144,6 +165,8 @@ fn render_markdown_inline_piece_safe_html(inline : MarkdownInline) -> SafeHtml {
           },
         ],
       )
+    InlineLineBreak =>
+      safe_html_element("br", class_name="markdown-line-break", attrs="", children=[])
   }
 }
 
@@ -201,6 +224,7 @@ fn render_markdown_block_safe_html(block : MarkdownBlock) -> SafeHtml {
         ]),
       ])
     }
+    BlockList(list) => render_markdown_list_safe_html(list)
     BlockTable(header, rows) => render_markdown_table_safe_html(header, rows)
     BlockMath(source) =>
       safe_html_element(
@@ -214,6 +238,32 @@ fn render_markdown_block_safe_html(block : MarkdownBlock) -> SafeHtml {
         ],
       )
   }
+}
+
+///|
+fn render_markdown_list_safe_html(list : MarkdownListBlock) -> SafeHtml {
+  let item_parts = []
+  for item in list.items {
+    let children = [render_markdown_inline_safe_html(item.text)]
+    for child in item.children {
+      children.push(render_markdown_list_safe_html(child))
+    }
+    item_parts.push(
+      safe_html_element(
+        "li",
+        class_name="markdown-list__item",
+        attrs="",
+        children~,
+      ),
+    )
+  }
+  let tag = if list.ordered { "ol" } else { "ul" }
+  let class_name = if list.ordered {
+    "markdown-list markdown-list--ordered"
+  } else {
+    "markdown-list markdown-list--unordered"
+  }
+  safe_html_element(tag, class_name~, attrs="", children=item_parts)
 }
 
 ///|
@@ -280,6 +330,8 @@ fn safe_html_element(
   let child_html = safe_html_join(children).value
   if tag == "input" {
     SafeHtml::{ value: "<input\{class_attr}\{attrs} />" }
+  } else if tag == "br" {
+    SafeHtml::{ value: "<br\{class_attr}\{attrs}>" }
   } else {
     SafeHtml::{ value: "<\{tag}\{class_attr}\{attrs}>\{child_html}</\{tag}>" }
   }
@@ -318,14 +370,20 @@ pub fn parse_markdown_block_list(
                       }
                     }
                   } else {
-                    match parse_markdown_task_line(trimmed) {
-                      Some(task) => parsed.push(task)
+                    match parse_markdown_list_block(lines) {
+                      Some(list) => parsed.push(list)
                       None =>
-                        parsed.push(
-                          BlockParagraph(
-                            normalize_markdown_paragraph_display_text(trimmed),
-                          ),
-                        )
+                        match parse_markdown_task_line(trimmed) {
+                          Some(task) => parsed.push(task)
+                          None =>
+                            parsed.push(
+                              BlockParagraph(
+                                normalize_markdown_paragraph_display_text(
+                                  trimmed,
+                                ),
+                              ),
+                            )
+                        }
                     }
                   }
                 }
@@ -335,6 +393,120 @@ pub fn parse_markdown_block_list(
     }
   }
   parsed
+}
+
+///|
+fn parse_markdown_list_block(lines : Array[String]) -> MarkdownBlock? {
+  let parsed = []
+  for line in lines {
+    match parse_markdown_list_item_line(line) {
+      Some(item) => parsed.push(item)
+      None => return None
+    }
+  }
+  if parsed.length() == 0 {
+    return None
+  }
+  let (list, next) = parse_markdown_list_tree(parsed, 0, parsed[0].indent)
+  if next == parsed.length() {
+    Some(BlockList(list))
+  } else {
+    None
+  }
+}
+
+///|
+fn parse_markdown_list_tree(
+  lines : Array[ParsedMarkdownListLine],
+  start : Int,
+  indent : Int,
+) -> (MarkdownListBlock, Int) {
+  let items = []
+  let ordered = lines[start].ordered
+  let mut index = start
+  while index < lines.length() && lines[index].indent >= indent {
+    if lines[index].indent > indent {
+      break
+    }
+    let item_line = lines[index]
+    index += 1
+    let children = []
+    while index < lines.length() && lines[index].indent > indent {
+      let (child, next) = parse_markdown_list_tree(
+        lines,
+        index,
+        lines[index].indent,
+      )
+      children.push(child)
+      index = next
+    }
+    items.push(MarkdownListItem::{ text: item_line.text, children })
+  }
+  (MarkdownListBlock::{ ordered, items }, index)
+}
+
+///|
+fn parse_markdown_list_item_line(line : String) -> ParsedMarkdownListLine? {
+  let indent = markdown_line_indent(line)
+  let trimmed = line.trim().to_owned()
+  if parse_markdown_task_line(trimmed) is Some(_) {
+    return None
+  }
+  if trimmed.length() > 2 {
+    let marker = trimmed[0].to_int().unsafe_to_char()
+    if (marker == '-' || marker == '*' || marker == '+') &&
+      trimmed[1].to_int().unsafe_to_char() == ' ' {
+      let text = trimmed[2:].to_owned().trim().to_owned()
+      if text.length() > 0 {
+        return Some(ParsedMarkdownListLine::{ indent, ordered: false, text })
+      }
+    }
+  }
+  parse_markdown_ordered_list_item_line(trimmed, indent)
+}
+
+///|
+fn parse_markdown_ordered_list_item_line(
+  line : String,
+  indent : Int,
+) -> ParsedMarkdownListLine? {
+  let mut index = 0
+  while index < line.length() &&
+        is_markdown_digit(line[index].to_int().unsafe_to_char()) {
+    index += 1
+  }
+  if index == 0 ||
+    index + 1 >= line.length() ||
+    line[index].to_int().unsafe_to_char() != '.' ||
+    line[index + 1].to_int().unsafe_to_char() != ' ' {
+    return None
+  }
+  let text = line[index + 2:].to_owned().trim().to_owned()
+  if text.length() == 0 {
+    None
+  } else {
+    Some(ParsedMarkdownListLine::{ indent, ordered: true, text })
+  }
+}
+
+///|
+fn markdown_line_indent(line : String) -> Int {
+  let mut indent = 0
+  for ch in line {
+    if ch == ' ' {
+      indent += 1
+    } else if ch == '\t' {
+      indent += 4
+    } else {
+      return indent
+    }
+  }
+  indent
+}
+
+///|
+fn is_markdown_digit(ch : Char) -> Bool {
+  ch >= '0' && ch <= '9'
 }
 
 ///|
@@ -489,6 +661,55 @@ pub fn parse_markdown_task_line(line : String) -> MarkdownBlock? {
 
 ///|
 pub fn parse_markdown_inline(source : String) -> Array[MarkdownInline] {
+  let lines = split_markdown_inline_lines(source)
+  let pieces = []
+  let mut line_index = 0
+  for line_view in lines {
+    let line = line_view
+    let (content, hard_break) = markdown_line_break_content(line)
+    for inline in parse_markdown_inline_line(content) {
+      pieces.push(inline)
+    }
+    if line_index + 1 < lines.length() {
+      if hard_break {
+        pieces.push(InlineLineBreak)
+      } else {
+        pieces.push(InlineText(" "))
+      }
+    }
+    line_index += 1
+  }
+  pieces
+}
+
+///|
+fn split_markdown_inline_lines(source : String) -> Array[String] {
+  let lines = []
+  let current = []
+  let mut previous_was_cr = false
+  for ch in source {
+    if ch == '\r' {
+      lines.push(current.join(""))
+      current.clear()
+      previous_was_cr = true
+    } else if ch == '\n' {
+      if previous_was_cr {
+        previous_was_cr = false
+      } else {
+        lines.push(current.join(""))
+        current.clear()
+      }
+    } else {
+      current.push(ch.to_string())
+      previous_was_cr = false
+    }
+  }
+  lines.push(current.join(""))
+  lines
+}
+
+///|
+fn parse_markdown_inline_line(source : String) -> Array[MarkdownInline] {
   // Prefer preserving literal text over guessing when delimiters are incomplete.
   // That keeps pasted Markdown readable even when it is not fully well-formed.
   let pieces = []
@@ -509,6 +730,24 @@ pub fn parse_markdown_inline(source : String) -> Array[MarkdownInline] {
     }
   }
   pieces
+}
+
+///|
+fn markdown_line_break_content(line : String) -> (String, Bool) {
+  if line.has_suffix("\\") {
+    return (line[0:line.length() - 1].to_owned(), true)
+  }
+  let mut trailing_spaces = 0
+  let mut index = line.length() - 1
+  while index >= 0 && line[index].to_int().unsafe_to_char() == ' ' {
+    trailing_spaces += 1
+    index -= 1
+  }
+  if trailing_spaces >= 2 {
+    (line[0:line.length() - trailing_spaces].to_owned(), true)
+  } else {
+    (line, false)
+  }
 }
 
 ///|

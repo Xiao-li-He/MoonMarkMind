@@ -26,6 +26,25 @@ test "backslash escapes inline markdown markers" {
 }
 
 ///|
+test "soft line break renders as a space" {
+  let html = render_markdown_inline_html("Alpha\nBeta")
+  assert_eq(html, "Alpha Beta")
+  assert_eq(html.contains("markdown-line-break"), false)
+}
+
+///|
+test "two trailing spaces render a hard line break" {
+  let html = render_markdown_inline_html("Alpha  \nBeta")
+  assert_eq(html.contains("Alpha<br class=\"markdown-line-break\">Beta"), true)
+}
+
+///|
+test "trailing backslash renders a hard line break" {
+  let html = render_markdown_inline_html("Alpha\\\nBeta")
+  assert_eq(html.contains("Alpha<br class=\"markdown-line-break\">Beta"), true)
+}
+
+///|
 test "block markdown renders code task table and math" {
   let html = render_markdown_blocks_html([
     "```mbt\nlet answer = 42\n```", "- [ ] Todo\n- [x] Done", "| Feature | Status |\n|---|---|\n| Editor | ok |",
@@ -38,6 +57,44 @@ test "block markdown renders code task table and math" {
   assert_eq(html.contains("class=\"markdown-table\""), true)
   assert_eq(html.contains("class=\"markdown-math markdown-math--block\""), true)
   assert_eq(html.contains("class=\"markdown-math-frac\""), true)
+}
+
+///|
+test "block markdown renders unordered and ordered lists" {
+  let unordered = render_markdown_blocks_html([
+    "- **Bold** item\n- Math $x^2$ item",
+  ])
+  assert_eq(
+    unordered.contains("<ul class=\"markdown-list markdown-list--unordered\">"),
+    true,
+  )
+  assert_eq(unordered.contains("class=\"markdown-list__item\""), true)
+  assert_eq(unordered.contains("class=\"markdown-strong\""), true)
+  assert_eq(
+    unordered.contains("class=\"markdown-math markdown-math--inline\""),
+    true,
+  )
+
+  let ordered = render_markdown_blocks_html(["1. First\n2. Second"])
+  assert_eq(
+    ordered.contains("<ol class=\"markdown-list markdown-list--ordered\">"),
+    true,
+  )
+  assert_eq(
+    ordered.contains("<li class=\"markdown-list__item\">First</li>"),
+    true,
+  )
+
+  let mixed = render_markdown_blocks_html(["1. First\n  - Nested-ish\n3. Third"])
+  assert_eq(mixed.contains("markdown-list--ordered"), true)
+  assert_eq(mixed.contains("markdown-list--unordered"), true)
+  assert_eq(
+    mixed.contains(
+      "<li class=\"markdown-list__item\">First<ul class=\"markdown-list markdown-list--unordered\">",
+    ),
+    true,
+  )
+  assert_eq(mixed.contains("Nested-ish"), true)
 }
 
 ///|

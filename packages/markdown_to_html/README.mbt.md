@@ -55,3 +55,4 @@ test {
 - LaTeX formulas are rendered through `lib/latex_math_render`.
 - Standalone HTML documents can include `render_style_element()` so Markdown text styles, tables, fractions, radicals, and scripts use the same visual rules as the Web mind map.
 - Backslash escapes Markdown markers. For example, `\**not bold\**` and `\$not math\$` render as literal text.
+- Line breaks follow standard Markdown: a single newline inside a paragraph renders like a space; two trailing spaces or a trailing backslash before newline renders as `<br>`.

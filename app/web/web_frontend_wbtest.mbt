@@ -274,10 +274,10 @@ test "markdown block renderer covers code task and table blocks" {
 }
 
 ///|
-test "markdown paragraph renderer collapses multiple blank lines" {
+test "markdown paragraph renderer treats soft breaks as spaces" {
   let html = render_markdown_blocks_html(["Alpha\n\n\nBeta"])
-  assert_eq(html.contains("Alpha\nBeta"), true)
-  assert_eq(html.contains("Alpha\n\nBeta"), false)
+  assert_eq(html.contains("Alpha Beta"), true)
+  assert_eq(html.contains("Alpha\nBeta"), false)
 
   let code = render_markdown_blocks_html(["```txt\nAlpha\n\nBeta\n```"])
   assert_eq(code.contains("Alpha\n\nBeta"), true)

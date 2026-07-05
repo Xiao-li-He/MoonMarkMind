@@ -7,6 +7,17 @@ test "render markdown body to html" {
 }
 
 ///|
+test "render heading followed by text without blank line" {
+  let html = render("# Title\nBody text")
+  assert_true(
+    html.contains(
+      "<h1 class=\"markdown-heading markdown-heading--h1\">Title</h1>",
+    ),
+  )
+  assert_true(html.contains("<p class=\"markdown-paragraph\">Body text</p>"))
+}
+
+///|
 test "render inline markdown to html" {
   let html = render_inline("Value $x^2$ and `code`")
   assert_true(html.contains("markdown-math--inline"))
@@ -43,6 +54,10 @@ test "render math style css for standalone documents" {
   assert_true(style.contains("<style>"))
   assert_true(style.contains(".markdown-strong"))
   assert_true(style.contains(".markdown-table th"))
+  assert_true(style.contains(".markdown-list"))
+  assert_true(style.contains(".markdown-image"))
+  assert_true(style.contains("margin: 0;"))
+  assert_true(style.contains("white-space: normal"))
   assert_true(style.contains(".markdown-math sup"))
 }
 
@@ -56,4 +71,36 @@ test "render escaped markdown markers literally" {
   assert_true(html.contains("**not bold**"))
   assert_true(html.contains("$x$"))
   assert_true(html.contains("**text**"))
+}
+
+///|
+test "render standard markdown line breaks" {
+  let soft = render("Alpha\nBeta")
+  assert_true(soft.contains("Alpha Beta"))
+  assert_false(soft.contains("markdown-line-break"))
+  let hard = render("Alpha  \nBeta\n\nGamma\\\nDelta")
+  assert_true(hard.contains("Alpha<br class=\"markdown-line-break\">Beta"))
+  assert_true(hard.contains("Gamma<br class=\"markdown-line-break\">Delta"))
+}
+
+///|
+test "render normal lists" {
+  let html = render("- Item **one**\n- Item $x^2$\n\n1. First\n2. Second")
+  assert_true(html.contains("markdown-list--unordered"))
+  assert_true(html.contains("markdown-list--ordered"))
+  assert_true(html.contains("markdown-strong"))
+  assert_true(html.contains("markdown-math--inline"))
+}
+
+///|
+test "render nested lists from indentation" {
+  let html = render("1. first\n  - child\n    1. grandchild\n2. second")
+  assert_true(html.contains("markdown-list--ordered"))
+  assert_true(html.contains("markdown-list--unordered"))
+  assert_true(
+    html.contains(
+      "<li class=\"markdown-list__item\">first<ul class=\"markdown-list markdown-list--unordered\">",
+    ),
+  )
+  assert_true(html.contains("grandchild"))
 }

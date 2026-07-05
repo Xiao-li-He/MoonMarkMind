@@ -554,6 +554,12 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "markdown-math-op") {
     style_markdown_math_op(element)
   }
+  if has_class_name(element, "markdown-list") {
+    style_markdown_list(element)
+  }
+  if has_class_name(element, "markdown-list__item") {
+    style_markdown_list_item(element)
+  }
   if has_class_name(element, "markdown-task") {
     style_markdown_task(element)
   }
@@ -2750,7 +2756,7 @@ fn style_markdown_blocks(element : @dom.Element) -> Unit {
 ///|
 fn style_markdown_paragraph(element : @dom.Element) -> Unit {
   set_style(element, "margin", "0")
-  set_style(element, "white-space", "pre-wrap")
+  set_style(element, "white-space", "normal")
 }
 
 ///|
@@ -2794,7 +2800,7 @@ fn style_markdown_image(element : @dom.Element) -> Unit {
   set_style(element, "max-height", "96px")
   set_style(element, "height", "auto")
   set_style(element, "width", "auto")
-  set_style(element, "margin", "0 auto")
+  set_style(element, "margin", "0")
   set_style(element, "border-radius", "6px")
   set_style(element, "object-fit", "contain")
   set_style(element, "cursor", "zoom-in")
@@ -3024,6 +3030,21 @@ fn latex_math_rule_matches(
     Some(ancestor_class) => element.closest(".\{ancestor_class}") is Some(_)
     None => true
   }
+}
+
+///|
+fn style_markdown_list(element : @dom.Element) -> Unit {
+  set_style(element, "margin", "0 0 0.75em")
+  set_style(element, "padding-left", "1.35em")
+  match element.closest(".markdown-list__item") {
+    Some(_) => set_style(element, "margin", "0.18em 0 0")
+    None => ()
+  }
+}
+
+///|
+fn style_markdown_list_item(element : @dom.Element) -> Unit {
+  set_style(element, "margin", "0.12em 0")
 }
 
 ///|

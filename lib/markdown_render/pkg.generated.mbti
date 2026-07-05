@@ -33,6 +33,7 @@ pub(all) enum MarkdownBlock {
   BlockParagraph(String)
   BlockCode(String, String)
   BlockTask(Bool, String)
+  BlockList(MarkdownListBlock)
   BlockTable(Array[String], Array[Array[String]])
   BlockMath(String)
 }
@@ -46,6 +47,17 @@ pub(all) enum MarkdownInline {
   InlineLink(String, String)
   InlineImage(String, String)
   InlineMath(String)
+  InlineLineBreak
+}
+
+pub(all) struct MarkdownListBlock {
+  ordered : Bool
+  items : Array[MarkdownListItem]
+}
+
+pub(all) struct MarkdownListItem {
+  text : String
+  children : Array[MarkdownListBlock]
 }
 
 pub(all) struct SafeHtml {

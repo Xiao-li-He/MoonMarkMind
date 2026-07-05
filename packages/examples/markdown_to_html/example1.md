@@ -12,6 +12,15 @@ formula $x^2 + \alpha$.
 - [x] Render Markdown to HTML
 - [X] Keep unsafe input escaped
 
+## List
+
+1. first
+  - a_1
+3. third
+  2. c_1
+  * c_2
+    + c_2_1
+
 ## Table
 
 | Feature | Status | Notes |
