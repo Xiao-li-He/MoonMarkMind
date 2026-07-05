@@ -2,7 +2,7 @@
 package "Xiao-li-He/MoonMarkMind/cmd/cli"
 
 // Values
-pub fn run() -> Unit
+pub async fn run() -> Unit
 
 // Errors
 

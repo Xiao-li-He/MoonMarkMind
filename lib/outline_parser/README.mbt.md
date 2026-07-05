@@ -26,7 +26,9 @@ test {
 
   let outline = build_outline(markdown)
   guard outline.title == "Project" else { fail("unexpected title") }
-  guard outline.children.length() == 2 else { fail("expected two child headings") }
+  guard outline.children.length() == 2 else {
+    fail("expected two child headings")
+  }
 }
 ```
 

@@ -5,6 +5,7 @@ priv struct CliRequest {
   layout : String
   style : String
   layer : String
+  output_dir : String
 }
 
 ///|
@@ -17,7 +18,7 @@ fn command() -> @argparse.Command {
       @argparse.OptionArg(
         "output",
         long="output",
-        about="Output format: svg, html, or png",
+        about="Output format: svg or html",
       ),
       @argparse.OptionArg(
         "layout",
@@ -29,6 +30,12 @@ fn command() -> @argparse.Command {
         "layer",
         long="layer",
         about="Layer preset: root, layer2, or full",
+      ),
+      @argparse.OptionArg(
+        "output-dir",
+        short='o',
+        long="output-dir",
+        about="Output directory",
       ),
     ],
     positionals=[
@@ -43,14 +50,44 @@ fn command() -> @argparse.Command {
 
 ///|
 fn parse_request(argv : Array[String]) -> CliRequest raise {
-  let matches = @argparse.parse(command(), argv=argv[1:])
+  let matches = @argparse.parse(command(), argv=normalize_argv(argv))
   {
     input_path: required_arg(matches, "input"),
-    output_format: optional_arg(matches, "output", "svg"),
-    layout: optional_arg(matches, "layout", "logic"),
-    style: optional_arg(matches, "style", "full"),
-    layer: optional_arg(matches, "layer", "full"),
+    output_format: validate_output_format(
+      optional_arg(matches, "output", "svg"),
+    ),
+    layout: validate_layout(optional_arg(matches, "layout", "logic")),
+    style: validate_style(optional_arg(matches, "style", "full")),
+    layer: validate_layer(optional_arg(matches, "layer", "full")),
+    output_dir: optional_arg(matches, "output-dir", "output"),
   }
+}
+
+///|
+fn normalize_argv(argv : Array[String]) -> Array[String] {
+  let args = []
+  let mut in_runtime_prefix = true
+  for arg in argv {
+    if in_runtime_prefix && looks_like_executable_arg(arg) {
+      continue
+    }
+    in_runtime_prefix = false
+    if arg == "--" {
+      continue
+    }
+    args.push(arg)
+  }
+  args
+}
+
+///|
+fn looks_like_executable_arg(arg : String) -> Bool {
+  arg.has_suffix(".js") ||
+  arg.has_suffix(".mjs") ||
+  arg.has_suffix(".exe") ||
+  arg.has_suffix(".wasm") ||
+  arg.has_suffix("cmd/cli") ||
+  arg.has_suffix("cmd\\cli")
 }
 
 ///|
@@ -74,6 +111,38 @@ fn optional_arg(
 }
 
 ///|
+fn validate_output_format(value : String) -> String raise {
+  match value {
+    "svg" | "html" => value
+    _ => fail("Unsupported output format: \{value}")
+  }
+}
+
+///|
+fn validate_layout(value : String) -> String raise {
+  match value {
+    "logic" | "mindmap" | "tree" => value
+    _ => fail("Unsupported layout: \{value}")
+  }
+}
+
+///|
+fn validate_style(value : String) -> String raise {
+  match value {
+    "full" | "line" => value
+    _ => fail("Unsupported style: \{value}")
+  }
+}
+
+///|
+fn validate_layer(value : String) -> String raise {
+  match value {
+    "root" | "layer2" | "full" => value
+    _ => fail("Unsupported layer: \{value}")
+  }
+}
+
+///|
 fn render_options(request : CliRequest) -> @renderer.RenderOptions {
   {
     layout: @renderer.normalize_layout(request.layout),
@@ -83,8 +152,33 @@ fn render_options(request : CliRequest) -> @renderer.RenderOptions {
 }
 
 ///|
-fn output_path(input_path : String, output_format : String) -> String {
-  "\{file_stem(input_path)}.\{output_format}"
+fn output_path(request : CliRequest) -> String {
+  join_path(
+    request.output_dir,
+    "\{file_stem(request.input_path)}.\{request.output_format}",
+  )
+}
+
+///|
+fn join_path(dir : String, name : String) -> String {
+  let trimmed = dir.trim().to_owned()
+  if trimmed.length() == 0 {
+    name
+  } else if ends_with_separator(trimmed) {
+    "\{trimmed}\{name}"
+  } else {
+    "\{trimmed}/\{name}"
+  }
+}
+
+///|
+fn ends_with_separator(path : String) -> Bool {
+  if path.length() == 0 {
+    false
+  } else {
+    let ch = path[path.length() - 1].to_int().unsafe_to_char()
+    ch == '/' || ch == '\\'
+  }
 }
 
 ///|
@@ -110,33 +204,53 @@ fn file_stem(path : String) -> String {
 }
 
 ///|
-fn run_export(request : CliRequest) -> Unit raise {
+async fn run_export(request : CliRequest) -> Unit {
   let options = render_options(request)
-  let _ = options
-  let _ = request.input_path
-  let _ = output_path(request.input_path, request.output_format)
-  match request.output_format {
-    "svg" | "html" =>
-      fail(
-        "File-system export requires moonbitlang/x; renderer library APIs are available now",
-      )
-    "png" =>
-      fail(
-        "PNG export requires the browser Canvas pipeline and is not available in the native CLI yet",
-      )
+  let markdown = @fs.read_file(request.input_path).text()
+  let rendered = match request.output_format {
+    "svg" => @renderer.render_markdown_svg(markdown, options~)
+    "html" =>
+      render_html_document(@renderer.render_markdown_html(markdown, options~))
     format => fail("Unsupported output format: \{format}")
   }
+  @fs.mkdir(request.output_dir, recursive=true) catch {
+    _ => ()
+  }
+  let path = output_path(request)
+  @fs.write_file(path, rendered)
+  println("Exported \{request.output_format}: \{path}")
 }
 
 ///|
-pub fn run() -> Unit {
+fn render_html_document(body : String) -> String {
+  (
+    $|<!doctype html>
+    $|<html lang="en">
+    $|<head>
+    $|  <meta charset="utf-8">
+    $|  <meta name="viewport" content="width=device-width, initial-scale=1">
+    $|  <title>MoonMarkMind Export</title>
+    $|</head>
+    $|<body>
+    $|\{body}
+    $|</body>
+    $|</html>
+  )
+}
+
+///|
+pub async fn run() -> Unit {
   let request = parse_request(@env.args()) catch {
     e => {
       println("Error parsing arguments: \{e}")
+      @sys.exit(1)
       return
     }
   }
   run_export(request) catch {
-    e => println("Failed to export mind map: \{e}")
+    e => {
+      println("Failed to export mind map: \{e}")
+      @sys.exit(1)
+    }
   }
 }

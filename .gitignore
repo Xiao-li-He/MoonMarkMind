@@ -4,6 +4,7 @@ _build/
 .mooncakes/
 .moonagent/
 web/main.bundle.js
+output/
 
 项目申报书.md
 申报书.txt

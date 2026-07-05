@@ -6,6 +6,9 @@ source = "."
 
 import {
   "mizchi/js@0.10.14",
+  "moonbitlang/async@0.20.0",
+  "moonbitlang/x@0.4.46",
+  "mizchi/x@0.5.1",
 }
 
 readme = "README.mbt.md"

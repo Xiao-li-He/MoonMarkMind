@@ -14,7 +14,7 @@ MoonMarkMind 是一个用 MoonBit 编写的 Markdown 脑图工具包与浏览器
 | `lib/latex_math_render` | LaTeX 行内/块级公式到 HTML/SVG fragment | 需要在 Markdown 节点中渲染轻量公式 |
 | `lib/mindmap_renderer` | `OutlineNode` 或 Markdown 到静态 HTML/SVG 脑图字符串 | 需要服务端、CLI 或测试环境生成脑图片段 |
 | `app/web` | 浏览器端 MoonMarkMind 应用 | DOM 交互、编辑器、工具栏、Canvas PNG 导出 |
-| `cmd/cli` | 命令行导出入口 | 本地终端批量生成脑图文件，仍在逐步完善 |
+| `cmd/cli` | 命令行导出入口 | 本地终端批量生成 SVG/HTML 脑图文件 |
 
 ## Install / Import
 
@@ -83,11 +83,11 @@ test {
 `cmd/cli` 是命令行导出入口，参数设计与 Web 端布局、样式和详情级别保持一致：
 
 ```powershell
-moon run cmd/cli -- ./samples/part1.md --output svg --layout logic --style full --layer full
-moon run cmd/cli -- ./samples/part1.md --output html --layout tree --style line --layer layer2
+moon run cmd/cli -- ./samples/example1.md --output svg --layout logic --style full --layer full
+moon run cmd/cli -- ./samples/example1.md --output html --layout tree --style line --layer layer2 -o output
 ```
 
-当前 CLI 主要用于 SVG/HTML 字符串导出能力验证；PNG/XMind 不作为本阶段文档承诺。
+默认输出目录为 `output/`；PNG/XMind 不作为本阶段文档承诺。
 
 ## Core APIs
 

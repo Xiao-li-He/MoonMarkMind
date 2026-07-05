@@ -1,6 +1,10 @@
 import {
   "moonbitlang/core/argparse",
   "moonbitlang/core/env",
+  "moonbitlang/x/sys",
+  "mizchi/x/fs",
+  "moonbitlang/async",
+  "moonbitlang/async/io",
   "Xiao-li-He/MoonMarkMind/lib/mindmap_renderer" @renderer,
 }
 
