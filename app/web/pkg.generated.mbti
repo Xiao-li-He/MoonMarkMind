@@ -36,6 +36,14 @@ pub fn promote_heading(String, Int) -> String
 
 pub fn rename_heading(String, Int, String) -> String
 
+pub fn render_markdown_blocks_html(Array[String]) -> String
+
+pub fn render_markdown_html(String) -> String
+
+pub fn render_markdown_inline_html(String) -> String
+
+pub fn render_markdown_title_html(String) -> String
+
 pub fn sample_markdown() -> String
 
 pub fn start_web_app() -> Unit

@@ -19,8 +19,3 @@ fn parse_markdown_nodes(markdown : String) -> Array[MarkdownNode] {
 fn normalize_markdown_body_lines(lines : Array[String]) -> Array[String] {
   @outline_parser.normalize_markdown_body_lines(lines)
 }
-
-///|
-fn is_blank_markdown_line(line : String) -> Bool {
-  line.trim().length() == 0
-}

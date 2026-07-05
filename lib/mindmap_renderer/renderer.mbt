@@ -135,10 +135,9 @@ fn render_node_html(
   let body_html = if node.body.length() == 0 {
     ""
   } else {
-    let body = node.body.join("\n\n")
-    "<div class=\"moonmarkmind-node-body\">\{escape_html(body)}</div>"
+    "<div class=\"moonmarkmind-node-body\">\{@markdown_render.render_markdown_blocks_html(node.body)}</div>"
   }
-  "<article class=\"moonmarkmind-node\" data-level=\"\{node.level}\" data-node-index=\"\{node.flat_index}\"><strong class=\"moonmarkmind-node-title\">\{escape_html(node.title)}</strong>\{body_html}\{child_html}</article>"
+  "<article class=\"moonmarkmind-node\" data-level=\"\{node.level}\" data-node-index=\"\{node.flat_index}\"><strong class=\"moonmarkmind-node-title\">\{@markdown_render.render_markdown_title_html(node.title)}</strong>\{body_html}\{child_html}</article>"
 }
 
 ///|
@@ -292,13 +291,4 @@ fn style_class(style : MindmapStyle) -> String {
     Full => "full"
     Line => "line"
   }
-}
-
-///|
-fn escape_html(source : String) -> String {
-  source
-  .replace(old="&", new="&amp;")
-  .replace(old="<", new="&lt;")
-  .replace(old=">", new="&gt;")
-  .replace(old="\"", new="&quot;")
 }
