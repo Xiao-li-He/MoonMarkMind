@@ -1,0 +1,10 @@
+import {
+  "Xiao-li-He/MoonMarkMind/packages/markdown_to_html" @to_html,
+  "mizchi/x/fs",
+  "moonbitlang/async",
+  "moonbitlang/async/io",
+}
+
+options(
+  "is-main": true,
+)
