@@ -2755,54 +2755,37 @@ fn style_markdown_blocks(element : @dom.Element) -> Unit {
 
 ///|
 fn style_markdown_paragraph(element : @dom.Element) -> Unit {
-  set_style(element, "margin", "0")
-  set_style(element, "white-space", "normal")
+  apply_markdown_style_rule(element, "markdown-paragraph")
 }
 
 ///|
 fn style_markdown_strong(element : @dom.Element) -> Unit {
-  set_style(element, "font-weight", "800")
+  apply_markdown_style_rule(element, "markdown-strong")
 }
 
 ///|
 fn style_markdown_emphasis(element : @dom.Element) -> Unit {
-  set_style(element, "font-style", "italic")
+  apply_markdown_style_rule(element, "markdown-emphasis")
 }
 
 ///|
 fn style_markdown_inline_code(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-block")
-  set_style(element, "padding", "1px 4px")
-  set_style(element, "border-radius", "5px")
-  set_style(element, "background", "rgba(32, 57, 82, 0.1)")
-  set_style(element, "color", "#28415d")
-  set_style(element, "font-family", "\"Cascadia Mono\", Consolas, monospace")
-  set_style(element, "font-size", "0.92em")
+  apply_markdown_style_rule(element, "markdown-inline-code")
 }
 
 ///|
 fn style_markdown_strike(element : @dom.Element) -> Unit {
-  set_style(element, "text-decoration", "line-through")
-  set_style(element, "opacity", "0.74")
+  apply_markdown_style_rule(element, "markdown-strike")
 }
 
 ///|
 fn style_markdown_link(element : @dom.Element) -> Unit {
-  set_style(element, "color", "#2c70ce")
-  set_style(element, "text-decoration", "underline")
-  set_style(element, "text-underline-offset", "2px")
+  apply_markdown_style_rule(element, "markdown-link")
 }
 
 ///|
 fn style_markdown_image(element : @dom.Element) -> Unit {
-  set_style(element, "display", "block")
-  set_style(element, "max-width", "100%")
-  set_style(element, "max-height", "96px")
-  set_style(element, "height", "auto")
-  set_style(element, "width", "auto")
-  set_style(element, "margin", "0")
-  set_style(element, "border-radius", "6px")
-  set_style(element, "object-fit", "contain")
+  apply_markdown_style_rule(element, "markdown-image")
   set_style(element, "cursor", "zoom-in")
 }
 
@@ -2851,21 +2834,12 @@ fn style_image_preview_close(element : @dom.Element) -> Unit {
 
 ///|
 fn style_markdown_code_block(element : @dom.Element) -> Unit {
-  set_style(element, "margin", "0")
+  apply_markdown_style_rule(element, "markdown-code-block")
   set_style(element, "display", "block")
   set_style(element, "width", "100%")
   set_style(element, "max-width", "100%")
   set_style(element, "min-width", "0")
   set_style(element, "box-sizing", "border-box")
-  set_style(element, "padding", "8px")
-  set_style(element, "border-radius", "8px")
-  set_style(element, "background", "rgba(29, 45, 62, 0.92)")
-  set_style(element, "color", "#f6fbff")
-  set_style(element, "font-family", "\"Cascadia Mono\", Consolas, monospace")
-  set_style(element, "font-size", "11px")
-  set_style(element, "line-height", "1.45")
-  set_style(element, "white-space", "pre")
-  set_style(element, "overflow-x", "auto")
   set_style(element, "overflow-y", "hidden")
   if branch_line_vertical_context(element) {
     set_style(element, "white-space", "pre-wrap")
@@ -2877,7 +2851,7 @@ fn style_markdown_code_block(element : @dom.Element) -> Unit {
 
 ///|
 fn style_markdown_code_block_code(element : @dom.Element) -> Unit {
-  set_style(element, "display", "block")
+  apply_markdown_style_rule(element, "markdown-code-block__code")
   set_style(element, "min-width", "max-content")
   if branch_line_vertical_context(element) {
     set_style(element, "min-width", "0")
@@ -2895,6 +2869,56 @@ fn branch_line_vertical_context(element : @dom.Element) -> Bool {
     element.closest(".node--branch-line") is Some(_) &&
     element.closest(".mindmap-stage--vertical") is Some(_)
   )
+}
+
+///|
+fn apply_markdown_style_rule(
+  element : @dom.Element,
+  class_name : String,
+) -> Unit {
+  for rule in @markdown_render.markdown_style_rules() {
+    if rule.class_name == class_name &&
+      markdown_style_rule_matches(element, rule) {
+      apply_markdown_style_declarations(element, rule)
+    }
+  }
+}
+
+///|
+fn apply_markdown_style_rule_for_tag(
+  element : @dom.Element,
+  tag_name : String,
+) -> Unit {
+  for rule in @markdown_render.markdown_style_rules() {
+    match rule.tag_name {
+      Some(rule_tag) =>
+        if rule_tag == tag_name && markdown_style_rule_matches(element, rule) {
+          apply_markdown_style_declarations(element, rule)
+        }
+      None => ()
+    }
+  }
+}
+
+///|
+fn apply_markdown_style_declarations(
+  element : @dom.Element,
+  rule : @markdown_render.MarkdownStyleRule,
+) -> Unit {
+  for declaration in rule.declarations {
+    set_style(element, declaration.property, declaration.value)
+  }
+}
+
+///|
+fn markdown_style_rule_matches(
+  element : @dom.Element,
+  rule : @markdown_render.MarkdownStyleRule,
+) -> Bool {
+  match rule.ancestor_class {
+    Some(ancestor_class) => element.closest(".\{ancestor_class}") is Some(_)
+    None => true
+  }
 }
 
 ///|
@@ -3034,59 +3058,40 @@ fn latex_math_rule_matches(
 
 ///|
 fn style_markdown_list(element : @dom.Element) -> Unit {
-  set_style(element, "margin", "0 0 0.75em")
-  set_style(element, "padding-left", "1.35em")
-  match element.closest(".markdown-list__item") {
-    Some(_) => set_style(element, "margin", "0.18em 0 0")
-    None => ()
-  }
+  apply_markdown_style_rule(element, "markdown-list")
 }
 
 ///|
 fn style_markdown_list_item(element : @dom.Element) -> Unit {
-  set_style(element, "margin", "0.12em 0")
+  apply_markdown_style_rule(element, "markdown-list__item")
 }
 
 ///|
 fn style_markdown_task(element : @dom.Element) -> Unit {
-  set_style(element, "display", "flex")
-  set_style(element, "align-items", "flex-start")
-  set_style(element, "gap", "6px")
-  set_style(element, "margin", "0")
+  apply_markdown_style_rule(element, "markdown-task")
 }
 
 ///|
 fn style_markdown_task_title(element : @dom.Element) -> Unit {
-  set_style(element, "display", "inline-flex")
-  set_style(element, "align-items", "center")
+  apply_markdown_style_rule(element, "markdown-task--title")
 }
 
 ///|
 fn style_markdown_task_check(element : @dom.Element) -> Unit {
-  set_style(element, "width", "13px")
-  set_style(element, "height", "13px")
-  set_style(element, "margin", "2px 0 0 0")
-  set_style(element, "flex", "0 0 auto")
+  apply_markdown_style_rule(element, "markdown-task__check")
 }
 
 ///|
 fn style_markdown_table(element : @dom.Element) -> Unit {
-  set_style(element, "width", "100%")
-  set_style(element, "border-collapse", "collapse")
-  set_style(element, "font-size", "11px")
-  set_style(element, "line-height", "1.35")
-  set_style(element, "overflow", "hidden")
+  apply_markdown_style_rule(element, "markdown-table")
 }
 
 ///|
 fn style_markdown_table_cell(element : @dom.Element, is_header : Bool) -> Unit {
-  set_style(element, "padding", "3px 5px")
-  set_style(element, "border", "1px solid rgba(167, 190, 214, 0.5)")
-  set_style(element, "vertical-align", "top")
-  set_style(element, "word-break", "break-word")
   if is_header {
-    set_style(element, "font-weight", "800")
-    set_style(element, "background", "rgba(214, 230, 245, 0.5)")
+    apply_markdown_style_rule_for_tag(element, "TH")
+  } else {
+    apply_markdown_style_rule_for_tag(element, "TD")
   }
 }
 

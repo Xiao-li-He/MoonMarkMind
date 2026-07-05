@@ -116,3 +116,28 @@ test "whole markdown input splits paragraphs without breaking fenced code" {
   assert_eq(html.contains("Beta"), true)
   assert_eq(html.contains("A\n\nB"), true)
 }
+
+///|
+test "document markdown renders heading blocks" {
+  let html = render_markdown_html("# Title\nBody text\n\n## Section")
+  assert_true(
+    html.contains(
+      "<h1 class=\"markdown-heading markdown-heading--h1\">Title</h1>",
+    ),
+  )
+  assert_true(html.contains("<p class=\"markdown-paragraph\">Body text</p>"))
+  assert_true(
+    html.contains(
+      "<h2 class=\"markdown-heading markdown-heading--h2\">Section</h2>",
+    ),
+  )
+}
+
+///|
+test "body block renderer keeps hash text as paragraph" {
+  let html = render_markdown_blocks_html(["# Body heading"])
+  assert_false(html.contains("markdown-heading"))
+  assert_true(
+    html.contains("<p class=\"markdown-paragraph\"># Body heading</p>"),
+  )
+}

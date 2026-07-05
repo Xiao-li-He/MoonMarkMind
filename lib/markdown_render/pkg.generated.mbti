@@ -8,6 +8,10 @@ pub fn is_safe_markdown_href(String) -> Bool
 
 pub fn is_safe_markdown_image_src(String) -> Bool
 
+pub fn markdown_style_css() -> String
+
+pub fn markdown_style_rules() -> Array[MarkdownStyleRule]
+
 pub fn parse_markdown_block_list(Array[String]) -> Array[MarkdownBlock]
 
 pub fn parse_markdown_blocks(String) -> Array[MarkdownBlock]
@@ -58,6 +62,19 @@ pub(all) struct MarkdownListBlock {
 pub(all) struct MarkdownListItem {
   text : String
   children : Array[MarkdownListBlock]
+}
+
+pub(all) struct MarkdownStyleDeclaration {
+  property : String
+  value : String
+}
+
+pub(all) struct MarkdownStyleRule {
+  selector : String
+  class_name : String
+  tag_name : String?
+  ancestor_class : String?
+  declarations : Array[MarkdownStyleDeclaration]
 }
 
 pub(all) struct SafeHtml {

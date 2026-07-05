@@ -54,7 +54,14 @@ priv struct ParsedMarkdownListLine {
 
 ///|
 pub fn render_markdown_html(markdown : String) -> String {
-  render_markdown_blocks_html(split_markdown_blocks(markdown))
+  let parts = []
+  for block in split_markdown_document_blocks(markdown) {
+    match render_markdown_heading_safe_html(block) {
+      Some(heading) => parts.push(heading)
+      None => parts.push(render_markdown_blocks_html([block]))
+    }
+  }
+  parts.join("")
 }
 
 ///|
@@ -177,6 +184,30 @@ pub fn render_markdown_blocks_html(blocks : Array[String]) -> String {
     parts.push(render_markdown_block_safe_html(block))
   }
   safe_html_join(parts).value
+}
+
+///|
+fn render_markdown_heading_safe_html(block : String) -> String? {
+  let trimmed = block.trim().to_owned()
+  let mut level = 0
+  while level < trimmed.length() &&
+        level < 6 &&
+        trimmed[level].to_int().unsafe_to_char() == '#' {
+    level += 1
+  }
+  if level == 0 ||
+    level >= trimmed.length() ||
+    trimmed[level].to_int().unsafe_to_char() != ' ' {
+    return None
+  }
+  let title = trimmed[level + 1:].to_owned().trim().to_owned()
+  if title.length() == 0 {
+    None
+  } else {
+    Some(
+      "<h\{level} class=\"markdown-heading markdown-heading--h\{level}\">\{render_markdown_title_html(title)}</h\{level}>",
+    )
+  }
 }
 
 ///|
@@ -1059,6 +1090,59 @@ fn split_markdown_blocks(markdown : String) -> Array[String] {
     blocks.push(current.join("\n"))
   }
   blocks
+}
+
+///|
+fn split_markdown_document_blocks(markdown : String) -> Array[String] {
+  let blocks = []
+  let current = []
+  let mut in_code = false
+  let mut in_math = false
+  for line in markdown.split("\n") {
+    let owned = line.to_owned()
+    let trimmed = owned.trim().to_owned()
+    if trimmed.has_prefix("```") {
+      current.push(owned)
+      in_code = !in_code
+    } else if trimmed.has_prefix("$$") &&
+      trimmed.has_suffix("$$") &&
+      trimmed.length() > 2 {
+      current.push(owned)
+    } else if trimmed.has_prefix("$$") {
+      current.push(owned)
+      in_math = !in_math
+    } else if is_markdown_heading_line(trimmed) && !in_code && !in_math {
+      if current.length() > 0 {
+        blocks.push(current.join("\n"))
+        current.clear()
+      }
+      blocks.push(owned)
+    } else if is_blank_markdown_line(owned) && !in_code && !in_math {
+      if current.length() > 0 {
+        blocks.push(current.join("\n"))
+        current.clear()
+      }
+    } else {
+      current.push(owned)
+    }
+  }
+  if current.length() > 0 {
+    blocks.push(current.join("\n"))
+  }
+  blocks
+}
+
+///|
+fn is_markdown_heading_line(line : String) -> Bool {
+  let mut level = 0
+  while level < line.length() &&
+        level < 6 &&
+        line[level].to_int().unsafe_to_char() == '#' {
+    level += 1
+  }
+  level > 0 &&
+  level < line.length() &&
+  line[level].to_int().unsafe_to_char() == ' '
 }
 
 ///|

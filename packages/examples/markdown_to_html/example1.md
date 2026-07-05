@@ -1,6 +1,6 @@
 # MoonMarkMind Markdown to HTML example
 
-This paragraph includes **strong text**, _emphasis_, ~~deleted text~~, 
+This paragraph includes **strong text**, _emphasis_, *emphasis*，~~deleted text~~, 
 `inline code`, a [mooncakes.io link](https://mooncakes.io/), and an inline
 formula $x^2 + \alpha$.
 
@@ -61,7 +61,7 @@ Indexed root: $\sqrt[n]{x + 1}$.
 
 Nested fraction: $\sqrt{\frac{a_1 + b^2}{c + d}}$.
 
-## Block Math
+### Block Math
 
 $$
 \frac{a_1}{b^2} + \sqrt{x}
@@ -73,14 +73,6 @@ $$
 
 $$
 \sqrt[n]{\frac{x^2 + 1}{y_0 - 3}}
-$$
-
-## Aligned Math
-
-$$
-a &= b + c \\
-x &= {-b \pm \sqrt{b^2 - 4ac} \over 2a} \\
-y &= \sqrt[n]{x^2 + 1}
 $$
 
 ## Unsafe HTML
