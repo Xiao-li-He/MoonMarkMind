@@ -36,9 +36,39 @@ pub fn render_math_style_css() -> String {
 }
 
 ///|
+/// Render CSS for the Markdown structural classes emitted from this package.
+pub fn render_markdown_style_css() -> String {
+  (
+    $|.markdown-heading { margin: 0 0 0.45em; line-height: 1.25; }
+    $|.markdown-heading--h1 { font-size: 1.55em; }
+    $|.markdown-heading--h2 { font-size: 1.35em; }
+    $|.markdown-heading--h3 { font-size: 1.2em; }
+    $|.markdown-heading--h4,
+    $|.markdown-heading--h5,
+    $|.markdown-heading--h6 { font-size: 1.05em; }
+    $|.markdown-paragraph { margin: 0 0 0.75em; white-space: pre-wrap; }
+    $|.markdown-strong { font-weight: 800; }
+    $|.markdown-emphasis { font-style: italic; }
+    $|.markdown-inline-code { display: inline-block; padding: 1px 4px; border-radius: 5px; background: rgba(32, 57, 82, 0.1); color: #28415d; font-family: "Cascadia Mono", Consolas, monospace; font-size: 0.92em; }
+    $|.markdown-strike { text-decoration: line-through; opacity: 0.74; }
+    $|.markdown-link { color: #2c70ce; text-decoration: underline; text-underline-offset: 2px; }
+    $|.markdown-image { display: block; max-width: 100%; max-height: 96px; height: auto; width: auto; margin: 0 auto; border-radius: 6px; object-fit: contain; }
+    $|.markdown-task { display: flex; align-items: flex-start; gap: 6px; margin: 0 0 0.75em; }
+    $|.markdown-task--title { display: inline-flex; align-items: center; margin: 0; }
+    $|.markdown-task__check { width: 13px; height: 13px; margin: 2px 0 0 0; flex: 0 0 auto; }
+    $|.markdown-code-block { margin: 0 0 0.85em; padding: 9px 10px; border-radius: 6px; background: rgba(32, 57, 82, 0.08); overflow-x: auto; }
+    $|.markdown-code-block__code { font-family: "Cascadia Mono", Consolas, monospace; font-size: 0.92em; white-space: pre; }
+    $|.markdown-table { width: 100%; border-collapse: collapse; font-size: 11px; line-height: 1.35; overflow: hidden; margin: 0 0 0.85em; }
+    $|.markdown-table th,
+    $|.markdown-table td { padding: 3px 5px; border: 1px solid rgba(167, 190, 214, 0.5); vertical-align: top; word-break: break-word; }
+    $|.markdown-table th { font-weight: 800; background: rgba(214, 230, 245, 0.5); }
+  )
+}
+
+///|
 /// Render a style element for standalone HTML documents.
 pub fn render_style_element() -> String {
-  "<style>\{render_math_style_css()}</style>"
+  "<style>\{render_markdown_style_css()}\n\{render_math_style_css()}</style>"
 }
 
 ///|

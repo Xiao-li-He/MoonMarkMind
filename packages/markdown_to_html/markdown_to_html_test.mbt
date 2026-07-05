@@ -41,5 +41,19 @@ test "render math style css for standalone documents" {
   assert_true(css.contains(".markdown-math--block"))
   let style = render_style_element()
   assert_true(style.contains("<style>"))
+  assert_true(style.contains(".markdown-strong"))
+  assert_true(style.contains(".markdown-table th"))
   assert_true(style.contains(".markdown-math sup"))
+}
+
+///|
+test "render escaped markdown markers literally" {
+  let html = render(
+    "\\**not bold\\**\n\n| A | B |\n|---|---|\n| \\$x\\$ | \\**text\\** |",
+  )
+  assert_false(html.contains("markdown-strong"))
+  assert_false(html.contains("markdown-math"))
+  assert_true(html.contains("**not bold**"))
+  assert_true(html.contains("$x$"))
+  assert_true(html.contains("**text**"))
 }

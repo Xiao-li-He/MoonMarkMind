@@ -531,9 +531,13 @@ fn parse_markdown_inline_at(
   source : String,
   cursor : Int,
 ) -> (Int, MarkdownInline)? {
+  match parse_markdown_escape_at(source, cursor) {
+    Some(escaped) => return Some(escaped)
+    None => ()
+  }
   if has_markdown_at(source, cursor, "$") &&
     !has_markdown_at(source, cursor, "$$") {
-    match find_markdown_from(source, "$", cursor + 1) {
+    match find_unescaped_markdown_from(source, "$", cursor + 1) {
       Some(end_) =>
         if end_ > cursor + 1 {
           let math_source = source[cursor + 1:end_].to_owned()
@@ -545,7 +549,7 @@ fn parse_markdown_inline_at(
     }
   }
   if has_markdown_at(source, cursor, "`") {
-    match find_markdown_from(source, "`", cursor + 1) {
+    match find_unescaped_markdown_from(source, "`", cursor + 1) {
       Some(end_) =>
         if end_ > cursor + 1 {
           return Some(
@@ -556,7 +560,7 @@ fn parse_markdown_inline_at(
     }
   }
   if has_markdown_at(source, cursor, "**") {
-    match find_markdown_from(source, "**", cursor + 2) {
+    match find_unescaped_markdown_from(source, "**", cursor + 2) {
       Some(end_) =>
         if end_ > cursor + 2 {
           return Some(
@@ -567,7 +571,7 @@ fn parse_markdown_inline_at(
     }
   }
   if has_markdown_at(source, cursor, "~~") {
-    match find_markdown_from(source, "~~", cursor + 2) {
+    match find_unescaped_markdown_from(source, "~~", cursor + 2) {
       Some(end_) =>
         if end_ > cursor + 2 {
           return Some(
@@ -578,7 +582,7 @@ fn parse_markdown_inline_at(
     }
   }
   if has_markdown_at(source, cursor, "*") {
-    match find_markdown_from(source, "*", cursor + 1) {
+    match find_unescaped_markdown_from(source, "*", cursor + 1) {
       Some(end_) =>
         if end_ > cursor + 1 {
           return Some(
@@ -589,7 +593,7 @@ fn parse_markdown_inline_at(
     }
   }
   if has_markdown_at(source, cursor, "_") {
-    match find_markdown_from(source, "_", cursor + 1) {
+    match find_unescaped_markdown_from(source, "_", cursor + 1) {
       Some(end_) =>
         if end_ > cursor + 1 {
           return Some(
@@ -612,6 +616,45 @@ fn parse_markdown_inline_at(
     }
   }
   None
+}
+
+///|
+fn parse_markdown_escape_at(
+  source : String,
+  cursor : Int,
+) -> (Int, MarkdownInline)? {
+  if !has_markdown_at(source, cursor, "\\") || cursor + 1 >= source.length() {
+    return None
+  }
+  if has_markdown_at(source, cursor + 1, "**") {
+    return Some((cursor + 3, InlineText("**")))
+  }
+  if has_markdown_at(source, cursor + 1, "~~") {
+    return Some((cursor + 3, InlineText("~~")))
+  }
+  let escaped = source[cursor + 1].to_int().unsafe_to_char()
+  if is_markdown_escapable_char(escaped) {
+    Some((cursor + 2, InlineText(escaped.to_string())))
+  } else {
+    None
+  }
+}
+
+///|
+fn is_markdown_escapable_char(ch : Char) -> Bool {
+  ch == '\\' ||
+  ch == '`' ||
+  ch == '*' ||
+  ch == '_' ||
+  ch == '~' ||
+  ch == '$' ||
+  ch == '[' ||
+  ch == ']' ||
+  ch == '(' ||
+  ch == ')' ||
+  ch == '!' ||
+  ch == '#' ||
+  ch == '|'
 }
 
 ///|
@@ -682,6 +725,41 @@ pub fn find_markdown_from(
     Some(offset) => Some(start + offset)
     None => None
   }
+}
+
+///|
+fn find_unescaped_markdown_from(
+  source : String,
+  needle : String,
+  start : Int,
+) -> Int? {
+  let mut cursor = start
+  while cursor < source.length() {
+    match find_markdown_from(source, needle, cursor) {
+      Some(found) =>
+        if is_escaped_markdown_position(source, found) {
+          cursor = found + needle.length()
+        } else {
+          return Some(found)
+        }
+      None => return None
+    }
+  }
+  None
+}
+
+///|
+fn is_escaped_markdown_position(source : String, cursor : Int) -> Bool {
+  if cursor <= 0 {
+    return false
+  }
+  let mut slash_count = 0
+  let mut index = cursor - 1
+  while index >= 0 && source[index].to_int().unsafe_to_char() == '\\' {
+    slash_count += 1
+    index -= 1
+  }
+  slash_count % 2 == 1
 }
 
 ///|

@@ -17,6 +17,15 @@ test "inline markdown renders rich html and math" {
 }
 
 ///|
+test "backslash escapes inline markdown markers" {
+  let html = render_markdown_inline_html("\\**not bold\\** and \\$not math\\$")
+  assert_eq(html.contains("markdown-strong"), false)
+  assert_eq(html.contains("markdown-math"), false)
+  assert_eq(html.contains("**not bold**"), true)
+  assert_eq(html.contains("$not math$"), true)
+}
+
+///|
 test "block markdown renders code task table and math" {
   let html = render_markdown_blocks_html([
     "```mbt\nlet answer = 42\n```", "- [ ] Todo\n- [x] Done", "| Feature | Status |\n|---|---|\n| Editor | ok |",

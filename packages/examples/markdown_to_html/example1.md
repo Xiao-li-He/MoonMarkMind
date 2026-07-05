@@ -1,6 +1,6 @@
 # MoonMarkMind Markdown to HTML example
 
-This paragraph includes **strong text**, _emphasis_, ~~deleted text~~,
+This paragraph includes **strong text**, _emphasis_, ~~deleted text~~, 
 `inline code`, a [mooncakes.io link](https://mooncakes.io/), and an inline
 formula $x^2 + \alpha$.
 
@@ -16,9 +16,15 @@ formula $x^2 + \alpha$.
 
 | Feature | Status | Notes |
 |---|---|---|
-| Strong | ok | `**text**` |
-| Math | ok | `$x^2$` |
+| Strong | ok | **text** |
+| Math | ok | Formula in a table cell: $x^2 + \sqrt{y}$ |
 | Table | ok | pipe table |
+
+## Escaped Markers use "\"
+
+Escaped strong markers stay literal: \**not bold\**.
+
+Escaped math markers stay literal: \$x^2\$.
 
 ## Code
 
