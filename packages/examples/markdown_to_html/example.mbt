@@ -25,20 +25,42 @@ pub fn render_rich_markdown_collapsible_html() -> String {
 
 ///|
 fn render_html_document(body : String) -> String {
-  (
-    $|<!doctype html>
-    $|<html lang="en">
-    $|<head>
-    $|  <meta charset="utf-8">
-    $|  <meta name="viewport" content="width=device-width, initial-scale=1">
-    $|  <title>MoonMarkMind Markdown to HTML Example</title>
-    $|  \{@to_html.render_style_element()}
-    $|</head>
-    $|<body>
-    $|\{body}
-    $|</body>
-    $|</html>
-  )
+  [
+    "<!doctype html>",
+    html_element("html", attrs=" lang=\"en\"", children=[
+      render_html_head(),
+      html_element("body", attrs="", children=[body]),
+    ]),
+  ].join("\n")
+}
+
+///|
+fn render_html_head() -> String {
+  html_element("head", attrs="", children=[
+    void_html_element("meta", attrs=" charset=\"utf-8\""),
+    void_html_element(
+      "meta",
+      attrs=" name=\"viewport\" content=\"width=device-width, initial-scale=1\"",
+    ),
+    html_element("title", attrs="", children=[
+      "MoonMarkMind Markdown to HTML Example",
+    ]),
+    @to_html.render_style_element(),
+  ])
+}
+
+///|
+fn html_element(
+  tag : String,
+  attrs~ : String,
+  children~ : Array[String],
+) -> String {
+  "<\{tag}\{attrs}>\{children.join("")}</\{tag}>"
+}
+
+///|
+fn void_html_element(tag : String, attrs~ : String) -> String {
+  "<\{tag}\{attrs}>"
 }
 
 ///|
