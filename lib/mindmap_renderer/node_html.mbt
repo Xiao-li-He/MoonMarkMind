@@ -1,45 +1,67 @@
 ///|
-fn render_node_card(
+fn write_node_card(
+  out : StringBuilder,
   node : @outline.OutlineNode,
   parent_index~ : Int,
   center~ : Bool,
   tone_index~ : Int,
   options~ : RenderOptions,
   depth~ : Int,
-) -> String {
-  let classes = ["node"]
+) -> Unit {
+  write_str(out, "<article class=\"node")
   if center {
-    classes.push("node--center")
+    write_str(out, " node--center")
   }
-  classes.push(render_node_style_class(options.style))
-  let body = render_node_body(node, options)
-  (
-    $|<article class="\{classes.join(" ")}" data-level="\{node.level}" data-depth="\{depth}" data-tone="\{tone_index}" data-node-index="\{node.flat_index}" data-parent-index="\{parent_index}" data-child-count="\{node.children.length()}" data-synthetic="\{node.synthetic}">
-    $|  <strong class="\{node_title_class(options.style)}" data-title-depth="\{depth}" data-title-center="\{center}">\{@markdown_render.render_markdown_title_html(node.title)}</strong>
-    $|  \{body}
-    $|</article>
-  )
+  write_str(out, " ")
+  write_node_style_class(out, options.style)
+  write_str(out, "\"")
+  write_int_attr(out, "data-level", node.level)
+  write_int_attr(out, "data-depth", depth)
+  write_int_attr(out, "data-tone", tone_index)
+  write_int_attr(out, "data-node-index", node.flat_index)
+  write_int_attr(out, "data-parent-index", parent_index)
+  write_int_attr(out, "data-child-count", node.children.length())
+  write_bool_attr(out, "data-synthetic", node.synthetic)
+  write_str(out, "><strong class=\"")
+  write_node_title_class(out, options.style)
+  write_str(out, "\"")
+  write_int_attr(out, "data-title-depth", depth)
+  write_bool_attr(out, "data-title-center", center)
+  write_str(out, ">")
+  write_str(out, @markdown_render.render_markdown_title_html(node.title))
+  write_str(out, "</strong>")
+  write_node_body(out, node, options)
+  write_str(out, "</article>")
 }
 
 ///|
-fn render_node_body(
+fn write_node_body(
+  out : StringBuilder,
   node : @outline.OutlineNode,
   options : RenderOptions,
-) -> String {
+) -> Unit {
   if node.body.length() == 0 || !is_full_layer(options.layer) {
-    return ""
+    return
   }
-  "<div class=\"node-note-rail\"><div class=\"node-body node-body-preview\"><div class=\"markdown-blocks\">\{@markdown_render.render_markdown_blocks_html(node.body)}</div></div></div>"
+  write_str(
+    out, "<div class=\"node-note-rail\"><div class=\"node-body node-body-preview\"><div class=\"markdown-blocks\">",
+  )
+  write_str(out, @markdown_render.render_markdown_blocks_html(node.body))
+  write_str(out, "</div></div></div>")
 }
 
 ///|
-fn stage_class(options : RenderOptions, extra : String) -> String {
-  let classes = ["mindmap-stage", extra]
+fn write_stage_class(
+  out : StringBuilder,
+  options : RenderOptions,
+  extra : String,
+) -> Unit {
+  write_str(out, "mindmap-stage ")
+  write_str(out, extra)
   match options.style {
-    Line => classes.push("mindmap-stage--branch-line")
-    Full => classes.push("mindmap-stage--fill")
+    Line => write_str(out, " mindmap-stage--branch-line")
+    Full => write_str(out, " mindmap-stage--fill")
   }
-  classes.join(" ")
 }
 
 ///|
@@ -51,18 +73,18 @@ fn is_full_layer(layer : MindmapLayer) -> Bool {
 }
 
 ///|
-fn render_node_style_class(style : MindmapStyle) -> String {
+fn write_node_style_class(out : StringBuilder, style : MindmapStyle) -> Unit {
   match style {
-    Line => "node--fill node--branch-line"
-    Full => "node--line"
+    Line => write_str(out, "node--fill node--branch-line")
+    Full => write_str(out, "node--line")
   }
 }
 
 ///|
-fn node_title_class(style : MindmapStyle) -> String {
+fn write_node_title_class(out : StringBuilder, style : MindmapStyle) -> Unit {
   match style {
-    Line => "node-title node-title--scaled node-title--line"
-    Full => "node-title node-title--scaled node-title--fill"
+    Line => write_str(out, "node-title node-title--scaled node-title--line")
+    Full => write_str(out, "node-title node-title--scaled node-title--fill")
   }
 }
 

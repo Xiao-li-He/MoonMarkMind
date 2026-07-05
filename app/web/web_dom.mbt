@@ -3082,33 +3082,33 @@ fn build_mindmap_export_html(bundle : String) -> String {
   // the app bundle so the resulting file can be opened independently.
   let export_dom = build_mindmap_interactive_export_dom()
   let script_tag = build_export_runtime_script(bundle)
-  (
-    $|<!doctype html>
-    $|<html>
-    $|<head>
-    $|  <meta charset="utf-8">
-    $|  <meta name="viewport" content="width=device-width, initial-scale=1">
-    $|  <title>MoonMarkMind Export</title>
-    $|</head>
-    $|<body>
-    $|\{export_dom.outerHTML()}
-    $|\{script_tag}
-    $|</body>
-    $|</html>
+  let out = StringBuilder()
+  out.write_string("<!doctype html><html><head>")
+  out.write_string("<meta charset=\"utf-8\">")
+  out.write_string(
+    "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
   )
+  out.write_string("<title>MoonMarkMind Export</title>")
+  out.write_string("</head><body>")
+  out.write_string(export_dom.outerHTML())
+  out.write_string(script_tag)
+  out.write_string("</body></html>")
+  out.to_string()
 }
 
 ///|
 fn build_export_runtime_script(bundle : String) -> String {
+  let out = StringBuilder()
   if bundle.length() == 0 {
-    (
-      $|<script type="module" src="\{current_bundle_src()}"></script>
-    )
+    out.write_string("<script type=\"module\" src=\"")
+    out.write_string(current_bundle_src())
+    out.write_string("\"></script>")
   } else {
-    (
-      $|<script type="module">\{escape_inline_script(bundle)}</script>
-    )
+    out.write_string("<script type=\"module\">")
+    out.write_string(escape_inline_script(bundle))
+    out.write_string("</script>")
   }
+  out.to_string()
 }
 
 ///|
@@ -4421,33 +4421,34 @@ fn serialize_svg_export_element(element : @dom.Element) -> String {
 
 ///|
 fn close_svg_void_elements(source : String) -> String {
-  let parts : Array[String] = []
+  let out = StringBuilder()
   let mut cursor = 0
   while cursor < source.length() {
     match find_svg_void_tag_start(source, cursor) {
       Some(start) => {
         if start > cursor {
-          parts.push(source[cursor:start].to_owned())
+          out.write_string(source[cursor:start].to_owned())
         }
         let end_ = find_tag_end(source, start)
         if end_ < 0 {
-          parts.push(source[start:].to_owned())
-          return parts.join("")
+          out.write_string(source[start:].to_owned())
+          return out.to_string()
         }
         if end_ > start && source[end_ - 1] == '/' {
-          parts.push(source[start:end_ + 1].to_owned())
+          out.write_string(source[start:end_ + 1].to_owned())
         } else {
-          parts.push(source[start:end_].to_owned() + " />")
+          out.write_string(source[start:end_].to_owned())
+          out.write_string(" />")
         }
         cursor = end_ + 1
       }
       None => {
-        parts.push(source[cursor:].to_owned())
+        out.write_string(source[cursor:].to_owned())
         cursor = source.length()
       }
     }
   }
-  parts.join("")
+  out.to_string()
 }
 
 ///|

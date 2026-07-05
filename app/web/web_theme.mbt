@@ -2114,25 +2114,34 @@ fn style_branch_item_head(element : @dom.Element) -> Unit {
 
 ///|
 fn style_branch_children(element : @dom.Element) -> Unit {
-  apply_mindmap_style_rule(element, "branch-children")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "gap", "16px")
   set_style(element, "position", "relative")
+  set_style(element, "border-left", "0")
+  set_style(element, "border-right", "0")
+  set_style(element, "padding-left", "0")
+  set_style(element, "padding-right", "0")
 }
 
 ///|
 fn style_branch_children_left(element : @dom.Element) -> Unit {
-  apply_mindmap_style_rule(element, "branch-children--left")
   set_style(element, "align-items", "flex-end")
   set_style(element, "margin-right", "16px")
+  set_style(element, "border-left", "0")
+  set_style(element, "border-right", "0")
+  set_style(element, "padding-left", "0")
+  set_style(element, "padding-right", "0")
 }
 
 ///|
 fn style_branch_children_right(element : @dom.Element) -> Unit {
-  apply_mindmap_style_rule(element, "branch-children--right")
   set_style(element, "align-items", "flex-start")
   set_style(element, "margin-left", "16px")
+  set_style(element, "border-left", "0")
+  set_style(element, "border-right", "0")
+  set_style(element, "padding-left", "0")
+  set_style(element, "padding-right", "0")
 }
 
 ///|
@@ -2161,7 +2170,6 @@ fn style_vertical_tree(element : @dom.Element) -> Unit {
 
 ///|
 fn style_vertical_tree_children(element : @dom.Element) -> Unit {
-  apply_mindmap_style_rule(element, "vertical-tree__children")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "row")
   set_style(element, "align-items", "flex-start")
@@ -2169,6 +2177,7 @@ fn style_vertical_tree_children(element : @dom.Element) -> Unit {
   set_style(element, "gap", "18px")
   set_style(element, "padding-top", "22px")
   set_style(element, "position", "relative")
+  set_style(element, "border-top", "0")
   if has_class_name(element, "vertical-tree__children--line-tree") {
     set_style(element, "gap", "44px")
   }
@@ -2231,7 +2240,6 @@ fn style_single_right_tree_head(element : @dom.Element) -> Unit {
 
 ///|
 fn style_single_right_tree_children(element : @dom.Element) -> Unit {
-  apply_mindmap_style_rule(element, "single-right-tree__children")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "align-items", "flex-start")
@@ -2239,6 +2247,8 @@ fn style_single_right_tree_children(element : @dom.Element) -> Unit {
   set_style(element, "padding-left", "0")
   set_style(element, "position", "relative")
   set_style(element, "flex", "0 0 auto")
+  set_style(element, "border-left", "0")
+  set_style(element, "border-right", "0")
 }
 
 ///|

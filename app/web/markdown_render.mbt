@@ -256,6 +256,7 @@ fn build_markdown_table_dom(
     append_child(tbody, tr)
   }
   append_child(table, tbody)
+  apply_theme_to_subtree(table)
   table
 }
 

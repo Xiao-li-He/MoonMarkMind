@@ -223,19 +223,17 @@ async fn run_export(request : CliRequest) -> Unit {
 
 ///|
 fn render_html_document(body : String) -> String {
-  (
-    $|<!doctype html>
-    $|<html lang="en">
-    $|<head>
-    $|  <meta charset="utf-8">
-    $|  <meta name="viewport" content="width=device-width, initial-scale=1">
-    $|  <title>MoonMarkMind Export</title>
-    $|</head>
-    $|<body>
-    $|\{body}
-    $|</body>
-    $|</html>
+  let out = StringBuilder()
+  out.write_string("<!doctype html><html lang=\"en\"><head>")
+  out.write_string("<meta charset=\"utf-8\">")
+  out.write_string(
+    "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
   )
+  out.write_string("<title>MoonMarkMind Export</title>")
+  out.write_string("</head><body>")
+  out.write_string(body)
+  out.write_string("</body></html>")
+  out.to_string()
 }
 
 ///|
