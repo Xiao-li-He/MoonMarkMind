@@ -20,7 +20,7 @@ priv struct AppState {
   mut started : Bool
   mut markdown : String
   mut document_name : String
-  mut root : OutlineNode
+  mut root : @outline_parser.OutlineNode
   mut collapsed : Array[Int]
   mut collapsed_note_nodes : Array[Int]
   mut hidden_nodes : Array[Int]
@@ -49,7 +49,7 @@ let app_state : AppState = AppState::{
   started: false,
   markdown: "",
   document_name: "notes.md",
-  root: empty_outline(),
+  root: @outline_parser.empty_outline(),
   collapsed: [],
   collapsed_note_nodes: [],
   hidden_nodes: [],
@@ -1385,7 +1385,10 @@ fn drag_target_inside_source_subtree(target_index : Int) -> Bool {
 }
 
 ///|
-fn outline_contains_node(node : OutlineNode, target_index : Int) -> Bool {
+fn outline_contains_node(
+  node : @outline_parser.OutlineNode,
+  target_index : Int,
+) -> Bool {
   if node.flat_index == target_index {
     return true
   }
@@ -1410,11 +1413,14 @@ fn clear_current_drag_drop() -> Unit {
 }
 
 ///|
-fn current_node_drag_placement() -> DropPlacement? {
+fn current_node_drag_placement() -> @outline_parser.DropPlacement? {
   match drag_drop_kind.val {
-    "before" => Some(DropBefore(drag_drop_target.val))
-    "after" => Some(DropAfter(drag_drop_target.val))
-    "inside" => Some(DropInside(drag_drop_target.val))
+    "before" =>
+      Some(@outline_parser.DropPlacement::DropBefore(drag_drop_target.val))
+    "after" =>
+      Some(@outline_parser.DropPlacement::DropAfter(drag_drop_target.val))
+    "inside" =>
+      Some(@outline_parser.DropPlacement::DropInside(drag_drop_target.val))
     _ => None
   }
 }
@@ -1489,7 +1495,7 @@ fn restore_node_drag_visual_style(node : @dom.Element) -> Unit {
 }
 
 ///|
-fn apply_node_drag_drop(placement : DropPlacement) -> Bool {
+fn apply_node_drag_drop(placement : @outline_parser.DropPlacement) -> Bool {
   // Commit a drag by delegating structural validation and Markdown rewriting to
   // outline_model.mbt, then refresh selection through the returned index map.
   let source_index = drag_source_node.val
@@ -1498,7 +1504,7 @@ fn apply_node_drag_drop(placement : DropPlacement) -> Bool {
   }
   let drop_kind = drag_drop_kind.val
   let drop_target = drag_drop_target.val
-  let result = move_node_to_drop_placement(
+  let result = @outline_parser.move_node_to_drop_placement(
     app_state.markdown,
     source_index,
     placement,
@@ -1528,7 +1534,7 @@ fn handle_add_child(node_index : Int) -> Unit {
     add_balanced_first_layer_heading(title)
   } else {
     (
-      add_child_heading(app_state.markdown, node_index, title),
+      @outline_parser.add_child_heading(app_state.markdown, node_index, title),
       target_index_after_add_child(node_index),
     )
   }
@@ -1574,7 +1580,7 @@ fn handle_add_sibling(node_index : Int, place_after : Bool) -> Unit {
   }
   let target_index = target_index_after_add_sibling(node_index, place_after)
   bump_root_split_after_insert(node_index)
-  let next_markdown = add_sibling_heading(
+  let next_markdown = @outline_parser.add_sibling_heading(
     app_state.markdown,
     node_index,
     title,
@@ -1640,7 +1646,7 @@ fn add_balanced_first_layer_heading(title : String) -> (String, Int) {
   } else {
     app_state.root.flat_index
   }
-  let appended_markdown = add_child_heading(
+  let appended_markdown = @outline_parser.add_child_heading(
     app_state.markdown,
     parent_index,
     title,
@@ -1660,7 +1666,9 @@ fn add_balanced_first_layer_heading(title : String) -> (String, Int) {
   }
   let boundary_index = app_state.root.children[split].flat_index
   (
-    move_heading(appended_markdown, appended_index, boundary_index, false),
+    @outline_parser.move_heading(
+      appended_markdown, appended_index, boundary_index, false,
+    ),
     boundary_index,
   )
 }
@@ -1681,7 +1689,10 @@ fn handle_delete(node_index : Int) -> Unit {
   }
   redo_expand_node.val = undo_expand_node.val
   shrink_root_split_after_delete(node_index)
-  let next_markdown = delete_heading(app_state.markdown, node_index)
+  let next_markdown = @outline_parser.delete_heading(
+    app_state.markdown,
+    node_index,
+  )
   clear_editing_session()
   clear_selected_nodes()
   app_state.editing_node = -2
@@ -1801,9 +1812,9 @@ fn move_to_tree_sibling(node_index : Int, move_next : Bool) -> Bool {
 
 ///|
 fn locate_tree_context(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   target : Int,
-) -> (Int, Array[OutlineNode], Int)? {
+) -> (Int, Array[@outline_parser.OutlineNode], Int)? {
   if node.flat_index == target {
     return Some((-1, [], -1))
   }
@@ -1881,7 +1892,7 @@ fn root_child_index(node_index : Int) -> Int {
 }
 
 ///|
-fn default_root_split_count(root : OutlineNode) -> Int {
+fn default_root_split_count(root : @outline_parser.OutlineNode) -> Int {
   let child_count = root.children.length()
   if child_count <= 1 {
     return child_count
@@ -1901,7 +1912,7 @@ fn save_editor(node_index : Int, title : String) -> Unit {
   if editor_snapshot_node.val != node_index {
     return
   }
-  let next_markdown = rename_heading(
+  let next_markdown = @outline_parser.rename_heading(
     editor_draft_markdown.val,
     node_index,
     title,
@@ -1940,7 +1951,7 @@ fn handle_insert_note() -> Unit {
 }
 
 ///|
-fn first_note_body_block_index(node : OutlineNode) -> Int? {
+fn first_note_body_block_index(node : @outline_parser.OutlineNode) -> Int? {
   for index in 0..<node.body.length() {
     if body_block_kind(node.body[index]) == "note" {
       return Some(index)
@@ -1998,7 +2009,7 @@ fn cancel_created_body_block_if_unchanged(
   if !created_body_block_still_template(node_index, block_index) {
     return false
   }
-  let next_markdown = delete_node_body_block(
+  let next_markdown = @outline_parser.delete_node_body_block(
     app_state.markdown,
     node_index,
     block_index,
@@ -2131,7 +2142,9 @@ fn cancel_note_editor(node_index : Int) -> Unit {
 ///|
 fn sync_note_editor_draft(node_index : Int, body_text : String) -> Unit {
   let current_markdown = note_editor_draft_markdown.val
-  let next_markdown = update_node_body(current_markdown, node_index, body_text)
+  let next_markdown = @outline_parser.update_node_body(
+    current_markdown, node_index, body_text,
+  )
   if next_markdown == current_markdown {
     return
   }
@@ -2163,7 +2176,9 @@ fn save_note_editor(node_index : Int, body_text : String) -> Unit {
 ///|
 fn sync_editor_draft(node_index : Int, title : String) -> Unit {
   let current_markdown = editor_draft_markdown.val
-  let next_markdown = rename_heading(current_markdown, node_index, title)
+  let next_markdown = @outline_parser.rename_heading(
+    current_markdown, node_index, title,
+  )
   if next_markdown == current_markdown {
     return
   }
@@ -2210,6 +2225,15 @@ fn markdown_body_block_line_count(block : String) -> Int {
 }
 
 ///|
+fn default_body_blank_line_count(index : Int) -> Int {
+  if index == 0 {
+    0
+  } else {
+    1
+  }
+}
+
+///|
 fn is_single_line_body_block(block : String) -> Bool {
   markdown_body_block_line_count(block) <= 1
 }
@@ -2244,7 +2268,7 @@ fn node_body_block_actions_class(block : String) -> String {
 
 ///|
 fn markdown_node_body_block_line_range(
-  node : MarkdownNode,
+  node : @outline_parser.MarkdownNode,
   block_index : Int,
 ) -> (Int, Int)? {
   if block_index < 0 ||
@@ -2269,10 +2293,10 @@ fn markdown_node_body_block_line_range(
 
 ///|
 fn node_body_block_line_range(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   block_index : Int,
 ) -> (Int, Int)? {
-  let nodes = parse_markdown_nodes(app_state.markdown)
+  let nodes = @outline_parser.parse_markdown_nodes(app_state.markdown)
   if node.flat_index < 0 || node.flat_index >= nodes.length() {
     return None
   }
@@ -2342,7 +2366,7 @@ fn save_body_block_editor(
     app_state.editing_body_block != block_index {
     return
   }
-  let next_markdown = update_node_body_block(
+  let next_markdown = @outline_parser.update_node_body_block(
     app_state.markdown,
     node_index,
     block_index,
@@ -2363,7 +2387,7 @@ fn delete_body_block(node_index : Int, block_index : Int) -> Unit {
   if node_index < 0 || block_index < 0 {
     return
   }
-  let next_markdown = delete_node_body_block(
+  let next_markdown = @outline_parser.delete_node_body_block(
     app_state.markdown,
     node_index,
     block_index,
@@ -2535,12 +2559,12 @@ fn handle_move_selected(move_down : Bool) -> Unit {
     return
   }
   let (next_markdown, next_selected_node) = if move_down {
-    move_heading_next_with_selection(
+    @outline_parser.move_heading_next_with_selection(
       app_state.markdown,
       app_state.selected_node,
     )
   } else {
-    move_heading_prev_with_selection(
+    @outline_parser.move_heading_prev_with_selection(
       app_state.markdown,
       app_state.selected_node,
     )
@@ -2562,9 +2586,9 @@ fn handle_relevel_selected(indent : Bool) -> Unit {
     return
   }
   let next_markdown = if indent {
-    indent_heading(app_state.markdown, app_state.selected_node)
+    @outline_parser.indent_heading(app_state.markdown, app_state.selected_node)
   } else {
-    promote_heading(app_state.markdown, app_state.selected_node)
+    @outline_parser.promote_heading(app_state.markdown, app_state.selected_node)
   }
   apply_markdown_change(next_markdown, false)
 }
@@ -2899,9 +2923,15 @@ fn can_move_selected(move_down : Bool) -> Bool {
     return false
   }
   let next_markdown = if move_down {
-    move_heading_next(app_state.markdown, app_state.selected_node)
+    @outline_parser.move_heading_next(
+      app_state.markdown,
+      app_state.selected_node,
+    )
   } else {
-    move_heading_prev(app_state.markdown, app_state.selected_node)
+    @outline_parser.move_heading_prev(
+      app_state.markdown,
+      app_state.selected_node,
+    )
   }
   next_markdown != app_state.markdown
 }
@@ -2955,7 +2985,7 @@ fn apply_markdown_state(
     app_state.collapsed_note_nodes = []
   }
   app_state.markdown = markdown
-  app_state.root = build_outline(markdown)
+  app_state.root = @outline_parser.build_outline(markdown)
   if reset_ui {
     app_state.node_width_overrides = []
   }
@@ -3401,7 +3431,10 @@ fn same_int_set(left : Array[Int], right : Array[Int]) -> Bool {
 }
 
 ///|
-fn source_line_for_flat_index(root : OutlineNode, flat_index : Int) -> Int {
+fn source_line_for_flat_index(
+  root : @outline_parser.OutlineNode,
+  flat_index : Int,
+) -> Int {
   if flat_index < 0 {
     return -1
   }
@@ -3429,11 +3462,17 @@ fn can_toolbar_action(action : String) -> Bool {
           "move-down" => can_move_selected(true)
           "indent-node" =>
             selected_node_exists() &&
-            indent_heading(app_state.markdown, app_state.selected_node) !=
+            @outline_parser.indent_heading(
+              app_state.markdown,
+              app_state.selected_node,
+            ) !=
             app_state.markdown
           "promote-node" =>
             selected_node_exists() &&
-            promote_heading(app_state.markdown, app_state.selected_node) !=
+            @outline_parser.promote_heading(
+              app_state.markdown,
+              app_state.selected_node,
+            ) !=
             app_state.markdown
           "toggle-node" => selected_has_children()
           "insert-note" => selected_node_exists()
@@ -3455,9 +3494,9 @@ fn insert_node_body_template(kind : String) -> Unit {
   let body_lines = if kind == "note" {
     ["笔记："]
   } else if kind == "link" {
-    ["[链接文字](https://example.com)"]
+    ["[閾炬帴鏂囧瓧](https://example.com)"]
   } else if kind == "image" {
-    ["![图片说明](image.png)"]
+    ["![鍥剧墖璇存槑](image.png)"]
   } else if kind == "formula" {
     ["$$", "x = 1", "$$"]
   } else if kind == "code" {
@@ -3467,11 +3506,11 @@ fn insert_node_body_template(kind : String) -> Unit {
   } else {
     []
   }
-  let template_body = normalize_markdown_body_lines(body_lines)
+  let template_body = @outline_parser.normalize_markdown_body_lines(body_lines)
   if template_body.length() == 0 {
     return
   }
-  let nodes = parse_markdown_nodes(app_state.markdown)
+  let nodes = @outline_parser.parse_markdown_nodes(app_state.markdown)
   if node_index >= nodes.length() {
     return
   }
@@ -3484,13 +3523,13 @@ fn insert_node_body_template(kind : String) -> Unit {
       for line in template_body {
         next_body.push(line)
       }
-      updated.push(MarkdownNode::{
+      updated.push(@outline_parser.MarkdownNode::{
         kind: node.kind,
         level: node.level,
         title: node.title,
         marker: node.marker,
         body: next_body,
-        body_blank_lines: default_body_blank_lines(next_body),
+        body_blank_lines: @outline_parser.default_body_blank_lines(next_body),
         leading_blank_lines: node.leading_blank_lines,
         source_line: node.source_line,
       })
@@ -3502,7 +3541,7 @@ fn insert_node_body_template(kind : String) -> Unit {
     app_state.collapsed_note_nodes,
     node_index,
   )
-  apply_markdown_change(render_markdown_nodes(updated), false)
+  apply_markdown_change(@outline_parser.render_markdown_nodes(updated), false)
   edit_inserted_body_block_after_insert(
     kind,
     node_index,
@@ -3534,7 +3573,7 @@ fn build_mindmap_dom() -> @dom.Element {
 
 ///|
 fn build_horizontal_mindmap_dom(
-  center : OutlineNode,
+  center : @outline_parser.OutlineNode,
   stage_class : String,
 ) -> @dom.Element {
   let stage = create_element("div", "\{stage_class} mindmap-stage--radial")
@@ -3602,7 +3641,7 @@ fn build_horizontal_mindmap_dom(
 
 ///|
 fn build_root_branch_node_dom(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   parent_index : Int,
   direction : String,
   tone_index : Int,
@@ -3629,7 +3668,7 @@ fn build_root_branch_node_dom(
 ///|
 fn append_branch_logic_parts(
   branch : @dom.Element,
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   parent_index : Int,
   is_root : Bool,
   direction : String,
@@ -3663,7 +3702,7 @@ fn append_branch_logic_parts(
 
 ///|
 fn build_branch_node_dom(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   parent_index : Int,
   direction : String,
   tone_index : Int,
@@ -3685,7 +3724,7 @@ fn build_branch_node_dom(
 
 ///|
 fn build_hidden_branch_node_dom(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   direction : String,
   tone_index : Int,
 ) -> @dom.Element {
@@ -3706,7 +3745,7 @@ fn build_hidden_branch_node_dom(
 
 ///|
 fn build_branch_children_dom(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   direction : String,
   tone_index : Int,
 ) -> @dom.Element {
@@ -3736,7 +3775,7 @@ fn build_branch_children_dom(
 
 ///|
 fn build_vertical_mindmap_dom(
-  center : OutlineNode,
+  center : @outline_parser.OutlineNode,
   stage_class : String,
 ) -> @dom.Element {
   let stage = create_element("div", "\{stage_class} mindmap-stage--vertical")
@@ -3748,7 +3787,7 @@ fn build_vertical_mindmap_dom(
 
 ///|
 fn build_vertical_tree_dom(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   parent_index : Int,
   is_root : Bool,
   tone_index : Int,
@@ -3770,7 +3809,7 @@ fn build_vertical_tree_dom(
 
 ///|
 fn build_vertical_children_dom(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   tone_index : Int,
 ) -> @dom.Element {
   let children = create_element("div", vertical_tree_children_class())
@@ -3799,7 +3838,7 @@ fn build_vertical_children_dom(
 
 ///|
 fn build_single_right_mindmap_dom(
-  center : OutlineNode,
+  center : @outline_parser.OutlineNode,
   stage_class : String,
 ) -> @dom.Element {
   let stage = create_element(
@@ -3814,7 +3853,7 @@ fn build_single_right_mindmap_dom(
 
 ///|
 fn build_single_right_tree_dom(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   parent_index : Int,
   is_root : Bool,
   tone_index : Int,
@@ -3839,7 +3878,7 @@ fn build_single_right_tree_dom(
 
 ///|
 fn build_single_right_children_dom(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   tone_index : Int,
 ) -> @dom.Element {
   let children = create_element("div", "single-right-tree__children")
@@ -3869,7 +3908,7 @@ fn build_single_right_children_dom(
 
 ///|
 fn build_node_card_dom(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   parent_index : Int,
   is_center : Bool,
   tone_index : Int,
@@ -3928,7 +3967,10 @@ fn build_node_width_resize_handle_dom(node_index : Int) -> @dom.Element {
 }
 
 ///|
-fn build_node_title_dom(node : OutlineNode, is_editing : Bool) -> @dom.Element {
+fn build_node_title_dom(
+  node : @outline_parser.OutlineNode,
+  is_editing : Bool,
+) -> @dom.Element {
   if is_editing {
     let input = create_element("input", "node-editor")
     input.setAttribute("data-editor-for", node.flat_index.to_string())
@@ -3966,12 +4008,12 @@ fn is_branch_line_tree_mode() -> Bool {
 }
 
 ///|
-fn is_branch_line_tree_note(node : OutlineNode) -> Bool {
+fn is_branch_line_tree_note(node : @outline_parser.OutlineNode) -> Bool {
   is_branch_line_tree_mode() && node_has_note(node)
 }
 
 ///|
-fn vertical_tree_class(node : OutlineNode) -> String {
+fn vertical_tree_class(node : @outline_parser.OutlineNode) -> String {
   if is_branch_line_tree_note(node) {
     "vertical-tree vertical-tree--line-note"
   } else {
@@ -3989,7 +4031,7 @@ fn vertical_tree_children_class() -> String {
 }
 
 ///|
-fn vertical_tree_child_class(node : OutlineNode) -> String {
+fn vertical_tree_child_class(node : @outline_parser.OutlineNode) -> String {
   if is_branch_line_tree_note(node) {
     "vertical-tree__child vertical-tree__child--line-note"
   } else {
@@ -3998,7 +4040,7 @@ fn vertical_tree_child_class(node : OutlineNode) -> String {
 }
 
 ///|
-fn build_node_body_dom(node : OutlineNode) -> @dom.Element? {
+fn build_node_body_dom(node : @outline_parser.OutlineNode) -> @dom.Element? {
   if !node_has_note(node) {
     return None
   }
@@ -4028,7 +4070,7 @@ fn build_node_body_dom(node : OutlineNode) -> @dom.Element? {
 }
 
 ///|
-fn node_body_is_image_only(node : OutlineNode) -> Bool {
+fn node_body_is_image_only(node : @outline_parser.OutlineNode) -> Bool {
   if node.body.length() != 1 {
     return false
   }
@@ -4037,7 +4079,7 @@ fn node_body_is_image_only(node : OutlineNode) -> Bool {
 
 ///|
 fn build_node_body_block_dom(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   block_index : Int,
 ) -> @dom.Element {
   let block = node.body[block_index]
@@ -4152,7 +4194,7 @@ fn body_block_action_icon_html(kind : String) -> String {
 
 ///|
 fn build_body_block_editor_dom(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   block_index : Int,
   block : String,
   kind : String,
@@ -4231,7 +4273,7 @@ fn build_body_block_editor_actions(block_index : Int) -> @dom.Element {
   save.setAttribute("data-action", "save-body-block")
   save.setAttribute("data-body-block-index", block_index.to_string())
   save.setAttribute("aria-label", "Save")
-  save.setTextContent("✔")
+  save.setTextContent("✓")
   let cancel = create_element(
     "button", "node-body-block-editor-action node-body-block-editor-action--secondary",
   )
@@ -4239,14 +4281,14 @@ fn build_body_block_editor_actions(block_index : Int) -> @dom.Element {
   cancel.setAttribute("data-action", "cancel-body-block")
   cancel.setAttribute("data-body-block-index", block_index.to_string())
   cancel.setAttribute("aria-label", "Cancel")
-  cancel.setTextContent("❌")
+  cancel.setTextContent("✕")
   append_child(actions, save)
   append_child(actions, cancel)
   actions
 }
 
 ///|
-fn build_node_note_dom(node : OutlineNode) -> @dom.Element? {
+fn build_node_note_dom(node : @outline_parser.OutlineNode) -> @dom.Element? {
   if !node_has_note(node) {
     return None
   }
@@ -4271,7 +4313,7 @@ fn build_node_note_dom(node : OutlineNode) -> @dom.Element? {
 
 ///|
 fn build_node_actions_dom(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   editable : Bool,
   is_center : Bool,
   action_anchor : String,
@@ -4412,14 +4454,14 @@ fn parse_image_body_block(block : String) -> (String, String, Bool) {
 
 ///|
 fn build_hidden_marker_dom(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   tone_index : Int,
 ) -> @dom.Element {
   let marker = create_element("button", "node collapsed-node")
   marker.setAttribute("type", "button")
   marker.setAttribute("data-action", "toggle-hide")
   marker.setAttribute("data-node-index", node.flat_index.to_string())
-  marker.setAttribute("data-tip", "展开折叠节点")
+  marker.setAttribute("data-tip", "灞曞紑鎶樺彔鑺傜偣")
   apply_node_visual_attrs(marker, node, tone_index)
   marker.setTextContent(count_subtree_nodes(node).to_string())
   marker
@@ -4438,7 +4480,7 @@ fn build_node_spacing_slot_dom() -> @dom.Element {
 ///|
 fn apply_node_visual_attrs(
   element : @dom.Element,
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   tone_index : Int,
 ) -> Unit {
   element.setAttribute("data-depth", relative_node_depth(node).to_string())
@@ -4489,7 +4531,7 @@ fn format_percentage_from_basis_points(value : Int) -> String {
 }
 
 ///|
-fn root_branch_left_count(center : OutlineNode) -> Int {
+fn root_branch_left_count(center : @outline_parser.OutlineNode) -> Int {
   let child_count = center.children.length()
   if child_count == 0 {
     return 0
@@ -4502,7 +4544,11 @@ fn root_branch_left_count(center : OutlineNode) -> Int {
 }
 
 ///|
-fn root_branch_total_span(center : OutlineNode, start : Int, stop : Int) -> Int {
+fn root_branch_total_span(
+  center : @outline_parser.OutlineNode,
+  start : Int,
+  stop : Int,
+) -> Int {
   let mut total = 0
   for index in start..<stop {
     total += root_branch_span(center.children[index])
@@ -4515,7 +4561,7 @@ fn root_branch_total_span(center : OutlineNode, start : Int, stop : Int) -> Int 
 }
 
 ///|
-fn root_branch_span(node : OutlineNode) -> Int {
+fn root_branch_span(node : @outline_parser.OutlineNode) -> Int {
   contour_subtree_span(node)
 }
 
@@ -4532,7 +4578,7 @@ fn clamp_int(value : Int, min_value : Int, max_value : Int) -> Int {
 
 ///|
 fn render_branch_node(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   parent_index : Int,
   direction : String,
   tone_index : Int,
@@ -4554,7 +4600,7 @@ fn render_branch_node(
 
 ///|
 fn render_branch_children(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   direction : String,
   tone_index : Int,
 ) -> String {
@@ -4578,7 +4624,7 @@ fn render_branch_children(
 
 ///|
 fn render_hidden_branch_node(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   direction : String,
   tone_index : Int,
 ) -> String {
@@ -4590,7 +4636,7 @@ fn render_hidden_branch_node(
 
 ///|
 fn render_vertical_tree(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   parent_index : Int,
   is_root : Bool,
   tone_index : Int,
@@ -4604,7 +4650,10 @@ fn render_vertical_tree(
 }
 
 ///|
-fn render_vertical_children(node : OutlineNode, tone_index : Int) -> String {
+fn render_vertical_children(
+  node : @outline_parser.OutlineNode,
+  tone_index : Int,
+) -> String {
   if !should_render_children(node) {
     return ""
   }
@@ -4637,7 +4686,7 @@ fn render_vertical_children(node : OutlineNode, tone_index : Int) -> String {
 
 ///|
 fn render_single_right_tree(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   parent_index : Int,
   is_root : Bool,
   tone_index : Int,
@@ -4651,7 +4700,10 @@ fn render_single_right_tree(
 }
 
 ///|
-fn render_single_right_children(node : OutlineNode, tone_index : Int) -> String {
+fn render_single_right_children(
+  node : @outline_parser.OutlineNode,
+  tone_index : Int,
+) -> String {
   if !should_render_children(node) {
     return ""
   }
@@ -4679,7 +4731,7 @@ fn render_single_right_children(node : OutlineNode, tone_index : Int) -> String 
 
 ///|
 fn render_node_card(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   parent_index : Int,
   is_center : Bool,
   tone_index : Int,
@@ -4726,7 +4778,10 @@ fn render_node_width_resize_handle(node_index : Int) -> String {
 }
 
 ///|
-fn render_node_visual_attrs(node : OutlineNode, tone_index : Int) -> String {
+fn render_node_visual_attrs(
+  node : @outline_parser.OutlineNode,
+  tone_index : Int,
+) -> String {
   let has_children = node.children.length() > 0
   let child_count = node.children.length()
   let collapsed = is_collapsed(node.flat_index)
@@ -4736,12 +4791,18 @@ fn render_node_visual_attrs(node : OutlineNode, tone_index : Int) -> String {
 }
 
 ///|
-fn render_hidden_marker(node : OutlineNode, tone_index : Int) -> String {
+fn render_hidden_marker(
+  node : @outline_parser.OutlineNode,
+  tone_index : Int,
+) -> String {
   build_hidden_marker_dom(node, tone_index).outerHTML()
 }
 
 ///|
-fn render_node_title(node : OutlineNode, is_editing : Bool) -> String {
+fn render_node_title(
+  node : @outline_parser.OutlineNode,
+  is_editing : Bool,
+) -> String {
   if is_editing {
     let value = escape_html_attribute(node.title)
     return "<input class=\"node-editor\" data-editor-for=\"\{node.flat_index}\" type=\"text\" value=\"\{value}\" />"
@@ -4754,12 +4815,12 @@ fn render_node_title(node : OutlineNode, is_editing : Bool) -> String {
 }
 
 ///|
-fn render_node_note(node : OutlineNode) -> String {
+fn render_node_note(node : @outline_parser.OutlineNode) -> String {
   render_node_body(node)
 }
 
 ///|
-fn render_node_body(node : OutlineNode) -> String {
+fn render_node_body(node : @outline_parser.OutlineNode) -> String {
   if !node_has_note(node) {
     return ""
   }
@@ -4789,7 +4850,10 @@ fn render_node_body(node : OutlineNode) -> String {
 }
 
 ///|
-fn render_node_body_block(node : OutlineNode, block_index : Int) -> String {
+fn render_node_body_block(
+  node : @outline_parser.OutlineNode,
+  block_index : Int,
+) -> String {
   let block = node.body[block_index]
   let kind = body_block_kind(block)
   if app_state.editing_body_node == node.flat_index &&
@@ -4806,7 +4870,7 @@ fn render_node_body_block(node : OutlineNode, block_index : Int) -> String {
 
 ///|
 fn render_body_block_editor(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   block_index : Int,
   block : String,
   kind : String,
@@ -4823,13 +4887,13 @@ fn render_body_block_editor(
     _ =>
       "<textarea class=\"node-body-block-textarea\" data-body-editor-value=\"raw\" rows=\"4\">\{escape_html(block)}</textarea>"
   }
-  let actions = "<div class=\"node-body-block-editor-actions\"><button type=\"button\" class=\"node-body-block-editor-action node-body-block-editor-action--save\" data-action=\"save-body-block\" data-body-block-index=\"\{block_index}\" aria-label=\"Save\">✔</button><button type=\"button\" class=\"node-body-block-editor-action node-body-block-editor-action--secondary\" data-action=\"cancel-body-block\" data-body-block-index=\"\{block_index}\" aria-label=\"Cancel\">❌</button></div>"
+  let actions = "<div class=\"node-body-block-editor-actions\"><button type=\"button\" class=\"node-body-block-editor-action node-body-block-editor-action--save\" data-action=\"save-body-block\" data-body-block-index=\"\{block_index}\" aria-label=\"Save\">✓</button><button type=\"button\" class=\"node-body-block-editor-action node-body-block-editor-action--secondary\" data-action=\"cancel-body-block\" data-body-block-index=\"\{block_index}\" aria-label=\"Cancel\">✕</button></div>"
   "<div class=\"node-body-block node-body-block--\{kind}\" data-body-block-index=\"\{block_index}\" data-body-block-kind=\"\{kind}\"><div class=\"node-body-block-editor node-body-block-editor--\{kind}\" data-body-editor-for=\"\{node.flat_index}\" data-body-editor-block=\"\{block_index}\" data-body-editor-kind=\"\{kind}\">\{fields}\{actions}</div></div>"
 }
 
 ///|
 fn render_node_actions_with_note(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   has_children : Bool,
   editable : Bool,
   is_center : Bool,
@@ -4862,12 +4926,12 @@ fn render_node_actions_with_note(
 }
 
 ///|
-fn node_has_note(node : OutlineNode) -> Bool {
+fn node_has_note(node : @outline_parser.OutlineNode) -> Bool {
   node.body.length() > 0 || app_state.editing_note_node == node.flat_index
 }
 
 ///|
-fn count_hidden_descendants(node : OutlineNode) -> Int {
+fn count_hidden_descendants(node : @outline_parser.OutlineNode) -> Int {
   let mut count = 0
   for child in node.children {
     count += 1 + count_hidden_descendants(child)
@@ -4876,12 +4940,12 @@ fn count_hidden_descendants(node : OutlineNode) -> Int {
 }
 
 ///|
-fn count_subtree_nodes(node : OutlineNode) -> Int {
+fn count_subtree_nodes(node : @outline_parser.OutlineNode) -> Int {
   1 + count_hidden_descendants(node)
 }
 
 ///|
-fn contour_subtree_span(node : OutlineNode) -> Int {
+fn contour_subtree_span(node : @outline_parser.OutlineNode) -> Int {
   if is_hidden_node(node.flat_index) {
     return 24
   }
@@ -4902,7 +4966,7 @@ fn contour_subtree_span(node : OutlineNode) -> Int {
 }
 
 ///|
-fn contour_node_height(node : OutlineNode) -> Int {
+fn contour_node_height(node : @outline_parser.OutlineNode) -> Int {
   let is_center = node.flat_index == app_state.root.flat_index
   let base_height = if is_center {
     72
@@ -4931,7 +4995,7 @@ fn contour_node_height(node : OutlineNode) -> Int {
 }
 
 ///|
-fn contour_note_height(node : OutlineNode) -> Int {
+fn contour_note_height(node : @outline_parser.OutlineNode) -> Int {
   if !node_has_note(node) || is_note_body_collapsed(node.flat_index) {
     return 0
   }
@@ -5032,7 +5096,7 @@ fn contour_max_int(left : Int, right : Int) -> Int {
 }
 
 ///|
-fn single_child_chain_length(node : OutlineNode) -> Int {
+fn single_child_chain_length(node : @outline_parser.OutlineNode) -> Int {
   if !should_render_children(node) || node.children.length() != 1 {
     1
   } else {
@@ -5092,7 +5156,10 @@ fn expand_node_path(node_index : Int) -> Unit {
 }
 
 ///|
-fn expand_ancestors_to_node(node : OutlineNode, target : Int) -> Bool {
+fn expand_ancestors_to_node(
+  node : @outline_parser.OutlineNode,
+  target : Int,
+) -> Bool {
   if node.flat_index == target {
     return true
   }
@@ -5195,17 +5262,17 @@ fn render_node_style_class() -> String {
 }
 
 ///|
-fn should_render_children(node : OutlineNode) -> Bool {
+fn should_render_children(node : @outline_parser.OutlineNode) -> Bool {
   node.children.length() > 0 && !is_collapsed(node.flat_index)
 }
 
 ///|
-fn node_depth(node : OutlineNode) -> Int {
+fn node_depth(node : @outline_parser.OutlineNode) -> Int {
   node.level - app_state.root.level + 1
 }
 
 ///|
-fn relative_node_depth(node : OutlineNode) -> Int {
+fn relative_node_depth(node : @outline_parser.OutlineNode) -> Int {
   node.level - app_state.root.level
 }
 
@@ -5224,7 +5291,7 @@ fn apply_detail_preset() -> Unit {
 
 ///|
 fn preset_collapsed_for_level(
-  root : OutlineNode,
+  root : @outline_parser.OutlineNode,
   detail_level : String,
 ) -> Array[Int] {
   let threshold = match detail_level {
@@ -5239,7 +5306,7 @@ fn preset_collapsed_for_level(
 
 ///|
 fn collect_preset_collapsed(
-  node : OutlineNode,
+  node : @outline_parser.OutlineNode,
   threshold : Int,
   collapsed : Array[Int],
 ) -> Unit {
@@ -5318,7 +5385,10 @@ fn sanitize_selected_state() -> Unit {
 }
 
 ///|
-fn is_collapsible_node(node : OutlineNode, target : Int) -> Bool {
+fn is_collapsible_node(
+  node : @outline_parser.OutlineNode,
+  target : Int,
+) -> Bool {
   if node.flat_index == target {
     return !node.synthetic && node.children.length() > 0
   }
@@ -5390,7 +5460,10 @@ fn normalize_split_percent(percent : Int) -> Int {
 }
 
 ///|
-fn find_node(node : OutlineNode, target : Int) -> OutlineNode? {
+fn find_node(
+  node : @outline_parser.OutlineNode,
+  target : Int,
+) -> @outline_parser.OutlineNode? {
   if node.flat_index == target {
     return Some(node)
   }

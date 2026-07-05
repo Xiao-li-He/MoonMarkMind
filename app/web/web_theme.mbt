@@ -1887,6 +1887,7 @@ fn style_mindmap_surface(element : @dom.Element) -> Unit {
 
 ///|
 fn style_mindmap(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "mindmap")
   set_style(element, "position", "relative")
   set_style(element, "height", "100%")
   set_style(element, "min-height", "0")
@@ -1907,6 +1908,7 @@ fn style_mindmap(element : @dom.Element) -> Unit {
 
 ///|
 fn style_mindmap_content(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "mindmap-content")
   set_style(element, "position", "absolute")
   set_style(element, "left", "50%")
   set_style(element, "top", "50%")
@@ -1918,6 +1920,7 @@ fn style_mindmap_content(element : @dom.Element) -> Unit {
 
 ///|
 fn style_mindmap_stage(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "mindmap-stage")
   set_style(element, "position", "relative")
   set_style(element, "display", "grid")
   set_style(
@@ -1932,6 +1935,7 @@ fn style_mindmap_stage(element : @dom.Element) -> Unit {
 
 ///|
 fn style_mindmap_stage_radial(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "mindmap-stage--radial")
   set_style(
     element, "grid-template-columns", "minmax(280px, 1fr) auto minmax(280px, 1fr)",
   )
@@ -1944,6 +1948,7 @@ fn style_mindmap_stage_radial(element : @dom.Element) -> Unit {
 
 ///|
 fn style_mindmap_stage_fill(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "mindmap-stage--fill")
   set_style(element, "--fill-branch", "#5c88a8")
   set_style(element, "--fill-outline", "#55c3fb")
   set_style(element, "--fill-soft-outline", "rgba(136, 169, 199, 0.42)")
@@ -1957,6 +1962,7 @@ fn style_mindmap_stage_fill(element : @dom.Element) -> Unit {
 
 ///|
 fn style_mindmap_stage_line(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "mindmap-stage--line")
   set_style(element, "--fill-branch", "#5c88a8")
   set_style(element, "--fill-outline", "#55c3fb")
   set_style(element, "--fill-soft-outline", "rgba(136, 169, 199, 0.42)")
@@ -1970,12 +1976,14 @@ fn style_mindmap_stage_line(element : @dom.Element) -> Unit {
 
 ///|
 fn style_mindmap_stage_branch_line(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "mindmap-stage--branch-line")
   set_style(element, "gap", "52px")
   set_style(element, "padding", "48px 28px")
 }
 
 ///|
 fn style_mindmap_stage_vertical(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "mindmap-stage--vertical")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "align-items", "center")
@@ -1987,6 +1995,7 @@ fn style_mindmap_stage_vertical(element : @dom.Element) -> Unit {
 
 ///|
 fn style_mindmap_stage_single_right(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "mindmap-stage--single-right")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "row")
   set_style(element, "align-items", "center")
@@ -2019,6 +2028,7 @@ fn style_layout_block(element : @dom.Element) -> Unit {
 
 ///|
 fn style_branch_column(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "branch-column")
   set_style(element, "position", "relative")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
@@ -2037,16 +2047,19 @@ fn style_branch_column_root(element : @dom.Element) -> Unit {
 
 ///|
 fn style_branch_column_left(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "branch-column--left")
   set_style(element, "align-items", "flex-end")
 }
 
 ///|
 fn style_branch_column_right(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "branch-column--right")
   set_style(element, "align-items", "flex-start")
 }
 
 ///|
 fn style_center_wrap(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "center-wrap")
   set_style(element, "display", "flex")
   set_style(element, "align-items", "center")
   set_style(element, "justify-content", "center")
@@ -2057,6 +2070,7 @@ fn style_center_wrap(element : @dom.Element) -> Unit {
 
 ///|
 fn style_branch_item(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "branch-item")
   set_style(element, "position", "relative")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
@@ -2072,11 +2086,13 @@ fn style_branch_item_root(element : @dom.Element) -> Unit {
 
 ///|
 fn style_branch_item_left(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "branch-item--left")
   set_style(element, "align-items", "flex-end")
 }
 
 ///|
 fn style_branch_item_right(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "branch-item--right")
   set_style(element, "align-items", "flex-start")
 }
 
@@ -2089,6 +2105,7 @@ fn style_branch_item_row(element : @dom.Element) -> Unit {
 
 ///|
 fn style_branch_item_head(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "branch-item__head")
   set_style(element, "position", "relative")
   set_style(element, "display", "flex")
   set_style(element, "align-items", "flex-start")
@@ -2097,6 +2114,7 @@ fn style_branch_item_head(element : @dom.Element) -> Unit {
 
 ///|
 fn style_branch_children(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "branch-children")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "gap", "16px")
@@ -2105,18 +2123,21 @@ fn style_branch_children(element : @dom.Element) -> Unit {
 
 ///|
 fn style_branch_children_left(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "branch-children--left")
   set_style(element, "align-items", "flex-end")
   set_style(element, "margin-right", "16px")
 }
 
 ///|
 fn style_branch_children_right(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "branch-children--right")
   set_style(element, "align-items", "flex-start")
   set_style(element, "margin-left", "16px")
 }
 
 ///|
 fn style_vertical_root(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "vertical-root")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "align-items", "center")
@@ -2125,6 +2146,7 @@ fn style_vertical_root(element : @dom.Element) -> Unit {
 
 ///|
 fn style_vertical_tree(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "vertical-tree")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "align-items", "center")
@@ -2139,6 +2161,7 @@ fn style_vertical_tree(element : @dom.Element) -> Unit {
 
 ///|
 fn style_vertical_tree_children(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "vertical-tree__children")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "row")
   set_style(element, "align-items", "flex-start")
@@ -2153,6 +2176,7 @@ fn style_vertical_tree_children(element : @dom.Element) -> Unit {
 
 ///|
 fn style_vertical_tree_child(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "vertical-tree__child")
   set_style(element, "display", "flex")
   set_style(element, "justify-content", "center")
   set_style(element, "align-items", "flex-start")
@@ -2167,6 +2191,7 @@ fn style_vertical_tree_child(element : @dom.Element) -> Unit {
 
 ///|
 fn style_single_right_tree(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "single-right-tree")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "row")
   set_style(element, "align-items", "center")
@@ -2176,6 +2201,7 @@ fn style_single_right_tree(element : @dom.Element) -> Unit {
 
 ///|
 fn style_single_right_tree_node(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "single-right-tree__node")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "row")
   set_style(element, "align-items", "center")
@@ -2195,6 +2221,7 @@ fn style_single_right_tree_node_right(element : @dom.Element) -> Unit {
 
 ///|
 fn style_single_right_tree_head(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "single-right-tree__head")
   set_style(element, "display", "flex")
   set_style(element, "justify-content", "flex-start")
   set_style(element, "position", "relative")
@@ -2204,6 +2231,7 @@ fn style_single_right_tree_head(element : @dom.Element) -> Unit {
 
 ///|
 fn style_single_right_tree_children(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "single-right-tree__children")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "align-items", "flex-start")
@@ -2225,6 +2253,7 @@ fn style_single_right_tree_children_right(element : @dom.Element) -> Unit {
 
 ///|
 fn style_node(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "node")
   // Base node styling is layout-neutral; center, fill, line, and branch-line
   // helpers refine the shared card shape for each visual mode.
   set_style(element, "position", "relative")
@@ -2251,6 +2280,7 @@ fn style_node(element : @dom.Element) -> Unit {
 
 ///|
 fn style_node_center(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "node--center")
   if has_class_name(element, "node--fill") {
     set_style(element, "min-width", "192px")
     set_style(element, "max-width", "252px")
@@ -2282,6 +2312,7 @@ fn style_node_center(element : @dom.Element) -> Unit {
 
 ///|
 fn style_node_line(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "node--line")
   set_style(element, "border-color", "rgba(224, 233, 242, 0.96)")
   set_style(
     element, "background", "linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 250, 253, 0.82))",
@@ -2293,6 +2324,7 @@ fn style_node_line(element : @dom.Element) -> Unit {
 
 ///|
 fn style_node_fill(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "node--fill")
   if element.getAttribute("data-depth").unwrap_or("0") == "1" {
     set_style(element, "min-width", "152px")
     set_style(element, "max-width", "228px")
@@ -2324,6 +2356,7 @@ fn style_node_fill(element : @dom.Element) -> Unit {
 
 ///|
 fn style_node_branch_line(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "node--branch-line")
   set_style(element, "display", "inline-flex")
   set_style(element, "align-items", "center")
   set_style(element, "justify-content", "center")
@@ -2394,6 +2427,7 @@ fn style_node_kicker(element : @dom.Element) -> Unit {
 
 ///|
 fn style_node_title(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "node-title")
   if has_class_name(element, "node-title--scaled") {
     set_style(element, "display", "block")
     set_style(element, "font-size", scaled_node_title_font_size(element))
@@ -2520,6 +2554,7 @@ fn branch_line_title_font_size(node : @dom.Element) -> String {
 
 ///|
 fn style_node_body(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "node-body")
   if has_class_name(element, "node-body--image-only") {
     style_node_body_image_only(element)
     return
@@ -2619,12 +2654,14 @@ fn style_node_body_branch_line(element : @dom.Element) -> Unit {
 
 ///|
 fn style_node_body_preview(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "node-body-preview")
   set_style(element, "cursor", "text")
   set_style(element, "text-align", "left")
 }
 
 ///|
 fn style_node_body_block(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "node-body-block")
   set_style(element, "position", "relative")
   set_style(element, "box-sizing", "border-box")
   set_style(element, "width", "100%")
@@ -2885,6 +2922,40 @@ fn apply_markdown_style_rule(
 }
 
 ///|
+fn apply_mindmap_style_rule(
+  element : @dom.Element,
+  class_name : String,
+) -> Unit {
+  for rule in @mindmap_renderer.mindmap_style_rules() {
+    if rule.class_name == class_name &&
+      mindmap_style_rule_matches(element, rule) {
+      apply_mindmap_style_declarations(element, rule)
+    }
+  }
+}
+
+///|
+fn apply_mindmap_style_declarations(
+  element : @dom.Element,
+  rule : @mindmap_renderer.MindmapStyleRule,
+) -> Unit {
+  for declaration in rule.declarations {
+    set_style(element, declaration.property, declaration.value)
+  }
+}
+
+///|
+fn mindmap_style_rule_matches(
+  element : @dom.Element,
+  rule : @mindmap_renderer.MindmapStyleRule,
+) -> Bool {
+  match rule.ancestor_class {
+    Some(class_name) => element.closest(".\{class_name}") is Some(_)
+    None => true
+  }
+}
+
+///|
 fn apply_markdown_style_rule_for_tag(
   element : @dom.Element,
   tag_name : String,
@@ -3097,6 +3168,7 @@ fn style_markdown_table_cell(element : @dom.Element, is_header : Bool) -> Unit {
 
 ///|
 fn style_node_note_rail(element : @dom.Element) -> Unit {
+  apply_mindmap_style_rule(element, "node-note-rail")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "align-items", "center")

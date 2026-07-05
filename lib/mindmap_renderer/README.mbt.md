@@ -1,12 +1,10 @@
 # mindmap_renderer
 
-`mindmap_renderer` 是 MoonMarkMind 的纯字符串脑图渲染包，负责把 Markdown 或 `OutlineNode` 渲染为静态 HTML/SVG 片段。
+`mindmap_renderer` is the pure string renderer for MoonMarkMind. It turns
+Markdown or an `OutlineNode` into static mind-map HTML/SVG without depending on
+browser DOM measurement, Canvas, downloads, or editor interactions.
 
-它依赖 `outline_parser`，但不依赖 DOM 测量、Canvas 或浏览器下载逻辑。浏览器端精细交互仍由 `app/web` 负责。
-
-## Install / Import
-
-在使用方 `moon.pkg` 中导入：
+## Import
 
 ```text
 import {
@@ -23,36 +21,13 @@ test {
     "# Root\n## Child",
     options=default_render_options(),
   )
-  assert_true(html.contains("moonmarkmind-node"))
+  assert_true(html.contains("moonmarkmind-export"))
+  assert_true(html.contains("mindmap-stage--single-right"))
   assert_true(html.contains("Root"))
 }
 ```
 
 ## Core APIs
-
-### 渲染 HTML
-
-```mbt check
-///|
-test {
-  let html = render_markdown_html("# Root\n## Child")
-  assert_true(html.contains("moonmarkmind-export"))
-  assert_true(html.contains("data-level=\"2\""))
-}
-```
-
-### 渲染 SVG
-
-```mbt check
-///|
-test {
-  let svg = render_markdown_svg("# Root\n## Child")
-  assert_true(svg.contains("<svg"))
-  assert_true(svg.contains("Root"))
-}
-```
-
-### 使用 OutlineNode
 
 ```mbt check
 ///|
@@ -60,26 +35,16 @@ test {
   let outline = @outline.build_outline("# Root\n## Child")
   let html = render_outline_html(outline)
   let svg = render_outline_svg(outline)
-  assert_true(html.contains("Child"))
-  assert_true(svg.contains("Child"))
+  assert_true(html.contains("data-node-index=\"1\""))
+  assert_true(svg.contains("<foreignObject"))
 }
 ```
 
-## Options
+`RenderOptions` controls the static view:
 
-`RenderOptions` 包含三类配置：
-
-- `layout`：`Logic`、`Mindmap`、`Tree`
-- `style`：`Full`、`Line`
-- `layer`：`Root`、`Layer2`、`Full`
-
-`layer` 与 Web 端 `detail-select` 的映射为：
-
-| `MindmapLayer` | Web detail-select |
-| --- | --- |
-| `Root` | `small` |
-| `Layer2` | `medium` |
-| `Full` | `all` |
+- `layout`: `Logic`, `Mindmap`, or `Tree`
+- `style`: `Full` or `Line`
+- `layer`: `Root`, `Layer2`, or `Full`
 
 ```mbt check
 ///|
@@ -90,8 +55,14 @@ test {
 }
 ```
 
+Use `mindmap_style_rules()` when embedding the renderer into a larger page.
+The renderer does not generate or inject `<style>` tags; CLI or Web callers can
+decide explicitly how to apply or serialize the structured declarations.
+
 ## Notes
 
-- 本包提供基础静态 HTML/SVG 输出，适合 CLI、测试和简单嵌入。
-- Web 应用中的节点拖拽、缩放、DOM 测量、Canvas PNG 导出仍保留在 `app/web`。
-- 字符串输入会先通过 `outline_parser` 构建结构树。
+- The package renders static reading/export artifacts only.
+- Browser-only behavior remains in `app/web`: editing, drag and drop, zoom,
+  DOM measurement, Canvas PNG export, and downloads.
+- PNG generation for command-line use should rasterize the generated SVG/HTML in
+  a separate CLI layer.

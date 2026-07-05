@@ -1,19 +1,4 @@
 ///|
-/// Built-in Markdown used by the CLI bridge, tests, and the initial browser demo.
-pub fn sample_markdown() -> String {
-  (
-    #|# MoonMarkMind Demo
-    #|## Parser
-    #|### Heading extraction
-    #|### Level mapping
-    #|## Renderer
-    #|### Tree preview
-    #|### Round-trip preview
-    #|
-  )
-}
-
-///|
 fn rules_sample_markdown_path(sample_id : String) -> String {
   match sample_id {
     "part2" => "samples/example2.md"

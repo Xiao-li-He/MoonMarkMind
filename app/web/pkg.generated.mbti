@@ -1,41 +1,7 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "Xiao-li-He/MoonMarkMind/app/web"
 
-import {
-  "Xiao-li-He/MoonMarkMind/lib/outline_parser",
-}
-
 // Values
-pub fn add_child_heading(String, Int, String) -> String
-
-pub fn add_sibling_heading(String, Int, String, Bool) -> String
-
-pub fn delete_heading(String, Int) -> String
-
-pub fn indent_heading(String, Int) -> String
-
-pub fn move_heading(String, Int, Int, Bool) -> String
-
-pub fn move_heading_among_siblings(String, Int, Bool) -> String
-
-pub fn move_heading_next(String, Int) -> String
-
-pub fn move_heading_next_with_selection(String, Int) -> (String, Int)
-
-pub fn move_heading_prev(String, Int) -> String
-
-pub fn move_heading_prev_with_selection(String, Int) -> (String, Int)
-
-pub fn move_node_to_drop_placement(String, Int, @outline_parser.DropPlacement) -> @outline_parser.MoveNodeResult
-
-pub fn outline_json(String) -> String
-
-pub fn parse_headings(String) -> Array[(Int, String)]
-
-pub fn promote_heading(String, Int) -> String
-
-pub fn rename_heading(String, Int, String) -> String
-
 pub fn render_markdown_blocks_html(Array[String]) -> String
 
 pub fn render_markdown_html(String) -> String
@@ -44,8 +10,6 @@ pub fn render_markdown_inline_html(String) -> String
 
 pub fn render_markdown_title_html(String) -> String
 
-pub fn sample_markdown() -> String
-
 pub fn start_web_app() -> Unit
 
 // Errors
@@ -53,15 +17,6 @@ pub fn start_web_app() -> Unit
 // Types and methods
 
 // Type aliases
-pub using @outline_parser {type DropPlacement}
-
-pub using @outline_parser {type MarkdownNode}
-
-pub using @outline_parser {type MarkdownNodeKind}
-
-pub using @outline_parser {type MoveNodeResult}
-
-pub using @outline_parser {type OutlineNode}
 
 // Traits
 

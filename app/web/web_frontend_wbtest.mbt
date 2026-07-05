@@ -75,7 +75,10 @@ fn mark_body_block_editing(node_index : Int, block_index : Int) -> Unit {
 }
 
 ///|
-fn outline_flat_index_by_title(node : OutlineNode, title : String) -> Int {
+fn outline_flat_index_by_title(
+  node : @outline_parser.OutlineNode,
+  title : String,
+) -> Int {
   if node.title == title {
     return node.flat_index
   }
@@ -86,6 +89,21 @@ fn outline_flat_index_by_title(node : OutlineNode, title : String) -> Int {
     }
   }
   -1
+}
+
+///|
+test "web package can consume mindmap shared style rules" {
+  let mut has_branch_children_padding = false
+  for rule in @mindmap_renderer.mindmap_style_rules() {
+    if rule.class_name == "branch-children" {
+      for declaration in rule.declarations {
+        if declaration.property == "padding-left" && declaration.value == "26px" {
+          has_branch_children_padding = true
+        }
+      }
+    }
+  }
+  assert_eq(has_branch_children_padding, true)
 }
 
 ///|
@@ -135,14 +153,14 @@ test "markdown inline renderer previews image with empty alt" {
 
 ///|
 test "image-only node body uses non scrolling body class" {
-  let node = OutlineNode::{
+  let node = @outline_parser.OutlineNode::{
     flat_index: 0,
     source_line: 0,
     level: 1,
     title: "Image",
     marker: "",
     body: ["![](https://markmap.js.org/favicon.png)"],
-    kind: MarkdownNodeKind::Heading,
+    kind: @outline_parser.MarkdownNodeKind::Heading,
     synthetic: false,
     children: [],
   }
@@ -203,7 +221,7 @@ test "markdown inline renderer renders latex over fractions" {
 ///|
 test "markdown inline renderer exposes latex math subtree classes" {
   let html0 = render_markdown_inline_html(
-    "鍏紡 $x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}$",
+    "閸忣剙绱?$x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}$",
   )
   let _ = html0
   let html = render_markdown_inline_html(
@@ -1099,7 +1117,9 @@ test "node drag inside collapsed target expands after drop" {
   drag_drop_target.val = 1
   app_state.collapsed = [1]
 
-  let changed = apply_node_drag_drop(DropInside(1))
+  let changed = apply_node_drag_drop(
+    @outline_parser.DropPlacement::DropInside(1),
+  )
 
   assert_eq(changed, true)
   assert_eq(app_state.selected_node, 4)
@@ -1122,7 +1142,9 @@ test "node drag unchanged drop keeps dragged source selected" {
   drag_drop_target.val = 1
   let markdown = app_state.markdown
 
-  let changed = apply_node_drag_drop(DropBefore(1))
+  let changed = apply_node_drag_drop(
+    @outline_parser.DropPlacement::DropBefore(1),
+  )
   if !changed {
     select_node_drag_source()
   }
@@ -1234,11 +1256,11 @@ test "keyboard tree navigation reveals selected markdown line" {
 ///|
 test "move heading prev keeps sibling subtree stable" {
   let markdown = "# Root\n\nThis is the root note.\n\n## Section A\n\nIntro text.\n\n- title list entry\n- sibling list entry\n- another list entry\n### Section A1\n#### Section A1-1\n##### Section A1-1-1\n###### Section A1-1-1-1\n\nmore text\n\n- deep list a\n  - deep list b\n    - deep list c\n\n### Section A2\n\n- list A2-1\n- list A2-2\n  - child A2-2-1\n    - child A2-2-1-1"
-  let outline = build_outline(markdown)
+  let outline = @outline_parser.build_outline(markdown)
   let a2_index = outline_flat_index_by_title(outline, "Section A2")
   assert_eq(a2_index >= 0, true)
 
-  let moved_up = move_heading_prev(markdown, a2_index)
+  let moved_up = @outline_parser.move_heading_prev(markdown, a2_index)
   assert_eq(moved_up.contains("### Section A2"), true)
   assert_eq(moved_up.contains("- Section A2"), false)
   assert_eq(moved_up.contains("### Section A1"), true)
@@ -1270,10 +1292,12 @@ test "mindmap ctrl arrow shortcut moves selected node before navigation" {
 test "move heading prev stops before document root" {
   let markdown = "# Root\n## Child"
 
-  let moved = move_heading_prev(markdown, 1)
+  let moved = @outline_parser.move_heading_prev(markdown, 1)
   assert_eq(moved, markdown)
 
-  let moved_with_selection = move_heading_prev_with_selection(markdown, 1)
+  let moved_with_selection = @outline_parser.move_heading_prev_with_selection(
+    markdown, 1,
+  )
   assert_eq(moved_with_selection.0, markdown)
   assert_eq(moved_with_selection.1, 1)
 }
@@ -1281,11 +1305,11 @@ test "move heading prev stops before document root" {
 ///|
 test "heading can promote one level when moving up" {
   let markdown = "# Root\n## Section A\n### Sub A1\n#### Sub A1-1"
-  let outline = build_outline(markdown)
+  let outline = @outline_parser.build_outline(markdown)
   let sub_index = outline_flat_index_by_title(outline, "Sub A1-1")
   assert_eq(sub_index >= 0, true)
 
-  let moved = move_heading_prev(markdown, sub_index)
+  let moved = @outline_parser.move_heading_prev(markdown, sub_index)
   assert_eq(moved.contains("### Sub A1-1"), true)
   assert_eq(moved.contains("#### Sub A1-1"), false)
 }
@@ -1293,42 +1317,42 @@ test "heading can promote one level when moving up" {
 ///|
 test "moving list item stays within list siblings" {
   let markdown = "# Root\n## Parent\n- list a\n- list b\n- list c"
-  let outline = build_outline(markdown)
+  let outline = @outline_parser.build_outline(markdown)
   let list_b_index = outline_flat_index_by_title(outline, "list b")
   assert_eq(list_b_index >= 0, true)
 
-  let moved_up = move_heading_prev(markdown, list_b_index)
+  let moved_up = @outline_parser.move_heading_prev(markdown, list_b_index)
   assert_eq(moved_up, "# Root\n## Parent\n- list b\n- list a\n- list c")
 
-  let moved_down = move_heading_next(markdown, list_b_index)
+  let moved_down = @outline_parser.move_heading_next(markdown, list_b_index)
   assert_eq(moved_down, "# Root\n## Parent\n- list a\n- list c\n- list b")
 }
 
 ///|
 test "list item does not cross into heading sibling" {
   let markdown = "# Root\n## Parent\n- list a\n### Head A\n### Head B"
-  let outline = build_outline(markdown)
+  let outline = @outline_parser.build_outline(markdown)
   let list_a_index = outline_flat_index_by_title(outline, "list a")
   assert_eq(list_a_index >= 0, true)
 
-  let moved_up = move_heading_prev(markdown, list_a_index)
+  let moved_up = @outline_parser.move_heading_prev(markdown, list_a_index)
   assert_eq(moved_up, markdown)
 
-  let moved_down = move_heading_next(markdown, list_a_index)
+  let moved_down = @outline_parser.move_heading_next(markdown, list_a_index)
   assert_eq(moved_down, markdown)
 }
 
 ///|
 test "markdown body preserves blank-only lines on render" {
   let markdown = "# Root\n  \n\t\nFirst line\nSecond line\n\nThird line\n## Child"
-  let nodes = parse_markdown_nodes(markdown)
+  let nodes = @outline_parser.parse_markdown_nodes(markdown)
 
   assert_eq(nodes.length(), 2)
   assert_eq(nodes[0].body.length(), 2)
   assert_eq(nodes[0].body[0], "First line\nSecond line")
   assert_eq(nodes[0].body[1], "Third line")
   assert_eq(
-    render_markdown_nodes(nodes),
+    @outline_parser.render_markdown_nodes(nodes),
     "# Root\n\n\nFirst line\nSecond line\n\nThird line\n## Child",
   )
 }
@@ -1338,7 +1362,7 @@ test "rename heading preserves original blank lines" {
   let markdown = "# Root\n\n\n## Alpha\n\nAlpha note\n\n\n## Beta"
 
   assert_eq(
-    rename_heading(markdown, 1, "Renamed"),
+    @outline_parser.rename_heading(markdown, 1, "Renamed"),
     "# Root\n\n\n## Renamed\n\nAlpha note\n\n\n## Beta",
   )
 }
@@ -1348,7 +1372,7 @@ test "new sibling text is inserted before next node spacing" {
   let markdown = "# Root\n## Alpha\n\n\n## Beta"
 
   assert_eq(
-    add_sibling_heading(markdown, 1, "New", true),
+    @outline_parser.add_sibling_heading(markdown, 1, "New", true),
     "# Root\n## Alpha\n\n\n## New\n## Beta",
   )
 }
@@ -1356,12 +1380,12 @@ test "new sibling text is inserted before next node spacing" {
 ///|
 test "heading inserted after list sibling keeps list block separator" {
   let markdown = "# Root\n## Parent\n- list item\n## Next"
-  let outline = build_outline(markdown)
+  let outline = @outline_parser.build_outline(markdown)
   let parent_index = outline_flat_index_by_title(outline, "Parent")
   assert_eq(parent_index >= 0, true)
 
   assert_eq(
-    add_child_heading(markdown, parent_index, "New heading"),
+    @outline_parser.add_child_heading(markdown, parent_index, "New heading"),
     "# Root\n## Parent\n- list item\n\n### New heading\n## Next",
   )
 }
@@ -1369,12 +1393,12 @@ test "heading inserted after list sibling keeps list block separator" {
 ///|
 test "list inserted after list sibling stays in same list block" {
   let markdown = "# Root\n## Parent\n- list item\n\n## Next"
-  let outline = build_outline(markdown)
+  let outline = @outline_parser.build_outline(markdown)
   let list_index = outline_flat_index_by_title(outline, "list item")
   assert_eq(list_index >= 0, true)
 
   assert_eq(
-    add_sibling_heading(markdown, list_index, "New item", true),
+    @outline_parser.add_sibling_heading(markdown, list_index, "New item", true),
     "# Root\n## Parent\n- list item\n- New item\n\n## Next",
   )
 }
@@ -1384,7 +1408,7 @@ test "moving heading carries surrounding blank lines with subtree" {
   let markdown = "# Root\n\n## Alpha\n\nAlpha note\n\n### Child\n\nChild note\n\n\n## Beta"
 
   assert_eq(
-    move_heading_next(markdown, 1),
+    @outline_parser.move_heading_next(markdown, 1),
     "# Root\n\n\n## Beta\n\n## Alpha\n\nAlpha note\n\n### Child\n\nChild note",
   )
 }
@@ -1393,7 +1417,11 @@ test "moving heading carries surrounding blank lines with subtree" {
 test "drop move heading inside target appends as last child" {
   let markdown = "# Root\n## A\n### A1\n## B\n### B1"
 
-  let result = move_node_to_drop_placement(markdown, 1, DropInside(3))
+  let result = @outline_parser.move_node_to_drop_placement(
+    markdown,
+    1,
+    @outline_parser.DropPlacement::DropInside(3),
+  )
 
   assert_eq(result.changed, true)
   assert_eq(result.selected_node, 3)
@@ -1404,7 +1432,11 @@ test "drop move heading inside target appends as last child" {
 test "drop move heading before child keeps target parent" {
   let markdown = "# Root\n## A\n### A1\n## B\n### B1"
 
-  let result = move_node_to_drop_placement(markdown, 4, DropBefore(2))
+  let result = @outline_parser.move_node_to_drop_placement(
+    markdown,
+    4,
+    @outline_parser.DropPlacement::DropBefore(2),
+  )
 
   assert_eq(result.changed, true)
   assert_eq(result.selected_node, 2)
@@ -1415,7 +1447,11 @@ test "drop move heading before child keeps target parent" {
 test "drop move heading to list area converts root to list item" {
   let markdown = "# Root\n## A\n- one\n- two\n## B"
 
-  let result = move_node_to_drop_placement(markdown, 4, DropBefore(2))
+  let result = @outline_parser.move_node_to_drop_placement(
+    markdown,
+    4,
+    @outline_parser.DropPlacement::DropBefore(2),
+  )
 
   assert_eq(result.changed, true)
   assert_eq(result.selected_node, 2)
@@ -1426,7 +1462,11 @@ test "drop move heading to list area converts root to list item" {
 test "drop move heading inside list converts whole subtree to list items" {
   let markdown = "# Root\n## A\n### A1\n#### A2\n## B\n- one"
 
-  let result = move_node_to_drop_placement(markdown, 1, DropInside(5))
+  let result = @outline_parser.move_node_to_drop_placement(
+    markdown,
+    1,
+    @outline_parser.DropPlacement::DropInside(5),
+  )
 
   assert_eq(result.changed, true)
   assert_eq(result.selected_node, 3)
@@ -1437,7 +1477,11 @@ test "drop move heading inside list converts whole subtree to list items" {
 test "drop move heading before list converts heading descendants to list" {
   let markdown = "# Root\n## A\n### A1\n## B\n- one"
 
-  let result = move_node_to_drop_placement(markdown, 1, DropBefore(4))
+  let result = @outline_parser.move_node_to_drop_placement(
+    markdown,
+    1,
+    @outline_parser.DropPlacement::DropBefore(4),
+  )
 
   assert_eq(result.changed, true)
   assert_eq(result.selected_node, 2)
@@ -1448,7 +1492,11 @@ test "drop move heading before list converts heading descendants to list" {
 test "drop move mixed heading subtree to list keeps list structure" {
   let markdown = "# Root\n## A\n### A1\n- nested\n## B\n- one"
 
-  let result = move_node_to_drop_placement(markdown, 1, DropBefore(5))
+  let result = @outline_parser.move_node_to_drop_placement(
+    markdown,
+    1,
+    @outline_parser.DropPlacement::DropBefore(5),
+  )
 
   assert_eq(result.changed, true)
   assert_eq(result.selected_node, 2)
@@ -1459,7 +1507,11 @@ test "drop move mixed heading subtree to list keeps list structure" {
 test "drop move list item to heading area converts root to heading" {
   let markdown = "# Root\n## A\n- one\n- two\n## B"
 
-  let result = move_node_to_drop_placement(markdown, 3, DropAfter(4))
+  let result = @outline_parser.move_node_to_drop_placement(
+    markdown,
+    3,
+    @outline_parser.DropPlacement::DropAfter(4),
+  )
 
   assert_eq(result.changed, true)
   assert_eq(result.selected_node, 4)
@@ -1470,7 +1522,11 @@ test "drop move list item to heading area converts root to heading" {
 test "drop move rejects self subtree and preserves index map" {
   let markdown = "# Root\n## A\n### A1\n## B"
 
-  let result = move_node_to_drop_placement(markdown, 1, DropInside(2))
+  let result = @outline_parser.move_node_to_drop_placement(
+    markdown,
+    1,
+    @outline_parser.DropPlacement::DropInside(2),
+  )
 
   assert_eq(result.changed, false)
   assert_eq(result.selected_node, 1)
@@ -1482,8 +1538,16 @@ test "drop move rejects self subtree and preserves index map" {
 test "drop move rejects before and after fixed root" {
   let markdown = "# Root\n## A\n## B"
 
-  let before = move_node_to_drop_placement(markdown, 1, DropBefore(0))
-  let after = move_node_to_drop_placement(markdown, 2, DropAfter(0))
+  let before = @outline_parser.move_node_to_drop_placement(
+    markdown,
+    1,
+    @outline_parser.DropPlacement::DropBefore(0),
+  )
+  let after = @outline_parser.move_node_to_drop_placement(
+    markdown,
+    2,
+    @outline_parser.DropPlacement::DropAfter(0),
+  )
 
   assert_eq(before.changed, false)
   assert_eq(before.markdown, markdown)
@@ -1493,14 +1557,14 @@ test "drop move rejects before and after fixed root" {
 
 ///|
 test "node body preview keeps paragraph spacing" {
-  let node = OutlineNode::{
+  let node = @outline_parser.OutlineNode::{
     flat_index: 0,
     source_line: 0,
     level: 1,
     title: "Root",
     marker: "",
     body: ["First line\nSecond line", "Third line"],
-    kind: MarkdownNodeKind::Heading,
+    kind: @outline_parser.MarkdownNodeKind::Heading,
     synthetic: false,
     children: [],
   }
@@ -1516,14 +1580,14 @@ test "node body preview keeps paragraph spacing" {
 
 ///|
 test "node body block editor renders one active block editor" {
-  let node = OutlineNode::{
+  let node = @outline_parser.OutlineNode::{
     flat_index: 0,
     source_line: 0,
     level: 1,
     title: "Root",
     marker: "",
     body: ["First line", "Second line"],
-    kind: MarkdownNodeKind::Heading,
+    kind: @outline_parser.MarkdownNodeKind::Heading,
     synthetic: false,
     children: [],
   }
@@ -1535,20 +1599,20 @@ test "node body block editor renders one active block editor" {
   assert_eq(html.contains("data-body-editor-block=\"1\""), true)
   assert_eq(html.contains("data-action=\"save-body-block\""), true)
   assert_eq(html.contains("data-action=\"cancel-body-block\""), true)
-  assert_eq(html.contains("✔"), true)
-  assert_eq(html.contains("❌"), true)
+  assert_eq(html.contains("✓"), true)
+  assert_eq(html.contains("✕"), true)
 }
 
 ///|
 test "node body block actions render svg icons" {
-  let node = OutlineNode::{
+  let node = @outline_parser.OutlineNode::{
     flat_index: 0,
     source_line: 0,
     level: 1,
     title: "Root",
     marker: "",
     body: ["First line"],
-    kind: MarkdownNodeKind::Heading,
+    kind: @outline_parser.MarkdownNodeKind::Heading,
     synthetic: false,
     children: [],
   }
@@ -1563,14 +1627,14 @@ test "node body block actions render svg icons" {
 
 ///|
 test "single line body block actions get centered layout class" {
-  let node = OutlineNode::{
+  let node = @outline_parser.OutlineNode::{
     flat_index: 0,
     source_line: 0,
     level: 1,
     title: "Root",
     marker: "",
     body: ["First line", "Second line\nThird line"],
-    kind: MarkdownNodeKind::Heading,
+    kind: @outline_parser.MarkdownNodeKind::Heading,
     synthetic: false,
     children: [],
   }
@@ -1590,14 +1654,14 @@ test "single line body block actions get centered layout class" {
 
 ///|
 test "image body block actions keep bottom layout" {
-  let node = OutlineNode::{
+  let node = @outline_parser.OutlineNode::{
     flat_index: 0,
     source_line: 0,
     level: 1,
     title: "Root",
     marker: "",
     body: ["![Logo](image.png)"],
-    kind: MarkdownNodeKind::Heading,
+    kind: @outline_parser.MarkdownNodeKind::Heading,
     synthetic: false,
     children: [],
   }
@@ -1627,7 +1691,7 @@ test "node visual hidden count excludes the current node" {
 ///|
 test "root branch split balances siblings by count" {
   let markdown = "# Root\n## One\n## Two\n## Three\n## Four\n## Five\n## Six\n## Seven"
-  let outline = build_outline(markdown)
+  let outline = @outline_parser.build_outline(markdown)
 
   assert_eq(default_root_split_count(outline), 3)
 }
@@ -1639,7 +1703,7 @@ test "root branch weight style keeps hundredth precision" {
 
 ///|
 test "normalize markdown body lines collapses blank separators" {
-  let normalized = normalize_markdown_body_lines([
+  let normalized = @outline_parser.normalize_markdown_body_lines([
     "  ", "First line", "Second line", "\t", "Third line", "", "", "Fourth line",
   ])
 
@@ -1923,7 +1987,7 @@ test "body block edit preserves table single newlines" {
 ///|
 test "insert note on list node preserves markdown indentation" {
   load_markdown("# Root\n## Parent\n- item\n## Next", true)
-  let outline = build_outline(app_state.markdown)
+  let outline = @outline_parser.build_outline(app_state.markdown)
   let list_index = outline_flat_index_by_title(outline, "item")
   assert_eq(list_index >= 0, true)
 
@@ -1941,12 +2005,12 @@ test "insert note on list node preserves markdown indentation" {
 ///|
 test "direct markdown edit roundtrips note bodies for heading and list nodes" {
   let markdown = "# Root\n## Alpha\nAlpha note\n## Parent\n- item\n  List note\n## Next"
-  let nodes = parse_markdown_nodes(markdown)
+  let nodes = @outline_parser.parse_markdown_nodes(markdown)
 
   assert_eq(nodes.length(), 5)
   assert_eq(nodes[1].body.length(), 1)
   assert_eq(nodes[1].body[0], "Alpha note")
   assert_eq(nodes[3].body.length(), 1)
   assert_eq(nodes[3].body[0], "List note")
-  assert_eq(render_markdown_nodes(nodes), markdown)
+  assert_eq(@outline_parser.render_markdown_nodes(nodes), markdown)
 }

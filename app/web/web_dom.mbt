@@ -1005,7 +1005,10 @@ fn apply_mindmap_single_child_alignment(stage : @dom.Element) -> Unit {
 }
 
 ///|
-fn align_single_child_chain(stage : @dom.Element, node : OutlineNode) -> Unit {
+fn align_single_child_chain(
+  stage : @dom.Element,
+  node : @outline_parser.OutlineNode,
+) -> Unit {
   if !should_render_children(node) {
     return
   }
@@ -2027,7 +2030,7 @@ fn markdown_node_index_at_line(markdown : String, line_index : Int) -> Int {
   if line_index < 0 {
     return -1
   }
-  let nodes = parse_markdown_nodes(markdown)
+  let nodes = @outline_parser.parse_markdown_nodes(markdown)
   for index in 0..<nodes.length() {
     let node = nodes[index]
     if node.source_line == line_index {

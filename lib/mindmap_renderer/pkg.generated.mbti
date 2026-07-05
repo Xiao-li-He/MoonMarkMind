@@ -10,6 +10,8 @@ pub fn default_render_options() -> RenderOptions
 
 pub fn layer_to_detail_select(MindmapLayer) -> String
 
+pub fn mindmap_style_rules() -> Array[MindmapStyleRule]
+
 pub fn normalize_layer(String) -> MindmapLayer
 
 pub fn normalize_layout(String) -> MindmapLayout
@@ -42,6 +44,18 @@ pub(all) enum MindmapLayout {
 pub(all) enum MindmapStyle {
   Full
   Line
+}
+
+pub(all) struct MindmapStyleDeclaration {
+  property : String
+  value : String
+}
+
+pub(all) struct MindmapStyleRule {
+  selector : String
+  class_name : String
+  ancestor_class : String?
+  declarations : Array[MindmapStyleDeclaration]
 }
 
 pub(all) struct RenderOptions {

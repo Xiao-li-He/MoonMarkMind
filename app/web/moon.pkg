@@ -11,17 +11,15 @@ import {
   "Xiao-li-He/MoonMarkMind/lib/outline_parser",
   "Xiao-li-He/MoonMarkMind/lib/latex_math_render",
   "Xiao-li-He/MoonMarkMind/lib/markdown_render",
+  "Xiao-li-He/MoonMarkMind/lib/mindmap_renderer",
 }
 
 supported_targets = "js"
 
 options(
   targets: {
-    "heading_parser.mbt": [ "js" ],
     "markdown_render.mbt": [ "js" ],
-    "outline_model.mbt": [ "js" ],
     "outline_model_test.mbt": [ "js" ],
-    "outline_tree.mbt": [ "js" ],
     "sample_data.mbt": [ "js" ],
     "web_dom.mbt": [ "js" ],
     "web_frontend.mbt": [ "js" ],
