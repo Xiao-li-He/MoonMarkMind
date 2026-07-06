@@ -38,5 +38,7 @@ browser or another rasterizer to convert the HTML/SVG layout into pixels.
 
 The HTML output includes the same export node attributes, toggle buttons,
 connector layer, and runtime contract used by the web export path. The SVG
-output embeds styles, nodes, and static connector paths; exact pixel parity with
-the web app's downloaded SVG still requires browser-driven DOM measurement.
+output embeds styles, nodes, static fallback connector paths, and the browser
+measurement runtime; when opened directly in a browser it redraws connectors
+from the actual node rectangles. In script-disabled SVG contexts, the static
+fallback remains visible.

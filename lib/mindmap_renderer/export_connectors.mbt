@@ -499,6 +499,7 @@ fn write_static_connector_layer(
   let color = if options.style is Full { "#7ca5d4" } else { "#94b6db" }
   write_str(out, "<svg")
   write_class_attr(out, "mindmap-connector-layer")
+  write_attr(out, "data-static-connectors", "true")
   write_attr(out, "xmlns", "http://www.w3.org/2000/svg")
   write_int_attr(out, "width", width)
   write_int_attr(out, "height", height)

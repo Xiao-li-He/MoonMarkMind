@@ -99,6 +99,7 @@ pub fn render_export_runtime_script() -> String {
     #|  function renderConnectors(root) {
     #|    var stage = root.querySelector(".mindmap-stage");
     #|    if (!stage) return;
+    #|    Array.prototype.slice.call((root.ownerDocument || document).querySelectorAll('[data-static-connectors="true"]')).forEach(function (layer) { layer.remove(); });
     #|    var existing = stage.querySelector(".mindmap-connector-layer");
     #|    if (existing) existing.remove();
     #|    var nodes = Array.prototype.slice.call(stage.querySelectorAll(".node[data-node-index]")).filter(nodeVisible);
@@ -186,4 +187,13 @@ pub fn render_export_runtime_script() -> String {
     #|})();
     #|</script>
   )
+}
+
+///|
+fn render_export_runtime_svg_script() -> String {
+  let body = render_export_runtime_script()
+    .replace_all(old="<script>\n", new="")
+    .replace_all(old="\n</script>\n", new="")
+    .replace_all(old="</script>", new="")
+  "<script><![CDATA[\n\{body}\n]]></script>"
 }

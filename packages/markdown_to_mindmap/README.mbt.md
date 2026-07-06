@@ -48,10 +48,12 @@ Use `render_style_css()`, `render_style_element()`, and
 Use `render_html_document()` when you want a complete standalone interactive
 document.
 
-SVG export embeds styles, nodes, and a static connector layer. Without launching
-a browser it cannot read the same DOM rectangles used by the web app download
-path, so SVG paths are visually aligned with the shared export contract rather
-than guaranteed to be pixel-identical to browser-generated SVG.
+SVG export embeds styles, nodes, a static connector fallback, and the same
+measurement runtime used by standalone HTML. When the SVG is opened directly in
+a browser, the runtime removes the fallback paths and redraws connectors from
+the actual DOM rectangles. If the SVG is used in a context where scripts do not
+run, the static fallback remains visible but may not be pixel-identical to the
+browser-measured HTML export.
 
 PNG export is intentionally not exposed here. PNG generation needs a browser or
 another rasterizer to lay out HTML/SVG and draw to pixels; the MoonMarkMind web
