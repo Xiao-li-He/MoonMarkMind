@@ -8,13 +8,13 @@ fn write_node_card(
   options~ : RenderOptions,
   depth~ : Int,
 ) -> Unit {
-  write_str(out, "<article class=\"node")
-  if center {
-    write_str(out, " node--center")
+  let class_name = if center {
+    "node node--center \{node_style_class(options.style)}"
+  } else {
+    "node \{node_style_class(options.style)}"
   }
-  write_str(out, " ")
-  write_node_style_class(out, options.style)
-  write_str(out, "\"")
+  write_str(out, "<article")
+  write_class_attr(out, class_name)
   write_int_attr(out, "data-level", node.level)
   write_int_attr(out, "data-depth", depth)
   write_int_attr(out, "data-tone", tone_index)
@@ -22,9 +22,8 @@ fn write_node_card(
   write_int_attr(out, "data-parent-index", parent_index)
   write_int_attr(out, "data-child-count", node.children.length())
   write_bool_attr(out, "data-synthetic", node.synthetic)
-  write_str(out, "><strong class=\"")
-  write_node_title_class(out, options.style)
-  write_str(out, "\"")
+  write_str(out, "><strong")
+  write_class_attr(out, node_title_class(options.style))
   write_int_attr(out, "data-title-depth", depth)
   write_bool_attr(out, "data-title-center", center)
   write_str(out, ">")
@@ -48,56 +47,4 @@ fn write_node_body(
   )
   write_str(out, @markdown_render.render_markdown_blocks_html(node.body))
   write_str(out, "</div></div></div>")
-}
-
-///|
-fn write_stage_class(
-  out : StringBuilder,
-  options : RenderOptions,
-  extra : String,
-) -> Unit {
-  write_str(out, "mindmap-stage ")
-  write_str(out, extra)
-  match options.style {
-    Line => write_str(out, " mindmap-stage--branch-line")
-    Full => write_str(out, " mindmap-stage--fill")
-  }
-}
-
-///|
-fn is_full_layer(layer : MindmapLayer) -> Bool {
-  match layer {
-    Full => true
-    _ => false
-  }
-}
-
-///|
-fn write_node_style_class(out : StringBuilder, style : MindmapStyle) -> Unit {
-  match style {
-    Line => write_str(out, "node--fill node--branch-line")
-    Full => write_str(out, "node--line")
-  }
-}
-
-///|
-fn write_node_title_class(out : StringBuilder, style : MindmapStyle) -> Unit {
-  match style {
-    Line => write_str(out, "node-title node-title--scaled node-title--line")
-    Full => write_str(out, "node-title node-title--scaled node-title--fill")
-  }
-}
-
-///|
-fn should_render_children(depth : Int, layer : MindmapLayer) -> Bool {
-  match layer {
-    Root => false
-    Layer2 => depth < 1
-    Full => true
-  }
-}
-
-///|
-fn fill_tone_index(index : Int) -> Int {
-  index % 5
 }

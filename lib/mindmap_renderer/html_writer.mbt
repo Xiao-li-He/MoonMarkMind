@@ -18,6 +18,11 @@ fn write_attr(out : StringBuilder, name : String, value : String) -> Unit {
 }
 
 ///|
+fn write_class_attr(out : StringBuilder, value : String) -> Unit {
+  write_attr(out, "class", value)
+}
+
+///|
 fn write_int_attr(out : StringBuilder, name : String, value : Int) -> Unit {
   out.write_string(" ")
   out.write_string(name)

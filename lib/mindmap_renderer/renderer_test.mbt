@@ -59,6 +59,9 @@ test "render style and layer options" {
   })
   assert_eq(line.contains("moonmarkmind-export--line"), true)
   assert_eq(line.contains("node--branch-line"), true)
+  assert_eq(line.contains("node--fill node--branch-line"), true)
+  assert_eq(root_only.contains("moonmarkmind-export--full"), true)
+  assert_eq(root_only.contains("node--line"), true)
   assert_eq(line.contains("Beta Child"), false)
   assert_eq(root_only.contains("Alpha"), false)
   assert_eq(root_only.contains("Beta Child"), false)
@@ -106,4 +109,12 @@ test "mindmap style rules expose shared static classes" {
     true,
   )
   assert_eq(mindmap_style_rules_contain_class("vertical-tree__children"), true)
+}
+
+///|
+test "mindmap style css serializes shared static classes" {
+  let css = mindmap_style_css()
+  assert_eq(css.contains(".moonmarkmind-export"), true)
+  assert_eq(css.contains(".mindmap-stage"), true)
+  assert_eq(css.contains(".node"), true)
 }

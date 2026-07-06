@@ -289,3 +289,17 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
     ]),
   ]
 }
+
+///|
+/// Render the shared mind-map visual rules as CSS for standalone exports.
+pub fn mindmap_style_css() -> String {
+  let blocks = []
+  for rule in mindmap_style_rules() {
+    let declarations = []
+    for declaration in rule.declarations {
+      declarations.push("\{declaration.property}: \{declaration.value};")
+    }
+    blocks.push("\{rule.selector} { \{declarations.join(" ")} }")
+  }
+  blocks.join("\n")
+}

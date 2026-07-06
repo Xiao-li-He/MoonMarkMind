@@ -10,6 +10,8 @@ pub fn default_render_options() -> RenderOptions
 
 pub fn layer_to_detail_select(MindmapLayer) -> String
 
+pub fn mindmap_style_css() -> String
+
 pub fn mindmap_style_rules() -> Array[MindmapStyleRule]
 
 pub fn normalize_layer(String) -> MindmapLayer

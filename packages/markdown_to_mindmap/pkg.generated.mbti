@@ -1,0 +1,41 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Xiao-li-He/MoonMarkMind/packages/markdown_to_mindmap"
+
+import {
+  "Xiao-li-He/MoonMarkMind/lib/mindmap_renderer",
+}
+
+// Values
+pub fn default_render_options() -> @mindmap_renderer.RenderOptions
+
+pub fn normalize_layer(String) -> @mindmap_renderer.MindmapLayer
+
+pub fn normalize_layout(String) -> @mindmap_renderer.MindmapLayout
+
+pub fn normalize_style(String) -> @mindmap_renderer.MindmapStyle
+
+pub fn render(String, options? : @mindmap_renderer.RenderOptions) -> String
+
+pub fn render_html_document(String, options? : @mindmap_renderer.RenderOptions) -> String
+
+pub fn render_style_css() -> String
+
+pub fn render_style_element() -> String
+
+pub fn render_svg(String, options? : @mindmap_renderer.RenderOptions) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @mindmap_renderer {type MindmapLayer}
+
+pub using @mindmap_renderer {type MindmapLayout}
+
+pub using @mindmap_renderer {type MindmapStyle}
+
+pub using @mindmap_renderer {type RenderOptions}
+
+// Traits
+

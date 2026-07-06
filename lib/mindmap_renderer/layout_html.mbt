@@ -18,9 +18,9 @@ fn write_horizontal_mindmap(
   options : RenderOptions,
 ) -> Unit {
   let split = (root.children.length() + 1) / 2
-  write_str(out, "<div class=\"")
-  write_stage_class(out, options, "mindmap-stage--radial")
-  write_str(out, "\"><div class=\"branch-column branch-column--left\">")
+  write_str(out, "<div")
+  write_class_attr(out, stage_class(options, "mindmap-stage--radial"))
+  write_str(out, "><div class=\"branch-column branch-column--left\">")
   for index in 0..<root.children.length() {
     if index < split {
       write_branch_node(
@@ -78,13 +78,13 @@ fn write_branch_node(
   write_int_attr(out, "data-parent-index", parent_index)
   write_str(out, ">")
   if direction == "left" {
-    if should_render_children(depth, options.layer) {
+    if should_render_layer_children(depth, options.layer) {
       write_branch_children(out, node, direction, tone_index, options, depth)
     }
     write_branch_head(out, node, parent_index, tone_index, options, depth)
   } else {
     write_branch_head(out, node, parent_index, tone_index, options, depth)
-    if should_render_children(depth, options.layer) {
+    if should_render_layer_children(depth, options.layer) {
       write_branch_children(out, node, direction, tone_index, options, depth)
     }
   }
@@ -148,9 +148,9 @@ fn write_single_right_mindmap(
   root : @outline.OutlineNode,
   options : RenderOptions,
 ) -> Unit {
-  write_str(out, "<div class=\"")
-  write_stage_class(out, options, "mindmap-stage--single-right")
-  write_str(out, "\"><div class=\"single-right-tree\">")
+  write_str(out, "<div")
+  write_class_attr(out, stage_class(options, "mindmap-stage--single-right"))
+  write_str(out, "><div class=\"single-right-tree\">")
   write_single_right_tree(out, root, -1, true, -1, options, 0)
   write_str(out, "</div></div>")
 }
@@ -179,7 +179,7 @@ fn write_single_right_tree(
     depth~,
   )
   write_str(out, "</div>")
-  if should_render_children(depth, options.layer) {
+  if should_render_layer_children(depth, options.layer) {
     write_single_right_children(out, node, tone_index, options, depth)
   }
   write_str(out, "</div>")
@@ -218,9 +218,9 @@ fn write_vertical_mindmap(
   root : @outline.OutlineNode,
   options : RenderOptions,
 ) -> Unit {
-  write_str(out, "<div class=\"")
-  write_stage_class(out, options, "mindmap-stage--vertical")
-  write_str(out, "\"><div class=\"vertical-root\">")
+  write_str(out, "<div")
+  write_class_attr(out, stage_class(options, "mindmap-stage--vertical"))
+  write_str(out, "><div class=\"vertical-root\">")
   write_vertical_tree(out, root, -1, true, -1, options, 0)
   write_str(out, "</div></div>")
 }
@@ -248,7 +248,7 @@ fn write_vertical_tree(
     options~,
     depth~,
   )
-  if should_render_children(depth, options.layer) {
+  if should_render_layer_children(depth, options.layer) {
     write_vertical_children(out, node, tone_index, options, depth)
   }
   write_str(out, "</div>")
