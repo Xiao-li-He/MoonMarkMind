@@ -65,8 +65,14 @@ pub fn render_style_element() -> String {
 }
 
 ///|
-/// Render Markdown to a complete standalone static HTML document.
-pub fn render_html_document(
+/// Render the small export runtime used by standalone interactive HTML.
+pub fn render_export_runtime_script() -> String {
+  @mindmap.render_export_runtime_script()
+}
+
+///|
+/// Render Markdown to a complete standalone interactive HTML document.
+pub fn render_interactive_html_document(
   markdown : String,
   options? : RenderOptions = default_render_options(),
 ) -> String {
@@ -80,6 +86,16 @@ pub fn render_html_document(
   out.write_string(render_style_element())
   out.write_string("</head><body>")
   out.write_string(render(markdown, options~))
+  out.write_string(render_export_runtime_script())
   out.write_string("</body></html>")
   out.to_string()
+}
+
+///|
+/// Render Markdown to a complete standalone HTML document.
+pub fn render_html_document(
+  markdown : String,
+  options? : RenderOptions = default_render_options(),
+) -> String {
+  render_interactive_html_document(markdown, options~)
 }

@@ -1,4 +1,5 @@
 import {
+  "Xiao-li-He/MoonMarkMind/lib/latex_math_render" @math,
   "Xiao-li-He/MoonMarkMind/lib/outline_parser" @outline,
   "Xiao-li-He/MoonMarkMind/lib/markdown_render",
 }

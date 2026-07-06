@@ -23,6 +23,13 @@ fn write_class_attr(out : StringBuilder, value : String) -> Unit {
 }
 
 ///|
+fn write_connector_layer_placeholder(out : StringBuilder) -> Unit {
+  write_str(
+    out, "<svg class=\"mindmap-connector-layer\" aria-hidden=\"true\"></svg>",
+  )
+}
+
+///|
 fn write_int_attr(out : StringBuilder, name : String, value : Int) -> Unit {
   out.write_string(" ")
   out.write_string(name)

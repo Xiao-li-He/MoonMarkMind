@@ -20,7 +20,9 @@ fn write_horizontal_mindmap(
   let split = (root.children.length() + 1) / 2
   write_str(out, "<div")
   write_class_attr(out, stage_class(options, "mindmap-stage--radial"))
-  write_str(out, "><div class=\"branch-column branch-column--left\">")
+  write_str(out, ">")
+  write_connector_layer_placeholder(out)
+  write_str(out, "<div class=\"branch-column branch-column--left\">")
   for index in 0..<root.children.length() {
     if index < split {
       write_branch_node(
@@ -150,7 +152,9 @@ fn write_single_right_mindmap(
 ) -> Unit {
   write_str(out, "<div")
   write_class_attr(out, stage_class(options, "mindmap-stage--single-right"))
-  write_str(out, "><div class=\"single-right-tree\">")
+  write_str(out, ">")
+  write_connector_layer_placeholder(out)
+  write_str(out, "<div class=\"single-right-tree\">")
   write_single_right_tree(out, root, -1, true, -1, options, 0)
   write_str(out, "</div></div>")
 }
@@ -220,7 +224,9 @@ fn write_vertical_mindmap(
 ) -> Unit {
   write_str(out, "<div")
   write_class_attr(out, stage_class(options, "mindmap-stage--vertical"))
-  write_str(out, "><div class=\"vertical-root\">")
+  write_str(out, ">")
+  write_connector_layer_placeholder(out)
+  write_str(out, "<div class=\"vertical-root\">")
   write_vertical_tree(out, root, -1, true, -1, options, 0)
   write_str(out, "</div></div>")
 }

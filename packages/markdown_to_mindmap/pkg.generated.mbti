@@ -16,7 +16,11 @@ pub fn normalize_style(String) -> @mindmap_renderer.MindmapStyle
 
 pub fn render(String, options? : @mindmap_renderer.RenderOptions) -> String
 
+pub fn render_export_runtime_script() -> String
+
 pub fn render_html_document(String, options? : @mindmap_renderer.RenderOptions) -> String
+
+pub fn render_interactive_html_document(String, options? : @mindmap_renderer.RenderOptions) -> String
 
 pub fn render_style_css() -> String
 

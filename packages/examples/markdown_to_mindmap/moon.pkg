@@ -1,0 +1,10 @@
+import {
+  "Xiao-li-He/MoonMarkMind/packages/markdown_to_mindmap" @to_mindmap,
+  "mizchi/x/fs",
+  "moonbitlang/async",
+  "moonbitlang/async/io",
+}
+
+options(
+  "is-main": true,
+)

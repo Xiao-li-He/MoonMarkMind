@@ -20,6 +20,8 @@ pub fn normalize_layout(String) -> MindmapLayout
 
 pub fn normalize_style(String) -> MindmapStyle
 
+pub fn render_export_runtime_script() -> String
+
 pub fn render_markdown_html(String, options? : RenderOptions) -> String
 
 pub fn render_markdown_svg(String, options? : RenderOptions) -> String
