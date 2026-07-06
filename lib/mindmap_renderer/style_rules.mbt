@@ -312,8 +312,15 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
       mindmap_decl("bottom", "auto"),
       mindmap_decl("transform", "none"),
     ]),
+    mindmap_rule(".node-actions--right-mid", "node-actions--right-mid", [
+      mindmap_decl("top", "50%"),
+      mindmap_decl("right", "0"),
+      mindmap_decl("left", "auto"),
+      mindmap_decl("bottom", "auto"),
+      mindmap_decl("transform", "translate(50%, -50%)"),
+    ]),
     mindmap_rule(".node-actions--branch-line", "node-actions--branch-line", [
-      mindmap_decl("top", "100%"),
+      mindmap_decl("top", "50%"),
       mindmap_decl("right", "0"),
       mindmap_decl("left", "auto"),
       mindmap_decl("bottom", "auto"),

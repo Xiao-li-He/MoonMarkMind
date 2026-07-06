@@ -76,6 +76,7 @@ test "render export node actions and attrs" {
     layer: Full,
   })
   assert_eq(html.contains("node-action--toggle"), true)
+  assert_eq(html.contains("node-actions--right-mid"), true)
   assert_eq(html.contains("data-action=\"toggle\""), true)
   assert_eq(html.contains("data-hidden-count=\"1\""), true)
   assert_eq(html.contains("aria-expanded=\"true\""), true)
@@ -124,6 +125,7 @@ test "mindmap style rules expose shared static classes" {
   assert_eq(mindmap_style_rules_contain_class("node--center"), true)
   assert_eq(mindmap_style_rules_contain_class("node-body"), true)
   assert_eq(mindmap_style_rules_contain_class("node-action--toggle"), true)
+  assert_eq(mindmap_style_rules_contain_class("node-actions--right-mid"), true)
   assert_eq(mindmap_style_rules_contain_class("mindmap-connector-layer"), true)
   assert_eq(
     mindmap_style_rules_contain_class("single-right-tree__children"),
@@ -139,6 +141,8 @@ test "mindmap style css serializes shared static classes" {
   assert_eq(css.contains("background: transparent;"), true)
   assert_eq(css.contains(".mindmap-stage"), true)
   assert_eq(css.contains(".node"), true)
+  assert_eq(css.contains(".node-actions--right-mid"), true)
+  assert_eq(css.contains("transform: translate(50%, -50%);"), true)
   assert_eq(css.contains("border-left: 2px"), false)
   assert_eq(css.contains("border-top: 2px"), false)
   assert_eq(css.contains("[hidden]"), true)

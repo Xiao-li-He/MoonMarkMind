@@ -49,8 +49,8 @@ fn node_toggle_action_class(style : MindmapStyle) -> String {
 ///|
 fn node_actions_class(style : MindmapStyle) -> String {
   match style {
-    Line => "node-actions node-actions--branch-line"
-    Full => "node-actions"
+    Line => "node-actions node-actions--right-mid node-actions--branch-line"
+    Full => "node-actions node-actions--right-mid"
   }
 }
 
