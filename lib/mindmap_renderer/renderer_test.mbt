@@ -136,6 +136,18 @@ test "mindmap style rules expose shared static classes" {
 test "mindmap style css serializes shared static classes" {
   let css = mindmap_style_css()
   assert_eq(css.contains(".moonmarkmind-export"), true)
+  assert_eq(css.contains("background: transparent;"), true)
   assert_eq(css.contains(".mindmap-stage"), true)
   assert_eq(css.contains(".node"), true)
+  assert_eq(css.contains("border-left: 2px"), false)
+  assert_eq(css.contains("border-top: 2px"), false)
+  assert_eq(css.contains("[hidden]"), true)
+}
+
+///|
+test "export runtime hides node containers with display override" {
+  let script = render_export_runtime_script()
+  assert_eq(script.contains("setHidden"), true)
+  assert_eq(script.contains("display\", \"none\", \"important"), true)
+  assert_eq(script.contains("hasAttribute(\"hidden\")"), true)
 }

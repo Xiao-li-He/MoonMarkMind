@@ -93,17 +93,17 @@ fn outline_flat_index_by_title(
 
 ///|
 test "web package can consume mindmap shared style rules" {
-  let mut has_branch_children_padding = false
+  let mut branch_children_use_connector_layer = false
   for rule in @mindmap_renderer.mindmap_style_rules() {
     if rule.class_name == "branch-children" {
       for declaration in rule.declarations {
-        if declaration.property == "padding-left" && declaration.value == "26px" {
-          has_branch_children_padding = true
+        if declaration.property == "border-left" && declaration.value == "0" {
+          branch_children_use_connector_layer = true
         }
       }
     }
   }
-  assert_eq(has_branch_children_padding, true)
+  assert_eq(branch_children_use_connector_layer, true)
 }
 
 ///|

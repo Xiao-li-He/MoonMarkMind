@@ -84,7 +84,17 @@ pub fn render_export_runtime_script() -> String {
     #|  }
     #|  function nodeVisible(node) {
     #|    var container = node.closest(".branch-item, .vertical-tree, .single-right-tree__node");
-    #|    return !(container && container.hidden);
+    #|    return !(container && container.hasAttribute("hidden"));
+    #|  }
+    #|  function setHidden(element, hidden) {
+    #|    if (!element) return;
+    #|    if (hidden) {
+    #|      element.setAttribute("hidden", "");
+    #|      element.style.setProperty("display", "none", "important");
+    #|    } else {
+    #|      element.removeAttribute("hidden");
+    #|      element.style.removeProperty("display");
+    #|    }
     #|  }
     #|  function renderConnectors(root) {
     #|    var stage = root.querySelector(".mindmap-stage");
@@ -129,7 +139,7 @@ pub fn render_export_runtime_script() -> String {
     #|    cards.forEach(function (card) {
     #|      var index = card.getAttribute("data-node-index");
     #|      var container = card.closest(".branch-item, .vertical-tree, .single-right-tree__node");
-    #|      if (container && card.getAttribute("data-parent-index") !== "-1") container.hidden = hiddenByAncestor(index);
+    #|      if (container && card.getAttribute("data-parent-index") !== "-1") setHidden(container, hiddenByAncestor(index));
     #|      var button = card.querySelector('[data-action="toggle"]');
     #|      if (button) {
     #|        var collapsed = card.getAttribute("data-collapsed") === "true";
@@ -157,8 +167,9 @@ pub fn render_export_runtime_script() -> String {
     #|        var noteCard = note.closest(".node[data-node-index]");
     #|        var body = noteCard && noteCard.querySelector("[data-note-preview-for]");
     #|        if (body) {
-    #|          body.hidden = !body.hidden;
-    #|          note.setAttribute("aria-expanded", String(!body.hidden));
+    #|          var nextHidden = !body.hasAttribute("hidden");
+    #|          setHidden(body, nextHidden);
+    #|          note.setAttribute("aria-expanded", String(!nextHidden));
     #|          renderConnectors(root);
     #|          event.preventDefault();
     #|        }
