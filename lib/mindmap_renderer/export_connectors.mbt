@@ -38,6 +38,15 @@ fn static_node_height(
 }
 
 ///|
+fn static_logic_child_gap(depth : Int) -> Double {
+  if depth == 0 {
+    56.0
+  } else {
+    24.0
+  }
+}
+
+///|
 fn static_subtree_span(
   node : @outline.OutlineNode,
   depth : Int,
@@ -90,7 +99,7 @@ fn collect_static_logic_boxes(
         child,
         node.flat_index,
         depth + 1,
-        x + width + 120.0,
+        x + width + static_logic_child_gap(depth),
         cursor,
         options,
       )

@@ -96,10 +96,63 @@ pub fn render_export_runtime_script() -> String {
     #|      element.style.removeProperty("display");
     #|    }
     #|  }
+    #|  function standaloneSvg(root) {
+    #|    var doc = root.ownerDocument || document;
+    #|    var svg = doc.documentElement;
+    #|    return svg && svg.tagName && svg.tagName.toLowerCase() === "svg" ? svg : null;
+    #|  }
+    #|  function resizeSvgCanvas(root) {
+    #|    var svg = standaloneSvg(root);
+    #|    if (!svg) return;
+    #|    var foreign = svg.querySelector("foreignObject");
+    #|    if (!foreign) return;
+    #|    var wrapper = foreign.firstElementChild;
+    #|    if (wrapper) {
+    #|      wrapper.style.position = "relative";
+    #|      wrapper.style.overflow = "visible";
+    #|    }
+    #|    root.style.position = "absolute";
+    #|    root.style.left = "0px";
+    #|    root.style.top = "0px";
+    #|    var nodes = Array.prototype.slice.call(root.querySelectorAll(".node[data-node-index]")).filter(nodeVisible);
+    #|    if (nodes.length === 0) return;
+    #|    var svgRect = svg.getBoundingClientRect();
+    #|    var left = Infinity;
+    #|    var top = Infinity;
+    #|    var right = -Infinity;
+    #|    var bottom = -Infinity;
+    #|    nodes.forEach(function (node) {
+    #|      var rect = node.getBoundingClientRect();
+    #|      left = Math.min(left, rect.left);
+    #|      top = Math.min(top, rect.top);
+    #|      right = Math.max(right, rect.right);
+    #|      bottom = Math.max(bottom, rect.bottom);
+    #|    });
+    #|    var margin = 48;
+    #|    var width = Math.max(1, Math.ceil(right - left + margin * 2));
+    #|    var height = Math.max(1, Math.ceil(bottom - top + margin * 2));
+    #|    var offsetX = Math.ceil(margin - (left - svgRect.left));
+    #|    var offsetY = Math.ceil(margin - (top - svgRect.top));
+    #|    svg.setAttribute("width", String(width));
+    #|    svg.setAttribute("height", String(height));
+    #|    svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+    #|    foreign.setAttribute("x", "0");
+    #|    foreign.setAttribute("y", "0");
+    #|    foreign.setAttribute("width", String(width));
+    #|    foreign.setAttribute("height", String(height));
+    #|    foreign.style.overflow = "visible";
+    #|    if (wrapper) {
+    #|      wrapper.style.width = width + "px";
+    #|      wrapper.style.height = height + "px";
+    #|    }
+    #|    root.style.left = offsetX + "px";
+    #|    root.style.top = offsetY + "px";
+    #|  }
     #|  function renderConnectors(root) {
     #|    var stage = root.querySelector(".mindmap-stage");
     #|    if (!stage) return;
     #|    Array.prototype.slice.call((root.ownerDocument || document).querySelectorAll('[data-static-connectors="true"]')).forEach(function (layer) { layer.remove(); });
+    #|    resizeSvgCanvas(root);
     #|    var existing = stage.querySelector(".mindmap-connector-layer");
     #|    if (existing) existing.remove();
     #|    var nodes = Array.prototype.slice.call(stage.querySelectorAll(".node[data-node-index]")).filter(nodeVisible);

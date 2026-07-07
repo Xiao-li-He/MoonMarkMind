@@ -15,11 +15,25 @@ test "sample renderer produces standalone html and svg" {
   assert_true(svg.contains("<style>"))
   assert_true(svg.contains("<script><![CDATA["))
   assert_true(svg.contains("renderConnectors"))
+  assert_true(svg.contains("resizeSvgCanvas"))
   assert_true(svg.contains("data-static-connectors=\"true\""))
   assert_true(svg.contains("node-action--toggle"))
   assert_true(svg.contains("mindmap-connector-layer"))
   assert_true(svg.contains("<path"))
   assert_true(svg.contains("Child"))
+}
+
+///|
+test "sample svg output keeps math entities xml safe" {
+  let markdown = "# Formula\n\nUse $x \\pm \\alpha \\le y$."
+  let svg = render_sample_svg(markdown)
+  assert_eq(svg.contains("&plusmn;"), false)
+  assert_eq(svg.contains("&alpha;"), false)
+  assert_eq(svg.contains("&le;"), false)
+  assert_true(svg.contains("&#177;"))
+  assert_true(svg.contains("&#945;"))
+  assert_true(svg.contains("&#8804;"))
+  assert_true(svg.contains("resizeSvgCanvas"))
 }
 
 ///|

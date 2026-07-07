@@ -152,7 +152,7 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
     mindmap_rule(".single-right-tree", "single-right-tree", [
       mindmap_decl("display", "flex"),
       mindmap_decl("align-items", "center"),
-      mindmap_decl("gap", "24px"),
+      mindmap_decl("gap", "56px"),
     ]),
     mindmap_rule(".single-right-tree__node", "single-right-tree__node", [
       mindmap_decl("position", "relative"),

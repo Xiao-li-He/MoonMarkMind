@@ -105,10 +105,29 @@ test "render markdown body and full svg export" {
   assert_eq(svg.contains("<style>"), true)
   assert_eq(svg.contains("<script><![CDATA["), true)
   assert_eq(svg.contains("renderConnectors"), true)
+  assert_eq(svg.contains("resizeSvgCanvas"), true)
   assert_eq(svg.contains("data-static-connectors=\"true\""), true)
   assert_eq(svg.contains(".node"), true)
   assert_eq(svg.contains("mindmap-connector-layer"), true)
   assert_eq(svg.contains("<path"), true)
+}
+
+///|
+test "render markdown svg normalizes html math entities for xml" {
+  let svg = render_markdown_svg(
+    (
+      #|# Formula
+      #|Use $x \pm \alpha \le y$.
+      #|
+    ),
+    options={ layout: Logic, style: Full, layer: Full },
+  )
+  assert_eq(svg.contains("&plusmn;"), false)
+  assert_eq(svg.contains("&alpha;"), false)
+  assert_eq(svg.contains("&le;"), false)
+  assert_eq(svg.contains("&#177;"), true)
+  assert_eq(svg.contains("&#945;"), true)
+  assert_eq(svg.contains("&#8804;"), true)
 }
 
 ///|
@@ -144,6 +163,12 @@ test "mindmap style css serializes shared static classes" {
   assert_eq(css.contains("background: transparent;"), true)
   assert_eq(css.contains(".mindmap-stage"), true)
   assert_eq(css.contains(".node"), true)
+  assert_eq(
+    css.contains(
+      ".single-right-tree { display: flex; align-items: center; gap: 56px; }",
+    ),
+    true,
+  )
   assert_eq(css.contains(".node-actions--right-mid"), true)
   assert_eq(css.contains("transform: translate(50%, -50%);"), true)
   assert_eq(css.contains(".node-note-rail"), true)

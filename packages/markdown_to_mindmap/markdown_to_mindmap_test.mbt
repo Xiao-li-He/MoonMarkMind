@@ -42,11 +42,33 @@ test "render markdown to mindmap svg" {
   assert_eq(svg.contains("<style>"), true)
   assert_eq(svg.contains("<script><![CDATA["), true)
   assert_eq(svg.contains("renderConnectors"), true)
+  assert_eq(svg.contains("resizeSvgCanvas"), true)
   assert_eq(svg.contains("data-static-connectors=\"true\""), true)
   assert_eq(svg.contains(".node"), true)
   assert_eq(svg.contains("mindmap-connector-layer"), true)
   assert_eq(svg.contains("<path"), true)
   assert_eq(svg.contains("Root"), true)
+}
+
+///|
+test "render markdown to mindmap svg is xml safe for math entities" {
+  let svg = render_svg(
+    (
+      #|# Formula
+      #|Use $x \pm \alpha \le y$.
+      #|
+    ),
+    options={ layout: Logic, style: Full, layer: Full },
+  )
+  assert_eq(svg.contains("&plusmn;"), false)
+  assert_eq(svg.contains("&alpha;"), false)
+  assert_eq(svg.contains("&le;"), false)
+  assert_eq(svg.contains("&#177;"), true)
+  assert_eq(svg.contains("&#945;"), true)
+  assert_eq(svg.contains("&#8804;"), true)
+  assert_eq(svg.contains("<foreignObject"), true)
+  assert_eq(svg.contains("data-static-connectors=\"true\""), true)
+  assert_eq(svg.contains("resizeSvgCanvas"), true)
 }
 
 ///|
