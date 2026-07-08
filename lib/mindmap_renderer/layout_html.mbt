@@ -241,7 +241,15 @@ fn write_vertical_tree(
   options : RenderOptions,
   depth : Int,
 ) -> Unit {
-  write_str(out, "<div class=\"vertical-tree\"")
+  let class_name = if is_tree_line_style(options) &&
+    node.body.length() > 0 &&
+    is_full_layer(options.layer) {
+    "vertical-tree vertical-tree--line-note"
+  } else {
+    "vertical-tree"
+  }
+  write_str(out, "<div")
+  write_class_attr(out, class_name)
   write_int_attr(out, "data-node-index", node.flat_index)
   write_int_attr(out, "data-parent-index", parent_index)
   write_str(out, ">")
@@ -271,10 +279,26 @@ fn write_vertical_children(
   if node.children.length() == 0 {
     return
   }
-  write_str(out, "<div class=\"vertical-tree__children\">")
+  let children_class = if is_tree_line_style(options) {
+    "vertical-tree__children vertical-tree__children--line-tree"
+  } else {
+    "vertical-tree__children"
+  }
+  write_str(out, "<div")
+  write_class_attr(out, children_class)
+  write_str(out, ">")
   for index in 0..<node.children.length() {
     let next_tone = if depth == 0 { fill_tone_index(index) } else { tone_index }
-    write_str(out, "<div class=\"vertical-tree__child\">")
+    let child_class = if is_tree_line_style(options) &&
+      node.children[index].body.length() > 0 &&
+      is_full_layer(options.layer) {
+      "vertical-tree__child vertical-tree__child--line-note"
+    } else {
+      "vertical-tree__child"
+    }
+    write_str(out, "<div")
+    write_class_attr(out, child_class)
+    write_str(out, ">")
     write_vertical_tree(
       out,
       node.children[index],

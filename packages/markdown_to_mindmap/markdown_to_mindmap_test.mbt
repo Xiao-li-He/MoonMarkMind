@@ -103,8 +103,22 @@ test "render options control layout style and layer" {
   assert_eq(html.contains("mindmap-stage--vertical"), true)
   assert_eq(html.contains("moonmarkmind-export--line"), true)
   assert_eq(html.contains("node--fill node--branch-line"), true)
+  assert_eq(html.contains("node--line-tree"), true)
   assert_eq(html.contains("Alpha"), false)
   assert_eq(html.contains("Beta Child"), false)
+}
+
+///|
+test "render tree line svg keeps web line classes" {
+  let svg = render_svg(sample_markdown(), options={
+    layout: Tree,
+    style: Line,
+    layer: Full,
+  })
+  assert_eq(svg.contains("node--line-tree"), true)
+  assert_eq(svg.contains("vertical-tree__children--line-tree"), true)
+  assert_eq(svg.contains("node-actions--bottom-center"), true)
+  assert_eq(svg.contains("node-body--line-tree"), true)
 }
 
 ///|

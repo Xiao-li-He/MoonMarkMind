@@ -104,6 +104,23 @@ fn node_style_class(style : MindmapStyle) -> String {
 }
 
 ///|
+fn is_tree_line_style(options : RenderOptions) -> Bool {
+  match (options.layout, options.style) {
+    (Tree, Line) => true
+    _ => false
+  }
+}
+
+///|
+fn node_style_class_for_options(options : RenderOptions) -> String {
+  if is_tree_line_style(options) {
+    "node--fill node--branch-line node--line-tree"
+  } else {
+    node_style_class(options.style)
+  }
+}
+
+///|
 fn node_title_class(style : MindmapStyle) -> String {
   match style {
     Line => "node-title node-title--scaled node-title--line"

@@ -4,13 +4,14 @@ package "Xiao-li-He/MoonMarkMind/packages/examples/markdown_to_mindmap"
 // Values
 pub async fn render_all_samples() -> Array[String]
 
-pub fn render_sample_html(String) -> String
+pub fn render_sample_html(String, layout? : String, style? : String) -> String
 
-pub fn render_sample_svg(String) -> String
+pub fn render_sample_svg(String, layout? : String, style? : String) -> String
 
 // Errors
 
 // Types and methods
+type ExampleVariant
 
 // Type aliases
 

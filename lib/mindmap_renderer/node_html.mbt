@@ -8,10 +8,18 @@ fn write_node_card(
   options~ : RenderOptions,
   depth~ : Int,
 ) -> Unit {
-  let class_name = if center {
-    "node node--center \{node_style_class(options.style)}"
+  let style_class = node_style_class_for_options(options)
+  let note_class = if is_tree_line_style(options) &&
+    node.body.length() > 0 &&
+    is_full_layer(options.layer) {
+    " node--line-tree-note"
   } else {
-    "node \{node_style_class(options.style)}"
+    ""
+  }
+  let class_name = if center {
+    "node node--center \{style_class}\{note_class}"
+  } else {
+    "node \{style_class}\{note_class}"
   }
   write_str(out, "<article")
   write_class_attr(out, class_name)
@@ -31,7 +39,7 @@ fn write_node_card(
   write_str(out, @markdown_render.render_markdown_title_html(node.title))
   write_str(out, "</strong>")
   write_node_body(out, node, options)
-  write_node_toggle_action(out, node, center, options.style)
+  write_node_toggle_action(out, node, center, options)
   write_str(out, "</article>")
 }
 
@@ -46,7 +54,13 @@ fn write_node_body(
   }
   write_str(out, "<div class=\"node-note-rail\">")
   write_note_toggle_action(out, node)
-  write_str(out, "<div class=\"node-body node-body-preview\"")
+  let body_class = if is_tree_line_style(options) {
+    "node-body node-body-preview node-body--line-tree"
+  } else {
+    "node-body node-body-preview"
+  }
+  write_str(out, "<div")
+  write_class_attr(out, body_class)
   write_int_attr(out, "data-note-preview-for", node.flat_index)
   write_str(out, "><div class=\"markdown-blocks\">")
   write_str(out, @markdown_render.render_markdown_blocks_html(node.body))

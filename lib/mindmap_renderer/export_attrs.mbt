@@ -47,10 +47,19 @@ fn node_toggle_action_class(style : MindmapStyle) -> String {
 }
 
 ///|
-fn node_actions_class(style : MindmapStyle) -> String {
-  match style {
-    Line => "node-actions node-actions--right-mid node-actions--branch-line"
-    Full => "node-actions node-actions--right-mid"
+fn node_actions_anchor_class(layout : MindmapLayout) -> String {
+  match layout {
+    Tree => "node-actions--bottom-center"
+    _ => "node-actions--right-mid"
+  }
+}
+
+///|
+fn node_actions_class(options : RenderOptions) -> String {
+  let anchor = node_actions_anchor_class(options.layout)
+  match options.style {
+    Line => "node-actions \{anchor} node-actions--branch-line"
+    Full => "node-actions \{anchor}"
   }
 }
 
@@ -59,16 +68,16 @@ fn write_node_toggle_action(
   out : StringBuilder,
   node : @outline.OutlineNode,
   center : Bool,
-  style : MindmapStyle,
+  options : RenderOptions,
 ) -> Unit {
   if center || node.children.length() == 0 {
     return
   }
   let hidden_count = hidden_descendant_count(node)
   write_str(out, "<div")
-  write_class_attr(out, node_actions_class(style))
+  write_class_attr(out, node_actions_class(options))
   write_str(out, "><button")
-  write_class_attr(out, node_toggle_action_class(style))
+  write_class_attr(out, node_toggle_action_class(options.style))
   write_attr(out, "type", "button")
   write_attr(out, "data-action", "toggle")
   write_attr(out, "data-tip", "Collapse")

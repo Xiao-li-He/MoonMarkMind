@@ -96,6 +96,42 @@ pub fn render_export_runtime_script() -> String {
     #|      element.style.removeProperty("display");
     #|    }
     #|  }
+    #|  function visibleNodeBounds(root) {
+    #|    var nodes = Array.prototype.slice.call(root.querySelectorAll(".node[data-node-index]")).filter(nodeVisible);
+    #|    if (nodes.length === 0) return null;
+    #|    var left = Infinity;
+    #|    var top = Infinity;
+    #|    var right = -Infinity;
+    #|    var bottom = -Infinity;
+    #|    nodes.forEach(function (node) {
+    #|      var rect = node.getBoundingClientRect();
+    #|      left = Math.min(left, rect.left);
+    #|      top = Math.min(top, rect.top);
+    #|      right = Math.max(right, rect.right);
+    #|      bottom = Math.max(bottom, rect.bottom);
+    #|    });
+    #|    return { left: left, top: top, right: right, bottom: bottom };
+    #|  }
+    #|  function ensureHtmlVisibleBounds(root, stage) {
+    #|    if (standaloneSvg(root) || !stage) return;
+    #|    root.style.paddingLeft = "48px";
+    #|    root.style.paddingRight = "48px";
+    #|    stage.style.marginTop = "0px";
+    #|    stage.style.marginBottom = "0px";
+    #|    var bounds = visibleNodeBounds(root);
+    #|    if (!bounds) return;
+    #|    var stageRect = stage.getBoundingClientRect();
+    #|    var basePadding = 48;
+    #|    var margin = 48;
+    #|    var extraLeft = Math.max(0, stageRect.left - bounds.left + margin);
+    #|    var extraRight = Math.max(0, bounds.right - stageRect.right + margin);
+    #|    root.style.paddingLeft = Math.ceil(basePadding + extraLeft) + "px";
+    #|    root.style.paddingRight = Math.ceil(basePadding + extraRight) + "px";
+    #|    var trimTop = Math.max(0, bounds.top - stageRect.top - margin);
+    #|    var trimBottom = Math.max(0, stageRect.bottom - bounds.bottom - margin);
+    #|    stage.style.marginTop = "-" + Math.ceil(trimTop) + "px";
+    #|    stage.style.marginBottom = "-" + Math.ceil(trimBottom) + "px";
+    #|  }
     #|  function standaloneSvg(root) {
     #|    var doc = root.ownerDocument || document;
     #|    var svg = doc.documentElement;
@@ -152,6 +188,7 @@ pub fn render_export_runtime_script() -> String {
     #|    var stage = root.querySelector(".mindmap-stage");
     #|    if (!stage) return;
     #|    Array.prototype.slice.call((root.ownerDocument || document).querySelectorAll('[data-static-connectors="true"]')).forEach(function (layer) { layer.remove(); });
+    #|    ensureHtmlVisibleBounds(root, stage);
     #|    resizeSvgCanvas(root);
     #|    var existing = stage.querySelector(".mindmap-connector-layer");
     #|    if (existing) existing.remove();

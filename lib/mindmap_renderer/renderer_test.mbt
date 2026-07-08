@@ -61,6 +61,8 @@ test "render style and layer options" {
   assert_eq(line.contains("moonmarkmind-export--line"), true)
   assert_eq(line.contains("node--branch-line"), true)
   assert_eq(line.contains("node--fill node--branch-line"), true)
+  assert_eq(line.contains("node--line-tree"), true)
+  assert_eq(line.contains("vertical-tree__children--line-tree"), true)
   assert_eq(root_only.contains("moonmarkmind-export--full"), true)
   assert_eq(root_only.contains("node--line"), true)
   assert_eq(line.contains("Beta Child"), false)
@@ -82,6 +84,20 @@ test "render export node actions and attrs" {
   assert_eq(html.contains("aria-expanded=\"true\""), true)
   assert_eq(html.contains("node-action--note"), true)
   assert_eq(html.contains("data-action=\"toggle-note\""), true)
+}
+
+///|
+test "render tree line keeps app web action placement classes" {
+  let html = render_markdown_html(rich_markdown(), options={
+    layout: Tree,
+    style: Line,
+    layer: Full,
+  })
+  assert_eq(html.contains("node-actions--bottom-center"), true)
+  assert_eq(html.contains("node-actions--branch-line"), true)
+  assert_eq(html.contains("node-actions--right-mid"), false)
+  assert_eq(html.contains("node-body--line-tree"), true)
+  assert_eq(html.contains("node--line-tree-note"), true)
 }
 
 ///|
@@ -148,6 +164,12 @@ test "mindmap style rules expose shared static classes" {
   assert_eq(mindmap_style_rules_contain_class("node-body"), true)
   assert_eq(mindmap_style_rules_contain_class("node-action--toggle"), true)
   assert_eq(mindmap_style_rules_contain_class("node-actions--right-mid"), true)
+  assert_eq(
+    mindmap_style_rules_contain_class("node-actions--bottom-center"),
+    true,
+  )
+  assert_eq(mindmap_style_rules_contain_class("node--line-tree"), true)
+  assert_eq(mindmap_style_rules_contain_class("node-body--line-tree"), true)
   assert_eq(mindmap_style_rules_contain_class("mindmap-connector-layer"), true)
   assert_eq(
     mindmap_style_rules_contain_class("single-right-tree__children"),
@@ -160,9 +182,33 @@ test "mindmap style rules expose shared static classes" {
 test "mindmap style css serializes shared static classes" {
   let css = mindmap_style_css()
   assert_eq(css.contains(".moonmarkmind-export"), true)
+  assert_eq(css.contains("display: inline-block;"), true)
+  assert_eq(css.contains("width: max-content;"), true)
   assert_eq(css.contains("background: transparent;"), true)
   assert_eq(css.contains(".mindmap-stage"), true)
+  assert_eq(css.contains("min-width: 1120px;"), true)
+  assert_eq(css.contains("min-width: 960px;"), true)
+  assert_eq(css.contains("padding: 56px 32px 48px;"), true)
+  assert_eq(css.contains("padding: 42px 32px 48px;"), true)
   assert_eq(css.contains(".node"), true)
+  assert_eq(css.contains(".node-title--scaled"), true)
+  assert_eq(css.contains(".node-title--scaled.node-title--line"), true)
+  assert_eq(css.contains("line-height: 1.18;"), true)
+  assert_eq(css.contains(".node-title--scaled.node-title--fill"), true)
+  assert_eq(css.contains("line-height: 1.28;"), true)
+  assert_eq(
+    css.contains(
+      ".node-title--scaled[data-title-center=\"true\"] { font-size: 22px; font-weight: 700; }",
+    ),
+    true,
+  )
+  assert_eq(
+    css.contains(
+      ".node-title--scaled[data-title-depth=\"1\"][data-title-center=\"false\"] { font-size: 20px; }",
+    ),
+    true,
+  )
+  assert_eq(css.contains("user-select: text;"), true)
   assert_eq(
     css.contains(
       ".single-right-tree { display: flex; align-items: center; gap: 56px; }",
@@ -170,6 +216,23 @@ test "mindmap style css serializes shared static classes" {
     true,
   )
   assert_eq(css.contains(".node-actions--right-mid"), true)
+  assert_eq(css.contains(".node-actions--bottom-center"), true)
+  assert_eq(css.contains(".vertical-tree__children--line-tree"), true)
+  assert_eq(
+    css.contains(".vertical-tree__children--line-tree { gap: 56px; }"),
+    true,
+  )
+  assert_eq(css.contains(".vertical-tree--line-note { width: 360px;"), true)
+  assert_eq(css.contains(".node--line-tree"), true)
+  assert_eq(
+    css.contains(
+      "border-bottom: 1.4px solid var(--mindmap-connector-color, #94b6db);",
+    ),
+    true,
+  )
+  assert_eq(css.contains("max-width: 130px;"), true)
+  assert_eq(css.contains(".node-body--line-tree"), true)
+  assert_eq(css.contains("top: calc(100% + 15px);"), true)
   assert_eq(css.contains("transform: translate(50%, -50%);"), true)
   assert_eq(css.contains(".node-note-rail"), true)
   assert_eq(css.contains("gap: 6px;"), true)
@@ -190,4 +253,7 @@ test "export runtime hides node containers with display override" {
   assert_eq(script.contains("setHidden"), true)
   assert_eq(script.contains("display\", \"none\", \"important"), true)
   assert_eq(script.contains("hasAttribute(\"hidden\")"), true)
+  assert_eq(script.contains("ensureHtmlVisibleBounds"), true)
+  assert_eq(script.contains("visibleNodeBounds"), true)
+  assert_eq(script.contains("root.style.paddingLeft"), true)
 }
