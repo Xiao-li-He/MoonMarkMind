@@ -285,6 +285,25 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
     mindmap_rule(".node--line", "node--line", [
       mindmap_decl("background", "#ffffff"),
     ]),
+    mindmap_rule(
+      ".node--center.node--line",
+      "node--line",
+      [
+        mindmap_decl("min-width", "210px"),
+        mindmap_decl("max-width", "260px"),
+        mindmap_decl("padding", "22px 30px"),
+        mindmap_decl("border-radius", "20px"),
+        mindmap_decl("border-color", "rgba(146, 170, 198, 0.22)"),
+        mindmap_decl(
+          "background", "linear-gradient(180deg, rgba(84, 113, 145, 0.96), rgba(67, 93, 122, 0.94))",
+        ),
+        mindmap_decl("color", "#ffffff"),
+        mindmap_decl(
+          "box-shadow", "inset 0 1px 0 rgba(233, 242, 251, 0.18), 0 16px 34px rgba(110, 131, 156, 0.16)",
+        ),
+      ],
+      ancestor_class="node--center",
+    ),
     mindmap_rule(".node--fill", "node--fill", [
       mindmap_decl("color", "#163348"),
       mindmap_decl(
