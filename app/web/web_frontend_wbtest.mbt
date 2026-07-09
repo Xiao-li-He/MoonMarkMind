@@ -26,6 +26,7 @@ fn reset_frontend_test_state() -> Unit {
   app_state.editing_body_block = -1
   app_state.root_split_count = 0
   app_state.reveal_selected_line = false
+  app_state.ensure_mindmap_visible = false
   app_state.sample_variant = "custom"
   app_state.node_width_overrides = []
   suppress_next_render_mindmap_reveal.val = false
@@ -52,6 +53,7 @@ fn reset_navigation_test_state() -> Unit {
   app_state.editing_body_block = -1
   app_state.root_split_count = 0
   app_state.reveal_selected_line = false
+  app_state.ensure_mindmap_visible = false
   app_state.sample_variant = "custom"
   app_state.node_width_overrides = []
   suppress_next_render_mindmap_reveal.val = false

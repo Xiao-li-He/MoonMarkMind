@@ -1785,6 +1785,8 @@ fn style_mindmap_panel(element : @dom.Element) -> Unit {
   set_style(element, "flex-direction", "column")
   set_style(element, "min-width", "0")
   set_style(element, "min-height", "0")
+  set_style(element, "height", mindmap_panel_height())
+  set_style(element, "box-sizing", "border-box")
   set_style(element, "gap", "8px")
   set_style(element, "grid-column", "3")
   set_style(element, "padding", "18px 20px")
@@ -1797,7 +1799,7 @@ fn style_mindmap_panel(element : @dom.Element) -> Unit {
     element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 18px 46px rgba(120, 139, 164, 0.09)",
   )
   set_style(element, "backdrop-filter", "blur(22px) saturate(122%)")
-  set_style(element, "overflow", "visible")
+  set_style(element, "overflow", "hidden")
 }
 
 ///|
@@ -1864,18 +1866,47 @@ fn style_mindmap_side_tools(element : @dom.Element) -> Unit {
 }
 
 ///|
+fn mindmap_panel_height() -> String {
+  "100%"
+}
+
+///|
+fn mindmap_canvas_shell_flex() -> String {
+  "1 1 auto"
+}
+
+///|
+fn mindmap_surface_flex() -> String {
+  "1 1 auto"
+}
+
+///|
+fn mindmap_surface_min_height() -> String {
+  "320px"
+}
+
+///|
+fn mindmap_viewport_flex() -> String {
+  "1 1 auto"
+}
+
+///|
 fn style_mindmap_canvas_shell(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
+  set_style(element, "flex", mindmap_canvas_shell_flex())
   set_style(element, "min-height", "0")
-  set_style(element, "height", "100%")
+  set_style(element, "height", "auto")
   set_style(element, "min-width", "0")
+  set_style(element, "overflow", "hidden")
 }
 
 ///|
 fn style_mindmap_surface(element : @dom.Element) -> Unit {
-  set_style(element, "flex", "1")
-  set_style(element, "min-height", "0")
+  set_style(element, "display", "flex")
+  set_style(element, "flex", mindmap_surface_flex())
+  set_style(element, "min-height", mindmap_surface_min_height())
   set_style(element, "min-width", "0")
+  set_style(element, "box-sizing", "border-box")
   set_style(element, "border", "1px solid rgba(223, 233, 243, 0.9)")
   set_style(element, "border-radius", "26px")
   set_style(
@@ -1884,17 +1915,20 @@ fn style_mindmap_surface(element : @dom.Element) -> Unit {
   set_style(
     element, "box-shadow", "inset 0 1px 0 rgba(255, 255, 255, 0.88), 0 12px 28px rgba(120, 139, 164, 0.06)",
   )
-  set_style(element, "height", "100%")
-  set_style(element, "overflow", "visible")
+  set_style(element, "height", "auto")
+  set_style(element, "overflow", "hidden")
 }
 
 ///|
 fn style_mindmap(element : @dom.Element) -> Unit {
   apply_mindmap_style_rule(element, "mindmap")
   set_style(element, "position", "relative")
-  set_style(element, "height", "100%")
+  set_style(element, "flex", mindmap_viewport_flex())
+  set_style(element, "width", "100%")
+  set_style(element, "height", "auto")
   set_style(element, "min-height", "0")
   set_style(element, "min-width", "0")
+  set_style(element, "box-sizing", "border-box")
   set_style(element, "padding", "6px 2px 2px")
   set_style(element, "overflow", "hidden")
   set_style(element, "outline", "none")

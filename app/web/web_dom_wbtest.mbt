@@ -80,6 +80,83 @@ test "current mindmap render cycle helper reflects the stored cycle" {
 }
 
 ///|
+test "mindmap viewport reset keeps normal visible state" {
+  assert_eq(
+    should_reset_mindmap_view(4, 900.0, 600.0, 820.0, 520.0, 80, -40, 1.0),
+    false,
+  )
+}
+
+///|
+test "mindmap viewport reset handles missing or unmeasured content" {
+  assert_eq(
+    should_reset_mindmap_view(0, 900.0, 600.0, 820.0, 520.0, 0, 0, 1.0),
+    true,
+  )
+  assert_eq(
+    should_reset_mindmap_view(4, 0.0, 600.0, 820.0, 520.0, 0, 0, 1.0),
+    true,
+  )
+  assert_eq(
+    should_reset_mindmap_view(4, 900.0, 600.0, 0.0, 520.0, 0, 0, 1.0),
+    true,
+  )
+}
+
+///|
+test "mindmap viewport reset catches stale far offscreen pan" {
+  assert_eq(
+    should_reset_mindmap_view(4, 900.0, 600.0, 820.0, 520.0, 2500, 0, 1.0),
+    true,
+  )
+  assert_eq(
+    should_reset_mindmap_view(4, 900.0, 600.0, 820.0, 520.0, 0, -1800, 1.0),
+    true,
+  )
+}
+
+///|
+test "mindmap panel sizing keeps viewport height chain stable" {
+  assert_eq(mindmap_panel_height(), "100%")
+  assert_eq(mindmap_canvas_shell_flex(), "1 1 auto")
+  assert_eq(mindmap_surface_flex(), "1 1 auto")
+  assert_eq(mindmap_surface_min_height(), "320px")
+  assert_eq(mindmap_viewport_flex(), "1 1 auto")
+}
+
+///|
+test "mindmap visibility recovery ignores visible node bounds" {
+  assert_eq(
+    should_recover_mindmap_visibility(
+      3, 100.0, 50.0, 900.0, 650.0, 240.0, 120.0, 620.0, 420.0,
+    ),
+    false,
+  )
+}
+
+///|
+test "mindmap visibility recovery catches offscreen or unmeasured bounds" {
+  assert_eq(
+    should_recover_mindmap_visibility(
+      3, 100.0, 50.0, 900.0, 650.0, -800.0, 120.0, -200.0, 420.0,
+    ),
+    true,
+  )
+  assert_eq(
+    should_recover_mindmap_visibility(
+      3, 100.0, 50.0, 100.0, 650.0, 240.0, 120.0, 620.0, 420.0,
+    ),
+    true,
+  )
+  assert_eq(
+    should_recover_mindmap_visibility(
+      0, 100.0, 50.0, 900.0, 650.0, -800.0, 120.0, -200.0, 420.0,
+    ),
+    false,
+  )
+}
+
+///|
 test "markdown line selection maps body lines to owning node" {
   let markdown = "# Root\n## Alpha\nFirst line\nSecond line\n\nSecond block\n## Beta"
 

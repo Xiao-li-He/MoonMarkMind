@@ -902,7 +902,7 @@ fn mindmap_render_cycle_matches(expected_cycle : Int) -> Bool {
 }
 
 ///|
-fn schedule_contour_layout() -> Unit {
+fn schedule_contour_layout(ensure_visible? : Bool = false) -> Unit {
   let window = @dom.window()
   mindmap_render_cycle.val += 1
   let expected_cycle = mindmap_render_cycle.val
@@ -921,10 +921,42 @@ fn schedule_contour_layout() -> Unit {
           return
         }
         apply_contour_layout()
+        if ensure_visible {
+          ensure_mindmap_visible_after_layout(expected_cycle)
+        }
         schedule_render_mindmap_connectors()
       }),
     )
   })
+}
+
+///|
+fn ensure_mindmap_visible_after_layout(expected_cycle : Int) -> Unit {
+  if !mindmap_render_cycle_matches(expected_cycle) {
+    return
+  }
+  match get_element("#mindmap") {
+    Some(mindmap) => {
+      let frame = @ref.Ref(0)
+      let window = @dom.window()
+      mindmap_fit_to_view(
+        mindmap,
+        get_element("#zoom-value"),
+        get_element("#zoom-edit"),
+        frame,
+        window,
+      )
+      mindmap_schedule_visibility_recovery(
+        mindmap,
+        get_element("#zoom-value"),
+        get_element("#zoom-edit"),
+        frame,
+        window,
+        expected_cycle,
+      )
+    }
+    None => ()
+  }
 }
 
 ///|
@@ -2906,17 +2938,44 @@ fn set_input_value(value : String) -> Unit {
 }
 
 ///|
-fn set_mindmap_dom(value : @dom.Element) -> Unit {
+fn set_mindmap_dom(
+  value : @dom.Element,
+  ensure_visible? : Bool = false,
+) -> Unit {
   match get_element("#mindmap") {
     Some(mindmap) => {
-      let pan_x = mindmap.getAttribute("data-pan-x").unwrap_or("0")
-      let pan_y = mindmap.getAttribute("data-pan-y").unwrap_or("0")
-      let zoom = mindmap.getAttribute("data-zoom").unwrap_or("1")
+      let original_pan_x = mindmap.getAttribute("data-pan-x").unwrap_or("0")
+      let original_pan_y = mindmap.getAttribute("data-pan-y").unwrap_or("0")
+      let original_zoom = mindmap.getAttribute("data-zoom").unwrap_or("1")
+      clear_element(mindmap)
+      append_child(mindmap, value)
+      let content = match mindmap.querySelector(".mindmap-stage") {
+        Some(stage) => stage
+        None => mindmap
+      }
+      let node_count = mindmap
+        .querySelectorAll(".node[data-node-index]")
+        .length()
+      let pan_x_int = parse_int_or_default(original_pan_x, 0)
+      let pan_y_int = parse_int_or_default(original_pan_y, 0)
+      let zoom_double = parse_double_or_default(original_zoom, 1.0)
+      let reset_view = ensure_visible &&
+        should_reset_mindmap_view(
+          node_count,
+          mindmap.clientWidth().to_double(),
+          mindmap.clientHeight().to_double(),
+          content.clientWidth().to_double(),
+          content.clientHeight().to_double(),
+          pan_x_int,
+          pan_y_int,
+          zoom_double,
+        )
+      let pan_x = if reset_view { "0" } else { original_pan_x }
+      let pan_y = if reset_view { "0" } else { original_pan_y }
+      let zoom = if reset_view { "1" } else { original_zoom }
       mindmap.setAttribute("data-pan-x", pan_x)
       mindmap.setAttribute("data-pan-y", pan_y)
       mindmap.setAttribute("data-zoom", zoom)
-      clear_element(mindmap)
-      append_child(mindmap, value)
       let style = @dom.css_style_from_val(mindmap.as_any()._get("style").cast())
       style.set_property("--pan-x", "\{pan_x}px")
       style.set_property("--pan-y", "\{pan_y}px")
@@ -2936,7 +2995,33 @@ fn set_mindmap_dom(value : @dom.Element) -> Unit {
     }
     None => ()
   }
-  schedule_contour_layout()
+  schedule_contour_layout(ensure_visible~)
+}
+
+///|
+fn should_reset_mindmap_view(
+  node_count : Int,
+  viewport_width : Double,
+  viewport_height : Double,
+  content_width : Double,
+  content_height : Double,
+  pan_x : Int,
+  pan_y : Int,
+  zoom : Double,
+) -> Bool {
+  if node_count <= 0 ||
+    viewport_width <= 0.0 ||
+    viewport_height <= 0.0 ||
+    content_width <= 0.0 ||
+    content_height <= 0.0 ||
+    zoom.is_nan() ||
+    zoom <= 0.0 {
+    return true
+  }
+  let pan_limit_x = max_double(viewport_width, content_width) * 2.0 + 120.0
+  let pan_limit_y = max_double(viewport_height, content_height) * 2.0 + 120.0
+  abs_double(pan_x.to_double()) > pan_limit_x ||
+  abs_double(pan_y.to_double()) > pan_limit_y
 }
 
 ///|

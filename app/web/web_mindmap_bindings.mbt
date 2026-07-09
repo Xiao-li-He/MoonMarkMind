@@ -247,6 +247,7 @@ fn mindmap_fit_to_view(
   zoom_edit : @dom.Element?,
   frame : @ref.Ref[Int],
   window : @dom.Window,
+  retry_count? : Int = 3,
 ) -> Unit {
   match mindmap.querySelector(".mindmap-stage") {
     Some(stage) => {
@@ -260,6 +261,9 @@ fn mindmap_fit_to_view(
         viewport_height <= 0.0 ||
         fit_width <= 0.0 ||
         fit_height <= 0.0 {
+        mindmap_schedule_fit_retry(
+          mindmap, zoom_value, zoom_edit, frame, window, retry_count,
+        )
         return
       }
       let fit_zoom = if viewport_width / fit_width <
@@ -295,8 +299,187 @@ fn mindmap_fit_to_view(
         1.0,
         preserve_root_anchor=false,
       )
+      mindmap_schedule_fit_retry(
+        mindmap, zoom_value, zoom_edit, frame, window, retry_count,
+      )
     }
   }
+}
+
+///|
+fn mindmap_schedule_fit_retry(
+  mindmap : @dom.Element,
+  zoom_value : @dom.Element?,
+  zoom_edit : @dom.Element?,
+  frame : @ref.Ref[Int],
+  window : @dom.Window,
+  retry_count : Int,
+) -> Unit {
+  if retry_count <= 0 {
+    return
+  }
+  let expected_cycle = current_mindmap_render_cycle()
+  ignore(
+    window.requestAnimationFrame(fn(_) {
+      if mindmap_render_cycle_matches(expected_cycle) {
+        mindmap_fit_to_view(
+          mindmap,
+          zoom_value,
+          zoom_edit,
+          frame,
+          window,
+          retry_count=retry_count - 1,
+        )
+      }
+    }),
+  )
+}
+
+///|
+fn mindmap_schedule_visibility_recovery(
+  mindmap : @dom.Element,
+  zoom_value : @dom.Element?,
+  zoom_edit : @dom.Element?,
+  frame : @ref.Ref[Int],
+  window : @dom.Window,
+  expected_cycle : Int,
+  retry_count? : Int = 3,
+) -> Unit {
+  ignore(
+    window.requestAnimationFrame(fn(_) {
+      if mindmap_render_cycle_matches(expected_cycle) {
+        mindmap_recover_visibility_if_needed(
+          mindmap, zoom_value, zoom_edit, frame, window, expected_cycle, retry_count,
+        )
+      }
+    }),
+  )
+}
+
+///|
+fn mindmap_recover_visibility_if_needed(
+  mindmap : @dom.Element,
+  zoom_value : @dom.Element?,
+  zoom_edit : @dom.Element?,
+  frame : @ref.Ref[Int],
+  window : @dom.Window,
+  expected_cycle : Int,
+  retry_count : Int,
+) -> Unit {
+  if !mindmap_render_cycle_matches(expected_cycle) {
+    return
+  }
+  match mindmap.querySelector(".mindmap-stage") {
+    Some(stage) => {
+      let nodes : Array[@dom.Element] = stage.querySelectorAll(
+        ".node[data-node-index]",
+      )
+      let viewport = element_rect(mindmap)
+      let bounds = mindmap_node_bounds(stage)
+      let should_recover = match bounds {
+        Some((left, top, right, bottom)) =>
+          should_recover_mindmap_visibility(
+            nodes.length(),
+            viewport.left,
+            viewport.top,
+            viewport.right,
+            viewport.bottom,
+            left,
+            top,
+            right,
+            bottom,
+          )
+        None => nodes.length() > 0
+      }
+      if !should_recover {
+        return
+      }
+      let viewport_ready = viewport.right - viewport.left > 1.0 &&
+        viewport.bottom - viewport.top > 1.0
+      let bounds_ready = match bounds {
+        Some((left, top, right, bottom)) =>
+          right - left > 1.0 && bottom - top > 1.0
+        None => false
+      }
+      if (!viewport_ready || !bounds_ready) && retry_count > 0 {
+        mindmap_schedule_visibility_recovery(
+          mindmap,
+          zoom_value,
+          zoom_edit,
+          frame,
+          window,
+          expected_cycle,
+          retry_count=retry_count - 1,
+        )
+        return
+      }
+      mindmap.setAttribute("data-pan-x", "0")
+      mindmap.setAttribute("data-pan-y", "0")
+      mindmap.setAttribute("data-zoom", "1")
+      mindmap_sync_view(mindmap, zoom_value, zoom_edit)
+      mindmap_fit_to_view(
+        mindmap,
+        zoom_value,
+        zoom_edit,
+        frame,
+        window,
+        retry_count~,
+      )
+    }
+    None =>
+      if retry_count > 0 {
+        mindmap_schedule_visibility_recovery(
+          mindmap,
+          zoom_value,
+          zoom_edit,
+          frame,
+          window,
+          expected_cycle,
+          retry_count=retry_count - 1,
+        )
+      }
+  }
+}
+
+///|
+fn should_recover_mindmap_visibility(
+  node_count : Int,
+  viewport_left : Double,
+  viewport_top : Double,
+  viewport_right : Double,
+  viewport_bottom : Double,
+  nodes_left : Double,
+  nodes_top : Double,
+  nodes_right : Double,
+  nodes_bottom : Double,
+) -> Bool {
+  if node_count <= 0 {
+    return false
+  }
+  if viewport_right - viewport_left <= 1.0 ||
+    viewport_bottom - viewport_top <= 1.0 ||
+    nodes_right - nodes_left <= 1.0 ||
+    nodes_bottom - nodes_top <= 1.0 {
+    return true
+  }
+  !rects_intersect(
+    viewport_left, viewport_top, viewport_right, viewport_bottom, nodes_left, nodes_top,
+    nodes_right, nodes_bottom,
+  )
+}
+
+///|
+fn rects_intersect(
+  left_a : Double,
+  top_a : Double,
+  right_a : Double,
+  bottom_a : Double,
+  left_b : Double,
+  top_b : Double,
+  right_b : Double,
+  bottom_b : Double,
+) -> Bool {
+  right_a > left_b && right_b > left_a && bottom_a > top_b && bottom_b > top_a
 }
 
 ///|
@@ -435,14 +618,6 @@ fn mindmap_current_root_anchor_point(
 }
 
 ///|
-fn capture_mindmap_current_root_anchor() -> (Double, Double)? {
-  match get_element("#mindmap") {
-    Some(mindmap) => mindmap_current_root_anchor_point(mindmap)
-    None => None
-  }
-}
-
-///|
 fn mindmap_node_origin_point(
   mindmap : @dom.Element,
   node_index : Int,
@@ -517,64 +692,6 @@ fn preserve_mindmap_node_origin_now(
             }
             None => ()
           }
-        None => ()
-      }
-    None => ()
-  }
-}
-
-///|
-fn schedule_mindmap_preserve_root_anchor(
-  anchor_before : (Double, Double)?,
-) -> Unit {
-  match anchor_before {
-    Some((before_x, before_y)) =>
-      match get_element("#mindmap") {
-        Some(mindmap) => {
-          let window = @dom.window()
-          ignore(
-            window.requestAnimationFrame(fn(_) {
-              ignore(
-                window.requestAnimationFrame(fn(_) {
-                  match mindmap_current_root_anchor_point(mindmap) {
-                    Some((after_x, after_y)) => {
-                      let current_pan_x = parse_int_or_default(
-                        mindmap.getAttribute("data-pan-x").unwrap_or("0"),
-                        0,
-                      )
-                      let current_pan_y = parse_int_or_default(
-                        mindmap.getAttribute("data-pan-y").unwrap_or("0"),
-                        0,
-                      )
-                      mindmap.setAttribute(
-                        "data-pan-x",
-                        (current_pan_x.to_double() + before_x - after_x)
-                        .round()
-                        .to_int()
-                        .to_string(),
-                      )
-                      mindmap.setAttribute(
-                        "data-pan-y",
-                        (current_pan_y.to_double() + before_y - after_y)
-                        .round()
-                        .to_int()
-                        .to_string(),
-                      )
-                      let frame = @ref.Ref(0)
-                      mindmap_sync_view(
-                        mindmap,
-                        get_element("#zoom-value"),
-                        get_element("#zoom-edit"),
-                      )
-                      mindmap_schedule_connectors(frame, window)
-                    }
-                    None => ()
-                  }
-                }),
-              )
-            }),
-          )
-        }
         None => ()
       }
     None => ()

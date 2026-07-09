@@ -40,6 +40,7 @@ priv struct AppState {
   mut left_panel_percent : Int
   mut root_split_count : Int
   mut reveal_selected_line : Bool
+  mut ensure_mindmap_visible : Bool
   mut sample_variant : String
   mut node_width_overrides : Array[NodeWidthOverride]
 }
@@ -69,6 +70,7 @@ let app_state : AppState = AppState::{
   left_panel_percent: 33,
   root_split_count: 0,
   reveal_selected_line: false,
+  ensure_mindmap_visible: false,
   sample_variant: rules_sample_default_id(),
   node_width_overrides: [],
 }
@@ -322,16 +324,16 @@ fn on_input_selected_headings_change(serialized : String) -> Unit {
 ///|
 fn on_layout_change(mode : String) -> Unit {
   app_state.layout_mode = normalize_layout_mode(mode)
+  app_state.ensure_mindmap_visible = true
   render_ui()
   schedule_mindmap_recenter_current_view()
 }
 
 ///|
 fn on_style_change(mode : String) -> Unit {
-  let root_anchor = capture_mindmap_current_root_anchor()
   app_state.style_mode = normalize_style_mode(mode)
+  app_state.ensure_mindmap_visible = true
   render_ui()
-  schedule_mindmap_preserve_root_anchor(root_anchor)
 }
 
 ///|
@@ -2983,6 +2985,7 @@ fn apply_markdown_state(
     clear_selected_nodes()
     app_state.hidden_nodes = []
     app_state.collapsed_note_nodes = []
+    app_state.ensure_mindmap_visible = true
   }
   app_state.markdown = markdown
   app_state.root = @outline_parser.build_outline(markdown)
@@ -3053,7 +3056,9 @@ fn render_ui() -> Unit {
   sync_selection_toolbar()
   set_aux_action_enabled("undo-action", can_undo_action())
   set_aux_action_enabled("redo-action", can_redo_action())
-  set_mindmap_dom(build_mindmap_dom())
+  let ensure_visible = app_state.ensure_mindmap_visible
+  app_state.ensure_mindmap_visible = false
+  set_mindmap_dom(build_mindmap_dom(), ensure_visible~)
   if app_state.editing_node >= 0 &&
     (app_state.editing_node == app_state.selected_node || !has_selected_nodes()) {
     focus_editor(app_state.editing_node)
