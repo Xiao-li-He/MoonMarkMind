@@ -147,6 +147,24 @@ test "render markdown svg normalizes html math entities for xml" {
 }
 
 ///|
+test "render markdown svg uses widened static connector spacing" {
+  let logic = render_markdown_svg("# Root\n## Child", options={
+    layout: Logic,
+    style: Full,
+    layer: Full,
+  })
+  let tree = render_markdown_svg("# Root\n## Child", options={
+    layout: Tree,
+    style: Full,
+    layer: Full,
+  })
+  assert_eq(logic.contains("M 270"), true)
+  assert_eq(logic.contains(" 390 "), true)
+  assert_eq(tree.contains("M 179 158 C 179 202"), true)
+  assert_eq(tree.contains("155 318"), true)
+}
+
+///|
 fn mindmap_style_rules_contain_class(class_name : String) -> Bool {
   for rule in mindmap_style_rules() {
     if rule.class_name == class_name {
@@ -188,6 +206,7 @@ test "mindmap style css serializes shared static classes" {
   assert_eq(css.contains(".mindmap-stage"), true)
   assert_eq(css.contains("min-width: 1120px;"), true)
   assert_eq(css.contains("min-width: 960px;"), true)
+  assert_eq(css.contains("gap: 100px;"), true)
   assert_eq(css.contains("padding: 56px 32px 48px;"), true)
   assert_eq(css.contains("padding: 42px 32px 48px;"), true)
   assert_eq(css.contains(".node"), true)
@@ -211,10 +230,29 @@ test "mindmap style css serializes shared static classes" {
   assert_eq(css.contains("user-select: text;"), true)
   assert_eq(
     css.contains(
-      ".single-right-tree { display: flex; align-items: center; gap: 56px; }",
+      ".branch-item { position: relative; display: flex; align-items: center; gap: 40px; }",
     ),
     true,
   )
+  assert_eq(
+    css.contains(
+      ".single-right-tree { display: flex; align-items: center; gap: 100px; }",
+    ),
+    true,
+  )
+  assert_eq(
+    css.contains(
+      ".single-right-tree__node { position: relative; display: flex; align-items: center; gap: 60px; }",
+    ),
+    true,
+  )
+  assert_eq(
+    css.contains(
+      ".vertical-tree { position: relative; display: flex; flex-direction: column; align-items: center; gap: 28px; }",
+    ),
+    true,
+  )
+  assert_eq(css.contains("padding-top: 28px;"), true)
   assert_eq(css.contains(".node-actions--right-mid"), true)
   assert_eq(css.contains(".node-actions--bottom-center"), true)
   assert_eq(css.contains(".vertical-tree__children--line-tree"), true)

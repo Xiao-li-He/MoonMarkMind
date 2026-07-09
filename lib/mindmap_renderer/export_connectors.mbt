@@ -40,9 +40,9 @@ fn static_node_height(
 ///|
 fn static_logic_child_gap(depth : Int) -> Double {
   if depth == 0 {
-    56.0
+    100.0
   } else {
-    24.0
+    60.0
   }
 }
 
@@ -161,7 +161,7 @@ fn collect_static_tree_boxes(
         node.flat_index,
         depth + 1,
         cursor,
-        y + height + 120.0,
+        y + height + 150.0,
         options,
       )
       cursor += consumed
@@ -260,7 +260,7 @@ fn collect_static_mindmap_side(
   for index in start..<end_ {
     let child = root.children[index]
     let span = static_subtree_span(child, 1, options)
-    let x = if direction == "left" { 260.0 } else { 830.0 }
+    let x = if direction == "left" { 170.0 } else { 930.0 }
     ignore(
       collect_static_mindmap_branch(
         boxes,
@@ -305,7 +305,7 @@ fn collect_static_mindmap_branch(
   })
   if should_render_layer_children(depth, options.layer) {
     let mut cursor = top
-    let next_x = if direction == "left" { x - 230.0 } else { x + 230.0 }
+    let next_x = if direction == "left" { x - 320.0 } else { x + 320.0 }
     for child in node.children {
       let child_span = collect_static_mindmap_branch(
         boxes,

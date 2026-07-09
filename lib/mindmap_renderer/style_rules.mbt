@@ -77,7 +77,7 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
     ]),
     mindmap_rule(".mindmap-stage--radial", "mindmap-stage--radial", [
       mindmap_decl("align-items", "center"),
-      mindmap_decl("gap", "60px"),
+      mindmap_decl("gap", "100px"),
       mindmap_decl("min-width", "1120px"),
       mindmap_decl("min-height", "1040px"),
       mindmap_decl("padding", "56px 32px 48px"),
@@ -134,7 +134,7 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
       mindmap_decl("position", "relative"),
       mindmap_decl("display", "flex"),
       mindmap_decl("align-items", "center"),
-      mindmap_decl("gap", "20px"),
+      mindmap_decl("gap", "40px"),
     ]),
     mindmap_rule(".branch-item--left", "branch-item--left", [
       mindmap_decl("justify-content", "flex-end"),
@@ -171,13 +171,13 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
     mindmap_rule(".single-right-tree", "single-right-tree", [
       mindmap_decl("display", "flex"),
       mindmap_decl("align-items", "center"),
-      mindmap_decl("gap", "56px"),
+      mindmap_decl("gap", "100px"),
     ]),
     mindmap_rule(".single-right-tree__node", "single-right-tree__node", [
       mindmap_decl("position", "relative"),
       mindmap_decl("display", "flex"),
       mindmap_decl("align-items", "center"),
-      mindmap_decl("gap", "24px"),
+      mindmap_decl("gap", "60px"),
     ]),
     mindmap_rule(".single-right-tree__head", "single-right-tree__head", [
       mindmap_decl("position", "relative"),
@@ -208,7 +208,7 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
       mindmap_decl("display", "flex"),
       mindmap_decl("flex-direction", "column"),
       mindmap_decl("align-items", "center"),
-      mindmap_decl("gap", "22px"),
+      mindmap_decl("gap", "28px"),
     ]),
     mindmap_rule(".vertical-tree__children", "vertical-tree__children", [
       mindmap_decl("display", "flex"),
@@ -216,7 +216,7 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
       mindmap_decl("align-items", "flex-start"),
       mindmap_decl("justify-content", "center"),
       mindmap_decl("gap", "18px"),
-      mindmap_decl("padding-top", "22px"),
+      mindmap_decl("padding-top", "28px"),
       mindmap_decl("position", "relative"),
       mindmap_decl("border-top", "0"),
     ]),
