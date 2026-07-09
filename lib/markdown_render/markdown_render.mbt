@@ -9,6 +9,7 @@ pub(all) enum MarkdownInline {
   InlineEmphasis(String)
   InlineCode(String)
   InlineStrike(String)
+  InlineHighlight(String)
   InlineLink(String, String)
   InlineImage(String, String)
   InlineMath(String)
@@ -149,6 +150,10 @@ fn render_markdown_inline_piece_safe_html(inline : MarkdownInline) -> SafeHtml {
       ])
     InlineStrike(text) =>
       safe_html_element("del", class_name="markdown-strike", attrs="", children=[
+        safe_html_text(text),
+      ])
+    InlineHighlight(text) =>
+      safe_html_element("mark", class_name="markdown-highlight", attrs="", children=[
         safe_html_text(text),
       ])
     InlineLink(text, href) =>
@@ -440,7 +445,7 @@ fn safe_html_element(
   if tag == "input" {
     SafeHtml::{ value: "<input\{class_attr}\{attrs} />" }
   } else if tag == "br" {
-    SafeHtml::{ value: "<br\{class_attr}\{attrs}>" }
+    SafeHtml::{ value: "<br\{class_attr}\{attrs} />" }
   } else {
     SafeHtml::{ value: "<\{tag}\{class_attr}\{attrs}>\{child_html}</\{tag}>" }
   }
@@ -929,6 +934,18 @@ fn parse_markdown_inline_at(
       None => ()
     }
   }
+  if has_markdown_at(source, cursor, "==") {
+    match find_unescaped_markdown_from(source, "==", cursor + 2) {
+      Some(end_) =>
+        if end_ > cursor + 2 {
+          let text = source[cursor + 2:end_].to_owned()
+          if text.trim().to_owned().length() > 0 {
+            return Some((end_ + 2, InlineHighlight(text)))
+          }
+        }
+      None => ()
+    }
+  }
   if has_markdown_at(source, cursor, "*") {
     match find_unescaped_markdown_from(source, "*", cursor + 1) {
       Some(end_) =>
@@ -980,6 +997,9 @@ fn parse_markdown_escape_at(
   if has_markdown_at(source, cursor + 1, "~~") {
     return Some((cursor + 3, InlineText("~~")))
   }
+  if has_markdown_at(source, cursor + 1, "==") {
+    return Some((cursor + 3, InlineText("==")))
+  }
   let escaped = source[cursor + 1].to_int().unsafe_to_char()
   if is_markdown_escapable_char(escaped) {
     Some((cursor + 2, InlineText(escaped.to_string())))
@@ -995,6 +1015,7 @@ fn is_markdown_escapable_char(ch : Char) -> Bool {
   ch == '*' ||
   ch == '_' ||
   ch == '~' ||
+  ch == '=' ||
   ch == '$' ||
   ch == '[' ||
   ch == ']' ||

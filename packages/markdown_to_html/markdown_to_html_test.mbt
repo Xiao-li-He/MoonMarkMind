@@ -1,8 +1,9 @@
 ///|
 test "render markdown body to html" {
-  let html = render("# Title\n\nHello **MoonBit**\n\n$$x^2$$")
+  let html = render("# Title\n\nHello **MoonBit** and ==Highlight==\n\n$$x^2$$")
   assert_true(html.contains("markdown-heading--h1"))
   assert_true(html.contains("markdown-strong"))
+  assert_true(html.contains("markdown-highlight"))
   assert_true(html.contains("markdown-math--block"))
 }
 
@@ -36,9 +37,10 @@ test "render collapsible markdown body to html" {
 
 ///|
 test "render inline markdown to html" {
-  let html = render_inline("Value $x^2$ and `code`")
+  let html = render_inline("Value $x^2$ and `code` with ==mark==")
   assert_true(html.contains("markdown-math--inline"))
   assert_true(html.contains("markdown-inline-code"))
+  assert_true(html.contains("<mark class=\"markdown-highlight\">mark</mark>"))
 }
 
 ///|
@@ -73,6 +75,7 @@ test "render math style css for standalone documents" {
   assert_true(style.contains(".markdown-table th"))
   assert_true(style.contains(".markdown-list"))
   assert_true(style.contains(".markdown-image"))
+  assert_true(style.contains(".markdown-highlight"))
   assert_true(style.contains("margin: 0;"))
   assert_true(style.contains("white-space: normal"))
   assert_true(style.contains(".markdown-math sup"))
@@ -96,8 +99,8 @@ test "render standard markdown line breaks" {
   assert_true(soft.contains("Alpha Beta"))
   assert_false(soft.contains("markdown-line-break"))
   let hard = render("Alpha  \nBeta\n\nGamma\\\nDelta")
-  assert_true(hard.contains("Alpha<br class=\"markdown-line-break\">Beta"))
-  assert_true(hard.contains("Gamma<br class=\"markdown-line-break\">Delta"))
+  assert_true(hard.contains("Alpha<br class=\"markdown-line-break\" />Beta"))
+  assert_true(hard.contains("Gamma<br class=\"markdown-line-break\" />Delta"))
 }
 
 ///|

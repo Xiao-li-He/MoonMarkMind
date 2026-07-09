@@ -223,7 +223,7 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
     mindmap_rule(
       ".vertical-tree__children--line-tree",
       "vertical-tree__children--line-tree",
-      [mindmap_decl("gap", "56px")],
+      [mindmap_decl("gap", "32px")],
     ),
     mindmap_rule(".vertical-tree__child", "vertical-tree__child", [
       mindmap_decl("position", "relative"),
@@ -234,17 +234,17 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
       mindmap_decl("min-width", "auto"),
     ]),
     mindmap_rule(".vertical-tree--line-note", "vertical-tree--line-note", [
-      mindmap_decl("width", "360px"),
-      mindmap_decl("min-width", "360px"),
-      mindmap_decl("max-width", "360px"),
+      mindmap_decl("width", "fit-content"),
+      mindmap_decl("min-width", "180px"),
+      mindmap_decl("max-width", "320px"),
     ]),
     mindmap_rule(
       ".vertical-tree__child--line-note",
       "vertical-tree__child--line-note",
       [
-        mindmap_decl("width", "360px"),
-        mindmap_decl("min-width", "360px"),
-        mindmap_decl("max-width", "360px"),
+        mindmap_decl("width", "fit-content"),
+        mindmap_decl("min-width", "180px"),
+        mindmap_decl("max-width", "320px"),
       ],
     ),
     mindmap_rule(".node", "node", [
@@ -311,7 +311,7 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
     ]),
     mindmap_rule(".node--line-tree", "node--line-tree", [
       mindmap_decl("min-width", "36px"),
-      mindmap_decl("max-width", "130px"),
+      mindmap_decl("max-width", "180px"),
       mindmap_decl("padding", "4px 10px 4px"),
       mindmap_decl(
         "border-bottom", "2px solid var(--mindmap-connector-color, #94b6db)",
@@ -330,8 +330,9 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
       ancestor_class="node--center",
     ),
     mindmap_rule(".node--line-tree-note", "node--line-tree-note", [
-      mindmap_decl("min-width", "200px"),
-      mindmap_decl("max-width", "360px"),
+      mindmap_decl("width", "fit-content"),
+      mindmap_decl("min-width", "160px"),
+      mindmap_decl("max-width", "320px"),
     ]),
     mindmap_rule(".node-title", "node-title", [
       mindmap_decl("display", "block"),
@@ -456,7 +457,7 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
       mindmap_decl("text-align", "left"),
     ]),
     mindmap_rule(".node-body--line-tree", "node-body--line-tree", [
-      mindmap_decl("width", "100%"),
+      mindmap_decl("width", "fit-content"),
       mindmap_decl("max-width", "100%"),
       mindmap_decl("min-width", "0"),
       mindmap_decl("padding", "8px 10px"),

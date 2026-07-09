@@ -107,6 +107,12 @@ pub fn markdown_style_rules() -> Array[MarkdownStyleRule] {
       markdown_decl("text-decoration", "line-through"),
       markdown_decl("opacity", "0.74"),
     ]),
+    markdown_rule(".markdown-highlight", "markdown-highlight", None, None, [
+      markdown_decl("padding", "0 3px"),
+      markdown_decl("border-radius", "4px"),
+      markdown_decl("background", "rgba(255, 221, 87, 0.45)"),
+      markdown_decl("color", "inherit"),
+    ]),
     markdown_rule(".markdown-link", "markdown-link", None, None, [
       markdown_decl("color", "#2c70ce"),
       markdown_decl("text-decoration", "underline"),

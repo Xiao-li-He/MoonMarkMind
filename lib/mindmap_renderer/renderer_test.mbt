@@ -219,10 +219,14 @@ test "mindmap style css serializes shared static classes" {
   assert_eq(css.contains(".node-actions--bottom-center"), true)
   assert_eq(css.contains(".vertical-tree__children--line-tree"), true)
   assert_eq(
-    css.contains(".vertical-tree__children--line-tree { gap: 56px; }"),
+    css.contains(".vertical-tree__children--line-tree { gap: 32px; }"),
     true,
   )
-  assert_eq(css.contains(".vertical-tree--line-note { width: 360px;"), true)
+  assert_eq(
+    css.contains(".vertical-tree--line-note { width: fit-content;"),
+    true,
+  )
+  assert_eq(css.contains("min-width: 180px; max-width: 320px;"), true)
   assert_eq(css.contains(".node--line-tree"), true)
   assert_eq(
     css.contains(
@@ -230,8 +234,10 @@ test "mindmap style css serializes shared static classes" {
     ),
     true,
   )
-  assert_eq(css.contains("max-width: 130px;"), true)
+  assert_eq(css.contains("max-width: 180px;"), true)
+  assert_eq(css.contains("min-width: 160px; max-width: 320px;"), true)
   assert_eq(css.contains(".node-body--line-tree"), true)
+  assert_eq(css.contains(".node-body--line-tree { width: fit-content;"), true)
   assert_eq(css.contains("top: calc(100% + 15px);"), true)
   assert_eq(css.contains("transform: translate(50%, -50%);"), true)
   assert_eq(css.contains(".node-note-rail"), true)

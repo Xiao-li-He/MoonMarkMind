@@ -50,6 +50,7 @@ pub(all) enum MarkdownInline {
   InlineEmphasis(String)
   InlineCode(String)
   InlineStrike(String)
+  InlineHighlight(String)
   InlineLink(String, String)
   InlineImage(String, String)
   InlineMath(String)

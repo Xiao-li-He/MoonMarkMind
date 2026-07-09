@@ -75,6 +75,11 @@ fn build_markdown_inline_piece_dom(inline : MarkdownInline) -> @dom.Element {
       del.setTextContent(text)
       del
     }
+    InlineHighlight(text) => {
+      let mark = create_element("mark", "markdown-highlight")
+      mark.setTextContent(text)
+      mark
+    }
     InlineLink(text, href) =>
       if @markdown_render.is_safe_markdown_href(href) {
         let safe_href = href.trim().to_owned()

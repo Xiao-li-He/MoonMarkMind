@@ -1,6 +1,6 @@
 # MoonMarkMind Markdown to HTML example
 
-This paragraph includes **strong text**, _emphasis_, *emphasis*，~~deleted text~~, 
+This paragraph includes **strong text**, _emphasis_, *emphasis*，~~deleted text~~, ==highlight==,
 `inline code`, a [mooncakes.io link](https://mooncakes.io/), and an inline
 formula $x^2 + \alpha$.
 

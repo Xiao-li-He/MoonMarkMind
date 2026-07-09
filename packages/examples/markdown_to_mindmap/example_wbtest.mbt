@@ -43,6 +43,27 @@ test "sample svg output keeps math entities xml safe" {
 }
 
 ///|
+test "sample svg output self closes markdown line breaks" {
+  let markdown = "# Root\n\nValue $x^2$  \nnext"
+  let svg = render_sample_svg(markdown, layout="logic", style="line")
+  assert_true(svg.contains("<br class=\"markdown-line-break\" />"))
+  assert_false(svg.contains("<br class=\"markdown-line-break\">"))
+}
+
+///|
+test "sample tree line output uses compact adaptive note nodes" {
+  let markdown = "# Root\n\n## Note\nBody text\n\n## Table\n| A | B |\n|---|---|\n| 1 | 2 |"
+  let html = render_sample_html(markdown, layout="tree", style="line")
+  assert_true(
+    html.contains(".vertical-tree__children--line-tree { gap: 32px; }"),
+  )
+  assert_true(html.contains(".vertical-tree--line-note { width: fit-content;"))
+  assert_true(html.contains(".node--line-tree-note"))
+  assert_true(html.contains(".node-body--line-tree { width: fit-content;"))
+  assert_false(html.contains(".vertical-tree--line-note { width: 360px;"))
+}
+
+///|
 test "example paths cover sample markdown files" {
   let names = sample_names()
   let variants = example_variants()

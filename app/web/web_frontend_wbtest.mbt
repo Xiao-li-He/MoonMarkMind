@@ -109,7 +109,7 @@ test "web package can consume mindmap shared style rules" {
 ///|
 test "markdown inline renderer covers sample part two styles" {
   let html = render_markdown_inline_html(
-    "[Link](https://example.com) **Bold** _Italic_ *Star Italic* `Code` ~~Gone~~",
+    "[Link](https://example.com) **Bold** _Italic_ *Star Italic* `Code` ~~Gone~~ ==Highlight==",
   )
   assert_eq(html.contains("class=\"markdown-link\""), true)
   assert_eq(html.contains("href=\"https://example.com\""), true)
@@ -121,6 +121,7 @@ test "markdown inline renderer covers sample part two styles" {
   )
   assert_eq(html.contains("class=\"markdown-inline-code\""), true)
   assert_eq(html.contains("class=\"markdown-strike\""), true)
+  assert_eq(html.contains("class=\"markdown-highlight\""), true)
 }
 
 ///|

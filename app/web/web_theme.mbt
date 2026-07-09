@@ -473,6 +473,9 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "markdown-strike") {
     style_markdown_strike(element)
   }
+  if has_class_name(element, "markdown-highlight") {
+    style_markdown_highlight(element)
+  }
   if has_class_name(element, "markdown-link") {
     style_markdown_link(element)
   }
@@ -2823,6 +2826,11 @@ fn style_markdown_inline_code(element : @dom.Element) -> Unit {
 ///|
 fn style_markdown_strike(element : @dom.Element) -> Unit {
   apply_markdown_style_rule(element, "markdown-strike")
+}
+
+///|
+fn style_markdown_highlight(element : @dom.Element) -> Unit {
+  apply_markdown_style_rule(element, "markdown-highlight")
 }
 
 ///|

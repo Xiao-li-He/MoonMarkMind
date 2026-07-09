@@ -1,7 +1,7 @@
 ///|
 test "inline markdown renders rich html and math" {
   let html = render_markdown_inline_html(
-    "[Link](https://example.com) **Bold** _Italic_ `Code` ~~Gone~~ $x^2$",
+    "[Link](https://example.com) **Bold** _Italic_ `Code` ~~Gone~~ ==Hot== $x^2$",
   )
   assert_eq(html.contains("class=\"markdown-link\""), true)
   assert_eq(html.contains("href=\"https://example.com\""), true)
@@ -9,6 +9,10 @@ test "inline markdown renders rich html and math" {
   assert_eq(html.contains("class=\"markdown-emphasis\""), true)
   assert_eq(html.contains("class=\"markdown-inline-code\""), true)
   assert_eq(html.contains("class=\"markdown-strike\""), true)
+  assert_eq(
+    html.contains("<mark class=\"markdown-highlight\">Hot</mark>"),
+    true,
+  )
   assert_eq(
     html.contains("class=\"markdown-math markdown-math--inline\""),
     true,
@@ -18,11 +22,31 @@ test "inline markdown renders rich html and math" {
 
 ///|
 test "backslash escapes inline markdown markers" {
-  let html = render_markdown_inline_html("\\**not bold\\** and \\$not math\\$")
+  let html = render_markdown_inline_html(
+    "\\**not bold\\** and \\$not math\\$ and \\==not highlight\\==",
+  )
   assert_eq(html.contains("markdown-strong"), false)
   assert_eq(html.contains("markdown-math"), false)
+  assert_eq(html.contains("markdown-highlight"), false)
   assert_eq(html.contains("**not bold**"), true)
   assert_eq(html.contains("$not math$"), true)
+  assert_eq(html.contains("==not highlight=="), true)
+}
+
+///|
+test "highlight markdown keeps incomplete empty and unsafe content literal safe" {
+  let unclosed = render_markdown_inline_html("A ==hot")
+  assert_eq(unclosed.contains("markdown-highlight"), false)
+  assert_eq(unclosed.contains("A ==hot"), true)
+  let empty = render_markdown_inline_html("A ==== B")
+  assert_eq(empty.contains("markdown-highlight"), false)
+  assert_eq(empty.contains("A ==== B"), true)
+  let escaped = render_markdown_inline_html("A ==<script>== B")
+  assert_eq(
+    escaped.contains("<mark class=\"markdown-highlight\">&lt;script&gt;</mark>"),
+    true,
+  )
+  assert_eq(escaped.contains("<script>"), false)
 }
 
 ///|
@@ -35,13 +59,19 @@ test "soft line break renders as a space" {
 ///|
 test "two trailing spaces render a hard line break" {
   let html = render_markdown_inline_html("Alpha  \nBeta")
-  assert_eq(html.contains("Alpha<br class=\"markdown-line-break\">Beta"), true)
+  assert_eq(
+    html.contains("Alpha<br class=\"markdown-line-break\" />Beta"),
+    true,
+  )
 }
 
 ///|
 test "trailing backslash renders a hard line break" {
   let html = render_markdown_inline_html("Alpha\\\nBeta")
-  assert_eq(html.contains("Alpha<br class=\"markdown-line-break\">Beta"), true)
+  assert_eq(
+    html.contains("Alpha<br class=\"markdown-line-break\" />Beta"),
+    true,
+  )
 }
 
 ///|
@@ -62,7 +92,7 @@ test "block markdown renders code task table and math" {
 ///|
 test "block markdown renders unordered and ordered lists" {
   let unordered = render_markdown_blocks_html([
-    "- **Bold** item\n- Math $x^2$ item",
+    "- **Bold** item\n- Math $x^2$ item\n- ==Marked== item",
   ])
   assert_eq(
     unordered.contains("<ul class=\"markdown-list markdown-list--unordered\">"),
@@ -74,6 +104,7 @@ test "block markdown renders unordered and ordered lists" {
     unordered.contains("class=\"markdown-math markdown-math--inline\""),
     true,
   )
+  assert_eq(unordered.contains("class=\"markdown-highlight\""), true)
 
   let ordered = render_markdown_blocks_html(["1. First\n2. Second"])
   assert_eq(
@@ -95,6 +126,20 @@ test "block markdown renders unordered and ordered lists" {
     true,
   )
   assert_eq(mixed.contains("Nested-ish"), true)
+}
+
+///|
+test "highlight markdown renders in document headings lists and tables" {
+  let html = render_markdown_html(
+    "# ==Title==\n\n- ==Item==\n\n| A | B |\n|---|---|\n| ==Cell== | ok |",
+  )
+  assert_true(
+    html.contains(
+      "<h1 class=\"markdown-heading markdown-heading--h1\"><mark class=\"markdown-highlight\">Title</mark></h1>",
+    ),
+  )
+  assert_true(html.contains("<mark class=\"markdown-highlight\">Item</mark>"))
+  assert_true(html.contains("<mark class=\"markdown-highlight\">Cell</mark>"))
 }
 
 ///|
@@ -145,7 +190,7 @@ test "body block renderer keeps hash text as paragraph" {
 ///|
 test "collapsible markdown nests heading sections" {
   let html = render_markdown_collapsible_html(
-    "Intro\n\n# A **bold** $x^2$\nText\n## B\nMore\n# C",
+    "Intro\n\n# A **bold** ==marked== $x^2$\nText\n## B\nMore\n# C",
   )
   assert_true(html.contains("<p class=\"markdown-paragraph\">Intro</p>"))
   assert_true(
@@ -155,9 +200,10 @@ test "collapsible markdown nests heading sections" {
   )
   assert_true(
     html.contains(
-      "<summary class=\"markdown-section__summary markdown-heading markdown-heading--h1\">A <span class=\"markdown-strong\">bold</span> <span class=\"markdown-math markdown-math--inline\">",
+      "<summary class=\"markdown-section__summary markdown-heading markdown-heading--h1\">A <span class=\"markdown-strong\">bold</span> <mark class=\"markdown-highlight\">marked</mark> <span class=\"markdown-math markdown-math--inline\">",
     ),
   )
+  assert_true(html.contains("<mark class=\"markdown-highlight\">marked</mark>"))
   assert_true(
     html.contains(
       "<div class=\"markdown-section__body\"><p class=\"markdown-paragraph\">Text</p><details class=\"markdown-section markdown-section--h2\" open>",
