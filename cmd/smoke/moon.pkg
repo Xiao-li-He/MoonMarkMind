@@ -1,6 +1,6 @@
 import {
   "Xiao-li-He/MoonMarkMind/lib/outline_parser",
-  "Xiao-li-He/MoonMarkMind/lib/mindmap_renderer",
+  "Xiao-li-He/MoonMarkMind/lib/mindmap_render",
   "Xiao-li-He/MoonMarkMind/lib/latex_math_render",
 }
 

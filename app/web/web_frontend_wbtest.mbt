@@ -100,7 +100,7 @@ fn outline_flat_index_by_title(
 ///|
 test "web package can consume mindmap shared style rules" {
   let mut branch_children_use_connector_layer = false
-  for rule in @mindmap_renderer.mindmap_style_rules() {
+  for rule in @mindmap_render.mindmap_style_rules() {
     if rule.class_name == "branch-children" {
       for declaration in rule.declarations {
         if declaration.property == "border-left" && declaration.value == "0" {

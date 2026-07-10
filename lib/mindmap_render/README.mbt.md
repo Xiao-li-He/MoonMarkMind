@@ -1,6 +1,6 @@
-# mindmap_renderer
+# mindmap_render
 
-`mindmap_renderer` is the pure string renderer for MoonMarkMind. It turns
+`mindmap_render` is the pure string renderer for MoonMarkMind. It turns
 Markdown or an `OutlineNode` into static mind-map HTML/SVG without depending on
 browser DOM measurement, Canvas, downloads, or editor interactions.
 
@@ -8,7 +8,7 @@ browser DOM measurement, Canvas, downloads, or editor interactions.
 
 ```text
 import {
-  "Xiao-li-He/MoonMarkMind/lib/mindmap_renderer" @mindmap
+  "Xiao-li-He/MoonMarkMind/lib/mindmap_render" @mindmap
 }
 ```
 

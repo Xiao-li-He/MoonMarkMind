@@ -2,44 +2,44 @@
 package "Xiao-li-He/MoonMarkMind/packages/markdown_to_mindmap"
 
 import {
-  "Xiao-li-He/MoonMarkMind/lib/mindmap_renderer",
+  "Xiao-li-He/MoonMarkMind/lib/mindmap_render",
 }
 
 // Values
-pub fn default_render_options() -> @mindmap_renderer.RenderOptions
+pub fn default_render_options() -> @mindmap_render.RenderOptions
 
-pub fn normalize_layer(String) -> @mindmap_renderer.MindmapLayer
+pub fn normalize_layer(String) -> @mindmap_render.MindmapLayer
 
-pub fn normalize_layout(String) -> @mindmap_renderer.MindmapLayout
+pub fn normalize_layout(String) -> @mindmap_render.MindmapLayout
 
-pub fn normalize_style(String) -> @mindmap_renderer.MindmapStyle
+pub fn normalize_style(String) -> @mindmap_render.MindmapStyle
 
-pub fn render(String, options? : @mindmap_renderer.RenderOptions) -> String
+pub fn render(String, options? : @mindmap_render.RenderOptions) -> String
 
 pub fn render_export_runtime_script() -> String
 
-pub fn render_html_document(String, options? : @mindmap_renderer.RenderOptions) -> String
+pub fn render_html_document(String, options? : @mindmap_render.RenderOptions) -> String
 
-pub fn render_interactive_html_document(String, options? : @mindmap_renderer.RenderOptions) -> String
+pub fn render_interactive_html_document(String, options? : @mindmap_render.RenderOptions) -> String
 
 pub fn render_style_css() -> String
 
 pub fn render_style_element() -> String
 
-pub fn render_svg(String, options? : @mindmap_renderer.RenderOptions) -> String
+pub fn render_svg(String, options? : @mindmap_render.RenderOptions) -> String
 
 // Errors
 
 // Types and methods
 
 // Type aliases
-pub using @mindmap_renderer {type MindmapLayer}
+pub using @mindmap_render {type MindmapLayer}
 
-pub using @mindmap_renderer {type MindmapLayout}
+pub using @mindmap_render {type MindmapLayout}
 
-pub using @mindmap_renderer {type MindmapStyle}
+pub using @mindmap_render {type MindmapStyle}
 
-pub using @mindmap_renderer {type RenderOptions}
+pub using @mindmap_render {type RenderOptions}
 
 // Traits
 

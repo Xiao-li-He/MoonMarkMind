@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "Xiao-li-He/MoonMarkMind/lib/mindmap_renderer"
+package "Xiao-li-He/MoonMarkMind/lib/mindmap_render"
 
 import {
   "Xiao-li-He/MoonMarkMind/lib/outline_parser",

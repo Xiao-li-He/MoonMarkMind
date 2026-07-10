@@ -3087,7 +3087,7 @@ fn apply_mindmap_style_rule(
   element : @dom.Element,
   class_name : String,
 ) -> Unit {
-  for rule in @mindmap_renderer.mindmap_style_rules() {
+  for rule in @mindmap_render.mindmap_style_rules() {
     if rule.class_name == class_name &&
       mindmap_style_rule_matches(element, rule) {
       apply_mindmap_style_declarations(element, rule)
@@ -3098,7 +3098,7 @@ fn apply_mindmap_style_rule(
 ///|
 fn apply_mindmap_style_declarations(
   element : @dom.Element,
-  rule : @mindmap_renderer.MindmapStyleRule,
+  rule : @mindmap_render.MindmapStyleRule,
 ) -> Unit {
   for declaration in rule.declarations {
     set_style(element, declaration.property, declaration.value)
@@ -3108,7 +3108,7 @@ fn apply_mindmap_style_declarations(
 ///|
 fn mindmap_style_rule_matches(
   element : @dom.Element,
-  rule : @mindmap_renderer.MindmapStyleRule,
+  rule : @mindmap_render.MindmapStyleRule,
 ) -> Bool {
   match rule.ancestor_class {
     Some(class_name) => element.closest(".\{class_name}") is Some(_)

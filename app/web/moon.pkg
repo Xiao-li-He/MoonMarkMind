@@ -1,8 +1,8 @@
 import {
   "mizchi/js/core",
-  "mizchi/js/browser/dom",
-  "mizchi/js/browser/canvas",
-  "mizchi/js/browser/file",
+  "mizchi/js_browser/dom",
+  "mizchi/js_browser/canvas",
+  "mizchi/js_browser/file",
   "mizchi/js/web/event",
   "moonbitlang/core/math",
   "moonbitlang/core/ref",
@@ -11,7 +11,7 @@ import {
   "Xiao-li-He/MoonMarkMind/lib/outline_parser",
   "Xiao-li-He/MoonMarkMind/lib/latex_math_render",
   "Xiao-li-He/MoonMarkMind/lib/markdown_render",
-  "Xiao-li-He/MoonMarkMind/lib/mindmap_renderer",
+  "Xiao-li-He/MoonMarkMind/lib/mindmap_render",
   "Xiao-li-He/MoonMarkMind/packages/markdown_to_html",
 }
 

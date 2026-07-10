@@ -5,7 +5,7 @@ import {
   "mizchi/x/fs",
   "moonbitlang/async",
   "moonbitlang/async/io",
-  "Xiao-li-He/MoonMarkMind/lib/mindmap_renderer" @renderer,
+  "Xiao-li-He/MoonMarkMind/lib/mindmap_render" @renderer,
 }
 
 options(

@@ -14,7 +14,7 @@ MoonMarkMind 是一个用 MoonBit 编写的 Markdown 脑图工具包与浏览器
 | `lib/latex_math_render` | LaTeX 行内/块级公式到 HTML/SVG fragment | 需要在 Markdown 节点中渲染轻量公式 |
 | `lib/markdown_render` | Markdown fragment/body 到安全 HTML | 需要在无 DOM 环境渲染脑图节点标题和正文 Markdown |
 | `packages/markdown_to_html` | Markdown 文本到安全 HTML fragment | 推荐给用户直接调用的 Markdown to HTML 包 |
-| `lib/mindmap_renderer` | `OutlineNode` 或 Markdown 到静态 HTML/SVG 脑图字符串 | 需要服务端、CLI 或测试环境生成脑图片段 |
+| `lib/mindmap_render` | `OutlineNode` 或 Markdown 到静态 HTML/SVG 脑图字符串 | 需要服务端、CLI 或测试环境生成脑图片段 |
 | `app/web` | 浏览器端 MoonMarkMind 应用 | DOM 交互、编辑器、工具栏、Canvas PNG 导出 |
 | `cmd/cli` | 命令行导出入口 | 本地终端批量生成 SVG/HTML 脑图文件 |
 
@@ -25,7 +25,7 @@ MoonMarkMind 是一个用 MoonBit 编写的 Markdown 脑图工具包与浏览器
 ```text
 import {
   "Xiao-li-He/MoonMarkMind/lib/outline_parser" @outline
-  "Xiao-li-He/MoonMarkMind/lib/mindmap_renderer" @mindmap
+  "Xiao-li-He/MoonMarkMind/lib/mindmap_render" @mindmap
   "Xiao-li-He/MoonMarkMind/lib/latex_math_render" @math
   "Xiao-li-He/MoonMarkMind/lib/markdown_render" @markdown
   "Xiao-li-He/MoonMarkMind/packages/markdown_to_html" @markdown_to_html
@@ -102,7 +102,7 @@ moon run cmd/cli -- ./samples/example1.md --output html --layout tree --style li
 - `outline_parser`：`parse_headings`、`parse_markdown_nodes`、`build_outline`、`outline_json`、`rename_heading`、`render_markdown_nodes`。
 - `markdown_to_html`：`render`、`render_inline`、`render_title`、`render_blocks`。
 - `markdown_render`：`render_markdown_html`、`render_markdown_inline_html`、`render_markdown_title_html`、`render_markdown_blocks_html`。
-- `mindmap_renderer`：`default_render_options`、`render_markdown_html`、`render_markdown_svg`、`render_outline_html`、`render_outline_svg`。
+- `mindmap_render`：`default_render_options`、`render_markdown_html`、`render_markdown_svg`、`render_outline_html`、`render_outline_svg`。
 - `latex_math_render`：`render_latex_math_inline_html`、`render_latex_math_block_html`、`render_latex_math_inline_svg`、`render_latex_math_block_svg`。
 
 ## Web App Features
@@ -121,7 +121,7 @@ moon run cmd/cli -- ./samples/example1.md --output html --layout tree --style li
 - `lib/latex_math_render`：可复用公式 fragment 渲染。
 - `lib/markdown_render`：可复用 Markdown fragment/body HTML 渲染。
 - `packages/markdown_to_html`：面向用户的 Markdown 文本到 HTML fragment 包。
-- `lib/mindmap_renderer`：可复用静态脑图字符串渲染。
+- `lib/mindmap_render`：可复用静态脑图字符串渲染。
 - `app/web`：浏览器端应用。
 - `cmd/main`：Web bundle 导出入口。
 - `cmd/cli`：命令行入口。
