@@ -53,12 +53,25 @@ test "markdown style css is generated from rules" {
   assert_true(css.contains(".markdown-section"))
   assert_true(css.contains(".markdown-section__summary"))
   assert_true(css.contains(".markdown-section__summary::marker"))
+  assert_true(
+    css.contains(".markdown-section__summary::-webkit-details-marker"),
+  )
+  assert_true(
+    css.contains(".markdown-section[open] > .markdown-section__summary::before"),
+  )
+  assert_true(
+    css.contains(
+      ".markdown-section:not([open]) > .markdown-section__summary::before",
+    ),
+  )
   assert_true(css.contains(".markdown-section__body > .markdown-section"))
-  assert_true(css.contains("font-size: 14px;"))
+  assert_true(css.contains("font-size: 22px;"))
+  assert_true(css.contains("margin-right: 0.35em;"))
+  assert_true(css.contains("margin-top: 0.08em;"))
   assert_true(css.contains("margin-left: 0;"))
-  assert_true(css.contains("margin-left: -1.25em;"))
+  assert_true(css.contains("margin-left: -1.15em;"))
   assert_true(css.contains("padding-left: 0;"))
-  assert_true(css.contains("padding-left: 1.25em;"))
+  assert_true(css.contains("padding-left: 1.15em;"))
   assert_true(css.contains("border-left: 0;"))
   assert_true(css.contains(".markdown-list .markdown-list"))
   assert_true(css.contains(".markdown-table th"))
