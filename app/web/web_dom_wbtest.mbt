@@ -35,6 +35,47 @@ test "double-height logical line does not advance gutter to next line" {
 }
 
 ///|
+test "unmapped gutter row stays blank without fold button" {
+  app_state.markdown = "# Root\nintro\n## A\na1"
+  app_state.folded_heading_lines = [0]
+  current_editor_projection.val = editor_projection(app_state.markdown)
+  let metrics = InputLineMetrics::{
+    heights: [28, 28],
+    tops: [18, 46],
+    line_height: 28,
+    padding_top: 18,
+  }
+  let rows = gutter_visual_rows(metrics)
+  assert_eq(rows.length(), 2)
+  assert_eq(rows[0].line_number, 1)
+  assert_eq(rows[0].show_fold_button, true)
+  assert_eq(rows[0].folded, true)
+  assert_eq(rows[1].source_line, -1)
+  assert_eq(rows[1].line_number, 0)
+  assert_eq(rows[1].show_number, true)
+  assert_eq(rows[1].show_fold_button, false)
+  assert_eq(rows[1].placeholder, false)
+}
+
+///|
+test "folded heading gutter preserves following source line number" {
+  app_state.markdown = "# Root\nintro\n## A\na1\n## B\nb1"
+  app_state.folded_heading_lines = [2]
+  current_editor_projection.val = editor_projection(app_state.markdown)
+  let metrics = InputLineMetrics::{
+    heights: [28, 28, 28, 28, 28],
+    tops: [18, 46, 74, 102, 130],
+    line_height: 28,
+    padding_top: 18,
+  }
+  let rows = gutter_visual_rows(metrics)
+  assert_eq(rows.length(), 5)
+  assert_eq(rows[3].source_line, 4)
+  assert_eq(rows[3].line_number, 5)
+  assert_eq(rows[3].show_fold_button, true)
+}
+
+///|
 test "triple wrapped logical line keeps continuation gutter rows blank" {
   let metrics = InputLineMetrics::{
     heights: [84],

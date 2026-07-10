@@ -140,6 +140,7 @@ test "editor projection folds heading content until next peer" {
     content="[0, 1, 2, 6, 7]",
   )
   inspect(projection.placeholders.length(), content="1")
+  inspect(projection.placeholders[0].visible_line, content="-1")
 }
 
 ///|
@@ -148,6 +149,7 @@ test "editor projection folds root including child headings" {
   let projection = build_editor_projection(markdown, [0])
   inspect(projection.visible_text, content="# Root")
   debug_inspect(projection.visible_line_to_source_line, content="[0]")
+  inspect(projection.placeholders[0].visible_line, content="-1")
 }
 
 ///|
