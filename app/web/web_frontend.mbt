@@ -3390,7 +3390,7 @@ fn sync_markdown_preview() -> Unit {
 fn render_markdown_preview_document_html(markdown : String) -> String {
   @markdown_to_html.render_style_element() +
   "<div class=\"markdown-html-preview-document\" style=\"box-sizing: border-box; min-height: 100%; padding: 18px 38px 42px; background: #ffffff; color: #23384d; font-size: 16px; line-height: 1.45;\">" +
-  @markdown_to_html.render(markdown) +
+  @markdown_to_html.render_collapsible(markdown) +
   "</div>"
 }
 

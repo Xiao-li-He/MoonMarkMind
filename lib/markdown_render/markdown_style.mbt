@@ -71,8 +71,17 @@ pub fn markdown_style_rules() -> Array[MarkdownStyleRule] {
       "markdown-section__summary",
       None,
       None,
-      [markdown_decl("cursor", "pointer"), markdown_decl("user-select", "none")],
+      [
+        markdown_decl("cursor", "pointer"),
+        markdown_decl("user-select", "none"),
+        markdown_decl("margin-left", "0"),
+        markdown_decl("padding-left", "0"),
+      ],
     ),
+    markdown_rule(".markdown-section__summary::marker", "", None, None, [
+      markdown_decl("font-size", "14px"),
+      markdown_decl("line-height", "1"),
+    ]),
     markdown_rule(
       ".markdown-section__body",
       "markdown-section__body",
@@ -80,9 +89,16 @@ pub fn markdown_style_rules() -> Array[MarkdownStyleRule] {
       None,
       [
         markdown_decl("margin", "0.45em 0 0"),
-        markdown_decl("padding-left", "0.75em"),
-        markdown_decl("border-left", "2px solid rgba(167, 190, 214, 0.45)"),
+        markdown_decl("padding-left", "1.25em"),
+        markdown_decl("border-left", "0"),
       ],
+    ),
+    markdown_rule(
+      ".markdown-section__body > .markdown-section",
+      "",
+      None,
+      None,
+      [markdown_decl("margin-left", "-1.25em")],
     ),
     markdown_rule(".markdown-paragraph", "markdown-paragraph", None, None, [
       markdown_decl("margin", "0 0 0.75em"),
