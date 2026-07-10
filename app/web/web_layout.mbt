@@ -549,7 +549,7 @@ fn build_editor_chrome(filename~ : String) -> @dom.Element {
     build_icon_button(
       class_name="editor-chrome-action",
       id="markdown-preview-toggle",
-      tip="Preview Markdown",
+      tip="预览",
       label="",
       icon="preview",
     ),
@@ -947,11 +947,9 @@ fn build_tool_svg(icon_key : String, compact : Bool) -> @dom.Element {
     "preview" => {
       append_child(
         svg,
-        build_svg_path(
-          "M2.8 12S6.2 5.8 12 5.8S21.2 12 21.2 12S17.8 18.2 12 18.2S2.8 12 2.8 12Z",
-        ),
+        build_svg_path("M4 12S7 7 12 7S20 12 20 12S17 17 12 17S4 12 4 12Z"),
       )
-      append_child(svg, build_svg_circle(12.0, 12.0, 3.0, false))
+      append_child(svg, build_svg_circle(12.0, 12.0, 2.4, false))
     }
     "undo" => {
       append_child(svg, build_svg_path("M9 8H5V4M5.4 8A8 8 0 1 1 8 17.5"))

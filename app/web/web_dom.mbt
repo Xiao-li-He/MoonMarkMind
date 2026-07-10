@@ -1774,7 +1774,7 @@ fn build_gutter_number_dom(row : GutterVisualRow, height : Int) -> @dom.Element 
       },
     )
     button.setAttribute("aria-expanded", (!row.folded).to_string())
-    button.setInnerHTML(editor_fold_icon_html(row.folded))
+    append_child(button, build_editor_fold_icon_dom(row.folded))
     button
     .as_event_target()
     .on("click", fn(raw) {
@@ -1791,13 +1791,24 @@ fn build_gutter_number_dom(row : GutterVisualRow, height : Int) -> @dom.Element 
 }
 
 ///|
-fn editor_fold_icon_html(folded : Bool) -> String {
-  let common = "viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" aria-hidden=\"true\" focusable=\"false\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\""
+fn build_editor_fold_icon_dom(folded : Bool) -> @dom.Element {
+  let svg = create_svg_element("svg", "")
+  svg.setAttribute("viewBox", "0 0 16 16")
+  svg.setAttribute("width", "14")
+  svg.setAttribute("height", "14")
+  svg.setAttribute("aria-hidden", "true")
+  svg.setAttribute("focusable", "false")
+  svg.setAttribute("fill", "none")
+  svg.setAttribute("stroke", "currentColor")
+  svg.setAttribute("stroke-width", "2")
+  svg.setAttribute("stroke-linecap", "round")
+  svg.setAttribute("stroke-linejoin", "round")
   if folded {
-    "<svg \{common}><path d=\"M6 4L10 8L6 12\"/></svg>"
+    append_child(svg, build_svg_path("M6 4L10 8L6 12"))
   } else {
-    "<svg \{common}><path d=\"M4 6L8 10L12 6\"/></svg>"
+    append_child(svg, build_svg_path("M4 6L8 10L12 6"))
   }
+  svg
 }
 
 ///|

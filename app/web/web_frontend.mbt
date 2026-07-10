@@ -3417,9 +3417,9 @@ fn sync_markdown_preview_toggle() -> Unit {
   match get_element("#markdown-preview-toggle") {
     Some(button) => {
       let title = if app_state.markdown_preview_mode {
-        "Edit Markdown"
+        "编辑"
       } else {
-        "Preview Markdown"
+        "预览"
       }
       button.setAttribute("data-tip", title)
       button.setAttribute("aria-label", title)
@@ -3427,8 +3427,17 @@ fn sync_markdown_preview_toggle() -> Unit {
         "aria-pressed",
         app_state.markdown_preview_mode.to_string(),
       )
-      button.setInnerHTML(
-        editor_preview_toggle_icon_html(app_state.markdown_preview_mode),
+      clear_element(button)
+      append_child(
+        button,
+        build_tool_icon(
+          if app_state.markdown_preview_mode {
+            "edit"
+          } else {
+            "preview"
+          },
+          false,
+        ),
       )
     }
     None => ()
@@ -3440,17 +3449,6 @@ fn toggle_markdown_preview_mode() -> Unit {
   app_state.markdown_preview_mode = !app_state.markdown_preview_mode
   sync_markdown_preview()
   sync_markdown_preview_toggle()
-}
-
-///|
-fn editor_preview_toggle_icon_html(editing : Bool) -> String {
-  let common = "class=\"tool-icon\" aria-hidden=\"true\""
-  let svg_common = "viewBox=\"0 0 24 24\" width=\"100%\" height=\"100%\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\""
-  if editing {
-    "<span \{common}><svg \{svg_common}><path d=\"M5.5 18.5L6.5 14.7L15.8 5.4L18.6 8.2L9.3 17.5L5.5 18.5Z\"/><path d=\"M14.9 6.3L17.7 9.1\"/></svg></span>"
-  } else {
-    "<span \{common}><svg \{svg_common}><path d=\"M2.8 12S6.2 5.8 12 5.8S21.2 12 21.2 12S17.8 18.2 12 18.2S2.8 12 2.8 12Z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg></span>"
-  }
 }
 
 ///|
@@ -4541,7 +4539,7 @@ fn build_body_block_controls_dom(
   edit.setAttribute("data-body-block-index", block_index.to_string())
   edit.setAttribute("data-tip", "Edit")
   edit.setAttribute("aria-label", "Edit")
-  edit.setInnerHTML(body_block_action_icon_html("edit"))
+  append_child(edit, build_body_block_action_icon_dom("edit"))
   let delete = create_element(
     "button", "node-body-block-action node-body-block-action--delete",
   )
@@ -4550,10 +4548,42 @@ fn build_body_block_controls_dom(
   delete.setAttribute("data-body-block-index", block_index.to_string())
   delete.setAttribute("data-tip", "Delete")
   delete.setAttribute("aria-label", "Delete")
-  delete.setInnerHTML(body_block_action_icon_html("delete"))
+  append_child(delete, build_body_block_action_icon_dom("delete"))
   append_child(controls, edit)
   append_child(controls, delete)
   controls
+}
+
+///|
+fn build_body_block_action_icon_dom(kind : String) -> @dom.Element {
+  let svg = create_svg_element("svg", "node-body-block-action-icon")
+  svg.setAttribute("viewBox", "0 0 24 24")
+  svg.setAttribute("width", "18")
+  svg.setAttribute("height", "18")
+  svg.setAttribute("aria-hidden", "true")
+  svg.setAttribute("focusable", "false")
+  svg.setAttribute("fill", "none")
+  svg.setAttribute("stroke", "currentColor")
+  svg.setAttribute("stroke-width", "1.9")
+  svg.setAttribute("stroke-linecap", "round")
+  svg.setAttribute("stroke-linejoin", "round")
+  match kind {
+    "delete" => {
+      append_child(svg, build_svg_circle(12.0, 12.0, 9.0, false))
+      append_child(svg, build_svg_path("M8.5 8.5l7 7"))
+      append_child(svg, build_svg_path("M15.5 8.5l-7 7"))
+    }
+    _ => {
+      append_child(
+        svg,
+        build_svg_path(
+          "M5.5 18.5L6.5 14.7L15.8 5.4L18.6 8.2L9.3 17.5L5.5 18.5Z",
+        ),
+      )
+      append_child(svg, build_svg_path("M14.9 6.3L17.7 9.1"))
+    }
+  }
+  svg
 }
 
 ///|
