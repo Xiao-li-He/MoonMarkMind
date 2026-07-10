@@ -23,6 +23,7 @@ priv struct AppState {
   mut root : @outline_parser.OutlineNode
   mut collapsed : Array[Int]
   mut collapsed_note_nodes : Array[Int]
+  mut folded_heading_lines : Array[Int]
   mut hidden_nodes : Array[Int]
   mut undo_stack : Array[HistorySnapshot]
   mut redo_stack : Array[HistorySnapshot]
@@ -41,6 +42,7 @@ priv struct AppState {
   mut root_split_count : Int
   mut reveal_selected_line : Bool
   mut ensure_mindmap_visible : Bool
+  mut markdown_preview_mode : Bool
   mut sample_variant : String
   mut node_width_overrides : Array[NodeWidthOverride]
 }
@@ -53,6 +55,7 @@ let app_state : AppState = AppState::{
   root: @outline_parser.empty_outline(),
   collapsed: [],
   collapsed_note_nodes: [],
+  folded_heading_lines: [],
   hidden_nodes: [],
   undo_stack: [],
   redo_stack: [],
@@ -71,6 +74,7 @@ let app_state : AppState = AppState::{
   root_split_count: 0,
   reveal_selected_line: false,
   ensure_mindmap_visible: false,
+  markdown_preview_mode: false,
   sample_variant: rules_sample_default_id(),
   node_width_overrides: [],
 }
@@ -205,6 +209,257 @@ let resize_width_snapshot : @ref.Ref[HistorySnapshot?] = @ref.Ref(None)
 let resize_width_connector_frame : @ref.Ref[Int] = @ref.Ref(0)
 
 ///|
+priv struct FoldPlaceholder {
+  visible_line : Int
+  source_start : Int
+  source_end : Int
+  folded_heading_line : Int
+}
+
+///|
+priv struct EditorProjection {
+  visible_text : String
+  visible_line_to_source_line : Array[Int]
+  placeholders : Array[FoldPlaceholder]
+}
+
+///|
+let current_editor_projection : @ref.Ref[EditorProjection] = @ref.Ref(EditorProjection::{
+  visible_text: "",
+  visible_line_to_source_line: [],
+  placeholders: [],
+})
+
+///|
+fn empty_editor_projection() -> EditorProjection {
+  EditorProjection::{
+    visible_text: "",
+    visible_line_to_source_line: [],
+    placeholders: [],
+  }
+}
+
+///|
+fn editor_projection(markdown : String) -> EditorProjection {
+  build_editor_projection(markdown, app_state.folded_heading_lines)
+}
+
+///|
+fn build_editor_projection(
+  markdown : String,
+  folded_heading_lines : Array[Int],
+) -> EditorProjection {
+  if markdown.length() == 0 {
+    return empty_editor_projection()
+  }
+  let lines = markdown.split("\n").map(fn(line) { line.to_owned() }).to_array()
+  let visible_lines : Array[String] = []
+  let visible_to_source : Array[Int] = []
+  let placeholders : Array[FoldPlaceholder] = []
+  let mut source_line = 0
+  while source_line < lines.length() {
+    visible_lines.push(lines[source_line])
+    visible_to_source.push(source_line)
+    match folded_heading_range(markdown, source_line) {
+      Some((start_line, end_line)) =>
+        if contains_int(folded_heading_lines, source_line) &&
+          start_line <= end_line {
+          let hidden_count = end_line - start_line + 1
+          let placeholder_line = visible_lines.length()
+          visible_lines.push("  ... \{hidden_count} lines folded")
+          visible_to_source.push(-1)
+          placeholders.push(FoldPlaceholder::{
+            visible_line: placeholder_line,
+            source_start: start_line,
+            source_end: end_line,
+            folded_heading_line: source_line,
+          })
+          source_line = end_line + 1
+        } else {
+          source_line += 1
+        }
+      None => source_line += 1
+    }
+  }
+  EditorProjection::{
+    visible_text: visible_lines.join("\n"),
+    visible_line_to_source_line: visible_to_source,
+    placeholders,
+  }
+}
+
+///|
+fn folded_heading_range(markdown : String, source_line : Int) -> (Int, Int)? {
+  let nodes = @outline_parser.parse_markdown_nodes(markdown)
+  let mut heading_index = -1
+  for index in 0..<nodes.length() {
+    let node = nodes[index]
+    match node.kind {
+      @outline_parser.MarkdownNodeKind::Heading =>
+        if node.source_line == source_line {
+          heading_index = index
+          break
+        }
+      _ => ()
+    }
+  }
+  if heading_index < 0 {
+    return None
+  }
+  let heading = nodes[heading_index]
+  let lines = markdown.split("\n").to_array()
+  let mut end_line = lines.length() - 1
+  for index in (heading_index + 1)..<nodes.length() {
+    let node = nodes[index]
+    match node.kind {
+      @outline_parser.MarkdownNodeKind::Heading =>
+        if node.level <= heading.level {
+          end_line = node.source_line - 1
+          break
+        }
+      _ => ()
+    }
+  }
+  let start_line = source_line + 1
+  if start_line > end_line {
+    None
+  } else {
+    Some((start_line, end_line))
+  }
+}
+
+///|
+fn source_line_to_visible_line(source_line : Int) -> Int {
+  let projection = current_editor_projection.val
+  for visible_line in 0..<projection.visible_line_to_source_line.length() {
+    if projection.visible_line_to_source_line[visible_line] == source_line {
+      return visible_line
+    }
+  }
+  -1
+}
+
+///|
+fn visible_line_to_source_line(visible_line : Int) -> Int {
+  current_editor_projection.val.visible_line_to_source_line
+  .get(visible_line)
+  .unwrap_or(visible_line)
+}
+
+///|
+fn visible_line_is_fold_placeholder(visible_line : Int) -> Bool {
+  for placeholder in current_editor_projection.val.placeholders {
+    if placeholder.visible_line == visible_line {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn unfold_placeholder_at_visible_line(visible_line : Int) -> Bool {
+  for placeholder in current_editor_projection.val.placeholders {
+    if placeholder.visible_line == visible_line {
+      app_state.folded_heading_lines = remove_int(
+        app_state.folded_heading_lines,
+        placeholder.folded_heading_line,
+      )
+      sync_editor_input_projection()
+      sync_editor_chrome()
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn unfold_hidden_source_line(source_line : Int) -> Bool {
+  for placeholder in current_editor_projection.val.placeholders {
+    if source_line >= placeholder.source_start &&
+      source_line <= placeholder.source_end {
+      app_state.folded_heading_lines = remove_int(
+        app_state.folded_heading_lines,
+        placeholder.folded_heading_line,
+      )
+      sync_editor_input_projection()
+      sync_editor_chrome()
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn toggle_heading_fold(source_line : Int) -> Unit {
+  if source_line < 0 ||
+    folded_heading_range(app_state.markdown, source_line) is None {
+    return
+  }
+  if contains_int(app_state.folded_heading_lines, source_line) {
+    app_state.folded_heading_lines = remove_int(
+      app_state.folded_heading_lines,
+      source_line,
+    )
+  } else {
+    app_state.folded_heading_lines = append_unique_int(
+      app_state.folded_heading_lines,
+      source_line,
+    )
+  }
+  sync_editor_input_projection()
+  sync_editor_chrome()
+}
+
+///|
+fn sanitize_folded_heading_state() -> Unit {
+  let next : Array[Int] = []
+  for line in app_state.folded_heading_lines {
+    if folded_heading_range(app_state.markdown, line) is Some(_) {
+      next.push(line)
+    }
+  }
+  app_state.folded_heading_lines = next
+}
+
+///|
+fn merge_visible_heading_edits(visible_markdown : String) -> String {
+  let projection = current_editor_projection.val
+  if projection.visible_text == app_state.markdown {
+    return visible_markdown
+  }
+  let source_lines = app_state.markdown
+    .split("\n")
+    .map(fn(line) { line.to_owned() })
+    .to_array()
+  let visible_lines = visible_markdown
+    .split("\n")
+    .map(fn(line) { line.to_owned() })
+    .to_array()
+  let max_lines = if visible_lines.length() <
+    projection.visible_line_to_source_line.length() {
+    visible_lines.length()
+  } else {
+    projection.visible_line_to_source_line.length()
+  }
+  for visible_line in 0..<max_lines {
+    let source_line = projection.visible_line_to_source_line[visible_line]
+    if source_line >= 0 &&
+      source_line < source_lines.length() &&
+      is_markdown_heading_line(source_lines[source_line]) &&
+      is_markdown_heading_line(visible_lines[visible_line]) {
+      source_lines[source_line] = visible_lines[visible_line]
+    }
+  }
+  source_lines.join("\n")
+}
+
+///|
+fn is_markdown_heading_line(line : String) -> Bool {
+  line.has_prefix("#".view()) &&
+  @outline_parser.parse_headings(line).length() == 1
+}
+
+///|
 /// Initialize the browser UI, bind event handlers, and render the initial map.
 pub fn start_web_app() -> Unit {
   match get_element("#mindmap-export") {
@@ -224,6 +479,7 @@ pub fn start_web_app() -> Unit {
     on_new_click, on_sample_select_change, on_upload_click, on_download_markdown_click,
     on_layout_change, on_style_change, on_detail_change, on_export_change, on_toolbar_action,
   )
+  bind_markdown_preview_toggle_ui()
   bind_tooltip_ui()
   bind_splitter_ui(on_splitter_change)
   bind_mindmap_ui(
@@ -234,6 +490,17 @@ pub fn start_web_app() -> Unit {
   bind_native_text_selection_clear_ui()
   bind_input_listener(on_input_change, on_input_selected_headings_change)
   load_rules_sample(rules_sample_default_id(), true)
+}
+
+///|
+fn bind_markdown_preview_toggle_ui() -> Unit {
+  match get_element("#markdown-preview-toggle") {
+    Some(button) =>
+      button
+      .as_event_target()
+      .addEventListener("click", fn(_) { toggle_markdown_preview_mode() })
+    None => ()
+  }
 }
 
 ///|
@@ -299,7 +566,7 @@ fn on_input_change() -> Unit {
   let preserve_node = app_state.selected_node
   let node_origin = capture_mindmap_node_origin(preserve_node)
   suppress_next_render_mindmap_reveal.val = true
-  apply_markdown_change(get_input_value(), false)
+  apply_markdown_change(get_editor_markdown_value(), false)
   schedule_mindmap_preserve_node_origin(preserve_node, node_origin)
 }
 
@@ -2985,10 +3252,13 @@ fn apply_markdown_state(
     clear_selected_nodes()
     app_state.hidden_nodes = []
     app_state.collapsed_note_nodes = []
+    app_state.folded_heading_lines = []
+    app_state.markdown_preview_mode = false
     app_state.ensure_mindmap_visible = true
   }
   app_state.markdown = markdown
   app_state.root = @outline_parser.build_outline(markdown)
+  sanitize_folded_heading_state()
   if reset_ui {
     app_state.node_width_overrides = []
   }
@@ -3008,8 +3278,10 @@ fn apply_markdown_state(
       app_state.root_split_count = default_root_split_count(app_state.root)
     }
   }
-  if app_state.started && get_input_value() != markdown {
-    set_input_value(markdown)
+  if app_state.started {
+    sync_editor_input_projection()
+    sync_markdown_preview()
+    sync_markdown_preview_toggle()
   }
   sync_detail_customized()
   if !preserve_editing_session && app_state.started {
@@ -3046,6 +3318,7 @@ fn render_ui() -> Unit {
   set_select_value("layout-select", app_state.layout_mode)
   set_select_value("style-select", app_state.style_mode)
   set_editor_document_name(app_state.document_name)
+  sync_markdown_preview_toggle()
   let detail_select_value = if app_state.detail_customized {
     "custom-\{app_state.detail_level}"
   } else {
@@ -3059,6 +3332,8 @@ fn render_ui() -> Unit {
   let ensure_visible = app_state.ensure_mindmap_visible
   app_state.ensure_mindmap_visible = false
   set_mindmap_dom(build_mindmap_dom(), ensure_visible~)
+  sync_editor_input_projection()
+  sync_markdown_preview()
   if app_state.editing_node >= 0 &&
     (app_state.editing_node == app_state.selected_node || !has_selected_nodes()) {
     focus_editor(app_state.editing_node)
@@ -3077,6 +3352,108 @@ fn render_ui() -> Unit {
     suppress_next_render_mindmap_reveal.val = false
   } else {
     schedule_mindmap_reveal_node(app_state.selected_node)
+  }
+}
+
+///|
+fn get_editor_markdown_value() -> String {
+  if app_state.folded_heading_lines.length() == 0 {
+    get_input_value()
+  } else {
+    merge_visible_heading_edits(get_input_value())
+  }
+}
+
+///|
+fn sync_editor_input_projection() -> Unit {
+  if !app_state.started {
+    return
+  }
+  let projection = editor_projection(app_state.markdown)
+  current_editor_projection.val = projection
+  let visible_text = projection.visible_text
+  if get_input_value() != visible_text {
+    set_input_value_without_projection_sync(visible_text)
+  } else {
+    sync_editor_chrome()
+  }
+}
+
+///|
+fn sync_markdown_preview() -> Unit {
+  match get_element("#editor-preview") {
+    Some(preview) => {
+      preview.setInnerHTML(render_markdown_html(app_state.markdown))
+      apply_theme_to_subtree(preview)
+    }
+    None => ()
+  }
+}
+
+///|
+fn sync_markdown_preview_toggle() -> Unit {
+  match get_element("#input") {
+    Some(input) => {
+      toggle_class(
+        input,
+        "editor-input--hidden",
+        app_state.markdown_preview_mode,
+      )
+      apply_theme_to_element(input)
+    }
+    None => ()
+  }
+  match get_element("#editor-preview") {
+    Some(preview) => {
+      toggle_class(
+        preview,
+        "editor-preview--visible",
+        app_state.markdown_preview_mode,
+      )
+      preview.setAttribute(
+        "aria-hidden",
+        (!app_state.markdown_preview_mode).to_string(),
+      )
+      apply_theme_to_element(preview)
+    }
+    None => ()
+  }
+  match get_element("#markdown-preview-toggle") {
+    Some(button) => {
+      let title = if app_state.markdown_preview_mode {
+        "Edit Markdown"
+      } else {
+        "Preview Markdown"
+      }
+      button.setAttribute("data-tip", title)
+      button.setAttribute("aria-label", title)
+      button.setAttribute(
+        "aria-pressed",
+        app_state.markdown_preview_mode.to_string(),
+      )
+      button.setInnerHTML(
+        editor_preview_toggle_icon_html(app_state.markdown_preview_mode),
+      )
+    }
+    None => ()
+  }
+}
+
+///|
+fn toggle_markdown_preview_mode() -> Unit {
+  app_state.markdown_preview_mode = !app_state.markdown_preview_mode
+  sync_markdown_preview()
+  sync_markdown_preview_toggle()
+}
+
+///|
+fn editor_preview_toggle_icon_html(editing : Bool) -> String {
+  let common = "class=\"tool-icon\" aria-hidden=\"true\""
+  let svg_common = "viewBox=\"0 0 24 24\" width=\"100%\" height=\"100%\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\""
+  if editing {
+    "<span \{common}><svg \{svg_common}><path d=\"M5.5 18.5L6.5 14.7L15.8 5.4L18.6 8.2L9.3 17.5L5.5 18.5Z\"/><path d=\"M14.9 6.3L17.7 9.1\"/></svg></span>"
+  } else {
+    "<span \{common}><svg \{svg_common}><path d=\"M2.8 12S6.2 5.8 12 5.8S21.2 12 21.2 12S17.8 18.2 12 18.2S2.8 12 2.8 12Z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg></span>"
   }
 }
 

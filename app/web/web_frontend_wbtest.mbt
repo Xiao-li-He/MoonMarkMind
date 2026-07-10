@@ -16,6 +16,7 @@ fn reset_frontend_test_state() -> Unit {
   app_state.document_name = "notes.md"
   app_state.collapsed = []
   app_state.collapsed_note_nodes = []
+  app_state.folded_heading_lines = []
   app_state.hidden_nodes = []
   app_state.selected_node = -2
   app_state.selected_nodes = []
@@ -27,6 +28,7 @@ fn reset_frontend_test_state() -> Unit {
   app_state.root_split_count = 0
   app_state.reveal_selected_line = false
   app_state.ensure_mindmap_visible = false
+  app_state.markdown_preview_mode = false
   app_state.sample_variant = "custom"
   app_state.node_width_overrides = []
   suppress_next_render_mindmap_reveal.val = false
@@ -43,6 +45,7 @@ fn reset_navigation_test_state() -> Unit {
   app_state.document_name = "notes.md"
   app_state.collapsed = []
   app_state.collapsed_note_nodes = []
+  app_state.folded_heading_lines = []
   app_state.hidden_nodes = []
   app_state.selected_node = -2
   app_state.selected_nodes = []
@@ -54,6 +57,7 @@ fn reset_navigation_test_state() -> Unit {
   app_state.root_split_count = 0
   app_state.reveal_selected_line = false
   app_state.ensure_mindmap_visible = false
+  app_state.markdown_preview_mode = false
   app_state.sample_variant = "custom"
   app_state.node_width_overrides = []
   suppress_next_render_mindmap_reveal.val = false
@@ -124,6 +128,54 @@ test "markdown inline renderer covers sample part two styles" {
   assert_eq(html.contains("class=\"markdown-inline-code\""), true)
   assert_eq(html.contains("class=\"markdown-strike\""), true)
   assert_eq(html.contains("class=\"markdown-highlight\""), true)
+}
+
+///|
+test "editor projection folds heading content until next peer" {
+  let markdown = "# Root\nintro\n## A\na1\n### A child\nchild\n## B\nb1"
+  let projection = build_editor_projection(markdown, [2])
+  inspect(
+    projection.visible_text,
+    content="# Root\nintro\n## A\n  ... 3 lines folded\n## B\nb1",
+  )
+  debug_inspect(
+    projection.visible_line_to_source_line,
+    content="[0, 1, 2, -1, 6, 7]",
+  )
+  inspect(projection.placeholders.length(), content="1")
+}
+
+///|
+test "editor projection folds root including child headings" {
+  let markdown = "# Root\nintro\n## A\na1\n## B\nb1"
+  let projection = build_editor_projection(markdown, [0])
+  inspect(projection.visible_text, content="# Root\n  ... 5 lines folded")
+  debug_inspect(projection.visible_line_to_source_line, content="[0, -1]")
+}
+
+///|
+test "merge folded visible heading edits preserves hidden body" {
+  reset_frontend_test_state()
+  app_state.markdown = "# Root\nintro\n## A\na1\n## B\nb1"
+  app_state.folded_heading_lines = [2]
+  current_editor_projection.val = editor_projection(app_state.markdown)
+  let visible = "# Root\nintro\n## Alpha\n  ... 1 lines folded\n## B\nb1"
+  inspect(
+    merge_visible_heading_edits(visible),
+    content="# Root\nintro\n## Alpha\na1\n## B\nb1",
+  )
+}
+
+///|
+test "markdown preview renders full source while editor projection is folded" {
+  reset_frontend_test_state()
+  app_state.markdown = "# Root\nintro\n## A\na1"
+  app_state.folded_heading_lines = [0]
+  let projection = editor_projection(app_state.markdown)
+  inspect(projection.visible_text, content="# Root\n  ... 3 lines folded")
+  let html = render_markdown_html(app_state.markdown)
+  assert_eq(html.contains("intro"), true)
+  assert_eq(html.contains("a1"), true)
 }
 
 ///|

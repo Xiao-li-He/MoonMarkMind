@@ -100,6 +100,24 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "editor-chrome-action") {
     style_icon_button(element, "32px")
   }
+  if has_class_name(element, "editor-preview") {
+    style_editor_preview(element)
+  }
+  if has_class_name(element, "editor-preview--visible") {
+    style_editor_preview_visible(element)
+  }
+  if has_class_name(element, "editor-input--hidden") {
+    style_editor_input_hidden(element)
+  }
+  if has_class_name(element, "editor-fold-button") {
+    style_editor_fold_button(element)
+  }
+  if has_class_name(element, "editor-fold-spacer") {
+    style_editor_fold_spacer(element)
+  }
+  if has_class_name(element, "editor-gutter-number__text") {
+    style_editor_gutter_number_text(element)
+  }
   if has_class_name(element, "zoom-chip") {
     style_zoom_chip(element)
   }
@@ -1509,7 +1527,7 @@ fn style_badge(element : @dom.Element) -> Unit {
 ///|
 fn style_editor_body(element : @dom.Element) -> Unit {
   set_style(element, "display", "grid")
-  set_style(element, "grid-template-columns", "44px minmax(0, 1fr)")
+  set_style(element, "grid-template-columns", "62px minmax(0, 1fr)")
   set_style(element, "align-self", "stretch")
   set_style(element, "min-height", "0")
   set_style(element, "height", "100%")
@@ -1522,8 +1540,8 @@ fn style_editor_gutter_wrap(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
   set_style(element, "height", "100%")
   set_style(element, "min-height", "0")
-  set_style(element, "width", "44px")
-  set_style(element, "min-width", "44px")
+  set_style(element, "width", "62px")
+  set_style(element, "min-width", "62px")
   set_style(element, "overflow", "hidden")
   set_style(element, "border-right", "1px solid rgba(224, 233, 242, 0.92)")
   set_style(
@@ -1638,9 +1656,9 @@ fn style_editor_gutter(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
   set_style(element, "z-index", "3")
   set_style(element, "margin", "0")
-  set_style(element, "padding", "18px 8px 22px 10px")
-  set_style(element, "width", "44px")
-  set_style(element, "min-width", "44px")
+  set_style(element, "padding", "18px 8px 22px 8px")
+  set_style(element, "width", "62px")
+  set_style(element, "min-width", "62px")
   set_style(element, "background", "transparent")
   set_style(element, "color", "rgba(109, 129, 151, 0.72)")
   set_style(
@@ -1659,12 +1677,44 @@ fn style_editor_gutter(element : @dom.Element) -> Unit {
 fn style_editor_gutter_number(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "align-items", "flex-start")
-  set_style(element, "justify-content", "flex-end")
+  set_style(element, "justify-content", "space-between")
+  set_style(element, "gap", "4px")
   set_style(element, "width", "100%")
   set_style(element, "min-height", "28px")
   set_style(element, "line-height", "28px")
   set_style(element, "font-size", "12px")
   set_style(element, "font-weight", "600")
+}
+
+///|
+fn style_editor_gutter_number_text(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-flex")
+  set_style(element, "align-items", "center")
+  set_style(element, "justify-content", "flex-end")
+  set_style(element, "min-width", "24px")
+}
+
+///|
+fn style_editor_fold_spacer(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-flex")
+  set_style(element, "width", "18px")
+  set_style(element, "height", "22px")
+  set_style(element, "flex", "0 0 18px")
+}
+
+///|
+fn style_editor_fold_button(element : @dom.Element) -> Unit {
+  set_style(element, "display", "inline-flex")
+  set_style(element, "align-items", "center")
+  set_style(element, "justify-content", "center")
+  set_style(element, "width", "18px")
+  set_style(element, "height", "22px")
+  set_style(element, "padding", "0")
+  set_style(element, "border", "0")
+  set_style(element, "border-radius", "6px")
+  set_style(element, "background", "transparent")
+  set_style(element, "color", "rgba(91, 121, 151, 0.72)")
+  set_style(element, "cursor", "pointer")
 }
 
 ///|
@@ -1700,6 +1750,32 @@ fn style_editor_textarea(element : @dom.Element) -> Unit {
   set_style(element, "outline", "none")
   set_style(element, "user-select", "text")
   set_style(element, "-webkit-user-select", "text")
+}
+
+///|
+fn style_editor_input_hidden(element : @dom.Element) -> Unit {
+  set_style(element, "display", "none")
+}
+
+///|
+fn style_editor_preview(element : @dom.Element) -> Unit {
+  set_style(element, "display", "none")
+  set_style(element, "position", "relative")
+  set_style(element, "z-index", "3")
+  set_style(element, "box-sizing", "border-box")
+  set_style(element, "width", "100%")
+  set_style(element, "height", "100%")
+  set_style(element, "padding", "18px 18px 22px 16px")
+  set_style(element, "overflow", "auto")
+  set_style(element, "background", "rgba(255, 255, 255, 0.42)")
+  set_style(element, "color", "#23384d")
+  set_style(element, "font-size", "14px")
+  set_style(element, "line-height", "1.55")
+}
+
+///|
+fn style_editor_preview_visible(element : @dom.Element) -> Unit {
+  set_style(element, "display", "block")
 }
 
 ///|

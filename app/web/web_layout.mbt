@@ -506,6 +506,10 @@ fn build_editor_panel() -> @dom.Element {
     "placeholder", "# MoonMarkMind\n\n## 链接\n- [MoonBit 包](https://mooncakes.io/)\n\n## 功能\n### 列表\n- 条目",
   )
   append_child(input_wrap, input)
+  let preview = create_element("div", "editor-preview")
+  preview.setAttribute("id", "editor-preview")
+  preview.setAttribute("aria-hidden", "true")
+  append_child(input_wrap, preview)
 
   append_child(body, gutter_wrap)
   append_child(body, input_wrap)
@@ -540,6 +544,16 @@ fn build_editor_chrome(filename~ : String) -> @dom.Element {
 
   let actions = create_element("div", "editor-chrome__actions")
   actions.setAttribute("aria-label", "Markdown 编辑操作")
+  append_child(
+    actions,
+    build_icon_button(
+      class_name="editor-chrome-action",
+      id="markdown-preview-toggle",
+      tip="Preview Markdown",
+      label="",
+      icon="preview",
+    ),
+  )
   append_child(
     actions,
     build_icon_button(
@@ -929,6 +943,15 @@ fn build_tool_svg(icon_key : String, compact : Bool) -> @dom.Element {
     "upload" => {
       append_child(svg, build_svg_path("M12 16V6M8.5 9.5L12 6L15.5 9.5"))
       append_child(svg, build_svg_path("M6.5 15.5V18.5H17.5V15.5"))
+    }
+    "preview" => {
+      append_child(
+        svg,
+        build_svg_path(
+          "M2.8 12S6.2 5.8 12 5.8S21.2 12 21.2 12S17.8 18.2 12 18.2S2.8 12 2.8 12Z",
+        ),
+      )
+      append_child(svg, build_svg_circle(12.0, 12.0, 3.0, false))
     }
     "undo" => {
       append_child(svg, build_svg_path("M9 8H5V4M5.4 8A8 8 0 1 1 8 17.5"))

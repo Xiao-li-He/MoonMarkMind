@@ -1321,8 +1321,12 @@ priv struct InputLineMetrics {
 ///|
 priv struct GutterVisualRow {
   line_number : Int
+  source_line : Int
   height : Int
   show_number : Bool
+  show_fold_button : Bool
+  folded : Bool
+  placeholder : Bool
 }
 
 ///|
@@ -1438,8 +1442,16 @@ fn gutter_visual_rows(metrics : InputLineMetrics) -> Array[GutterVisualRow] {
   } else {
     [resolved_metric_line_height(metrics)]
   }
-  let mut line_number = 1
-  for height in heights {
+  let projection = current_editor_projection.val
+  for visible_line, height in heights {
+    let source_line = projection.visible_line_to_source_line
+      .get(visible_line)
+      .unwrap_or(visible_line)
+    let line_number = if source_line >= 0 { source_line + 1 } else { 0 }
+    let foldable = source_line >= 0 &&
+      folded_heading_range(app_state.markdown, source_line) is Some(_)
+    let folded = contains_int(app_state.folded_heading_lines, source_line)
+    let placeholder = visible_line_is_fold_placeholder(visible_line)
     for
       visual_index, visual_height in measure_mirror_line_heights(
         height,
@@ -1447,11 +1459,14 @@ fn gutter_visual_rows(metrics : InputLineMetrics) -> Array[GutterVisualRow] {
       ) {
       rows.push(GutterVisualRow::{
         line_number,
+        source_line,
         height: visual_height,
         show_number: visual_index == 0,
+        show_fold_button: foldable && visual_index == 0,
+        folded,
+        placeholder,
       })
     }
-    line_number += 1
   }
   rows
 }
@@ -1725,17 +1740,64 @@ fn build_linked_line_dom(
 }
 
 ///|
-fn build_gutter_number_dom(
-  line_number : Int,
-  height : Int,
-  show_number : Bool,
-) -> @dom.Element {
+fn build_gutter_number_dom(row : GutterVisualRow, height : Int) -> @dom.Element {
   let block = create_element("div", "editor-gutter-number")
   let block_height = if height > 1 { height } else { 1 }
   let style = @dom.css_style_from_val(block.as_any()._get("style").cast())
   style.set_property("height", "\{block_height}px")
-  block.setTextContent(if show_number { line_number.to_string() } else { "" })
+  if row.show_number && row.show_fold_button {
+    let button = create_element("button", "editor-fold-button")
+    button.setAttribute("type", "button")
+    button.setAttribute("data-action", "toggle-heading-fold")
+    button.setAttribute("data-source-line", row.source_line.to_string())
+    button.setAttribute(
+      "aria-label",
+      if row.folded {
+        "Expand heading"
+      } else {
+        "Collapse heading"
+      },
+    )
+    button.setAttribute(
+      "data-tip",
+      if row.folded {
+        "Expand"
+      } else {
+        "Collapse"
+      },
+    )
+    button.setAttribute("aria-expanded", (!row.folded).to_string())
+    button.setInnerHTML(editor_fold_icon_html(row.folded))
+    button
+    .as_event_target()
+    .on("click", fn(raw) {
+      let event : @dom.MouseEvent = raw.cast()
+      event.preventDefault()
+      event.stopPropagation()
+      toggle_heading_fold(row.source_line)
+    })
+    append_child(block, button)
+  } else {
+    append_child(block, create_element("span", "editor-fold-spacer"))
+  }
+  let number = create_element("span", "editor-gutter-number__text")
+  if row.show_number && row.line_number > 0 && !row.placeholder {
+    number.setTextContent(row.line_number.to_string())
+  } else {
+    number.setTextContent("")
+  }
+  append_child(block, number)
   block
+}
+
+///|
+fn editor_fold_icon_html(folded : Bool) -> String {
+  let common = "viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" aria-hidden=\"true\" focusable=\"false\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\""
+  if folded {
+    "<svg \{common}><path d=\"M6 4L10 8L6 12\"/></svg>"
+  } else {
+    "<svg \{common}><path d=\"M4 6L8 10L12 6\"/></svg>"
+  }
 }
 
 ///|
@@ -1838,10 +1900,7 @@ fn sync_input_line_numbers(
     Some(gutter) => {
       clear_element(gutter)
       for row in gutter_visual_rows(metrics) {
-        append_child(
-          gutter,
-          build_gutter_number_dom(row.line_number, row.height, row.show_number),
-        )
+        append_child(gutter, build_gutter_number_dom(row, row.height))
       }
       let style = @dom.css_style_from_val(gutter.as_any()._get("style").cast())
       style.set_property(
@@ -2008,12 +2067,15 @@ fn current_heading_selection(input : @dom.HTMLTextAreaElement) -> Array[Int] {
   let start_line = line_index_at_offset(input.value, range_start)
   let end_line = line_index_at_offset(input.value, range_end)
   if range_start == range_end {
-    let node_index = markdown_node_index_at_line(input.value, start_line)
+    let node_index = markdown_node_index_at_line(
+      app_state.markdown,
+      visible_line_to_source_line(start_line),
+    )
     if node_index >= 0 {
       return [node_index]
     }
   }
-  let lines = input.value.split("\n".view()).to_array()
+  let lines = app_state.markdown.split("\n".view()).to_array()
   let structural_line_indexes : Array[(Int, Int)] = []
   let mut node_index = 0
   for line_index in 0..<lines.length() {
@@ -2030,16 +2092,17 @@ fn current_heading_selection(input : @dom.HTMLTextAreaElement) -> Array[Int] {
   }
   if range_start == range_end {
     for pair in structural_line_indexes {
-      if pair.0 == start_line {
+      if pair.0 == visible_line_to_source_line(start_line) {
         return [pair.1]
       }
     }
     return []
   }
   for line_index in start_line..<=end_line {
+    let source_line = visible_line_to_source_line(line_index)
     let mut structural = false
     for pair in structural_line_indexes {
-      if pair.0 == line_index {
+      if pair.0 == source_line {
         structural = true
         break
       }
@@ -2049,8 +2112,10 @@ fn current_heading_selection(input : @dom.HTMLTextAreaElement) -> Array[Int] {
     }
   }
   let result : Array[Int] = []
+  let source_start = visible_line_to_source_line(start_line)
+  let source_end = visible_line_to_source_line(end_line)
   for pair in structural_line_indexes {
-    if pair.0 >= start_line && pair.0 <= end_line {
+    if pair.0 >= source_start && pair.0 <= source_end {
       result.push(pair.1)
     }
   }
@@ -2106,15 +2171,22 @@ fn reveal_input_line(line_index : Int) -> Unit {
   if line_index < 0 {
     return
   }
+  if source_line_to_visible_line(line_index) < 0 &&
+    unfold_hidden_source_line(line_index) {
+    reveal_input_line(line_index)
+    return
+  }
+  let visible_line = source_line_to_visible_line(line_index)
+  let target_line = if visible_line >= 0 { visible_line } else { line_index }
   match get_element("#input") {
     Some(input_element) => {
       let input = @dom.HTMLTextAreaElement::cast_from_element(input_element)
       let metrics = input_line_metrics(input)
-      if line_index >= metrics.heights.length() {
+      if target_line >= metrics.heights.length() {
         return
       }
-      let line_top = metric_line_top(metrics, line_index)
-      let line_height = metric_line_height(metrics, line_index)
+      let line_top = metric_line_top(metrics, target_line)
+      let line_height = metric_line_height(metrics, target_line)
       let viewport_top = input.scrollTop()
       let viewport_bottom = viewport_top + input.clientHeight()
       let top_margin = line_height * 2
@@ -2171,8 +2243,27 @@ fn input_offset_after_line(value : String, line_index : Int) -> Int {
 
 ///|
 fn focus_input_line_range(start_line : Int, end_line : Int) -> Unit {
-  let start = if start_line < 0 { 0 } else { start_line }
-  let stop = if end_line < start { start } else { end_line }
+  if source_line_to_visible_line(start_line) < 0 &&
+    unfold_hidden_source_line(start_line) {
+    focus_input_line_range(start_line, end_line)
+    return
+  }
+  let visible_start = source_line_to_visible_line(start_line)
+  let visible_end = source_line_to_visible_line(end_line)
+  let start = if visible_start >= 0 {
+    visible_start
+  } else if start_line < 0 {
+    0
+  } else {
+    start_line
+  }
+  let stop = if visible_end >= 0 {
+    visible_end
+  } else if end_line < start {
+    start
+  } else {
+    end_line
+  }
   match get_element("#input") {
     Some(input_element) => {
       let input = @dom.HTMLTextAreaElement::cast_from_element(input_element)
@@ -2853,6 +2944,14 @@ fn bind_input_listener(
         schedule_sync_selected_headings(force_reveal)
       }
 
+      let unfold_placeholder_at_selection = fn() {
+        let line_index = line_index_at_offset(
+          input.value,
+          input_selection_start(input),
+        )
+        unfold_placeholder_at_visible_line(line_index) |> ignore
+      }
+
       input
       .as_event_target()
       .on("input", fn(_) {
@@ -2891,11 +2990,24 @@ fn bind_input_listener(
         input_hover_line_index.val = -1
         sync_editor_chrome()
       })
-      input.as_event_target().on("click", fn(_) { sync_selection_state(true) })
       input
       .as_event_target()
-      .on("mouseup", fn(_) { sync_selection_state(true) })
-      input.as_event_target().on("keyup", fn(_) { sync_selection_state(true) })
+      .on("click", fn(_) {
+        unfold_placeholder_at_selection()
+        sync_selection_state(true)
+      })
+      input
+      .as_event_target()
+      .on("mouseup", fn(_) {
+        unfold_placeholder_at_selection()
+        sync_selection_state(true)
+      })
+      input
+      .as_event_target()
+      .on("keyup", fn(_) {
+        unfold_placeholder_at_selection()
+        sync_selection_state(true)
+      })
       input.as_event_target().on("select", fn(_) { sync_selection_state(true) })
       input.as_event_target().on("focus", fn(_) { sync_selection_state(true) })
       input
@@ -2935,6 +3047,11 @@ fn set_input_value(value : String) -> Unit {
     None => ()
   }
   sync_editor_chrome()
+}
+
+///|
+fn set_input_value_without_projection_sync(value : String) -> Unit {
+  set_input_value(value)
 }
 
 ///|
