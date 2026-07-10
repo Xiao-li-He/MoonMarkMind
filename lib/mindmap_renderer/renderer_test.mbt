@@ -147,7 +147,7 @@ test "render markdown svg normalizes html math entities for xml" {
 }
 
 ///|
-test "render markdown svg uses widened static connector spacing" {
+test "render markdown svg uses static connector spacing" {
   let logic = render_markdown_svg("# Root\n## Child", options={
     layout: Logic,
     style: Full,
@@ -159,9 +159,9 @@ test "render markdown svg uses widened static connector spacing" {
     layer: Full,
   })
   assert_eq(logic.contains("M 270"), true)
-  assert_eq(logic.contains(" 390 "), true)
+  assert_eq(logic.contains(" 370 "), true)
   assert_eq(tree.contains("M 179 158 C 179 202"), true)
-  assert_eq(tree.contains("155 318"), true)
+  assert_eq(tree.contains("155 308"), true)
 }
 
 ///|
