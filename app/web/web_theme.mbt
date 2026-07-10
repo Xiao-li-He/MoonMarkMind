@@ -1677,8 +1677,8 @@ fn style_editor_gutter(element : @dom.Element) -> Unit {
 fn style_editor_gutter_number(element : @dom.Element) -> Unit {
   set_style(element, "display", "flex")
   set_style(element, "align-items", "flex-start")
-  set_style(element, "justify-content", "space-between")
-  set_style(element, "gap", "4px")
+  set_style(element, "justify-content", "flex-end")
+  set_style(element, "gap", "2px")
   set_style(element, "width", "100%")
   set_style(element, "min-height", "28px")
   set_style(element, "line-height", "28px")
@@ -1691,15 +1691,15 @@ fn style_editor_gutter_number_text(element : @dom.Element) -> Unit {
   set_style(element, "display", "inline-flex")
   set_style(element, "align-items", "center")
   set_style(element, "justify-content", "flex-end")
-  set_style(element, "min-width", "24px")
+  set_style(element, "min-width", "26px")
 }
 
 ///|
 fn style_editor_fold_spacer(element : @dom.Element) -> Unit {
   set_style(element, "display", "inline-flex")
-  set_style(element, "width", "18px")
+  set_style(element, "width", "16px")
   set_style(element, "height", "22px")
-  set_style(element, "flex", "0 0 18px")
+  set_style(element, "flex", "0 0 16px")
 }
 
 ///|
@@ -1707,8 +1707,9 @@ fn style_editor_fold_button(element : @dom.Element) -> Unit {
   set_style(element, "display", "inline-flex")
   set_style(element, "align-items", "center")
   set_style(element, "justify-content", "center")
-  set_style(element, "width", "18px")
-  set_style(element, "height", "22px")
+  set_style(element, "width", "16px")
+  set_style(element, "height", "20px")
+  set_style(element, "margin-top", "3px")
   set_style(element, "padding", "0")
   set_style(element, "border", "0")
   set_style(element, "border-radius", "6px")

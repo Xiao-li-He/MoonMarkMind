@@ -1745,6 +1745,13 @@ fn build_gutter_number_dom(row : GutterVisualRow, height : Int) -> @dom.Element 
   let block_height = if height > 1 { height } else { 1 }
   let style = @dom.css_style_from_val(block.as_any()._get("style").cast())
   style.set_property("height", "\{block_height}px")
+  let number = create_element("span", "editor-gutter-number__text")
+  if row.show_number && row.line_number > 0 && !row.placeholder {
+    number.setTextContent(row.line_number.to_string())
+  } else {
+    number.setTextContent("")
+  }
+  append_child(block, number)
   if row.show_number && row.show_fold_button {
     let button = create_element("button", "editor-fold-button")
     button.setAttribute("type", "button")
@@ -1780,13 +1787,6 @@ fn build_gutter_number_dom(row : GutterVisualRow, height : Int) -> @dom.Element 
   } else {
     append_child(block, create_element("span", "editor-fold-spacer"))
   }
-  let number = create_element("span", "editor-gutter-number__text")
-  if row.show_number && row.line_number > 0 && !row.placeholder {
-    number.setTextContent(row.line_number.to_string())
-  } else {
-    number.setTextContent("")
-  }
-  append_child(block, number)
   block
 }
 
