@@ -264,12 +264,8 @@ fn build_editor_projection(
       Some((start_line, end_line)) =>
         if contains_int(folded_heading_lines, source_line) &&
           start_line <= end_line {
-          let hidden_count = end_line - start_line + 1
-          let placeholder_line = visible_lines.length()
-          visible_lines.push("  ... \{hidden_count} lines folded")
-          visible_to_source.push(-1)
           placeholders.push(FoldPlaceholder::{
-            visible_line: placeholder_line,
+            visible_line: -1,
             source_start: start_line,
             source_end: end_line,
             folded_heading_line: source_line,

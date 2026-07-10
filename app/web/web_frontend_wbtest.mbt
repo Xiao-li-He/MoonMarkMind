@@ -134,13 +134,10 @@ test "markdown inline renderer covers sample part two styles" {
 test "editor projection folds heading content until next peer" {
   let markdown = "# Root\nintro\n## A\na1\n### A child\nchild\n## B\nb1"
   let projection = build_editor_projection(markdown, [2])
-  inspect(
-    projection.visible_text,
-    content="# Root\nintro\n## A\n  ... 3 lines folded\n## B\nb1",
-  )
+  inspect(projection.visible_text, content="# Root\nintro\n## A\n## B\nb1")
   debug_inspect(
     projection.visible_line_to_source_line,
-    content="[0, 1, 2, -1, 6, 7]",
+    content="[0, 1, 2, 6, 7]",
   )
   inspect(projection.placeholders.length(), content="1")
 }
@@ -149,8 +146,8 @@ test "editor projection folds heading content until next peer" {
 test "editor projection folds root including child headings" {
   let markdown = "# Root\nintro\n## A\na1\n## B\nb1"
   let projection = build_editor_projection(markdown, [0])
-  inspect(projection.visible_text, content="# Root\n  ... 5 lines folded")
-  debug_inspect(projection.visible_line_to_source_line, content="[0, -1]")
+  inspect(projection.visible_text, content="# Root")
+  debug_inspect(projection.visible_line_to_source_line, content="[0]")
 }
 
 ///|
@@ -159,7 +156,7 @@ test "merge folded visible heading edits preserves hidden body" {
   app_state.markdown = "# Root\nintro\n## A\na1\n## B\nb1"
   app_state.folded_heading_lines = [2]
   current_editor_projection.val = editor_projection(app_state.markdown)
-  let visible = "# Root\nintro\n## Alpha\n  ... 1 lines folded\n## B\nb1"
+  let visible = "# Root\nintro\n## Alpha\n## B\nb1"
   inspect(
     merge_visible_heading_edits(visible),
     content="# Root\nintro\n## Alpha\na1\n## B\nb1",
@@ -172,7 +169,7 @@ test "markdown preview renders full source while editor projection is folded" {
   app_state.markdown = "# Root\nintro\n## A\na1"
   app_state.folded_heading_lines = [0]
   let projection = editor_projection(app_state.markdown)
-  inspect(projection.visible_text, content="# Root\n  ... 3 lines folded")
+  inspect(projection.visible_text, content="# Root")
   let html = render_markdown_html(app_state.markdown)
   assert_eq(html.contains("intro"), true)
   assert_eq(html.contains("a1"), true)
