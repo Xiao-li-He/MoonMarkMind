@@ -172,7 +172,9 @@ test "markdown preview renders full source while editor projection is folded" {
   app_state.folded_heading_lines = [0]
   let projection = editor_projection(app_state.markdown)
   inspect(projection.visible_text, content="# Root")
-  let html = render_markdown_html(app_state.markdown)
+  let html = render_markdown_preview_document_html(app_state.markdown)
+  assert_eq(html.contains("<style>"), true)
+  assert_eq(html.contains("markdown-html-preview-document"), true)
   assert_eq(html.contains("intro"), true)
   assert_eq(html.contains("a1"), true)
 }

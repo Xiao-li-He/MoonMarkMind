@@ -12,6 +12,7 @@ import {
   "Xiao-li-He/MoonMarkMind/lib/latex_math_render",
   "Xiao-li-He/MoonMarkMind/lib/markdown_render",
   "Xiao-li-He/MoonMarkMind/lib/mindmap_renderer",
+  "Xiao-li-He/MoonMarkMind/packages/markdown_to_html",
 }
 
 supported_targets = "js"

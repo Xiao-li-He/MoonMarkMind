@@ -3378,16 +3378,57 @@ fn sync_editor_input_projection() -> Unit {
 ///|
 fn sync_markdown_preview() -> Unit {
   match get_element("#editor-preview") {
-    Some(preview) => {
-      preview.setInnerHTML(render_markdown_html(app_state.markdown))
-      apply_theme_to_subtree(preview)
-    }
+    Some(preview) =>
+      preview.setInnerHTML(
+        render_markdown_preview_document_html(app_state.markdown),
+      )
     None => ()
   }
 }
 
 ///|
+fn render_markdown_preview_document_html(markdown : String) -> String {
+  @markdown_to_html.render_style_element() +
+  "<div class=\"markdown-html-preview-document\" style=\"box-sizing: border-box; min-height: 100%; padding: 18px 38px 42px; background: #ffffff; color: #23384d; font-size: 16px; line-height: 1.45;\">" +
+  @markdown_to_html.render(markdown) +
+  "</div>"
+}
+
+///|
 fn sync_markdown_preview_toggle() -> Unit {
+  match get_element(".editor-body") {
+    Some(body) => {
+      toggle_class(
+        body,
+        "editor-body--markdown-preview",
+        app_state.markdown_preview_mode,
+      )
+      apply_theme_to_element(body)
+    }
+    None => ()
+  }
+  match get_element(".editor-gutter-wrap") {
+    Some(gutter_wrap) => {
+      toggle_class(
+        gutter_wrap,
+        "editor-gutter-wrap--hidden",
+        app_state.markdown_preview_mode,
+      )
+      apply_theme_to_element(gutter_wrap)
+    }
+    None => ()
+  }
+  match get_element(".editor-input-wrap") {
+    Some(input_wrap) => {
+      toggle_class(
+        input_wrap,
+        "editor-input-wrap--hidden",
+        app_state.markdown_preview_mode,
+      )
+      apply_theme_to_element(input_wrap)
+    }
+    None => ()
+  }
   match get_element("#input") {
     Some(input) => {
       toggle_class(

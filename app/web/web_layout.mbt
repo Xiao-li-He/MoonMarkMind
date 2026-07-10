@@ -506,13 +506,13 @@ fn build_editor_panel() -> @dom.Element {
     "placeholder", "# MoonMarkMind\n\n## 链接\n- [MoonBit 包](https://mooncakes.io/)\n\n## 功能\n### 列表\n- 条目",
   )
   append_child(input_wrap, input)
-  let preview = create_element("div", "editor-preview")
-  preview.setAttribute("id", "editor-preview")
-  preview.setAttribute("aria-hidden", "true")
-  append_child(input_wrap, preview)
 
   append_child(body, gutter_wrap)
   append_child(body, input_wrap)
+  let preview = create_element("div", "editor-preview")
+  preview.setAttribute("id", "editor-preview")
+  preview.setAttribute("aria-hidden", "true")
+  append_child(body, preview)
   append_child(surface, body)
   append_child(panel, surface)
   panel

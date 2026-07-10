@@ -196,11 +196,20 @@ fn apply_theme_to_element(element : @dom.Element) -> Unit {
   if has_class_name(element, "editor-body") {
     style_editor_body(element)
   }
+  if has_class_name(element, "editor-body--markdown-preview") {
+    style_editor_body_markdown_preview(element)
+  }
   if has_class_name(element, "editor-gutter-wrap") {
     style_editor_gutter_wrap(element)
   }
+  if has_class_name(element, "editor-gutter-wrap--hidden") {
+    style_editor_gutter_wrap_hidden(element)
+  }
   if has_class_name(element, "editor-input-wrap") {
     style_editor_input_wrap(element)
+  }
+  if has_class_name(element, "editor-input-wrap--hidden") {
+    style_editor_input_wrap_hidden(element)
   }
   if has_class_name(element, "editor-input-mirror") {
     style_editor_input_mirror(element)
@@ -1536,7 +1545,13 @@ fn style_editor_body(element : @dom.Element) -> Unit {
 }
 
 ///|
+fn style_editor_body_markdown_preview(element : @dom.Element) -> Unit {
+  set_style(element, "grid-template-columns", "1fr")
+}
+
+///|
 fn style_editor_gutter_wrap(element : @dom.Element) -> Unit {
+  set_style(element, "display", "block")
   set_style(element, "position", "relative")
   set_style(element, "height", "100%")
   set_style(element, "min-height", "0")
@@ -1550,13 +1565,24 @@ fn style_editor_gutter_wrap(element : @dom.Element) -> Unit {
 }
 
 ///|
+fn style_editor_gutter_wrap_hidden(element : @dom.Element) -> Unit {
+  set_style(element, "display", "none")
+}
+
+///|
 fn style_editor_input_wrap(element : @dom.Element) -> Unit {
+  set_style(element, "display", "block")
   set_style(element, "position", "relative")
   set_style(element, "height", "100%")
   set_style(element, "min-width", "0")
   set_style(element, "min-height", "0")
   set_style(element, "background", "transparent")
   set_style(element, "overflow", "hidden")
+}
+
+///|
+fn style_editor_input_wrap_hidden(element : @dom.Element) -> Unit {
+  set_style(element, "display", "none")
 }
 
 ///|
@@ -1764,14 +1790,20 @@ fn style_editor_preview(element : @dom.Element) -> Unit {
   set_style(element, "position", "relative")
   set_style(element, "z-index", "3")
   set_style(element, "box-sizing", "border-box")
+  set_style(element, "grid-column", "1 / -1")
   set_style(element, "width", "100%")
   set_style(element, "height", "100%")
-  set_style(element, "padding", "18px 18px 22px 16px")
+  set_style(element, "min-width", "0")
+  set_style(element, "min-height", "0")
+  set_style(element, "padding", "0")
   set_style(element, "overflow", "auto")
-  set_style(element, "background", "rgba(255, 255, 255, 0.42)")
+  set_style(element, "background", "#ffffff")
   set_style(element, "color", "#23384d")
-  set_style(element, "font-size", "14px")
-  set_style(element, "line-height", "1.55")
+  set_style(
+    element, "font-family", "\"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+  )
+  set_style(element, "font-size", "16px")
+  set_style(element, "line-height", "1.45")
 }
 
 ///|
