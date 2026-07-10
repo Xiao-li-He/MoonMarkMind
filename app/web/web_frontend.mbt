@@ -3395,22 +3395,32 @@ fn sync_markdown_preview_toggle() -> Unit {
         "editor-input--hidden",
         app_state.markdown_preview_mode,
       )
+      let (input_display, _) = markdown_preview_display_values(
+        app_state.markdown_preview_mode,
+      )
+      style_of(input).set_property("display", input_display)
       apply_theme_to_element(input)
+      style_of(input).set_property("display", input_display)
     }
     None => ()
   }
   match get_element("#editor-preview") {
     Some(preview) => {
+      let (_, preview_display) = markdown_preview_display_values(
+        app_state.markdown_preview_mode,
+      )
       toggle_class(
         preview,
         "editor-preview--visible",
         app_state.markdown_preview_mode,
       )
+      style_of(preview).set_property("display", preview_display)
       preview.setAttribute(
         "aria-hidden",
         (!app_state.markdown_preview_mode).to_string(),
       )
       apply_theme_to_element(preview)
+      style_of(preview).set_property("display", preview_display)
     }
     None => ()
   }
@@ -3441,6 +3451,15 @@ fn sync_markdown_preview_toggle() -> Unit {
       )
     }
     None => ()
+  }
+}
+
+///|
+fn markdown_preview_display_values(preview_mode : Bool) -> (String, String) {
+  if preview_mode {
+    ("none", "block")
+  } else {
+    ("block", "none")
   }
 }
 

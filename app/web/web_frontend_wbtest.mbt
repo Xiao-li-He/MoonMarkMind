@@ -176,6 +176,16 @@ test "markdown preview renders full source while editor projection is folded" {
 }
 
 ///|
+test "markdown preview display values restore editor after preview" {
+  let preview = markdown_preview_display_values(true)
+  assert_eq(preview.0, "none")
+  assert_eq(preview.1, "block")
+  let editor = markdown_preview_display_values(false)
+  assert_eq(editor.0, "block")
+  assert_eq(editor.1, "none")
+}
+
+///|
 test "markdown inline renderer degrades unsafe links to text" {
   let html = render_markdown_inline_html("[Bad](javascript:alert(1))")
   assert_eq(html.contains("href="), false)
