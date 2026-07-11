@@ -620,16 +620,18 @@ fn on_layout_change(mode : String) -> Unit {
 ///|
 fn on_style_change(mode : String) -> Unit {
   app_state.style_mode = normalize_style_mode(mode)
-  app_state.ensure_mindmap_visible = true
   render_ui()
+  schedule_mindmap_reveal_node_or_recenter(app_state.selected_node)
 }
 
 ///|
 fn on_detail_change(level : String) -> Unit {
+  let root_anchor = capture_mindmap_root_anchor()
   app_state.detail_level = normalize_detail_level(level)
   apply_detail_preset()
   sync_detail_customized()
   render_ui()
+  schedule_mindmap_preserve_root_anchor(root_anchor)
 }
 
 ///|

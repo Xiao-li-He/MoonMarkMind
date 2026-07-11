@@ -701,6 +701,14 @@ fn mindmap_current_root_anchor_point(
 }
 
 ///|
+fn capture_mindmap_root_anchor() -> (Double, Double)? {
+  match get_element("#mindmap") {
+    Some(mindmap) => mindmap_current_root_anchor_point(mindmap)
+    None => None
+  }
+}
+
+///|
 fn mindmap_node_origin_point(
   mindmap : @dom.Element,
   node_index : Int,
@@ -711,6 +719,81 @@ fn mindmap_node_origin_point(
       Some((rect.left, rect.top))
     }
     None => None
+  }
+}
+
+///|
+fn preserve_mindmap_root_anchor_now(anchor_before : (Double, Double)?) -> Unit {
+  match anchor_before {
+    Some((before_x, before_y)) =>
+      match get_element("#mindmap") {
+        Some(mindmap) =>
+          match mindmap_current_root_anchor_point(mindmap) {
+            Some((after_x, after_y)) => {
+              let delta_x = before_x - after_x
+              let delta_y = before_y - after_y
+              if abs_double(delta_x) < 0.5 && abs_double(delta_y) < 0.5 {
+                return
+              }
+              let current_pan_x = parse_int_or_default(
+                mindmap.getAttribute("data-pan-x").unwrap_or("0"),
+                0,
+              )
+              let current_pan_y = parse_int_or_default(
+                mindmap.getAttribute("data-pan-y").unwrap_or("0"),
+                0,
+              )
+              mindmap.setAttribute(
+                "data-pan-x",
+                (current_pan_x.to_double() + delta_x)
+                .round()
+                .to_int()
+                .to_string(),
+              )
+              mindmap.setAttribute(
+                "data-pan-y",
+                (current_pan_y.to_double() + delta_y)
+                .round()
+                .to_int()
+                .to_string(),
+              )
+              mindmap_sync_view(
+                mindmap,
+                get_element("#zoom-value"),
+                get_element("#zoom-edit"),
+              )
+              render_mindmap_connectors()
+            }
+            None => ()
+          }
+        None => ()
+      }
+    None => ()
+  }
+}
+
+///|
+fn schedule_mindmap_preserve_root_anchor(
+  anchor_before : (Double, Double)?,
+) -> Unit {
+  match anchor_before {
+    Some(_) =>
+      match get_element("#mindmap") {
+        Some(_) => {
+          let window = @dom.window()
+          ignore(
+            window.requestAnimationFrame(fn(_) {
+              ignore(
+                window.requestAnimationFrame(fn(_) {
+                  preserve_mindmap_root_anchor_now(anchor_before)
+                }),
+              )
+            }),
+          )
+        }
+        None => ()
+      }
+    None => ()
   }
 }
 
