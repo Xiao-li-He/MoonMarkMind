@@ -2176,6 +2176,7 @@ fn style_layout_block(element : @dom.Element) -> Unit {
 fn style_branch_column(element : @dom.Element) -> Unit {
   apply_mindmap_style_rule(element, "branch-column")
   set_style(element, "position", "relative")
+  set_style(element, "z-index", "2")
   set_style(element, "display", "flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "gap", "20px")
@@ -2206,6 +2207,8 @@ fn style_branch_column_right(element : @dom.Element) -> Unit {
 ///|
 fn style_center_wrap(element : @dom.Element) -> Unit {
   apply_mindmap_style_rule(element, "center-wrap")
+  set_style(element, "position", "relative")
+  set_style(element, "z-index", "2")
   set_style(element, "display", "flex")
   set_style(element, "align-items", "center")
   set_style(element, "justify-content", "center")
@@ -2413,6 +2416,7 @@ fn style_node(element : @dom.Element) -> Unit {
   // Base node styling is layout-neutral; center, fill, line, and branch-line
   // helpers refine the shared card shape for each visual mode.
   set_style(element, "position", "relative")
+  set_style(element, "z-index", "2")
   set_style(element, "display", "inline-flex")
   set_style(element, "flex-direction", "column")
   set_style(element, "align-items", "center")
@@ -3427,7 +3431,7 @@ fn style_node_actions(element : @dom.Element) -> Unit {
   set_style(element, "position", "absolute")
   set_style(element, "display", "flex")
   set_style(element, "gap", "6px")
-  set_style(element, "z-index", "2")
+  set_style(element, "z-index", "4")
   style_node_actions_corner(element)
 }
 
