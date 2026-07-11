@@ -967,8 +967,7 @@ fn apply_contour_layout() -> Unit {
         Some(stage) =>
           if has_class_name(stage, "mindmap-stage--radial") {
             apply_contour_min_heights(stage)
-            apply_mindmap_root_packing(stage)
-            apply_mindmap_single_child_alignment(stage)
+            apply_radial_branch_layout(stage)
           }
         None => ()
       }
@@ -1009,13 +1008,22 @@ fn apply_contour_min_heights(stage : @dom.Element) -> Unit {
 }
 
 ///|
-fn apply_mindmap_root_packing(stage : @dom.Element) -> Unit {
+fn apply_radial_branch_layout(stage : @dom.Element) -> Unit {
   let zoom = match get_element("#mindmap") {
     Some(mindmap) =>
       parse_float(mindmap.getAttribute("data-zoom").unwrap_or("1"))
     None => 1.0
   }
   let safe_zoom = if zoom.is_nan() || zoom <= 0.0 { 1.0 } else { zoom }
+  apply_radial_branch_layout_with_zoom(stage, safe_zoom)
+}
+
+///|
+fn apply_radial_branch_layout_with_zoom(
+  stage : @dom.Element,
+  safe_zoom : Double,
+) -> Unit {
+  clear_radial_branch_transforms(stage)
   apply_root_column_packing(
     stage,
     stage.querySelector(".branch-column--left"),
@@ -1028,17 +1036,45 @@ fn apply_mindmap_root_packing(stage : @dom.Element) -> Unit {
     16,
     safe_zoom,
   )
+  align_right_radial_single_child_chains(stage, safe_zoom)
 }
 
 ///|
-fn apply_mindmap_single_child_alignment(stage : @dom.Element) -> Unit {
-  align_single_child_chain(stage, app_state.root)
+fn clear_radial_branch_transforms(stage : @dom.Element) -> Unit {
+  for branch in stage.querySelectorAll(".branch-item") {
+    let style = @dom.css_style_from_val(branch.as_any()._get("style").cast())
+    style.set_property("transform", "none")
+  }
+}
+
+///|
+fn align_right_radial_single_child_chains(
+  stage : @dom.Element,
+  safe_zoom : Double,
+) -> Unit {
+  match stage.querySelector(".branch-column--right") {
+    Some(right_column) =>
+      for branch in right_column.querySelectorAll(".branch-item--root") {
+        let node_index = parse_int_or_default(
+          branch.getAttribute("data-node-index").unwrap_or("-1"),
+          -1,
+        )
+        if node_index >= 0 {
+          match find_node(app_state.root, node_index) {
+            Some(node) => align_single_child_chain(stage, node, safe_zoom)
+            None => ()
+          }
+        }
+      }
+    None => ()
+  }
 }
 
 ///|
 fn align_single_child_chain(
   stage : @dom.Element,
   node : @outline_parser.OutlineNode,
+  safe_zoom : Double,
 ) -> Unit {
   if !should_render_children(node) {
     return
@@ -1054,12 +1090,17 @@ fn align_single_child_chain(
               Some(child_card) => {
                 let parent_center_y = rect_center_y(element_rect(parent_card))
                 let child_center_y = rect_center_y(element_rect(child_card))
-                let delta = parent_center_y - child_center_y
-                if abs_double(delta) >= 0.5 {
+                let local_delta = root_branch_local_translate_delta(
+                  child_center_y, parent_center_y, safe_zoom,
+                )
+                if abs_double(local_delta) >= 0.5 {
                   let style = @dom.css_style_from_val(
                     child_branch.as_any()._get("style").cast(),
                   )
-                  style.set_property("transform", "translateY(\{delta}px)")
+                  style.set_property(
+                    "transform",
+                    "translateY(\{local_delta}px)",
+                  )
                 }
               }
               None => ()
@@ -1070,7 +1111,7 @@ fn align_single_child_chain(
     }
   }
   for child in node.children {
-    align_single_child_chain(stage, child)
+    align_single_child_chain(stage, child, safe_zoom)
   }
 }
 
@@ -1097,16 +1138,12 @@ fn apply_root_column_packing(
       if branches.length() == 0 {
         return
       }
-      for branch in branches {
-        let style = @dom.css_style_from_val(
-          branch.as_any()._get("style").cast(),
-        )
-        style.set_property("transform", "none")
-      }
+      let card_top_radii = []
+      let card_bottom_radii = []
       let branch_top_radii = []
       let branch_bottom_radii = []
       for branch in branches {
-        let (_, fallback_top_radius, fallback_bottom_radius, card) = match
+        let (_, card_top_radius, card_bottom_radius, card) = match
           root_branch_head_card(branch) {
           Some(card) => {
             let card_rect = element_rect(card)
@@ -1138,14 +1175,19 @@ fn apply_root_column_packing(
             (branch_height, branch_height / 2, branch_height / 2, branch)
           }
         }
+        let fallback_top_radius = card_top_radius
+        let fallback_bottom_radius = card_bottom_radius
         let (top_radius, bottom_radius) = root_branch_dom_radii(
           branch, card, fallback_top_radius, fallback_bottom_radius, safe_zoom,
         )
+        card_top_radii.push(card_top_radius)
+        card_bottom_radii.push(card_bottom_radius)
         branch_top_radii.push(top_radius)
         branch_bottom_radii.push(bottom_radius)
       }
       let adjusted = root_branch_sibling_group_centers(
-        branch_top_radii, branch_bottom_radii, 0, 0, gap,
+        card_top_radii, card_bottom_radii, branch_top_radii, branch_bottom_radii,
+        gap,
       )
       let root_center = match
         find_stage_card(stage, app_state.root.flat_index) {
@@ -1162,8 +1204,10 @@ fn apply_root_column_packing(
             let current_center = rect_center_y(element_rect(card))
             let target_center = root_center +
               adjusted[index].to_double() * safe_zoom
-            let delta = target_center - current_center
-            style.set_property("transform", "translateY(\{delta}px)")
+            let local_delta = root_branch_local_translate_delta(
+              current_center, target_center, safe_zoom,
+            )
+            style.set_property("transform", "translateY(\{local_delta}px)")
           }
           None => ()
         }
@@ -1181,6 +1225,20 @@ fn unscaled_length_to_int(value : Double, safe_zoom : Double) -> Int {
   } else {
     unscaled.round().to_int()
   }
+}
+
+///|
+fn root_branch_local_translate_delta(
+  current_center : Double,
+  target_center : Double,
+  safe_zoom : Double,
+) -> Double {
+  let zoom = if safe_zoom.is_nan() || safe_zoom <= 0.0 {
+    1.0
+  } else {
+    safe_zoom
+  }
+  (target_center - current_center) / zoom
 }
 
 ///|
@@ -1244,52 +1302,91 @@ fn root_branch_sibling_group_span(
 
 ///|
 fn root_branch_sibling_group_centers(
+  card_top_radii : Array[Int],
+  card_bottom_radii : Array[Int],
   top_radii : Array[Int],
   bottom_radii : Array[Int],
-  anchor_center : Int,
-  available_span : Int,
   gap : Int,
 ) -> Array[Int] {
-  let adjusted = []
-  if top_radii.length() == 0 || bottom_radii.length() == 0 {
-    return adjusted
+  let centers = root_branch_card_group_centers(
+    card_top_radii, card_bottom_radii, gap,
+  )
+  root_branch_avoid_visible_subtree_collisions(
+    centers, top_radii, bottom_radii, gap,
+  )
+}
+
+///|
+fn root_branch_card_group_centers(
+  card_top_radii : Array[Int],
+  card_bottom_radii : Array[Int],
+  gap : Int,
+) -> Array[Int] {
+  let centers = []
+  if card_top_radii.length() == 0 || card_bottom_radii.length() == 0 {
+    return centers
   }
-  let safe_count = if top_radii.length() < bottom_radii.length() {
+  let safe_count = if card_top_radii.length() < card_bottom_radii.length() {
+    card_top_radii.length()
+  } else {
+    card_bottom_radii.length()
+  }
+  if safe_count == 1 {
+    return [0]
+  }
+  let group_span = root_branch_sibling_group_span(
+    card_top_radii, card_bottom_radii, gap,
+  )
+  let group_top = -group_span / 2
+  centers.push(group_top + card_top_radii[0])
+  for index in 1..<safe_count {
+    let previous = centers[index - 1]
+    centers.push(
+      previous + card_bottom_radii[index - 1] + card_top_radii[index] + gap,
+    )
+  }
+  centers
+}
+
+///|
+fn root_branch_avoid_visible_subtree_collisions(
+  centers : Array[Int],
+  top_radii : Array[Int],
+  bottom_radii : Array[Int],
+  gap : Int,
+) -> Array[Int] {
+  if centers.length() == 0 {
+    return []
+  }
+  let safe_count = if centers.length() < top_radii.length() {
+    if centers.length() < bottom_radii.length() {
+      centers.length()
+    } else {
+      bottom_radii.length()
+    }
+  } else if top_radii.length() < bottom_radii.length() {
     top_radii.length()
   } else {
     bottom_radii.length()
   }
-  let group_span = root_branch_sibling_group_span(top_radii, bottom_radii, gap)
-  let group_top = anchor_center - group_span / 2
-  adjusted.push(group_top + top_radii[0])
+  if safe_count == 0 {
+    return []
+  }
+  let adjusted = []
+  adjusted.push(centers[0])
   for index in 1..<safe_count {
     let previous = adjusted[index - 1]
-    adjusted.push(previous + bottom_radii[index - 1] + top_radii[index] + gap)
-  }
-  let first_top = adjusted[0] - top_radii[0]
-  let last_index = adjusted.length() - 1
-  let last_bottom = adjusted[last_index] + bottom_radii[last_index]
-  let shift = if first_top < 0 {
-    -first_top
-  } else if available_span > 0 && last_bottom > available_span {
-    let overflow = last_bottom - available_span
-    if overflow < first_top {
-      -overflow
+    let minimum_center = previous +
+      bottom_radii[index - 1] +
+      top_radii[index] +
+      gap
+    if centers[index] < minimum_center {
+      adjusted.push(minimum_center)
     } else {
-      -first_top
+      adjusted.push(centers[index])
     }
-  } else {
-    0
   }
-  if shift == 0 {
-    adjusted
-  } else {
-    let shifted = []
-    for center in adjusted {
-      shifted.push(center + shift)
-    }
-    shifted
-  }
+  adjusted
 }
 
 ///|
@@ -3908,18 +4005,7 @@ fn ensure_export_mindmap_visible_bounds(
 ///|
 fn apply_export_mindmap_layout(stage : @dom.Element) -> Unit {
   if has_class_name(stage, "mindmap-stage--radial") {
-    apply_root_column_packing(
-      stage,
-      stage.querySelector(".branch-column--left"),
-      16,
-      1.0,
-    )
-    apply_root_column_packing(
-      stage,
-      stage.querySelector(".branch-column--right"),
-      16,
-      1.0,
-    )
+    apply_radial_branch_layout_with_zoom(stage, 1.0)
   }
 }
 

@@ -661,45 +661,63 @@ test "balanced first layer insert adds to right when right side is shorter" {
 }
 
 ///|
-test "root branch sibling group uses the same gap between visible subtree spans" {
-  let centers = root_branch_sibling_group_centers(
-    [30, 30, 30, 30],
-    [30, 30, 30, 30],
-    220,
-    500,
-    16,
-  )
-  assert_eq(centers[0], 106)
-  assert_eq(centers[1], 182)
-  assert_eq(centers[2], 258)
-  assert_eq(centers[3], 334)
+test "root branch card group distributes first-level cards evenly around root" {
+  let centers = root_branch_card_group_centers([22, 22, 22], [22, 22, 22], 16)
+  assert_eq(centers.length(), 3)
+  assert_eq(centers[0], -60)
+  assert_eq(centers[1], 0)
+  assert_eq(centers[2], 60)
 }
 
 ///|
-test "root branch sibling group places shallow branch after previous visible subtree" {
-  let centers = root_branch_sibling_group_centers(
-    [90, 20],
-    [120, 20],
-    250,
-    500,
-    16,
-  )
-  assert_eq(centers[0], 207)
-  assert_eq(centers[1], 363)
-  assert_eq(centers[1] - centers[0], 156)
+test "root branch sibling group centers a single first-level branch on root" {
+  let centers = root_branch_sibling_group_centers([22], [22], [90], [180], 16)
+  assert_eq(centers.length(), 1)
+  assert_eq(centers[0], 0)
 }
 
 ///|
-test "root branch sibling group shifts into the available span without recentering" {
+test "root branch sibling group keeps first-level centers independent from subtree top" {
   let centers = root_branch_sibling_group_centers(
+    [22, 22],
+    [22, 22],
+    [200, 20],
+    [20, 20],
+    16,
+  )
+  assert_eq(centers.length(), 2)
+  assert_eq(centers[0], -30)
+  assert_eq(centers[1], 30)
+}
+
+///|
+test "root branch sibling group only pushes later branch to avoid visible overlap" {
+  let centers = root_branch_sibling_group_centers(
+    [22, 22],
+    [22, 22],
+    [30, 20],
     [80, 20],
-    [110, 20],
-    80,
-    500,
     16,
   )
-  assert_eq(centers[0], 80)
-  assert_eq(centers[1], 226)
+  assert_eq(centers.length(), 2)
+  assert_eq(centers[0], -30)
+  assert_eq(centers[1], 86)
+}
+
+///|
+test "root branch local translate delta is independent of zoom scale" {
+  assert_true(
+    abs_double(root_branch_local_translate_delta(100.0, 140.0, 1.0) - 40.0) <
+    0.0001,
+  )
+  assert_true(
+    abs_double(root_branch_local_translate_delta(84.0, 117.6, 0.84) - 40.0) <
+    0.0001,
+  )
+  assert_true(
+    abs_double(root_branch_local_translate_delta(40.0, 56.0, 0.4) - 40.0) <
+    0.0001,
+  )
 }
 
 ///|
