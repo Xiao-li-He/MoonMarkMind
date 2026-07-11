@@ -26,6 +26,16 @@ pub(all) struct RenderOptions {
 }
 
 ///|
+pub(all) struct InteractiveRenderHooks {
+  render_node_card : (@outline.OutlineNode, Int, Bool, Int, Int, String) -> String
+  should_render_children : (@outline.OutlineNode) -> Bool
+  is_hidden_node : (Int) -> Bool
+  render_hidden_marker : (@outline.OutlineNode, String, Int) -> String
+  root_left_count : (@outline.OutlineNode) -> Int
+  root_branch_span : (@outline.OutlineNode) -> Int
+}
+
+///|
 pub fn default_render_options() -> RenderOptions {
   { layout: Logic, style: Full, layer: Full }
 }

@@ -47,6 +47,68 @@ test "render layouts expose static mindmap structure" {
 }
 
 ///|
+fn interactive_test_hooks() -> InteractiveRenderHooks {
+  {
+    render_node_card: fn(
+      node,
+      parent_index,
+      center,
+      tone_index,
+      depth,
+      action_anchor,
+    ) {
+      "<article class=\"hook-card\" data-node-index=\"\{node.flat_index}\" data-parent-index=\"\{parent_index}\" data-center=\"\{center}\" data-tone=\"\{tone_index}\" data-depth=\"\{depth}\" data-action-anchor=\"\{action_anchor}\">\{node.title}</article>"
+    },
+    should_render_children: fn(node) { node.title != "Collapsed" },
+    is_hidden_node: fn(index) { index == 2 },
+    render_hidden_marker: fn(node, direction, tone_index) {
+      "<button class=\"hook-hidden\" data-node-index=\"\{node.flat_index}\" data-direction=\"\{direction}\" data-tone=\"\{tone_index}\">hidden</button>"
+    },
+    root_left_count: fn(_root) { 1 },
+    root_branch_span: fn(_node) { 10 },
+  }
+}
+
+///|
+test "interactive renderer delegates cards through hooks across layouts" {
+  let root = @outline.build_outline(
+    "# Root\n## Left\n### Hidden\n### Visible\n## Right\n### Child\n## Collapsed\n### Omitted",
+  )
+  let logic = render_interactive_content_html(
+    root,
+    { layout: Logic, style: Full, layer: Full },
+    interactive_test_hooks(),
+  )
+  let mindmap = render_interactive_content_html(
+    root,
+    { layout: Mindmap, style: Full, layer: Full },
+    interactive_test_hooks(),
+  )
+  let tree = render_interactive_content_html(
+    root,
+    { layout: Tree, style: Line, layer: Full },
+    interactive_test_hooks(),
+  )
+  assert_eq(logic.contains("mindmap-stage--single-right"), true)
+  assert_eq(mindmap.contains("mindmap-stage--radial"), true)
+  assert_eq(tree.contains("mindmap-stage--vertical"), true)
+  assert_eq(logic.contains("mindmap-connector-layer"), true)
+  assert_eq(mindmap.contains("mindmap-connector-layer"), true)
+  assert_eq(tree.contains("mindmap-connector-layer"), true)
+  assert_eq(logic.contains("data-parent-index=\"0\""), true)
+  assert_eq(
+    mindmap.contains("data-action-anchor=\"node-actions--left-mid\""),
+    true,
+  )
+  assert_eq(
+    tree.contains("data-action-anchor=\"node-actions--bottom-center\""),
+    true,
+  )
+  assert_eq(mindmap.contains("hook-hidden"), true)
+  assert_eq(tree.contains("Omitted"), false)
+}
+
+///|
 test "render style and layer options" {
   let line = render_markdown_html(rich_markdown(), options={
     layout: Tree,

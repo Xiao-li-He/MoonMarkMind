@@ -113,6 +113,42 @@ test "web package can consume mindmap shared style rules" {
 }
 
 ///|
+test "mindmap dom keeps interactive editor state through shared renderer" {
+  reset_frontend_test_state()
+  load_markdown(
+    "# Root\n## Alpha\n### Hidden\n### Visible\n## Beta\n### Beta Child\n## Gamma\nGamma note",
+    true,
+  )
+  app_state.layout_mode = "mindmap"
+  app_state.style_mode = "full"
+  let hidden = outline_flat_index_by_title(app_state.root, "Hidden")
+  let beta = outline_flat_index_by_title(app_state.root, "Beta")
+  let gamma = outline_flat_index_by_title(app_state.root, "Gamma")
+  app_state.hidden_nodes = [hidden]
+  app_state.collapsed = [beta]
+  select_single_node(beta, false)
+  set_node_width_override(beta, 240)
+  app_state.editing_node = gamma
+  app_state.editing_body_node = gamma
+  app_state.editing_body_block = 0
+
+  let html = @mindmap_render.render_interactive_content_html(
+    app_state.root,
+    interactive_mindmap_render_options(),
+    interactive_mindmap_render_hooks(),
+  )
+  assert_eq(html.contains("mindmap-content"), true)
+  assert_eq(html.contains("mindmap-stage--radial"), true)
+  assert_eq(html.contains("mindmap-connector-layer"), true)
+  assert_eq(html.contains("is-selected"), true)
+  assert_eq(html.contains("data-collapsed=\"true\""), true)
+  assert_eq(html.contains("collapsed-node"), true)
+  assert_eq(html.contains("node-editor"), true)
+  assert_eq(html.contains("node-body-block-editor"), true)
+  assert_eq(html.contains("node-width-resize-handle"), true)
+}
+
+///|
 test "markdown inline renderer covers sample part two styles" {
   let html = render_markdown_inline_html(
     "[Link](https://example.com) **Bold** _Italic_ *Star Italic* `Code` ~~Gone~~ ==Highlight==",
