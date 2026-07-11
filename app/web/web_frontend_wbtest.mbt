@@ -149,6 +149,27 @@ test "mindmap dom keeps interactive editor state through shared renderer" {
 }
 
 ///|
+test "mindmap root branch render weights stay layout-neutral" {
+  reset_frontend_test_state()
+  load_markdown(
+    "# Root\n## Left\n## Heavy\n### A\n#### A1\n### B\n### C\n### D\n#### D1\n### E\n#### E1\n##### E2\n### F\n## Tail",
+    true,
+  )
+  app_state.layout_mode = "mindmap"
+  app_state.style_mode = "full"
+
+  let html = @mindmap_render.render_interactive_content_html(
+    app_state.root,
+    interactive_mindmap_render_options(),
+    interactive_mindmap_render_hooks(),
+  )
+
+  assert_eq(html.contains("top:"), true)
+  assert_eq(root_branch_render_weight(app_state.root.children[1]), 1)
+  assert_eq(root_branch_render_weight(app_state.root.children[2]), 1)
+}
+
+///|
 test "markdown inline renderer covers sample part two styles" {
   let html = render_markdown_inline_html(
     "[Link](https://example.com) **Bold** _Italic_ *Star Italic* `Code` ~~Gone~~ ==Highlight==",
@@ -557,33 +578,6 @@ test "node render omits mouse drag sorting attributes" {
 }
 
 ///|
-test "contour pack positions centers siblings without overlap" {
-  let positions = contour_pack_positions([40, 60, 50], 220, 24)
-  assert_eq(positions.length(), 3)
-  assert_eq(positions[0], 11)
-  assert_eq(positions[1], 75)
-  assert_eq(positions[2], 159)
-}
-
-///|
-test "contour pack positions keeps single and paired children centered" {
-  assert_true(contour_pack_positions([80], 120, 24) == [20])
-  assert_true(contour_pack_positions([40, 40], 140, 20) == [20, 80])
-}
-
-///|
-test "contour anchor pack positions centers odd and even siblings around the parent axis" {
-  assert_true(
-    contour_anchor_pack_positions([20, 20, 20, 20, 20, 20, 20], 100, 200, 10) ==
-    [0, 30, 60, 90, 120, 150, 180],
-  )
-  assert_true(
-    contour_anchor_pack_positions([20, 20, 20, 20, 20, 20], 100, 170, 10) ==
-    [15, 45, 75, 105, 135, 165],
-  )
-}
-
-///|
 test "single child chain length follows recursive single-child nodes" {
   load_markdown("# Root\n## Alpha\n### Beta\n#### Gamma\n## Delta", true)
   match find_node(app_state.root, 1) {
@@ -599,7 +593,7 @@ test "single child chain length follows recursive single-child nodes" {
 }
 
 ///|
-test "contour subtree span grows with nested children and notes" {
+test "mindmap branch visual span follows horizontal tree shape" {
   load_markdown(
     "# Root\n## Alpha\nAlpha note line one\n\nAlpha note line two\n### Child A\n#### Grandchild\n## Beta",
     true,
@@ -609,8 +603,10 @@ test "contour subtree span grows with nested children and notes" {
       let beta_index = outline_flat_index_by_title(app_state.root, "Beta")
       match find_node(app_state.root, beta_index) {
         Some(beta) => {
-          assert_true(contour_subtree_span(alpha) > contour_subtree_span(beta))
-          assert_true(contour_subtree_span(alpha) > 100)
+          assert_true(
+            mindmap_branch_visual_span(alpha) > root_branch_span(beta),
+          )
+          assert_true(mindmap_branch_visual_span(alpha) > 100)
         }
         None => fail("missing beta node")
       }
@@ -665,17 +661,45 @@ test "balanced first layer insert adds to right when right side is shorter" {
 }
 
 ///|
-test "root branch packing keeps first layer gaps independent of children" {
-  let centers = root_branch_collision_adjusted_centers(
-    [100, 180, 260, 340],
+test "root branch sibling group uses the same gap between visible subtree spans" {
+  let centers = root_branch_sibling_group_centers(
     [30, 30, 30, 30],
     [30, 30, 30, 30],
     220,
+    500,
     16,
   )
-  assert_eq(centers[1] - centers[0], 80)
-  assert_eq(centers[2] - centers[1], 80)
-  assert_eq(centers[3] - centers[2], 80)
+  assert_eq(centers[0], 106)
+  assert_eq(centers[1], 182)
+  assert_eq(centers[2], 258)
+  assert_eq(centers[3], 334)
+}
+
+///|
+test "root branch sibling group places shallow branch after previous visible subtree" {
+  let centers = root_branch_sibling_group_centers(
+    [90, 20],
+    [120, 20],
+    250,
+    500,
+    16,
+  )
+  assert_eq(centers[0], 207)
+  assert_eq(centers[1], 363)
+  assert_eq(centers[1] - centers[0], 156)
+}
+
+///|
+test "root branch sibling group shifts into the available span without recentering" {
+  let centers = root_branch_sibling_group_centers(
+    [80, 20],
+    [110, 20],
+    80,
+    500,
+    16,
+  )
+  assert_eq(centers[0], 80)
+  assert_eq(centers[1], 226)
 }
 
 ///|

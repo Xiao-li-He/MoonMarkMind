@@ -964,15 +964,12 @@ fn apply_contour_layout() -> Unit {
   match get_element("#mindmap") {
     Some(mindmap) =>
       match mindmap.querySelector(".mindmap-stage") {
-        Some(stage) => {
+        Some(stage) =>
           if has_class_name(stage, "mindmap-stage--radial") {
             apply_contour_min_heights(stage)
-          }
-          if has_class_name(stage, "mindmap-stage--radial") {
             apply_mindmap_root_packing(stage)
             apply_mindmap_single_child_alignment(stage)
           }
-        }
         None => ()
       }
     None => ()
@@ -1000,7 +997,7 @@ fn apply_contour_min_heights(stage : @dom.Element) -> Unit {
     }
     match find_node(app_state.root, node_index) {
       Some(node) => {
-        let span = contour_subtree_span(node)
+        let span = root_branch_span(node)
         let style = @dom.css_style_from_val(
           element.as_any()._get("style").cast(),
         )
@@ -1020,11 +1017,13 @@ fn apply_mindmap_root_packing(stage : @dom.Element) -> Unit {
   }
   let safe_zoom = if zoom.is_nan() || zoom <= 0.0 { 1.0 } else { zoom }
   apply_root_column_packing(
+    stage,
     stage.querySelector(".branch-column--left"),
     16,
     safe_zoom,
   )
   apply_root_column_packing(
+    stage,
     stage.querySelector(".branch-column--right"),
     16,
     safe_zoom,
@@ -1087,6 +1086,7 @@ fn find_stage_branch(stage : @dom.Element, node_index : Int) -> @dom.Element? {
 
 ///|
 fn apply_root_column_packing(
+  stage : @dom.Element,
   column : @dom.Element?,
   gap : Int,
   safe_zoom : Double,
@@ -1097,11 +1097,16 @@ fn apply_root_column_packing(
       if branches.length() == 0 {
         return
       }
-      let card_heights = []
+      for branch in branches {
+        let style = @dom.css_style_from_val(
+          branch.as_any()._get("style").cast(),
+        )
+        style.set_property("transform", "none")
+      }
       let branch_top_radii = []
       let branch_bottom_radii = []
       for branch in branches {
-        let (card_height, fallback_top_radius, fallback_bottom_radius, card) = match
+        let (_, fallback_top_radius, fallback_bottom_radius, card) = match
           root_branch_head_card(branch) {
           Some(card) => {
             let card_rect = element_rect(card)
@@ -1133,40 +1138,35 @@ fn apply_root_column_packing(
             (branch_height, branch_height / 2, branch_height / 2, branch)
           }
         }
-        let safe_card_height = if card_height > 1 { card_height } else { 1 }
-        card_heights.push(safe_card_height)
         let (top_radius, bottom_radius) = root_branch_dom_radii(
           branch, card, fallback_top_radius, fallback_bottom_radius, safe_zoom,
         )
         branch_top_radii.push(top_radius)
         branch_bottom_radii.push(bottom_radius)
       }
-      let available = root_column.clientHeight()
-      let starts = contour_anchor_pack_positions(
-        card_heights,
-        available / 2,
-        available,
-        gap,
+      let adjusted = root_branch_sibling_group_centers(
+        branch_top_radii, branch_bottom_radii, 0, 0, gap,
       )
-      let positions = root_branch_centers_from_starts(starts, card_heights)
-      let adjusted = root_branch_collision_adjusted_centers(
-        positions,
-        branch_top_radii,
-        branch_bottom_radii,
-        available / 2,
-        gap,
-      )
+      let root_center = match
+        find_stage_card(stage, app_state.root.flat_index) {
+        Some(root_card) => rect_center_y(element_rect(root_card))
+        None => rect_center_y(element_rect(root_column))
+      }
       for index in 0..<branches.length() {
         let branch = branches[index]
         let style = @dom.css_style_from_val(
           branch.as_any()._get("style").cast(),
         )
-        let top = root_branch_top_for_card_center(
-          branch,
-          adjusted[index],
-          safe_zoom,
-        )
-        style.set_property("top", "\{top}px")
+        match root_branch_head_card(branch) {
+          Some(card) => {
+            let current_center = rect_center_y(element_rect(card))
+            let target_center = root_center +
+              adjusted[index].to_double() * safe_zoom
+            let delta = target_center - current_center
+            style.set_property("transform", "translateY(\{delta}px)")
+          }
+          None => ()
+        }
       }
     }
     None => ()
@@ -1222,63 +1222,65 @@ fn root_branch_dom_radii(
 }
 
 ///|
-fn root_branch_top_for_card_center(
-  branch : @dom.Element,
-  target_center : Int,
-  safe_zoom : Double,
+fn root_branch_sibling_group_span(
+  top_radii : Array[Int],
+  bottom_radii : Array[Int],
+  gap : Int,
 ) -> Int {
-  match root_branch_head_card(branch) {
-    Some(card) => {
-      let branch_rect = element_rect(branch)
-      let card_rect = element_rect(card)
-      let card_center_offset = (rect_center_y(card_rect) - branch_rect.top) /
-        safe_zoom
-      (target_center.to_double() - card_center_offset).round().to_int()
-    }
-    None => target_center
+  if top_radii.length() == 0 || bottom_radii.length() == 0 {
+    return 0
   }
+  let safe_count = if top_radii.length() < bottom_radii.length() {
+    top_radii.length()
+  } else {
+    bottom_radii.length()
+  }
+  let mut total = top_radii[0] + bottom_radii[safe_count - 1]
+  for index in 1..<safe_count {
+    total += bottom_radii[index - 1] + top_radii[index] + gap
+  }
+  total
 }
 
 ///|
-fn root_branch_centers_from_starts(
-  starts : Array[Int],
-  heights : Array[Int],
-) -> Array[Int] {
-  let centers = []
-  for index in 0..<starts.length() {
-    centers.push(starts[index] + heights[index] / 2)
-  }
-  centers
-}
-
-///|
-fn root_branch_collision_adjusted_centers(
-  centers : Array[Int],
+fn root_branch_sibling_group_centers(
   top_radii : Array[Int],
   bottom_radii : Array[Int],
   anchor_center : Int,
+  available_span : Int,
   gap : Int,
 ) -> Array[Int] {
   let adjusted = []
-  if centers.length() == 0 {
+  if top_radii.length() == 0 || bottom_radii.length() == 0 {
     return adjusted
   }
-  adjusted.push(centers[0])
-  for index in 1..<centers.length() {
+  let safe_count = if top_radii.length() < bottom_radii.length() {
+    top_radii.length()
+  } else {
+    bottom_radii.length()
+  }
+  let group_span = root_branch_sibling_group_span(top_radii, bottom_radii, gap)
+  let group_top = anchor_center - group_span / 2
+  adjusted.push(group_top + top_radii[0])
+  for index in 1..<safe_count {
     let previous = adjusted[index - 1]
-    let min_center = previous + bottom_radii[index - 1] + top_radii[index] + gap
-    adjusted.push(
-      if centers[index] < min_center {
-        min_center
-      } else {
-        centers[index]
-      },
-    )
+    adjusted.push(previous + bottom_radii[index - 1] + top_radii[index] + gap)
   }
   let first_top = adjusted[0] - top_radii[0]
   let last_index = adjusted.length() - 1
   let last_bottom = adjusted[last_index] + bottom_radii[last_index]
-  let shift = anchor_center - (first_top + last_bottom) / 2
+  let shift = if first_top < 0 {
+    -first_top
+  } else if available_span > 0 && last_bottom > available_span {
+    let overflow = last_bottom - available_span
+    if overflow < first_top {
+      -overflow
+    } else {
+      -first_top
+    }
+  } else {
+    0
+  }
   if shift == 0 {
     adjusted
   } else {
@@ -3125,6 +3127,7 @@ fn set_mindmap_dom(
           @dom.HTMLInputElement::cast_from_element(zoom_edit).value = "\{zoom_percent}%"
         None => ()
       }
+      apply_contour_layout()
     }
     None => ()
   }
@@ -3906,11 +3909,13 @@ fn ensure_export_mindmap_visible_bounds(
 fn apply_export_mindmap_layout(stage : @dom.Element) -> Unit {
   if has_class_name(stage, "mindmap-stage--radial") {
     apply_root_column_packing(
+      stage,
       stage.querySelector(".branch-column--left"),
       16,
       1.0,
     )
     apply_root_column_packing(
+      stage,
       stage.querySelector(".branch-column--right"),
       16,
       1.0,

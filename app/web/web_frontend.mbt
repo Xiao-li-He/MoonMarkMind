@@ -4052,7 +4052,7 @@ fn interactive_mindmap_render_hooks() -> @mindmap_render.InteractiveRenderHooks 
     is_hidden_node,
     render_hidden_marker: render_hidden_marker_for_mindmap_render,
     root_left_count: root_branch_left_count,
-    root_branch_span,
+    root_branch_span: root_branch_render_weight,
   }
 }
 
@@ -4262,7 +4262,7 @@ fn root_branch_total_span(
 ) -> Int {
   let mut total = 0
   for index in start..<stop {
-    total += root_branch_span(center.children[index])
+    total += mindmap_branch_visual_span(center.children[index])
   }
   if total <= 0 {
     1
@@ -4273,7 +4273,56 @@ fn root_branch_total_span(
 
 ///|
 fn root_branch_span(node : @outline_parser.OutlineNode) -> Int {
-  contour_subtree_span(node)
+  mindmap_branch_visual_span(node)
+}
+
+///|
+fn root_branch_render_weight(_node : @outline_parser.OutlineNode) -> Int {
+  1
+}
+
+///|
+fn mindmap_branch_visual_span(node : @outline_parser.OutlineNode) -> Int {
+  if is_hidden_node(node.flat_index) {
+    return 24
+  }
+  let own_height = mindmap_branch_node_span(node)
+  if !should_render_children(node) {
+    return own_height
+  }
+  let child_count = node.children.length()
+  if child_count == 0 {
+    return own_height
+  }
+  let mut children_height = 0
+  for child in node.children {
+    children_height += mindmap_branch_visual_span(child)
+  }
+  children_height += (child_count - 1) * 16
+  contour_max_int(own_height, children_height)
+}
+
+///|
+fn mindmap_branch_node_span(node : @outline_parser.OutlineNode) -> Int {
+  let relative_depth = relative_node_depth(node)
+  let base_height = if node.flat_index == app_state.root.flat_index {
+    72
+  } else if relative_depth <= 1 {
+    44
+  } else {
+    32
+  }
+  let chars_per_line = if relative_depth <= 1 { 18 } else { 20 }
+  let line_height = if relative_depth <= 1 { 16 } else { 14 }
+  let title_lines = contour_wrap_lines(node.title, chars_per_line)
+  let extra_title_height = contour_max_int(0, title_lines - 1) * line_height
+  let note_height = if node_has_note(node) ||
+    app_state.editing_note_node == node.flat_index {
+    contour_note_height(node)
+  } else {
+    0
+  }
+  base_height + extra_title_height + note_height
 }
 
 ///|
@@ -4680,56 +4729,6 @@ fn count_subtree_nodes(node : @outline_parser.OutlineNode) -> Int {
 }
 
 ///|
-fn contour_subtree_span(node : @outline_parser.OutlineNode) -> Int {
-  if is_hidden_node(node.flat_index) {
-    return 24
-  }
-  let own_height = contour_node_height(node)
-  if !should_render_children(node) {
-    return own_height
-  }
-  let mut total_children = 0
-  for child in node.children {
-    total_children += contour_subtree_span(child)
-  }
-  let child_count = node.children.length()
-  if child_count == 0 {
-    own_height
-  } else {
-    own_height + 16 + total_children + (child_count - 1) * 16
-  }
-}
-
-///|
-fn contour_node_height(node : @outline_parser.OutlineNode) -> Int {
-  let is_center = node.flat_index == app_state.root.flat_index
-  let base_height = if is_center {
-    72
-  } else if node.level <= app_state.root.level + 1 {
-    60
-  } else {
-    54
-  }
-  let title_chars = if is_center {
-    15
-  } else if app_state.style_mode == "line" {
-    18
-  } else {
-    20
-  }
-  let title_line_height = if is_center {
-    22
-  } else if node.level <= app_state.root.level + 1 {
-    20
-  } else {
-    19
-  }
-  let title_lines = contour_wrap_lines(node.title, title_chars)
-  let note_height = contour_note_height(node)
-  base_height + title_lines * title_line_height + note_height
-}
-
-///|
 fn contour_note_height(node : @outline_parser.OutlineNode) -> Int {
   if !node_has_note(node) || is_note_body_collapsed(node.flat_index) {
     return 0
@@ -4765,60 +4764,6 @@ fn contour_wrap_lines(text : String, chars_per_line : Int) -> Int {
   } else {
     (length + safe_chars - 1) / safe_chars
   }
-}
-
-///|
-fn contour_pack_positions(
-  heights : Array[Int],
-  available_span : Int,
-  gap : Int,
-) -> Array[Int] {
-  let positions = []
-  if heights.length() == 0 {
-    return positions
-  }
-  let mut total = 0
-  for height in heights {
-    total += contour_max_int(1, height)
-  }
-  total += gap * (heights.length() - 1)
-  let mut cursor = 0
-  if available_span > total {
-    cursor = (available_span - total) / 2
-  }
-  for height in heights {
-    positions.push(cursor)
-    cursor += contour_max_int(1, height) + gap
-  }
-  positions
-}
-
-///|
-fn contour_anchor_pack_positions(
-  heights : Array[Int],
-  anchor_center : Int,
-  available_span : Int,
-  gap : Int,
-) -> Array[Int] {
-  let positions = contour_pack_positions(heights, available_span, gap)
-  if positions.length() == 0 {
-    return positions
-  }
-  let mut total = 0
-  for height in heights {
-    total += contour_max_int(1, height)
-  }
-  total += gap * (heights.length() - 1)
-  let expected_start = anchor_center - total / 2
-  let shift = expected_start - positions[0]
-  if shift == 0 {
-    return positions
-  }
-  let adjusted = []
-  for position in positions {
-    adjusted.push(position + shift)
-  }
-  adjusted
 }
 
 ///|
