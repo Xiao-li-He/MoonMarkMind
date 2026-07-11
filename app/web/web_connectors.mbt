@@ -31,7 +31,6 @@ fn render_mindmap_connectors() -> Unit {
               } else {
                 zoom
               }
-              let content_rect = element_rect(content)
               let stage_rect = element_rect(stage_element)
               let stage_left = stage_rect.left
               let stage_top = stage_rect.top
@@ -45,12 +44,6 @@ fn render_mindmap_connectors() -> Unit {
               } else {
                 (stage_rect.height / safe_zoom).round().to_int()
               }
-              let left = ((stage_rect.left - content_rect.left) / safe_zoom)
-                .round()
-                .to_int()
-              let top = ((stage_rect.top - content_rect.top) / safe_zoom)
-                .round()
-                .to_int()
               let svg_paths : Array[@dom.Element] = []
               let layout = stage_layout_kind(stage_element)
               for node in nodes {
@@ -117,12 +110,6 @@ fn render_mindmap_connectors() -> Unit {
               for path in svg_paths {
                 append_child(svg, path)
               }
-              ignore(
-                render_mindmap_connector_controls(
-                  content, stage_element, nodes, stage_left, stage_top, safe_zoom,
-                  left, top, width, height,
-                ),
-              )
             }
             None => ()
           }
@@ -130,35 +117,6 @@ fn render_mindmap_connectors() -> Unit {
       }
     None => ()
   }
-}
-
-///|
-fn render_mindmap_connector_controls(
-  content : @dom.Element,
-  stage : @dom.Element,
-  nodes : Array[@dom.Element],
-  stage_left : Double,
-  stage_top : Double,
-  safe_zoom : Double,
-  left : Int,
-  top : Int,
-  width : Int,
-  height : Int,
-) -> Bool {
-  match content.querySelector(".mindmap-connector-controls") {
-    Some(existing) => existing.remove()
-    None => ()
-  }
-  let _ = nodes
-  let _ = stage
-  let _ = stage_left
-  let _ = stage_top
-  let _ = safe_zoom
-  let _ = left
-  let _ = top
-  let _ = width
-  let _ = height
-  false
 }
 
 ///|
