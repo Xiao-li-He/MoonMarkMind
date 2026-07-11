@@ -939,7 +939,7 @@ fn ensure_mindmap_visible_after_layout(expected_cycle : Int) -> Unit {
     Some(mindmap) => {
       let frame = @ref.Ref(0)
       let window = @dom.window()
-      mindmap_fit_to_view(
+      mindmap_center_at_actual_size(
         mindmap,
         get_element("#zoom-value"),
         get_element("#zoom-edit"),

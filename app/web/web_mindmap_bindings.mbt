@@ -307,6 +307,93 @@ fn mindmap_fit_to_view(
 }
 
 ///|
+fn mindmap_center_at_actual_size(
+  mindmap : @dom.Element,
+  zoom_value : @dom.Element?,
+  zoom_edit : @dom.Element?,
+  frame : @ref.Ref[Int],
+  window : @dom.Window,
+  retry_count? : Int = 3,
+) -> Unit {
+  match mindmap.querySelector(".mindmap-stage") {
+    Some(stage) => {
+      let viewport_width = mindmap.clientWidth().to_double()
+      let viewport_height = mindmap.clientHeight().to_double()
+      mindmap.setAttribute("data-pan-x", "0")
+      mindmap.setAttribute("data-pan-y", "0")
+      mindmap_apply_zoom(
+        mindmap,
+        zoom_value,
+        zoom_edit,
+        frame,
+        window,
+        1.0,
+        preserve_root_anchor=false,
+      )
+      let bounds_ready = match mindmap_node_bounds(stage) {
+        Some((left, top, right, bottom)) =>
+          right - left > 1.0 && bottom - top > 1.0
+        None => false
+      }
+      if (viewport_width <= 1.0 || viewport_height <= 1.0 || !bounds_ready) &&
+        retry_count > 0 {
+        mindmap_schedule_actual_size_center_retry(
+          mindmap, zoom_value, zoom_edit, frame, window, retry_count,
+        )
+        return
+      }
+      mindmap_center_fit_content(mindmap, zoom_value, zoom_edit)
+      mindmap_schedule_connectors(frame, window)
+    }
+    None => {
+      mindmap.setAttribute("data-pan-x", "0")
+      mindmap.setAttribute("data-pan-y", "0")
+      mindmap_apply_zoom(
+        mindmap,
+        zoom_value,
+        zoom_edit,
+        frame,
+        window,
+        1.0,
+        preserve_root_anchor=false,
+      )
+      mindmap_schedule_actual_size_center_retry(
+        mindmap, zoom_value, zoom_edit, frame, window, retry_count,
+      )
+    }
+  }
+}
+
+///|
+fn mindmap_schedule_actual_size_center_retry(
+  mindmap : @dom.Element,
+  zoom_value : @dom.Element?,
+  zoom_edit : @dom.Element?,
+  frame : @ref.Ref[Int],
+  window : @dom.Window,
+  retry_count : Int,
+) -> Unit {
+  if retry_count <= 0 {
+    return
+  }
+  let expected_cycle = current_mindmap_render_cycle()
+  ignore(
+    window.requestAnimationFrame(fn(_) {
+      if mindmap_render_cycle_matches(expected_cycle) {
+        mindmap_center_at_actual_size(
+          mindmap,
+          zoom_value,
+          zoom_edit,
+          frame,
+          window,
+          retry_count=retry_count - 1,
+        )
+      }
+    }),
+  )
+}
+
+///|
 fn mindmap_schedule_fit_retry(
   mindmap : @dom.Element,
   zoom_value : @dom.Element?,
@@ -413,11 +500,7 @@ fn mindmap_recover_visibility_if_needed(
         )
         return
       }
-      mindmap.setAttribute("data-pan-x", "0")
-      mindmap.setAttribute("data-pan-y", "0")
-      mindmap.setAttribute("data-zoom", "1")
-      mindmap_sync_view(mindmap, zoom_value, zoom_edit)
-      mindmap_fit_to_view(
+      mindmap_center_at_actual_size(
         mindmap,
         zoom_value,
         zoom_edit,
@@ -1271,7 +1354,7 @@ fn bind_mindmap_ui(
         window.requestAnimationFrame(fn(_) {
           ignore(
             window.requestAnimationFrame(fn(_) {
-              mindmap_fit_to_view(
+              mindmap_center_at_actual_size(
                 mindmap, zoom_value, zoom_edit, connector_frame, window,
               )
             }),
