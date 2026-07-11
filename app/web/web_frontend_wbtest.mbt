@@ -180,6 +180,56 @@ test "markdown preview renders full source while editor projection is folded" {
 }
 
 ///|
+test "gutter shows fold button for every heading" {
+  app_state.markdown = "# Root\n## Empty"
+  app_state.folded_heading_lines = []
+  current_editor_projection.val = build_editor_projection(app_state.markdown, [])
+  let rows = gutter_visual_rows(InputLineMetrics::{
+    heights: [28, 28],
+    tops: [18, 46],
+    line_height: 28,
+    padding_top: 18,
+  })
+  assert_eq(rows[0].show_fold_button, true)
+  assert_eq(rows[1].show_fold_button, true)
+}
+
+///|
+test "empty heading can keep folded state without projection placeholder" {
+  reset_frontend_test_state()
+  app_state.markdown = "# Root\n## Empty"
+  app_state.folded_heading_lines = toggle_heading_fold_lines(
+    app_state.markdown,
+    app_state.folded_heading_lines,
+    1,
+  )
+  assert_eq(contains_int(app_state.folded_heading_lines, 1), true)
+  let projection = build_editor_projection(
+    app_state.markdown,
+    app_state.folded_heading_lines,
+  )
+  inspect(projection.visible_text, content="# Root\n## Empty")
+  inspect(projection.placeholders.length(), content="0")
+}
+
+///|
+test "gutter marks empty heading folded when toggled" {
+  app_state.markdown = "# Root\n## Empty"
+  app_state.folded_heading_lines = [1]
+  current_editor_projection.val = build_editor_projection(app_state.markdown, [
+    1,
+  ])
+  let rows = gutter_visual_rows(InputLineMetrics::{
+    heights: [28, 28],
+    tops: [18, 46],
+    line_height: 28,
+    padding_top: 18,
+  })
+  assert_eq(rows[1].show_fold_button, true)
+  assert_eq(rows[1].folded, true)
+}
+
+///|
 test "markdown preview display values restore editor after preview" {
   let preview = markdown_preview_display_values(true)
   assert_eq(preview.0, "none")

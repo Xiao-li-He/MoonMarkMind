@@ -1453,9 +1453,9 @@ fn gutter_visual_rows(metrics : InputLineMetrics) -> Array[GutterVisualRow] {
     } else {
       0
     }
-    let foldable = source_line >= 0 &&
+    let heading = source_line >= 0 &&
       !placeholder &&
-      folded_heading_range(app_state.markdown, source_line) is Some(_)
+      is_heading_source_line(app_state.markdown, source_line)
     let folded = contains_int(app_state.folded_heading_lines, source_line)
     for
       visual_index, visual_height in measure_mirror_line_heights(
@@ -1467,7 +1467,7 @@ fn gutter_visual_rows(metrics : InputLineMetrics) -> Array[GutterVisualRow] {
         source_line,
         height: visual_height,
         show_number: visual_index == 0,
-        show_fold_button: foldable && visual_index == 0 && !placeholder,
+        show_fold_button: heading && visual_index == 0 && !placeholder,
         folded,
         placeholder,
       })

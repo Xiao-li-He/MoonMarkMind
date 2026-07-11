@@ -325,6 +325,23 @@ fn folded_heading_range(markdown : String, source_line : Int) -> (Int, Int)? {
 }
 
 ///|
+fn is_heading_source_line(markdown : String, source_line : Int) -> Bool {
+  if source_line < 0 {
+    return false
+  }
+  for node in @outline_parser.parse_markdown_nodes(markdown) {
+    match node.kind {
+      @outline_parser.MarkdownNodeKind::Heading =>
+        if node.source_line == source_line {
+          return true
+        }
+      _ => ()
+    }
+  }
+  false
+}
+
+///|
 fn source_line_to_visible_line(source_line : Int) -> Int {
   let projection = current_editor_projection.val
   for visible_line in 0..<projection.visible_line_to_source_line.length() {
@@ -387,30 +404,39 @@ fn unfold_hidden_source_line(source_line : Int) -> Bool {
 
 ///|
 fn toggle_heading_fold(source_line : Int) -> Unit {
-  if source_line < 0 ||
-    folded_heading_range(app_state.markdown, source_line) is None {
+  let next = toggle_heading_fold_lines(
+    app_state.markdown,
+    app_state.folded_heading_lines,
+    source_line,
+  )
+  if next == app_state.folded_heading_lines {
     return
   }
-  if contains_int(app_state.folded_heading_lines, source_line) {
-    app_state.folded_heading_lines = remove_int(
-      app_state.folded_heading_lines,
-      source_line,
-    )
-  } else {
-    app_state.folded_heading_lines = append_unique_int(
-      app_state.folded_heading_lines,
-      source_line,
-    )
-  }
+  app_state.folded_heading_lines = next
   sync_editor_input_projection()
   sync_editor_chrome()
+}
+
+///|
+fn toggle_heading_fold_lines(
+  markdown : String,
+  folded_heading_lines : Array[Int],
+  source_line : Int,
+) -> Array[Int] {
+  if source_line < 0 || !is_heading_source_line(markdown, source_line) {
+    folded_heading_lines
+  } else if contains_int(folded_heading_lines, source_line) {
+    remove_int(folded_heading_lines, source_line)
+  } else {
+    append_unique_int(folded_heading_lines, source_line)
+  }
 }
 
 ///|
 fn sanitize_folded_heading_state() -> Unit {
   let next : Array[Int] = []
   for line in app_state.folded_heading_lines {
-    if folded_heading_range(app_state.markdown, line) is Some(_) {
+    if is_heading_source_line(app_state.markdown, line) {
       next.push(line)
     }
   }
