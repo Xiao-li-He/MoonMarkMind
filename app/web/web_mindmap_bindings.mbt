@@ -900,6 +900,47 @@ fn schedule_mindmap_reveal_node(node_index : Int) -> Unit {
 }
 
 ///|
+fn schedule_mindmap_reveal_node_or_recenter(node_index : Int) -> Unit {
+  match get_element("#mindmap") {
+    Some(mindmap) => {
+      let window = @dom.window()
+      ignore(
+        window.requestAnimationFrame(fn(_) {
+          ignore(
+            window.requestAnimationFrame(fn(_) {
+              let frame = @ref.Ref(0)
+              if node_index >= 0 &&
+                mindmap.querySelector(
+                  ".node[data-node-index=\"\{node_index}\"]",
+                )
+                is Some(_) {
+                mindmap_reveal_node(
+                  mindmap,
+                  node_index,
+                  get_element("#zoom-value"),
+                  get_element("#zoom-edit"),
+                  frame,
+                  window,
+                )
+              } else {
+                mindmap_recenter_pan(
+                  mindmap,
+                  get_element("#zoom-value"),
+                  get_element("#zoom-edit"),
+                  frame,
+                  window,
+                )
+              }
+            }),
+          )
+        }),
+      )
+    }
+    None => ()
+  }
+}
+
+///|
 fn mindmap_recenter_pan(
   mindmap : @dom.Element,
   zoom_value : @dom.Element?,

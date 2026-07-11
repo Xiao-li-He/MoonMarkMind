@@ -613,9 +613,8 @@ fn on_input_selected_headings_change(serialized : String) -> Unit {
 ///|
 fn on_layout_change(mode : String) -> Unit {
   app_state.layout_mode = normalize_layout_mode(mode)
-  app_state.ensure_mindmap_visible = true
   render_ui()
-  schedule_mindmap_recenter_current_view()
+  schedule_mindmap_reveal_node_or_recenter(app_state.selected_node)
 }
 
 ///|
