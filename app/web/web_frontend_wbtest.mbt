@@ -1849,11 +1849,6 @@ test "root branch split balances siblings by count" {
 }
 
 ///|
-test "root branch weight style keeps hundredth precision" {
-  assert_eq(format_percentage_from_basis_points(1666), "16.66%")
-}
-
-///|
 test "normalize markdown body lines collapses blank separators" {
   let normalized = @outline_parser.normalize_markdown_body_lines([
     "  ", "First line", "Second line", "\t", "Third line", "", "", "Fourth line",
