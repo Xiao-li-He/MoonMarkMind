@@ -8,6 +8,12 @@ pub fn add_sibling_heading(String, Int, String, Bool) -> String
 
 pub fn delete_heading(String, Int) -> String
 
+pub async fn export_mindmap_html(String, String, String, String) -> String
+
+pub async fn export_mindmap_png_data_url(String, String, String, String) -> String
+
+pub async fn export_mindmap_svg(String, String, String, String) -> String
+
 pub fn indent_heading(String, Int) -> String
 
 pub fn move_heading(String, Int, Int, Bool) -> String

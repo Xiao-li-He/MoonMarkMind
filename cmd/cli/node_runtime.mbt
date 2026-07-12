@@ -4,7 +4,8 @@ fn ensure_output_parent(output_path : String) -> Unit raise {
     let parent = @path.dirname(node_path_resolve([output_path]))
     @node_fs.mkdirSync(parent, recursive=true)
   } catch {
-    @core.ThrowError(error) => fail("Failed to create output directory: \{error}")
+    @core.ThrowError(error) =>
+      fail("Failed to create output directory: \{error}")
   }
 }
 
@@ -26,8 +27,7 @@ fn ensure_web_bundle(root : String) -> Unit raise {
       @child_process.spawnSync(
         shell,
         args=[
-          "-ExecutionPolicy", "Bypass", "-File", script, "-NoServe",
-          "-NoOpenBrowser",
+          "-ExecutionPolicy", "Bypass", "-File", script, "-NoServe", "-NoOpenBrowser",
         ],
         cwd=root,
         stdio="pipe",
@@ -57,24 +57,38 @@ fn find_browser_executable(preferred : String) -> String raise {
   let env = @node.esm_require("node:process")._get("env")
   let candidates = if @os.platform() == "win32" {
     [
-      env_value(env, "LOCALAPPDATA").map(fn(p) { node_path_join([p, "Google", "Chrome", "Application", "chrome.exe"]) }),
-      env_value(env, "PROGRAMFILES").map(fn(p) { node_path_join([p, "Google", "Chrome", "Application", "chrome.exe"]) }),
-      env_value(env, "PROGRAMFILES(X86)").map(fn(p) { node_path_join([p, "Google", "Chrome", "Application", "chrome.exe"]) }),
-      env_value(env, "PROGRAMFILES").map(fn(p) { node_path_join([p, "Microsoft", "Edge", "Application", "msedge.exe"]) }),
-      env_value(env, "PROGRAMFILES(X86)").map(fn(p) { node_path_join([p, "Microsoft", "Edge", "Application", "msedge.exe"]) }),
+      env_value(env, "LOCALAPPDATA").map(fn(p) {
+        node_path_join([p, "Google", "Chrome", "Application", "chrome.exe"])
+      }),
+      env_value(env, "PROGRAMFILES").map(fn(p) {
+        node_path_join([p, "Google", "Chrome", "Application", "chrome.exe"])
+      }),
+      env_value(env, "PROGRAMFILES(X86)").map(fn(p) {
+        node_path_join([p, "Google", "Chrome", "Application", "chrome.exe"])
+      }),
+      env_value(env, "PROGRAMFILES").map(fn(p) {
+        node_path_join([p, "Microsoft", "Edge", "Application", "msedge.exe"])
+      }),
+      env_value(env, "PROGRAMFILES(X86)").map(fn(p) {
+        node_path_join([p, "Microsoft", "Edge", "Application", "msedge.exe"])
+      }),
       Some("chrome.exe"),
       Some("msedge.exe"),
     ]
   } else {
     [
-      Some("google-chrome"), Some("chrome"), Some("chromium"),
-      Some("chromium-browser"), Some("microsoft-edge"), Some("msedge"),
+      Some("google-chrome"),
+      Some("chrome"),
+      Some("chromium"),
+      Some("chromium-browser"),
+      Some("microsoft-edge"),
+      Some("msedge"),
     ]
   }
   for candidate in candidates {
     match candidate {
       Some(name) if @node_fs.existsSync(name) => return name
-      Some(name) => {
+      Some(name) =>
         try
           @child_process.spawnSync(name, args=["--version"], stdio="pipe")
         catch {
@@ -82,7 +96,6 @@ fn find_browser_executable(preferred : String) -> String raise {
         } noraise {
           result => if result.status() == Some(0) { return name }
         }
-      }
       None => ()
     }
   }
@@ -91,16 +104,14 @@ fn find_browser_executable(preferred : String) -> String raise {
 
 ///|
 fn node_path_join(parts : Array[String]) -> String {
-  @node
-  .esm_require("node:path")
+  @node.esm_require("node:path")
   ._call("join", parts.map(fn(part) { @core.any(part) }))
   .cast()
 }
 
 ///|
 fn node_path_resolve(parts : Array[String]) -> String {
-  @node
-  .esm_require("node:path")
+  @node.esm_require("node:path")
   ._call("resolve", parts.map(fn(part) { @core.any(part) }))
   .cast()
 }

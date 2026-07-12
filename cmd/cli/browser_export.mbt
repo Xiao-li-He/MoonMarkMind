@@ -14,7 +14,7 @@ priv struct BrowserRuntime {
 ///|
 priv struct CdpClient {
   socket : @websocket.WebSocket
-  responses : Map[Int, @core.Any]
+  messages : Array[@core.Any]
   mut next_id : Int
 }
 
@@ -51,15 +51,14 @@ async fn perform_browser_export(
     let websocket_url = wait_for_page_websocket(browser.debug_port)
     let client = open_cdp_client(websocket_url)
     try {
-      ignore(client.send(
-        "Page.navigate",
-        @core.from_entries([
-          (
-            "url",
-            @core.any("http://127.0.0.1:\{server.port}/index.html"),
-          ),
-        ]),
-      ))
+      ignore(
+        client.send(
+          "Page.navigate",
+          @core.from_entries([
+            ("url", @core.any("http://127.0.0.1:\{server.port}/index.html")),
+          ]),
+        ),
+      )
       wait_for_export_api(client)
       let export_method = match format {
         "png" => "exportMindmapPngDataUrl"
@@ -130,9 +129,9 @@ async fn start_static_server(web_dir : String) -> StaticServer {
     }
     @core.sleep(10)
   }
-  let address = server.address().unwrap_or_else(() => {
-    fail("Static server did not expose an address")
-  })
+  let address = server
+    .address()
+    .unwrap_or_else(() => fail("Static server did not expose an address"))
   { server, port: address.port() }
 }
 
@@ -150,11 +149,7 @@ fn content_type(path : String) -> String {
 
 ///|
 fn unique_temp_dir() -> String raise {
-  let timestamp = @core
-    .global_this()
-    ._get("Date")
-    ._call("now", [])
-    .to_string()
+  let timestamp = @core.global_this()._get("Date")._call("now", []).to_string()
   let dir = node_path_join([@os.tmpdir(), "moonmarkmind-cli-\{timestamp}"])
   @node_fs.mkdirSync(dir, recursive=true)
   dir
@@ -163,18 +158,17 @@ fn unique_temp_dir() -> String raise {
 ///|
 async fn start_browser(browser_path : String) -> BrowserRuntime {
   let user_data_dir = unique_temp_dir()
-  let process = @child_process.spawn(
-    browser_path,
-    args=[
-      "--headless=new",
-      "--disable-gpu",
-      "--no-first-run",
-      "--no-default-browser-check",
-      "--remote-debugging-port=0",
-      "--user-data-dir=\{user_data_dir}",
-      "about:blank",
-    ],
-  )
+  let process = @child_process.spawn(browser_path, args=[
+    "--headless=new",
+    "--disable-gpu",
+    "--disable-dev-shm-usage",
+    "--no-sandbox",
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--remote-debugging-port=0",
+    "--user-data-dir=\{user_data_dir}",
+    "about:blank",
+  ])
   let active_port_file = node_path_join([user_data_dir, "DevToolsActivePort"])
   let debug_port = wait_for_debug_port(active_port_file)
   { process, user_data_dir, debug_port }
@@ -184,7 +178,9 @@ async fn start_browser(browser_path : String) -> BrowserRuntime {
 async fn wait_for_debug_port(path : String) -> Int {
   for _ in 0..<100 {
     if @node_fs.existsSync(path) {
-      let lines = @node_fs.read_file_as_string(path).split("\n".view()).to_array()
+      let lines = @node_fs.read_file_as_string(path)
+        .split("\n".view())
+        .to_array()
       match lines.get(0) {
         Some(line) => return parse_decimal_int(line.to_owned())
         None => ()
@@ -224,19 +220,14 @@ async fn wait_for_page_websocket(debug_port : Int) -> String {
 
 ///|
 async fn open_cdp_client(url : String) -> CdpClient {
-  let socket = @websocket.WebSocket::new(url)
-  let responses : Map[Int, @core.Any] = {}
+  let socket = create_websocket(url)
+  let messages : Array[@core.Any] = []
   socket.set_onmessage(fn(event) {
-    let message = @core.json_parse(@websocket.get_message_data(event))
-    let id_value = message._get("id")
-    if !@core.is_undefined(id_value) {
-      let id : Int = id_value.cast()
-      responses[id] = message
-    }
+    messages.push(@core.json_parse(@websocket.get_message_data(event)))
   })
   for _ in 0..<100 {
     if socket.readyState == 1 {
-      return { socket, responses, next_id: 1 }
+      return { socket, messages, next_id: 1 }
     }
     if socket.readyState == 3 {
       fail("Browser debugging WebSocket closed before opening")
@@ -248,7 +239,16 @@ async fn open_cdp_client(url : String) -> CdpClient {
 }
 
 ///|
-async fn CdpClient::send(self : CdpClient, method_name : String, params : @core.Any) -> @core.Any {
+fn create_websocket(url : String) -> @websocket.WebSocket {
+  @core.new(@core.global_this()._get("WebSocket"), [@core.any(url)]).cast()
+}
+
+///|
+async fn CdpClient::send(
+  self : CdpClient,
+  method_name : String,
+  params : @core.Any,
+) -> @core.Any {
   let id = self.next_id
   self.next_id += 1
   self.socket.send_string(
@@ -261,17 +261,17 @@ async fn CdpClient::send(self : CdpClient, method_name : String, params : @core.
     ),
   )
   for _ in 0..<600 {
-    match self.responses.get(id) {
-      Some(message) => {
-        self.responses.remove(id)
+    for message in self.messages {
+      let id_value = message._get("id")
+      if !@core.is_undefined(id_value) && id_value.to_string() == "\{id}" {
         let error = message._get("error")
         if !@core.is_undefined(error) {
           fail("CDP \{method_name} failed: \{@core.json_stringify(error)}")
         }
         return message._get("result")
       }
-      None => @core.sleep(25)
     }
+    @core.sleep(25)
   }
   fail("Timed out waiting for CDP method \{method_name}")
 }
@@ -301,6 +301,8 @@ async fn CdpClient::evaluate(
   let value = result._get("result")._get("value")
   if @core.is_undefined(value) {
     ""
+  } else if result._get("result")._get("type").to_string() == "string" {
+    (value.cast() : String)
   } else {
     value.to_string()
   }
@@ -332,15 +334,27 @@ fn any_string_field(value : @core.Any, field : String) -> String {
 }
 
 ///|
-fn write_export_output(format : String, output_path : String, value : String) -> Unit raise {
+fn write_export_output(
+  format : String,
+  output_path : String,
+  value : String,
+) -> Unit raise {
   if format == "png" {
     let encoded = png_base64_payload(value)
-    let buffer = @buffer.Buffer::from_string(encoded, encoding="base64")
-    @node_fs.writeFileSync(output_path, buffer.as_any())
+    @node_fs.writeFileSync(
+      output_path,
+      node_buffer_from_string(encoded, "base64"),
+    )
   } else {
-    let buffer = @buffer.Buffer::from_string(value, encoding="utf8")
-    @node_fs.writeFileSync(output_path, buffer.as_any())
+    @node_fs.writeFileSync(output_path, node_buffer_from_string(value, "utf8"))
   }
+}
+
+///|
+fn node_buffer_from_string(value : String, encoding : String) -> @core.Any {
+  @node.esm_require("node:buffer")
+  ._get("Buffer")
+  ._call("from", [@core.any(value), @core.any(encoding)])
 }
 
 ///|
@@ -362,9 +376,7 @@ fn CdpClient::close(self : CdpClient) -> Unit {
 fn cleanup_runtime(browser : BrowserRuntime, server : StaticServer) -> Unit {
   ignore(browser.process.kill())
   server.server.close() |> ignore
-  try @node_fs.rmSync(
-    browser.user_data_dir, recursive=true, force=true,
-  ) catch {
+  try @node_fs.rmSync(browser.user_data_dir, recursive=true, force=true) catch {
     _ => ()
   } noraise {
     _ => ()

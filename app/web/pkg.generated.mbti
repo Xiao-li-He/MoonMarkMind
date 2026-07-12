@@ -2,6 +2,12 @@
 package "Xiao-li-He/MoonMarkMind/app/web"
 
 // Values
+pub async fn export_mindmap_html(String, String, String, String) -> String
+
+pub async fn export_mindmap_png_data_url(String, String, String, String) -> String
+
+pub async fn export_mindmap_svg(String, String, String, String) -> String
+
 pub fn render_markdown_blocks_html(Array[String]) -> String
 
 pub fn render_markdown_html(String) -> String
