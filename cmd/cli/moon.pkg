@@ -2,12 +2,21 @@ import {
   "moonbitlang/core/argparse",
   "moonbitlang/core/env",
   "moonbitlang/x/sys",
-  "mizchi/x/fs",
   "mizchi/js/core",
+  "mizchi/js/node" @node,
+  "mizchi/js/node/buffer" @buffer,
+  "mizchi/js/node/child_process" @child_process,
+  "mizchi/js/node/fs" @node_fs,
+  "mizchi/js/node/http" @http,
+  "mizchi/js/node/os" @os,
+  "mizchi/js/node/path" @path,
+  "mizchi/js/web/http" @web_http,
+  "mizchi/js/web/websocket" @websocket,
   "moonbitlang/async",
-  "moonbitlang/async/io",
 }
 
 options(
   "is-main": true,
 )
+
+supported_targets = "js"

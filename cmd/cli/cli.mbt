@@ -187,15 +187,18 @@ fn validate_layer(value : String) -> String raise {
 }
 
 ///|
-async fn validate_input(input : String) -> Unit {
-  match @fs.kind(input) {
-    @fs.FileKind::Regular =>
-      if !is_markdown_path(input) {
-        fail("Input file is not Markdown: \{input}")
-      }
-    @fs.FileKind::Directory =>
-      fail("Directory input is not supported: \{input}")
+fn validate_input(input : String) -> Unit raise {
+  let stat = @node_fs.statSync(input) catch {
     _ => fail("Input is not a Markdown file: \{input}")
+  }
+  if stat.isDirectory() {
+    fail("Directory input is not supported: \{input}")
+  }
+  if !stat.isFile() {
+    fail("Input is not a Markdown file: \{input}")
+  }
+  if !is_markdown_path(input) {
+    fail("Input file is not Markdown: \{input}")
   }
 }
 
@@ -262,11 +265,12 @@ fn file_stem(path : String) -> String {
 ///|
 async fn run_export(request : CliRequest) -> Unit {
   validate_input(request.input_path)
+  @node.init_esm_require().wait()
   ensure_output_parent(request.output_path)
   ensure_web_bundle(".")
   let browser = find_browser_executable(request.browser_path)
-  let markdown = @fs.read_file(request.input_path).text()
-  let export_error = export_with_browser(
+  let markdown = @node_fs.read_file_as_string(request.input_path)
+  export_with_browser(
     "web",
     browser,
     markdown,
@@ -275,252 +279,9 @@ async fn run_export(request : CliRequest) -> Unit {
     request.layer,
     request.output_format,
     request.output_path,
-  ).wait()
-  if export_error.length() > 0 {
-    fail(export_error)
-  }
+  )
   println("Exported \{request.output_format}: \{request.output_path}")
 }
-
-///|
-extern "js" fn ensure_output_parent(output_path : String) -> Unit =
-  #| (outputPath) => {
-  #|   const fs = require("node:fs");
-  #|   const path = require("node:path");
-  #|   const parent = path.dirname(path.resolve(outputPath));
-  #|   fs.mkdirSync(parent, { recursive: true });
-  #| }
-
-///|
-extern "js" fn ensure_web_bundle(root : String) -> Unit =
-  #| (root) => {
-  #|   const fs = require("node:fs");
-  #|   const path = require("node:path");
-  #|   const childProcess = require("node:child_process");
-  #|   const bundle = path.join(root, "web", "main.bundle.js");
-  #|   const script = path.join(root, "build-web.ps1");
-  #|   if (fs.existsSync(bundle)) return;
-  #|   const candidates = process.platform === "win32" ? ["powershell", "pwsh"] : ["pwsh"];
-  #|   let last = "";
-  #|   for (const shell of candidates) {
-  #|     const result = childProcess.spawnSync(
-  #|       shell,
-  #|       ["-ExecutionPolicy", "Bypass", "-File", script, "-NoServe", "-NoOpenBrowser"],
-  #|       { cwd: root, encoding: "utf8" },
-  #|     );
-  #|     if (result.status === 0) return;
-  #|     last = `${shell}: ${result.stderr || result.stdout || result.error || ""}`;
-  #|   }
-  #|   throw new Error(`Failed to build web bundle. ${last}`);
-  #| }
-
-///|
-extern "js" fn find_browser_executable(preferred : String) -> String =
-  #| (preferred) => {
-  #|   const fs = require("node:fs");
-  #|   const childProcess = require("node:child_process");
-  #|   if (preferred && fs.existsSync(preferred)) return preferred;
-  #|   const names = process.platform === "win32"
-  #|     ? [
-  #|         process.env.LOCALAPPDATA && `${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`,
-  #|         process.env.PROGRAMFILES && `${process.env.PROGRAMFILES}\\Google\\Chrome\\Application\\chrome.exe`,
-  #|         process.env["PROGRAMFILES(X86)"] && `${process.env["PROGRAMFILES(X86)"]}\\Google\\Chrome\\Application\\chrome.exe`,
-  #|         process.env.PROGRAMFILES && `${process.env.PROGRAMFILES}\\Microsoft\\Edge\\Application\\msedge.exe`,
-  #|         process.env["PROGRAMFILES(X86)"] && `${process.env["PROGRAMFILES(X86)"]}\\Microsoft\\Edge\\Application\\msedge.exe`,
-  #|         "chrome.exe",
-  #|         "msedge.exe",
-  #|       ]
-  #|     : ["google-chrome", "chrome", "chromium", "chromium-browser", "microsoft-edge", "msedge"];
-  #|   for (const name of names.filter(Boolean)) {
-  #|     if (fs.existsSync(name)) return name;
-  #|     const probe = childProcess.spawnSync(name, ["--version"], { encoding: "utf8" });
-  #|     if (probe.status === 0) return name;
-  #|   }
-  #|   if (preferred) {
-  #|     throw new Error(`Browser executable not found: ${preferred}`);
-  #|   }
-  #|   throw new Error("Chrome or Edge executable not found. Pass --browser <path>.");
-  #| }
-
-///|
-extern "js" fn export_with_browser(
-  web_dir : String,
-  browser_path : String,
-  markdown : String,
-  layout : String,
-  style : String,
-  layer : String,
-  format : String,
-  output_path : String,
-) -> @core.Promise[String] =
-  #| async (webDir, browserPath, markdown, layout, style, layer, format, outputPath) => {
-  #|   const fs = require("node:fs");
-  #|   const path = require("node:path");
-  #|   const os = require("node:os");
-  #|   const http = require("node:http");
-  #|   const childProcess = require("node:child_process");
-  #|   try {
-  #|   if (typeof WebSocket === "undefined") {
-  #|     throw new Error("Node.js WebSocket support is required for browser export.");
-  #|   }
-  #|   const absoluteWebDir = path.resolve(webDir);
-  #|   const contentTypes = new Map([
-  #|     [".html", "text/html; charset=utf-8"],
-  #|     [".js", "text/javascript; charset=utf-8"],
-  #|     [".css", "text/css; charset=utf-8"],
-  #|     [".png", "image/png"],
-  #|     [".md", "text/markdown; charset=utf-8"],
-  #|   ]);
-  #|   const server = http.createServer((req, res) => {
-  #|     const url = new URL(req.url || "/", "http://127.0.0.1");
-  #|     const requested = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
-  #|     const file = path.resolve(absoluteWebDir, `.${requested}`);
-  #|     if (!file.startsWith(absoluteWebDir)) {
-  #|       res.writeHead(403);
-  #|       res.end("Forbidden");
-  #|       return;
-  #|     }
-  #|     fs.readFile(file, (err, data) => {
-  #|       if (err) {
-  #|         res.writeHead(404);
-  #|         res.end("Not found");
-  #|         return;
-  #|       }
-  #|       res.writeHead(200, { "Content-Type": contentTypes.get(path.extname(file)) || "application/octet-stream" });
-  #|       res.end(data);
-  #|     });
-  #|   });
-  #|   await new Promise((resolve, reject) => {
-  #|     server.once("error", reject);
-  #|     server.listen(0, "127.0.0.1", resolve);
-  #|   });
-  #|   const serverPort = server.address().port;
-  #|   const debugPort = 40000 + Math.floor(Math.random() * 20000);
-  #|   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "moonmarkmind-cli-"));
-  #|   const browser = childProcess.spawn(browserPath, [
-  #|     "--headless=new",
-  #|     "--disable-gpu",
-  #|     "--no-first-run",
-  #|     "--no-default-browser-check",
-  #|     `--user-data-dir=${userDataDir}`,
-  #|     `--remote-debugging-port=${debugPort}`,
-  #|     "about:blank",
-  #|   ], { stdio: "ignore" });
-  #|   const closeAll = async () => {
-  #|     try { browser.kill(); } catch (_) {}
-  #|     try { server.close(); } catch (_) {}
-  #|     try { fs.rmSync(userDataDir, { recursive: true, force: true }); } catch (_) {}
-  #|   };
-  #|   try {
-  #|     await waitForJson(`http://127.0.0.1:${debugPort}/json/version`, 8000);
-  #|     const targets = await waitForJson(`http://127.0.0.1:${debugPort}/json/list`, 8000);
-  #|     const pageTarget = targets.find((target) => target.type === "page" && target.webSocketDebuggerUrl);
-  #|     if (!pageTarget) throw new Error("Browser did not expose a debuggable page target");
-  #|     const ws = await openWebSocket(pageTarget.webSocketDebuggerUrl);
-  #|     let nextId = 1;
-  #|     const pending = new Map();
-  #|     const listeners = [];
-  #|     ws.addEventListener("message", async (event) => {
-  #|       const raw = typeof event.data === "string"
-  #|         ? event.data
-  #|         : event.data && typeof event.data.text === "function"
-  #|           ? await event.data.text()
-  #|           : Buffer.from(event.data).toString("utf8");
-  #|       const msg = JSON.parse(raw);
-  #|       if (msg.id && pending.has(msg.id)) {
-  #|         const { resolve, reject, timer } = pending.get(msg.id);
-  #|         clearTimeout(timer);
-  #|         pending.delete(msg.id);
-  #|         msg.error ? reject(new Error(JSON.stringify(msg.error))) : resolve(msg.result || {});
-  #|       }
-  #|       for (const listener of listeners) listener(msg);
-  #|     });
-  #|     const send = (method, params = {}, sessionId = undefined) => new Promise((resolve, reject) => {
-  #|       const id = nextId++;
-  #|       const timer = setTimeout(() => {
-  #|         pending.delete(id);
-  #|         reject(new Error(`Timed out waiting for CDP method ${method}`));
-  #|       }, 15000);
-  #|       pending.set(id, { resolve, reject, timer });
-  #|       ws.send(JSON.stringify(sessionId ? { id, method, params, sessionId } : { id, method, params }));
-  #|     });
-  #|     const sessionId = undefined;
-  #|     await send("Page.navigate", { url: `http://127.0.0.1:${serverPort}/index.html` }, sessionId);
-  #|     await waitForExportApi(send, sessionId, 10000);
-  #|     const args = [markdown, layout, style, layer].map(JSON.stringify).join(",");
-  #|     const method = format === "png"
-  #|       ? "exportMindmapPngDataUrl"
-  #|       : format === "svg"
-  #|         ? "exportMindmapSvg"
-  #|         : "exportMindmapHtml";
-  #|     const value = await evaluate(send, sessionId, `globalThis.MoonMarkMind.${method}(${args})`);
-  #|     if (format === "png") {
-  #|       const marker = "base64,";
-  #|       const index = value.indexOf(marker);
-  #|       if (!value.startsWith("data:image/png") || index < 0) {
-  #|         throw new Error("Browser did not return a PNG data URL");
-  #|       }
-  #|       fs.writeFileSync(outputPath, Buffer.from(value.slice(index + marker.length), "base64"));
-  #|     } else {
-  #|       fs.writeFileSync(outputPath, value, "utf8");
-  #|     }
-  #|     try { await send("Browser.close"); } catch (_) {}
-  #|     try { ws.close(); } catch (_) {}
-  #|   } finally {
-  #|     await closeAll();
-  #|   }
-  #|   async function waitForJson(url, timeoutMs) {
-  #|     const started = Date.now();
-  #|     while (Date.now() - started < timeoutMs) {
-  #|       try {
-  #|         const response = await fetch(url);
-  #|         if (response.ok) return await response.json();
-  #|       } catch (_) {}
-  #|       await new Promise((resolve) => setTimeout(resolve, 100));
-  #|     }
-  #|     throw new Error("Timed out waiting for browser debugging endpoint");
-  #|   }
-  #|   function openWebSocket(url) {
-  #|     return new Promise((resolve, reject) => {
-  #|       const ws = new WebSocket(url);
-  #|       ws.addEventListener("open", () => resolve(ws), { once: true });
-  #|       ws.addEventListener("error", reject, { once: true });
-  #|     });
-  #|   }
-  #|   async function waitForExportApi(send, sessionId, timeoutMs) {
-  #|     const started = Date.now();
-  #|     while (Date.now() - started < timeoutMs) {
-  #|       const result = await send("Runtime.evaluate", {
-  #|         expression: "Boolean(document.readyState !== 'loading' && globalThis.MoonMarkMind && globalThis.MoonMarkMind.exportMindmapHtml)",
-  #|         returnByValue: true,
-  #|       }, sessionId);
-  #|       if (result.result && result.result.value === true) return;
-  #|       await new Promise((resolve) => setTimeout(resolve, 100));
-  #|     }
-  #|     throw new Error("MoonMarkMind export API did not become ready");
-  #|   }
-  #|   async function evaluate(send, sessionId, expression) {
-  #|     const result = await send("Runtime.evaluate", {
-  #|       expression,
-  #|       awaitPromise: true,
-  #|       returnByValue: true,
-  #|     }, sessionId);
-  #|     if (result.exceptionDetails) {
-  #|       const details = result.exceptionDetails;
-  #|       const description = details.exception && details.exception.description;
-  #|       const frames = details.stackTrace && details.stackTrace.callFrames;
-  #|       const stack = Array.isArray(frames)
-  #|         ? frames.map((frame) => `    at ${frame.functionName || "<anonymous>"} (${frame.url}:${frame.lineNumber + 1}:${frame.columnNumber + 1})`).join("\n")
-  #|         : "";
-  #|       throw new Error([description || details.text || "Browser evaluation failed", stack].filter(Boolean).join("\n"));
-  #|     }
-  #|     return result.result ? result.result.value || "" : "";
-  #|   }
-  #|   return "";
-  #|   } catch (error) {
-  #|     return error && error.stack ? String(error.stack) : String(error);
-  #|   }
-  #| }
 
 ///|
 pub async fn run() -> Unit {
