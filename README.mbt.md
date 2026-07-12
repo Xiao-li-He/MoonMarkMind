@@ -114,6 +114,8 @@ moon run cmd/cli samples/example1.md -o output/example1.png
 ## Web App Features
 
 - Markdown 实时转换为结构化脑图。
+- 支持 Markdown 编辑区按标题层级折叠/展开。
+- 支持 Markdown 文档的 HTML 富文本预览。
 - 支持脑图、树状图、逻辑图三种布局。
 - 支持填充卡片和线框/分支线两种样式。
 - 支持完整、中等、精简详情级别。

@@ -6,15 +6,15 @@
 
 ```text
 Markdown 文本
-  -> app/web/heading_parser.mbt 解析结构线索
-  -> app/web/outline_tree.mbt 构建层级树
-  -> app/web/outline_model.mbt 维护可编辑模型
-  -> app/web/web_frontend.mbt / app/web/web_mindmap_bindings.mbt 渲染和交互
-  -> app/web/outline_model.mbt 回写 Markdown
-  -> app/web/web_dom.mbt 导出 PNG / SVG / HTML
+  -> lib/outline_parser 解析结构线索并构建 OutlineNode 层级树
+  -> lib/outline_parser 维护结构编辑与 Markdown 回写
+  -> lib/markdown_render / packages/markdown_to_html 渲染 HTML 富文本预览
+  -> lib/mindmap_render / packages/markdown_to_mindmap 渲染静态 HTML/SVG 脑图
+  -> app/web 组织浏览器端编辑器、脑图交互、预览和导出
+  -> cmd/cli 复用 Web 渲染链路导出单个 Markdown 文件为 PNG / SVG / HTML
 ```
 
-Markdown 是主数据源。脑图中的结构编辑最终应能回写为可读 Markdown。
+Markdown 是主数据源。脑图中的结构编辑最终应能回写为可读 Markdown；可复用包和 CLI 都应围绕同一解析、渲染和导出规则工作。
 
 ## 2. Markdown 到脑图
 
@@ -188,6 +188,6 @@ HTML 导出用于独立打开和演示，应保留必要的运行时逻辑，在
 ## 7. 验收映射
 
 - 完成度：README 和 ACCEPTANCE 中的关键功能路径可触发声明范围。
-- 工程质量：MoonBit 模块按解析、模型、渲染、Web 交互、导出拆分。
+- 工程质量：MoonBit 模块按解析/模型、Markdown 渲染、脑图渲染、可复用包、Web 交互、CLI 导出拆分。
 - 可解释性：本文档解释核心规则，README 和验收说明解释运行方式、模块边界与关键功能路径。
-- 用户体验：Web 页面提供直接编辑、实时预览、示例加载和导出能力。
+- 用户体验：Web 页面提供直接编辑、HTML 富文本预览、示例加载和导出能力。
