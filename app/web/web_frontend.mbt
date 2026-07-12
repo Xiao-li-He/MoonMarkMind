@@ -4166,7 +4166,7 @@ fn insert_node_body_template(kind : String) -> Unit {
   } else if kind == "link" {
     ["[閾炬帴鏂囧瓧](https://example.com)"]
   } else if kind == "image" {
-    ["![鍥剧墖璇存槑](image.png)"]
+    ["![图片描述](image.png)"]
   } else if kind == "formula" {
     ["$$", "x = 1", "$$"]
   } else if kind == "code" {

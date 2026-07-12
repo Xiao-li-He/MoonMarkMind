@@ -1964,11 +1964,7 @@ test "insert body template appends a markdown image block" {
 
   insert_node_body_template("image")
 
-  assert_eq(
-    app_state.markdown.contains("![") &&
-    app_state.markdown.contains("](image.png)"),
-    true,
-  )
+  assert_eq(app_state.markdown.contains("![图片描述](image.png)"), true)
   assert_eq(app_state.editing_body_node, 1)
   assert_eq(app_state.editing_body_block, 0)
 }
