@@ -1,77 +1,93 @@
 ///|
-test "parse batch request accepts multiple inputs and formats" {
+test "parse request uses stable defaults" {
+  let request = parse_request(["cmd/cli", "--", "samples/example1.md"])
+  assert_eq(request.input_path, "samples/example1.md")
+  assert_eq(request.output_format, "png")
+  assert_eq(request.output_path, "output/example1.png")
+  assert_eq(request.layout, "logic")
+  assert_eq(request.style, "full")
+  assert_eq(request.layer, "full")
+}
+
+///|
+test "parse request accepts one explicit format and all rendering options" {
   let request = parse_request([
-    "cmd/cli",
-    "--",
-    "samples",
-    "README.md",
-    "--output",
-    "png,svg,html",
-    "--layout",
-    "mindmap",
-    "--style",
-    "line",
-    "--layer",
-    "layer2",
-    "--browser",
-    "chrome",
-    "-o",
-    "dist",
+    "cmd/cli", "samples/example1.md", "--format", "svg", "--layout", "mindmap", "--style",
+    "line", "--layer", "layer2", "--browser", "chrome", "-o", "dist/map.svg",
   ])
-  assert_true(request.input_paths == ["samples", "README.md"])
-  assert_true(request.output_formats == ["png", "svg", "html"])
+  assert_eq(request.input_path, "samples/example1.md")
+  assert_eq(request.output_format, "svg")
+  assert_eq(request.output_path, "dist/map.svg")
   assert_eq(request.layout, "mindmap")
   assert_eq(request.style, "line")
   assert_eq(request.layer, "layer2")
   assert_eq(request.browser_path, "chrome")
-  assert_eq(request.output_dir, "dist")
 }
 
 ///|
-test "parse batch request defaults to all dynamic formats" {
-  let request = parse_request(["cmd/cli", "--", "samples/example1.md"])
-  assert_true(request.input_paths == ["samples/example1.md"])
-  assert_true(request.output_formats == ["png", "svg", "html"])
-  assert_eq(request.layout, "logic")
-  assert_eq(request.style, "full")
-  assert_eq(request.layer, "full")
-  assert_eq(request.output_dir, "output")
-}
-
-///|
-test "parse output formats removes duplicates" {
-  assert_true(validate_output_formats("svg,png,svg,html") == [
-    "svg",
-    "png",
-    "html",
-  ])
-}
-
-///|
-test "invalid output format fails" {
-  try validate_output_formats("png,pdf") catch {
-    _ => ()
-  } noraise {
-    _ => fail("expected invalid format to fail")
+test "output extension infers format" {
+  for
+    pair in [
+      ("dist/map.png", "png"),
+      ("dist/map.svg", "svg"),
+      ("dist/map.html", "html"),
+    ] {
+    let (path, expected) = pair
+    let request = parse_request(["cmd/cli", "input.md", "-o", path])
+    assert_eq(request.output_format, expected)
   }
 }
 
 ///|
-test "duplicate stems fail before export" {
+test "format and output extension conflict fails" {
   try
-    ensure_unique_output_stems([
-      ExportInput::{ path: "a/notes.md", stem: "notes" },
-      ExportInput::{ path: "b/notes.md", stem: "notes" },
-    ])
+    parse_request(["cmd/cli", "input.md", "--format", "png", "-o", "map.svg"])
   catch {
     _ => ()
   } noraise {
-    _ => fail("expected duplicate stems to fail")
+    _ => fail("expected conflicting format and extension to fail")
   }
 }
 
 ///|
-test "output path uses input stem and format" {
-  let input = ExportInput::{ path: "samples/example1.md", stem: "example1" }
-  assert_eq(output_path("output", input, "png"), "output/example1.png")
+test "comma separated and unknown formats fail" {
+  for format in ["png,svg", "pdf"] {
+    try parse_request(["cmd/cli", "input.md", "--format", format]) catch {
+      _ => ()
+    } noraise {
+      _ => fail("expected invalid format to fail")
+    }
+  }
+}
+
+///|
+test "multiple inputs fail" {
+  try parse_request(["cmd/cli", "one.md", "two.md"]) catch {
+    _ => ()
+  } noraise {
+    _ => fail("expected multiple inputs to fail")
+  }
+}
+
+///|
+test "all layout style and layer values are accepted" {
+  for layout in ["logic", "mindmap", "tree"] {
+    assert_eq(validate_layout(layout), layout)
+  }
+  for style in ["full", "line"] {
+    assert_eq(validate_style(style), style)
+  }
+  for layer in ["root", "layer2", "full"] {
+    assert_eq(validate_layer(layer), layer)
+  }
+}
+
+///|
+test "input and output path helpers" {
+  assert_true(is_markdown_path("notes.MD"))
+  assert_false(is_markdown_path("notes.txt"))
+  assert_eq(
+    resolve_output_path("samples/example1.md", "html", None),
+    "output/example1.html",
+  )
 }

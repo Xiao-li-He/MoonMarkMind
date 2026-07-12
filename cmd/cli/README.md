@@ -1,24 +1,43 @@
 # moonmarkmind CLI
 
-Batch export Markdown outlines from a local terminal.
+Export one Markdown outline to one PNG, SVG, or standalone HTML file through
+the MoonMarkMind browser renderer.
+
+The shortest invocation uses PNG, logic layout, full style, full detail, and
+writes `output/example1.png`:
 
 ```powershell
-moon run cmd/cli -- ./samples --output png,svg,html --layout mindmap --style full --layer full
-moon run cmd/cli -- ./samples/example1.md ./samples/example2.md --output html --layout tree --style line --layer layer2 -o output
+moon run cmd/cli samples/example1.md
 ```
 
-By default, exported files are written to `output/` and `--output` defaults to
-`png,svg,html`:
+Choose a format or rendering options explicitly:
 
-- `output/example1.png`
-- `output/example1.svg`
-- `output/example1.html`
+```powershell
+moon run cmd/cli samples/example1.md --format svg --layout mindmap --style line --layer layer2
+moon run cmd/cli samples/example1.md --format html -o dist/map.html
+```
 
-Inputs may be Markdown files or directories. Directory inputs scan first-level
-`.md` files only. Duplicate output stems fail early to avoid overwriting files.
+`-o`/`--output` is an optional output file path. A `.png`, `.svg`, or `.html`
+extension infers the format, so this also exports SVG:
 
-All formats are exported through the Web app renderer. PNG requires Chrome or
-Edge in headless mode; pass `--browser <path>` when it cannot be detected.
+```powershell
+moon run cmd/cli samples/example1.md -o dist/map.svg
+```
+
+When both `--format` and an output extension are present, they must agree. The
+CLI accepts exactly one Markdown file and one format per invocation; directory
+inputs, multiple files, and comma-separated formats are rejected.
+
+Defaults:
+
+- `--format png`
+- `--layout logic`
+- `--style full`
+- `--layer full`
+- `--output output/<input-stem>.<format>`
+
+PNG, SVG, and HTML are all exported through Chrome or Edge in headless mode.
+Pass `--browser <path>` when the browser cannot be detected automatically.
 
 `--layer` maps to the Web app detail selector:
 

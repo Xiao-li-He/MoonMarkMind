@@ -1,31 +1,26 @@
 ///|
 priv struct CliRequest {
-  input_paths : Array[String]
-  output_formats : Array[String]
+  input_path : String
+  output_format : String
   layout : String
   style : String
   layer : String
-  output_dir : String
+  output_path : String
   browser_path : String
-}
-
-///|
-priv struct ExportInput {
-  path : String
-  stem : String
 }
 
 ///|
 fn command() -> @argparse.Command {
   @argparse.Command(
     "moonmarkmind",
-    about="Batch export Markdown outlines through the MoonMarkMind browser renderer",
+    about="Export one Markdown outline through the MoonMarkMind browser renderer",
     arg_required_else_help=true,
     options=[
       @argparse.OptionArg(
-        "output",
-        long="output",
-        about="Output formats: png, svg, html, or comma-separated values",
+        "format",
+        short='f',
+        long="format",
+        about="Output format: png, svg, or html (default: png)",
       ),
       @argparse.OptionArg(
         "layout",
@@ -39,10 +34,10 @@ fn command() -> @argparse.Command {
         about="Layer preset: root, layer2, or full",
       ),
       @argparse.OptionArg(
-        "output-dir",
+        "output",
         short='o',
-        long="output-dir",
-        about="Output directory",
+        long="output",
+        about="Output file path (default: output/<input>.<format>)",
       ),
       @argparse.OptionArg(
         "browser",
@@ -50,28 +45,26 @@ fn command() -> @argparse.Command {
         about="Chrome or Edge executable path",
       ),
     ],
-    positionals=[
-      @argparse.PositionArg(
-        "input",
-        about="Markdown file path or directory",
-        num_args=@argparse.ValueRange(lower=1),
-      ),
-    ],
+    positionals=[@argparse.PositionArg("input", about="Markdown file path")],
   )
 }
 
 ///|
 fn parse_request(argv : Array[String]) -> CliRequest raise {
   let matches = @argparse.parse(command(), argv=normalize_argv(argv))
+  let input_path = required_arg(matches, "input")
+  let requested_format = optional_arg_value(matches, "format")
+  let requested_output = optional_arg_value(matches, "output")
+  let output_format = resolve_output_format(requested_format, requested_output)
   {
-    input_paths: required_args(matches, "input"),
-    output_formats: validate_output_formats(
-      optional_arg(matches, "output", "png,svg,html"),
-    ),
+    input_path,
+    output_format,
     layout: validate_layout(optional_arg(matches, "layout", "logic")),
     style: validate_style(optional_arg(matches, "style", "full")),
     layer: validate_layer(optional_arg(matches, "layer", "full")),
-    output_dir: optional_arg(matches, "output-dir", "output"),
+    output_path: resolve_output_path(
+      input_path, output_format, requested_output,
+    ),
     browser_path: optional_arg(matches, "browser", ""),
   }
 }
@@ -104,10 +97,18 @@ fn looks_like_executable_arg(arg : String) -> Bool {
 }
 
 ///|
-fn required_args(matches : @argparse.Matches, key : String) -> Array[String] raise {
+fn required_arg(matches : @argparse.Matches, key : String) -> String raise {
   match matches.values.get(key) {
-    Some(values) if values.length() > 0 => values
+    Some([value]) => value
     _ => fail("Missing required argument: \{key}")
+  }
+}
+
+///|
+fn optional_arg_value(matches : @argparse.Matches, key : String) -> String? {
+  match matches.values.get(key) {
+    Some([value]) => Some(value)
+    _ => None
   }
 }
 
@@ -124,24 +125,41 @@ fn optional_arg(
 }
 
 ///|
-fn validate_output_formats(value : String) -> Array[String] raise {
-  let formats = []
-  for raw in value.split(",".view()) {
-    let format = raw.trim().to_owned()
-    if format.length() > 0 {
-      match format {
-        "png" | "svg" | "html" => ()
-        _ => fail("Unsupported output format: \{format}")
-      }
-      if !formats.contains(format) {
-        formats.push(format)
-      }
-    }
+fn validate_output_format(value : String) -> String raise {
+  let format = value.trim().to_lower().to_owned()
+  match format {
+    "png" | "svg" | "html" => format
+    _ => fail("Unsupported output format: \{value}; expected png, svg, or html")
   }
-  if formats.length() == 0 {
-    fail("At least one output format is required")
+}
+
+///|
+fn resolve_output_format(format : String?, output : String?) -> String raise {
+  let explicit = format.map(validate_output_format)
+  let inferred = match output {
+    Some(path) => output_format_from_path(path)
+    None => None
   }
-  formats
+  match (explicit, inferred) {
+    (Some(a), Some(b)) if a != b =>
+      fail("Output format '\{a}' conflicts with output file extension '.\{b}'")
+    (Some(value), _) | (_, Some(value)) => value
+    _ => "png"
+  }
+}
+
+///|
+fn output_format_from_path(path : String) -> String? {
+  let lower = path.trim().to_lower()
+  if lower.has_suffix(".png") {
+    Some("png")
+  } else if lower.has_suffix(".svg") {
+    Some("svg")
+  } else if lower.has_suffix(".html") {
+    Some("html")
+  } else {
+    None
+  }
 }
 
 ///|
@@ -169,51 +187,15 @@ fn validate_layer(value : String) -> String raise {
 }
 
 ///|
-async fn expand_inputs(input_paths : Array[String]) -> Array[ExportInput] raise {
-  let inputs = []
-  for input in input_paths {
-    match @fs.kind(input) {
-      @fs.FileKind::Regular => {
-        if is_markdown_path(input) {
-          inputs.push(ExportInput::{ path: input, stem: file_stem(input) })
-        } else {
-          fail("Input file is not Markdown: \{input}")
-        }
+async fn validate_input(input : String) -> Unit {
+  match @fs.kind(input) {
+    @fs.FileKind::Regular =>
+      if !is_markdown_path(input) {
+        fail("Input file is not Markdown: \{input}")
       }
-      @fs.FileKind::Directory => {
-        let entries = @fs.readdir(input, sort=true)
-        for entry in entries {
-          if is_markdown_path(entry) {
-            let path = join_path(input, entry)
-            match @fs.kind(path) {
-              @fs.FileKind::Regular =>
-                inputs.push(ExportInput::{ path, stem: file_stem(entry) })
-              _ => ()
-            }
-          }
-        }
-      }
-      _ => fail("Input is not a Markdown file or directory: \{input}")
-    }
-  }
-  if inputs.length() == 0 {
-    fail("No Markdown files found")
-  }
-  ensure_unique_output_stems(inputs)
-  inputs
-}
-
-///|
-fn ensure_unique_output_stems(inputs : Array[ExportInput]) -> Unit raise {
-  let seen : Map[String, String] = {}
-  for input in inputs {
-    match seen.get(input.stem) {
-      Some(previous) =>
-        fail(
-          "Duplicate output stem '\{input.stem}' for \{previous} and \{input.path}",
-        )
-      None => seen[input.stem] = input.path
-    }
+    @fs.FileKind::Directory =>
+      fail("Directory input is not supported: \{input}")
+    _ => fail("Input is not a Markdown file: \{input}")
   }
 }
 
@@ -223,8 +205,14 @@ fn is_markdown_path(path : String) -> Bool {
 }
 
 ///|
-fn output_path(output_dir : String, input : ExportInput, format : String) -> String {
-  join_path(output_dir, "\{input.stem}.\{format}")
+fn resolve_output_path(
+  input : String,
+  format : String,
+  output : String?,
+) -> String {
+  output.unwrap_or_else(fn() {
+    join_path("output", "\{file_stem(input)}.\{format}")
+  })
 }
 
 ///|
@@ -273,30 +261,35 @@ fn file_stem(path : String) -> String {
 
 ///|
 async fn run_export(request : CliRequest) -> Unit {
-  let inputs = expand_inputs(request.input_paths)
-  @fs.mkdir(request.output_dir, recursive=true) catch {
-    _ => ()
-  }
+  validate_input(request.input_path)
+  ensure_output_parent(request.output_path)
   ensure_web_bundle(".")
   let browser = find_browser_executable(request.browser_path)
-  for input in inputs {
-    let markdown = @fs.read_file(input.path).text()
-    for format in request.output_formats {
-      let path = output_path(request.output_dir, input, format)
-      export_with_browser(
-        "web",
-        browser,
-        markdown,
-        request.layout,
-        request.style,
-        request.layer,
-        format,
-        path,
-      ).wait()
-      println("Exported \{format}: \{path}")
-    }
+  let markdown = @fs.read_file(request.input_path).text()
+  let export_error = export_with_browser(
+    "web",
+    browser,
+    markdown,
+    request.layout,
+    request.style,
+    request.layer,
+    request.output_format,
+    request.output_path,
+  ).wait()
+  if export_error.length() > 0 {
+    fail(export_error)
   }
+  println("Exported \{request.output_format}: \{request.output_path}")
 }
+
+///|
+extern "js" fn ensure_output_parent(output_path : String) -> Unit =
+  #| (outputPath) => {
+  #|   const fs = require("node:fs");
+  #|   const path = require("node:path");
+  #|   const parent = path.dirname(path.resolve(outputPath));
+  #|   fs.mkdirSync(parent, { recursive: true });
+  #| }
 
 ///|
 extern "js" fn ensure_web_bundle(root : String) -> Unit =
@@ -359,13 +352,14 @@ extern "js" fn export_with_browser(
   layer : String,
   format : String,
   output_path : String,
-) -> @core.Promise[Unit] =
+) -> @core.Promise[String] =
   #| async (webDir, browserPath, markdown, layout, style, layer, format, outputPath) => {
   #|   const fs = require("node:fs");
   #|   const path = require("node:path");
   #|   const os = require("node:os");
   #|   const http = require("node:http");
   #|   const childProcess = require("node:child_process");
+  #|   try {
   #|   if (typeof WebSocket === "undefined") {
   #|     throw new Error("Node.js WebSocket support is required for browser export.");
   #|   }
@@ -418,13 +412,21 @@ extern "js" fn export_with_browser(
   #|     try { fs.rmSync(userDataDir, { recursive: true, force: true }); } catch (_) {}
   #|   };
   #|   try {
-  #|     const version = await waitForJson(`http://127.0.0.1:${debugPort}/json/version`, 8000);
-  #|     const ws = await openWebSocket(version.webSocketDebuggerUrl);
+  #|     await waitForJson(`http://127.0.0.1:${debugPort}/json/version`, 8000);
+  #|     const targets = await waitForJson(`http://127.0.0.1:${debugPort}/json/list`, 8000);
+  #|     const pageTarget = targets.find((target) => target.type === "page" && target.webSocketDebuggerUrl);
+  #|     if (!pageTarget) throw new Error("Browser did not expose a debuggable page target");
+  #|     const ws = await openWebSocket(pageTarget.webSocketDebuggerUrl);
   #|     let nextId = 1;
   #|     const pending = new Map();
   #|     const listeners = [];
-  #|     ws.addEventListener("message", (event) => {
-  #|       const msg = JSON.parse(String(event.data));
+  #|     ws.addEventListener("message", async (event) => {
+  #|       const raw = typeof event.data === "string"
+  #|         ? event.data
+  #|         : event.data && typeof event.data.text === "function"
+  #|           ? await event.data.text()
+  #|           : Buffer.from(event.data).toString("utf8");
+  #|       const msg = JSON.parse(raw);
   #|       if (msg.id && pending.has(msg.id)) {
   #|         const { resolve, reject, timer } = pending.get(msg.id);
   #|         clearTimeout(timer);
@@ -438,27 +440,13 @@ extern "js" fn export_with_browser(
   #|       const timer = setTimeout(() => {
   #|         pending.delete(id);
   #|         reject(new Error(`Timed out waiting for CDP method ${method}`));
-  #|       }, 10000);
+  #|       }, 15000);
   #|       pending.set(id, { resolve, reject, timer });
   #|       ws.send(JSON.stringify(sessionId ? { id, method, params, sessionId } : { id, method, params }));
   #|     });
-  #|     const created = await send("Target.createTarget", { url: "about:blank" });
-  #|     const attached = await send("Target.attachToTarget", { targetId: created.targetId, flatten: true });
-  #|     const sessionId = attached.sessionId;
-  #|     await send("Page.enable", {}, sessionId);
-  #|     await send("Runtime.enable", {}, sessionId);
+  #|     const sessionId = undefined;
   #|     await send("Page.navigate", { url: `http://127.0.0.1:${serverPort}/index.html` }, sessionId);
-  #|     await evaluate(send, sessionId, `
-  #|       (async () => {
-  #|         for (let i = 0; i < 200; i++) {
-  #|           if (document.readyState !== "loading" &&
-  #|               globalThis.MoonMarkMind &&
-  #|               globalThis.MoonMarkMind.exportMindmapHtml) return true;
-  #|           await new Promise((resolve) => setTimeout(resolve, 50));
-  #|         }
-  #|         throw new Error("MoonMarkMind export API did not become ready");
-  #|       })()
-  #|     `);
+  #|     await waitForExportApi(send, sessionId, 10000);
   #|     const args = [markdown, layout, style, layer].map(JSON.stringify).join(",");
   #|     const method = format === "png"
   #|       ? "exportMindmapPngDataUrl"
@@ -499,6 +487,18 @@ extern "js" fn export_with_browser(
   #|       ws.addEventListener("error", reject, { once: true });
   #|     });
   #|   }
+  #|   async function waitForExportApi(send, sessionId, timeoutMs) {
+  #|     const started = Date.now();
+  #|     while (Date.now() - started < timeoutMs) {
+  #|       const result = await send("Runtime.evaluate", {
+  #|         expression: "Boolean(document.readyState !== 'loading' && globalThis.MoonMarkMind && globalThis.MoonMarkMind.exportMindmapHtml)",
+  #|         returnByValue: true,
+  #|       }, sessionId);
+  #|       if (result.result && result.result.value === true) return;
+  #|       await new Promise((resolve) => setTimeout(resolve, 100));
+  #|     }
+  #|     throw new Error("MoonMarkMind export API did not become ready");
+  #|   }
   #|   async function evaluate(send, sessionId, expression) {
   #|     const result = await send("Runtime.evaluate", {
   #|       expression,
@@ -506,9 +506,19 @@ extern "js" fn export_with_browser(
   #|       returnByValue: true,
   #|     }, sessionId);
   #|     if (result.exceptionDetails) {
-  #|       throw new Error(result.exceptionDetails.text || "Browser evaluation failed");
+  #|       const details = result.exceptionDetails;
+  #|       const description = details.exception && details.exception.description;
+  #|       const frames = details.stackTrace && details.stackTrace.callFrames;
+  #|       const stack = Array.isArray(frames)
+  #|         ? frames.map((frame) => `    at ${frame.functionName || "<anonymous>"} (${frame.url}:${frame.lineNumber + 1}:${frame.columnNumber + 1})`).join("\n")
+  #|         : "";
+  #|       throw new Error([description || details.text || "Browser evaluation failed", stack].filter(Boolean).join("\n"));
   #|     }
   #|     return result.result ? result.result.value || "" : "";
+  #|   }
+  #|   return "";
+  #|   } catch (error) {
+  #|     return error && error.stack ? String(error.stack) : String(error);
   #|   }
   #| }
 
