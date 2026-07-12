@@ -6,6 +6,8 @@
 
 MoonMarkMind 的声明范围是 Markdown 脑图编辑器与可复用 Markdown 渲染工具包：项目解析 Markdown、生成结构化脑图、提供 Web 交互编辑、支持 Markdown 富文本预览、布局与样式切换，并脑图导出 PNG、SVG 和 HTML；同时提供 `markdown_to_html` 和 `markdown_to_mindmap` 包，以及 `cmd/cli` 命令行入口，供第三方复用和自动化导出。
 
+已发布至 mooncakes.io：Xiao-li-He/MoonMarkMind 0.1.0
+
 ### 可构建
 
 在项目根目录执行：
