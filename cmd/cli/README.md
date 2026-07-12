@@ -39,8 +39,8 @@ Defaults:
 PNG, SVG, and HTML are all exported through Chrome or Edge in headless mode.
 Pass `--browser <path>` when the browser cannot be detected automatically.
 
-`--layer` maps to the Web app detail selector:
+`--layer` controls how much node detail is included in the export. It maps to the Web app detail selector:
 
-- `root` -> `small`
-- `layer2` -> `medium`
-- `full` -> `all`
+- `root`: compact view, emphasizing the main structure
+- `layer2`: medium view, showing content up to the second level
+- `full`: full view, showing all node content

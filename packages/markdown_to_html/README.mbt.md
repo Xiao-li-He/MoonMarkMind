@@ -22,6 +22,10 @@ test {
   let html = render("Hello **MoonBit**\n\n$$x^2$$")
   assert_true(html.contains("markdown-strong"))
   assert_true(html.contains("markdown-math--block"))
+
+  let collapsible = render_collapsible("# Root\nBody\n## Child")
+  assert_true(collapsible.contains("<details"))
+  assert_true(collapsible.contains("markdown-section--h2"))
 }
 ```
 
@@ -40,6 +44,7 @@ test {
 ## Core APIs
 
 - `render(markdown : String) -> String`: render Markdown body text to an HTML fragment.
+- `render_collapsible(markdown : String) -> String`: render Markdown as nested collapsible heading sections.
 - `render_inline(source : String) -> String`: render inline Markdown to an HTML fragment.
 - `render_title(source : String) -> String`: render a node title, including task markers.
 - `render_blocks(blocks : Array[String]) -> String`: render pre-split Markdown body blocks.

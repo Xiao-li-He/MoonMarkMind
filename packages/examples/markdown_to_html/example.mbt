@@ -1,7 +1,6 @@
 ///|
 fn example_input_path() -> String {
-  // "packages/examples/markdown_to_html/example1.md"
-  "samples/example1.md"
+  "packages/examples/markdown_to_html/example1.md"
 }
 
 ///|

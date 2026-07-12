@@ -14,9 +14,10 @@ MoonMarkMind 是一个用 MoonBit 编写的 Markdown 脑图工具包与浏览器
 | `lib/latex_math_render` | LaTeX 行内/块级公式到 HTML/SVG fragment | 需要在 Markdown 节点中渲染轻量公式 |
 | `lib/markdown_render` | Markdown fragment/body 到安全 HTML | 需要在无 DOM 环境渲染脑图节点标题和正文 Markdown |
 | `packages/markdown_to_html` | Markdown 文本到安全 HTML fragment | 推荐给用户直接调用的 Markdown to HTML 包 |
+| `packages/markdown_to_mindmap` | Markdown 文本到静态 SVG 脑图 | 推荐给用户直接调用的 Markdown to mindmap 包 |
 | `lib/mindmap_render` | `OutlineNode` 或 Markdown 到静态 HTML/SVG 脑图字符串 | 需要服务端、CLI 或测试环境生成脑图片段 |
 | `app/web` | 浏览器端 MoonMarkMind 应用 | DOM 交互、编辑器、工具栏、Canvas PNG 导出 |
-| `cmd/cli` | 命令行导出入口 | 本地终端批量生成 SVG/HTML 脑图文件 |
+| `cmd/cli` | 命令行导出入口 | 本地终端将单个 Markdown 文件导出为 PNG/SVG/HTML |
 
 ## Install / Import
 
@@ -29,6 +30,7 @@ import {
   "Xiao-li-He/MoonMarkMind/lib/latex_math_render" @math
   "Xiao-li-He/MoonMarkMind/lib/markdown_render" @markdown
   "Xiao-li-He/MoonMarkMind/packages/markdown_to_html" @markdown_to_html
+  "Xiao-li-He/MoonMarkMind/packages/markdown_to_mindmap" @markdown_to_mindmap
 }
 ```
 
@@ -79,28 +81,32 @@ test {
   let formula = @math.render_latex_math_inline_html("\\frac{x}{y}")
   let body = @markdown.render_markdown_html("Hello **MoonBit**")
   let user_html = @markdown_to_html.render("Hello **MoonBit**")
+  let svg = @markdown_to_mindmap.render_svg(markdown)
   ignore(html)
   ignore(formula)
   ignore(body)
   ignore(user_html)
+  ignore(svg)
 }
 ```
 
-### CLI 批量导出
+### CLI 单文件导出
 
 `cmd/cli` 是命令行导出入口，参数设计与 Web 端布局、样式和详情级别保持一致：
 
 ```powershell
-moon run cmd/cli -- ./samples --output png,svg,html --layout mindmap --style full --layer full
-moon run cmd/cli -- ./samples/example1.md ./samples/example2.md --output html --layout tree --style line --layer layer2 -o output
+moon run cmd/cli samples/example1.md --format svg --layout mindmap --style line --layer layer2
+moon run cmd/cli samples/example1.md --format html -o output/example1.html
+moon run cmd/cli samples/example1.md -o output/example1.png
 ```
 
-默认输出目录为 `output/`，`--output` 默认生成 `png,svg,html`。文件和目录都可作为输入；目录只扫描第一层 `.md` 文件。所有格式都走 Web 端动态渲染导出，PNG 需要本机可用的 Chrome 或 Edge，也可通过 `--browser <path>` 指定。
+默认导出 PNG，输出到 `output/<input-stem>.<format>`。`--format` 支持 `png`、`svg`、`html`，`-o`/`--output` 可指定输出文件路径；当输出路径以 `.png`、`.svg` 或 `.html` 结尾时，CLI 会自动推断导出格式。CLI 每次接受一个 Markdown 文件和一种格式；目录输入、多文件输入和逗号分隔的多格式会被拒绝。所有格式都走 Web 端动态渲染导出，PNG 需要本机可用的 Chrome 或 Edge，也可通过 `--browser <path>` 指定。
 
 ## Core APIs
 
 - `outline_parser`：`parse_headings`、`parse_markdown_nodes`、`build_outline`、`outline_json`、`rename_heading`、`render_markdown_nodes`。
 - `markdown_to_html`：`render`、`render_inline`、`render_title`、`render_blocks`。
+- `markdown_to_mindmap`：`render_svg`、`build_svg_document`、`default_render_options`、`normalize_layout`、`normalize_style`、`normalize_layer`。
 - `markdown_render`：`render_markdown_html`、`render_markdown_inline_html`、`render_markdown_title_html`、`render_markdown_blocks_html`。
 - `mindmap_render`：`default_render_options`、`render_markdown_html`、`render_markdown_svg`、`render_outline_html`、`render_outline_svg`。
 - `latex_math_render`：`render_latex_math_inline_html`、`render_latex_math_block_html`、`render_latex_math_inline_svg`、`render_latex_math_block_svg`。
@@ -108,6 +114,8 @@ moon run cmd/cli -- ./samples/example1.md ./samples/example2.md --output html --
 ## Web App Features
 
 - Markdown 实时转换为结构化脑图。
+- 支持 Markdown 编辑区按标题层级折叠/展开。
+- 支持 Markdown 文档的 HTML 富文本预览。
 - 支持脑图、树状图、逻辑图三种布局。
 - 支持填充卡片和线框/分支线两种样式。
 - 支持完整、中等、精简详情级别。
@@ -121,6 +129,7 @@ moon run cmd/cli -- ./samples/example1.md ./samples/example2.md --output html --
 - `lib/latex_math_render`：可复用公式 fragment 渲染。
 - `lib/markdown_render`：可复用 Markdown fragment/body HTML 渲染。
 - `packages/markdown_to_html`：面向用户的 Markdown 文本到 HTML fragment 包。
+- `packages/markdown_to_mindmap`：面向用户的 Markdown 文本到静态 SVG 脑图包。
 - `lib/mindmap_render`：可复用静态脑图字符串渲染。
 - `app/web`：浏览器端应用。
 - `cmd/main`：Web bundle 导出入口。
