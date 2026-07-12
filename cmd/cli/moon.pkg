@@ -3,9 +3,9 @@ import {
   "moonbitlang/core/env",
   "moonbitlang/x/sys",
   "mizchi/x/fs",
+  "mizchi/js/core",
   "moonbitlang/async",
   "moonbitlang/async/io",
-  "Xiao-li-He/MoonMarkMind/lib/mindmap_render" @renderer,
 }
 
 options(

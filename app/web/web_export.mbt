@@ -1256,21 +1256,24 @@ fn download_mindmap_svg(filename : String) -> Unit {
 fn download_mindmap_png(filename : String) -> Unit {
   ignore(
     @core.Promise::new(async fn(resolve, _reject) {
-      download_mindmap_png_async(filename)
+      let data_url = build_mindmap_export_png_data_url()
+      if data_url.length() > 0 {
+        download_link_from_data_url(filename, data_url)
+      }
       resolve(())
     }),
   )
 }
 
 ///|
-/// Rasterize the generated SVG through a canvas and download it as PNG.
+/// Rasterize the generated SVG through a canvas and return it as PNG data URL.
 ///
 /// Image sources are inlined first when possible because canvas export becomes
 /// blocked if the SVG references external image data.
-async fn download_mindmap_png_async(filename : String) -> Unit {
+async fn build_mindmap_export_png_data_url() -> String {
   let svg_element = match build_mindmap_export_svg_element() {
     Some(svg) => svg
-    None => return
+    None => return ""
   }
   let width = parse_int_or_default(
     svg_element.getAttribute("width").unwrap_or("0"),
@@ -1281,7 +1284,7 @@ async fn download_mindmap_png_async(filename : String) -> Unit {
     0,
   )
   if width <= 0 || height <= 0 {
-    return
+    return ""
   }
   let scale = png_export_scale(width, height)
   let output_width = (width.to_double() * scale).round().to_int()
@@ -1293,6 +1296,7 @@ async fn download_mindmap_png_async(filename : String) -> Unit {
   let image = create_element("img", "")
   let image_element = @dom.HTMLImageElement::cast_from_element(image)
   let export_url = "data:image/svg+xml;charset=utf-8,\{@global.encodeURIComponent(svg)}"
+  let resolvers : @core.PromiseResolvers[String] = @core.Promise::withResolvers()
   image_element
   .as_event_target()
   .addEventListener("load", fn(_) {
@@ -1311,13 +1315,13 @@ async fn download_mindmap_png_async(filename : String) -> Unit {
       output_width.to_double(),
       output_height.to_double(),
     )
-    download_link_from_data_url(
-      filename,
-      canvas_element.toDataURL(image_type="image/png"),
-    )
+    resolvers.resolve(canvas_element.toDataURL(image_type="image/png"))
   })
-  image_element.as_event_target().addEventListener("error", fn(_) { () })
+  image_element
+  .as_event_target()
+  .addEventListener("error", fn(_) { resolvers.resolve("") })
   image_element.src = export_url
+  resolvers.promise.wait()
 }
 
 ///|

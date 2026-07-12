@@ -93,6 +93,39 @@ pub fn start_web_app() -> Unit {
 }
 
 ///|
+/// JavaScript export shim for dynamic HTML export through the browser app.
+pub async fn export_mindmap_html(
+  markdown : String,
+  layout : String,
+  style : String,
+  layer : String,
+) -> String {
+  @lib.export_mindmap_html(markdown, layout, style, layer)
+}
+
+///|
+/// JavaScript export shim for dynamic SVG export through the browser app.
+pub async fn export_mindmap_svg(
+  markdown : String,
+  layout : String,
+  style : String,
+  layer : String,
+) -> String {
+  @lib.export_mindmap_svg(markdown, layout, style, layer)
+}
+
+///|
+/// JavaScript export shim for dynamic PNG data URL export through the browser app.
+pub async fn export_mindmap_png_data_url(
+  markdown : String,
+  layout : String,
+  style : String,
+  layer : String,
+) -> String {
+  @lib.export_mindmap_png_data_url(markdown, layout, style, layer)
+}
+
+///|
 fn main {
   println("Markdown input:")
   println(sample_markdown())

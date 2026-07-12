@@ -91,11 +91,11 @@ test {
 `cmd/cli` 是命令行导出入口，参数设计与 Web 端布局、样式和详情级别保持一致：
 
 ```powershell
-moon run cmd/cli -- ./samples/example1.md --output svg --layout logic --style full --layer full
-moon run cmd/cli -- ./samples/example1.md --output html --layout tree --style line --layer layer2 -o output
+moon run cmd/cli -- ./samples --output png,svg,html --layout mindmap --style full --layer full
+moon run cmd/cli -- ./samples/example1.md ./samples/example2.md --output html --layout tree --style line --layer layer2 -o output
 ```
 
-默认输出目录为 `output/`；PNG/XMind 不作为本阶段文档承诺。
+默认输出目录为 `output/`，`--output` 默认生成 `png,svg,html`。文件和目录都可作为输入；目录只扫描第一层 `.md` 文件。所有格式都走 Web 端动态渲染导出，PNG 需要本机可用的 Chrome 或 Edge，也可通过 `--browser <path>` 指定。
 
 ## Core APIs
 

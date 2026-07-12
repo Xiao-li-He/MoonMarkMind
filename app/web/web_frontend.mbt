@@ -525,6 +525,89 @@ pub fn start_web_app() -> Unit {
 }
 
 ///|
+pub async fn export_mindmap_html(
+  markdown : String,
+  layout : String,
+  style : String,
+  layer : String,
+) -> String {
+  prepare_mindmap_export(markdown, layout, style, layer)
+  wait_for_mindmap_export_render()
+  let bundle = fetch_current_bundle_text() catch { _ => "" }
+  build_mindmap_export_html(bundle)
+}
+
+///|
+pub async fn export_mindmap_svg(
+  markdown : String,
+  layout : String,
+  style : String,
+  layer : String,
+) -> String {
+  prepare_mindmap_export(markdown, layout, style, layer)
+  wait_for_mindmap_export_render()
+  build_mindmap_export_svg()
+}
+
+///|
+pub async fn export_mindmap_png_data_url(
+  markdown : String,
+  layout : String,
+  style : String,
+  layer : String,
+) -> String {
+  prepare_mindmap_export(markdown, layout, style, layer)
+  wait_for_mindmap_export_render()
+  build_mindmap_export_png_data_url()
+}
+
+///|
+fn prepare_mindmap_export(
+  markdown : String,
+  layout : String,
+  style : String,
+  layer : String,
+) -> Unit {
+  start_web_app()
+  reset_history()
+  app_state.document_name = "moonmarkmind.md"
+  app_state.sample_variant = "custom"
+  app_state.layout_mode = normalize_layout_mode(layout)
+  app_state.style_mode = normalize_style_mode(style)
+  app_state.detail_level = normalize_export_layer(layer)
+  app_state.detail_customized = false
+  load_markdown(markdown, true)
+  render_ui()
+}
+
+///|
+fn normalize_export_layer(layer : String) -> String {
+  match layer {
+    "root" | "small" => "small"
+    "layer2" | "medium" => "medium"
+    "full" | "all" => "all"
+    _ => "all"
+  }
+}
+
+///|
+async fn wait_for_mindmap_export_render() -> Unit {
+  let window = @dom.window()
+  let p : @core.Promise[Unit] = @core.Promise::new(fn(resolve, _reject) {
+    ignore(
+      window.requestAnimationFrame(fn(_) {
+        ignore(
+          window.requestAnimationFrame(fn(_) {
+            ignore(window.setTimeout(fn() { resolve(()) }, 80))
+          }),
+        )
+      }),
+    )
+  })
+  p.wait()
+}
+
+///|
 fn bind_markdown_preview_toggle_ui() -> Unit {
   match get_element("#markdown-preview-toggle") {
     Some(button) =>

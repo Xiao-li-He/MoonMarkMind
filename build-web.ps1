@@ -60,6 +60,9 @@ $moveSymbol = Find-LocalExportSymbol "move_heading"
 $addChildSymbol = Find-LocalExportSymbol "add_child_heading"
 $deleteSymbol = Find-LocalExportSymbol "delete_heading"
 $startSymbol = Find-LocalExportSymbol "start_web_app"
+$exportHtmlSymbol = Find-LocalExportSymbol "export_mindmap_html"
+$exportSvgSymbol = Find-LocalExportSymbol "export_mindmap_svg"
+$exportPngSymbol = Find-LocalExportSymbol "export_mindmap_png_data_url"
 
 $bridge = @'
 
@@ -85,6 +88,21 @@ globalThis.__API_NAME__ = {
   startWebApp() {
     return __START_SYMBOL__();
   },
+  exportMindmapHtml(markdown, layout, style, layer) {
+    return new Promise((resolve, reject) => {
+      __EXPORT_HTML_SYMBOL__(markdown, layout, style, layer, resolve, reject);
+    });
+  },
+  exportMindmapSvg(markdown, layout, style, layer) {
+    return new Promise((resolve, reject) => {
+      __EXPORT_SVG_SYMBOL__(markdown, layout, style, layer, resolve, reject);
+    });
+  },
+  exportMindmapPngDataUrl(markdown, layout, style, layer) {
+    return new Promise((resolve, reject) => {
+      __EXPORT_PNG_SYMBOL__(markdown, layout, style, layer, resolve, reject);
+    });
+  },
 };
 
 globalThis.__API_NAME__.startWebApp();
@@ -100,6 +118,9 @@ $bridge = $bridge.
   Replace("__ADD_CHILD_SYMBOL__", $addChildSymbol).
   Replace("__DELETE_SYMBOL__", $deleteSymbol).
   Replace("__START_SYMBOL__", $startSymbol).
+  Replace("__EXPORT_HTML_SYMBOL__", $exportHtmlSymbol).
+  Replace("__EXPORT_SVG_SYMBOL__", $exportSvgSymbol).
+  Replace("__EXPORT_PNG_SYMBOL__", $exportPngSymbol).
   Replace("__API_NAME__", $apiName)
 
 Copy-Item $source $output -Force
