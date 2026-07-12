@@ -1,6 +1,6 @@
 # MoonMarkMind
 
-MoonMarkMind 是一个用 MoonBit 编写的 Markdown 脑图工具包与浏览器应用。它把 Markdown 大纲解析为结构树，并提供浏览器编辑、脑图渲染、布局切换、节点编辑和 PNG/SVG/HTML 导出能力。
+MoonMarkMind 是一个用 MoonBit 编写的 Markdown 脑图工具包与浏览器应用。它把 Markdown 大纲解析为结构树，并提供浏览器编辑、脑图渲染、布局切换、节点编辑和 PNG/SVG/HTML 导出能力。 
 
 [在线使用 MoonMarkMind](https://xiao-li-he.github.io/MoonMarkMind/)
 
