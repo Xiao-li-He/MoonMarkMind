@@ -1,8 +1,8 @@
 # mindmap_render
 
-`mindmap_render` is the pure string renderer for MoonMarkMind. It turns
-Markdown or an `OutlineNode` into static mind-map HTML/SVG without depending on
-browser DOM measurement, Canvas, downloads, or editor interactions.
+`mindmap_render` builds structured markup for MoonMarkMind and serializes it at
+explicit HTML/SVG export boundaries. It does not depend on browser DOM
+measurement, Canvas, downloads, or editor interactions.
 
 ## Import
 
@@ -37,6 +37,9 @@ test {
   let svg = render_outline_svg(outline)
   assert_true(html.contains("data-node-index=\"1\""))
   assert_true(svg.contains("<foreignObject"))
+
+  let tree = build_outline_document(outline)
+  let _ : MarkupNode = tree
 }
 ```
 
@@ -62,6 +65,7 @@ decide explicitly how to apply or serialize the structured declarations.
 ## Notes
 
 - The package renders static reading/export artifacts only.
+- SVG output contains no embedded script runtime.
 - Browser-only behavior remains in `app/web`: editing, drag and drop, zoom,
   DOM measurement, Canvas PNG export, and downloads.
 - PNG generation for command-line use should rasterize the generated SVG/HTML in

@@ -181,9 +181,9 @@ test "render markdown body and full svg export" {
   assert_eq(html.contains("<style>"), false)
   assert_eq(svg.contains("<foreignObject"), true)
   assert_eq(svg.contains("<style>"), true)
-  assert_eq(svg.contains("<script><![CDATA["), true)
-  assert_eq(svg.contains("renderConnectors"), true)
-  assert_eq(svg.contains("resizeSvgCanvas"), true)
+  assert_eq(svg.contains("<script"), false)
+  assert_eq(svg.contains("renderConnectors"), false)
+  assert_eq(svg.contains("resizeSvgCanvas"), false)
   assert_eq(svg.contains("data-static-connectors=\"true\""), true)
   assert_eq(svg.contains(".node"), true)
   assert_eq(svg.contains("mindmap-connector-layer"), true)
@@ -354,12 +354,46 @@ test "mindmap style css serializes shared static classes" {
 }
 
 ///|
-test "export runtime hides node containers with display override" {
-  let script = render_export_runtime_script()
-  assert_eq(script.contains("setHidden"), true)
-  assert_eq(script.contains("display\", \"none\", \"important"), true)
-  assert_eq(script.contains("hasAttribute(\"hidden\")"), true)
-  assert_eq(script.contains("ensureHtmlVisibleBounds"), true)
-  assert_eq(script.contains("visibleNodeBounds"), true)
-  assert_eq(script.contains("root.style.paddingLeft"), true)
+test "svg export is static and contains no script runtime" {
+  let svg = render_markdown_svg("# Root\n## Child")
+  assert_false(svg.contains("<script"))
+  assert_false(svg.contains("javascript:"))
+  assert_false(svg.contains("CDATA"))
+  assert_true(svg.contains("data-static-connectors=\"true\""))
+}
+
+///|
+test "structured markup serializer escapes text and attributes" {
+  let node = html_element(
+    "div",
+    attributes=[markup_attribute("data-value", "\" onerror=\"alert(1)")],
+    children=[markup_text("<script>alert(1)</script></style>")],
+  )
+  let html = serialize_markup(node)
+  assert_false(html.contains("<script>"))
+  assert_false(html.contains(" onerror=\"alert(1)\""))
+  assert_true(html.contains("&lt;script&gt;alert(1)&lt;/script&gt;"))
+  assert_true(html.contains("&quot; onerror=&quot;alert(1)"))
+}
+
+///|
+test "structured documents cover layouts and stay script free" {
+  let markdown = "# Root\nRoot note\n## Child"
+  let layouts : Array[MindmapLayout] = [Logic, Mindmap, Tree]
+  for layout in layouts {
+    let tree = build_markdown_document(markdown, options={
+      layout,
+      style: Full,
+      layer: Full,
+    })
+    let html = serialize_markup(tree)
+    assert_true(html.contains("moonmarkmind-export"))
+    assert_true(html.contains("Root"))
+    assert_true(html.contains("Child"))
+    assert_false(html.contains("<script"))
+  }
+  let svg = serialize_markup(build_markdown_svg_document(markdown))
+  assert_true(svg.contains("<svg"))
+  assert_true(svg.contains("<foreignObject"))
+  assert_false(svg.contains("<script"))
 }

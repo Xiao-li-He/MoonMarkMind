@@ -6,9 +6,23 @@ import {
 }
 
 // Values
+pub fn build_markdown_document(String, options? : RenderOptions) -> MarkupNode
+
+pub fn build_markdown_svg_document(String, options? : RenderOptions) -> MarkupNode
+
+pub fn build_outline_document(@outline_parser.OutlineNode, options? : RenderOptions) -> MarkupNode
+
+pub fn build_outline_svg_document(@outline_parser.OutlineNode, options? : RenderOptions) -> MarkupNode
+
 pub fn default_render_options() -> RenderOptions
 
+pub fn html_element(String, attributes? : Array[MarkupAttribute], children? : Array[MarkupNode]) -> MarkupNode
+
 pub fn layer_to_detail_select(MindmapLayer) -> String
+
+pub fn markup_attribute(String, String) -> MarkupAttribute
+
+pub fn markup_text(String) -> MarkupNode
 
 pub fn mindmap_style_css() -> String
 
@@ -20,8 +34,6 @@ pub fn normalize_layout(String) -> MindmapLayout
 
 pub fn normalize_style(String) -> MindmapStyle
 
-pub fn render_export_runtime_script() -> String
-
 pub fn render_interactive_content_html(@outline_parser.OutlineNode, RenderOptions, InteractiveRenderHooks) -> String
 
 pub fn render_markdown_html(String, options? : RenderOptions) -> String
@@ -31,6 +43,10 @@ pub fn render_markdown_svg(String, options? : RenderOptions) -> String
 pub fn render_outline_html(@outline_parser.OutlineNode, options? : RenderOptions) -> String
 
 pub fn render_outline_svg(@outline_parser.OutlineNode, options? : RenderOptions) -> String
+
+pub fn serialize_markup(MarkupNode) -> String
+
+pub fn svg_element(String, attributes? : Array[MarkupAttribute], children? : Array[MarkupNode]) -> MarkupNode
 
 // Errors
 
@@ -42,6 +58,28 @@ pub(all) struct InteractiveRenderHooks {
   render_hidden_marker : (@outline_parser.OutlineNode, String, Int) -> String
   root_left_count : (@outline_parser.OutlineNode) -> Int
   root_branch_span : (@outline_parser.OutlineNode) -> Int
+}
+
+pub(all) struct MarkupAttribute {
+  name : String
+  value : String
+}
+
+pub(all) struct MarkupElement {
+  kind : MarkupNamespace
+  tag : String
+  attributes : Array[MarkupAttribute]
+  children : Array[MarkupNode]
+}
+
+pub(all) enum MarkupNamespace {
+  Html
+  Svg
+}
+
+pub(all) enum MarkupNode {
+  Element(MarkupElement)
+  Text(String)
 }
 
 pub(all) enum MindmapLayer {

@@ -1,9 +1,9 @@
 # markdown_to_mindmap
 
 `markdown_to_mindmap` is the public Markdown-to-mind-map package. It renders
-HTML/SVG strings without depending on Canvas, downloads, or the web editor
-state. Complete HTML documents include the small export runtime that draws
-connectors from browser DOM measurements and handles node/note collapse.
+structured markup plus serialized HTML/SVG exports without depending on Canvas,
+downloads, or the web editor state. SVG and complete HTML documents are static
+reading artifacts and contain no embedded script runtime.
 
 ## Import
 
@@ -26,6 +26,9 @@ test {
 
   let document = render_html_document("# Root\n## Child")
   assert_true(document.contains("<style>"))
+
+  let tree = build_document("# Root\n## Child")
+  let _ : MarkupNode = tree
 }
 ```
 
@@ -43,17 +46,13 @@ test {
 }
 ```
 
-Use `render_style_css()`, `render_style_element()`, and
-`render_export_runtime_script()` when embedding the fragment into your own page.
-Use `render_html_document()` when you want a complete standalone interactive
+Use `build_document()` or `build_svg_document()` when adapting the output to a
+native DOM API. Use `render_style_css()` and `render_style_element()` only at a
+file serialization boundary. `render_html_document()` creates a complete static
 document.
 
-SVG export embeds styles, nodes, a static connector fallback, and the same
-measurement runtime used by standalone HTML. When the SVG is opened directly in
-a browser, the runtime removes the fallback paths and redraws connectors from
-the actual DOM rectangles. If the SVG is used in a context where scripts do not
-run, the static fallback remains visible but may not be pixel-identical to the
-browser-measured HTML export.
+SVG export embeds styles, nodes, and static connector paths. It deliberately
+contains no JavaScript, event attributes, or runtime-generated connector code.
 
 PNG export is intentionally not exposed here. PNG generation needs a browser or
 another rasterizer to lay out HTML/SVG and draw to pixels; the MoonMarkMind web

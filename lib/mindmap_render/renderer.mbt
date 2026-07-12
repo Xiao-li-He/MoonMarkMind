@@ -72,7 +72,6 @@ pub fn render_outline_svg(
   write_str(out, ">")
   write_outline_html(out, root, options)
   write_str(out, "</div></foreignObject>")
-  write_str(out, render_export_runtime_svg_script())
   write_str(out, "</svg>")
   normalize_svg_xml_entities(finish_builder(out))
 }
