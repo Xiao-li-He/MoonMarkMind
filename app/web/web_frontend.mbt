@@ -769,6 +769,13 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
     None => ()
   }
   if is_blank_mindmap_click_target(event.target()) {
+    let saved_body_block = save_active_body_block_editor_from_dom()
+    if saved_body_block {
+      event.preventDefault()
+      event.stopPropagation()
+      focus_mindmap()
+      return
+    }
     if has_selected_nodes() {
       clear_editing_session()
       app_state.editing_node = -2
@@ -899,7 +906,7 @@ fn is_blank_mindmap_click_target(target : @dom.Element) -> Bool {
   match target.closest(".mindmap, .mindmap-content, .mindmap-stage") {
     Some(_) =>
       target.closest(
-        "[data-node-index], [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for]",
+        ".node, [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for]",
       )
       is None
     None => false
@@ -2798,6 +2805,56 @@ fn cancel_body_block_editor() -> Unit {
 }
 
 ///|
+fn save_active_body_block_editor_from_dom() -> Bool {
+  let node_index = app_state.editing_body_node
+  let block_index = app_state.editing_body_block
+  if node_index < 0 || block_index < 0 {
+    return false
+  }
+  let block_text = match
+    active_body_block_editor_text(node_index, block_index) {
+    Some(text) => text
+    None => {
+      clear_body_block_editing_session()
+      render_ui()
+      return true
+    }
+  }
+  save_body_block_editor(node_index, block_index, block_text)
+  true
+}
+
+///|
+fn active_body_block_editor_text(
+  node_index : Int,
+  block_index : Int,
+) -> String? {
+  if !app_state.started {
+    return current_body_block_text(node_index, block_index)
+  }
+  match
+    get_element(
+      "[data-body-editor-for=\"\{node_index}\"][data-body-editor-block=\"\{block_index}\"]",
+    ) {
+    Some(editor) => Some(body_block_editor_value_from_target(editor))
+    None => current_body_block_text(node_index, block_index)
+  }
+}
+
+///|
+fn current_body_block_text(node_index : Int, block_index : Int) -> String? {
+  match find_node(app_state.root, node_index) {
+    Some(node) =>
+      if block_index >= 0 && block_index < node.body.length() {
+        Some(node.body[block_index])
+      } else {
+        None
+      }
+    None => None
+  }
+}
+
+///|
 fn save_body_block_editor(
   node_index : Int,
   block_index : Int,
@@ -2818,6 +2875,7 @@ fn save_body_block_editor(
   if next_markdown != app_state.markdown {
     apply_markdown_change(next_markdown, false)
     select_single_node(node_index, false)
+    render_ui()
   } else {
     render_ui()
   }

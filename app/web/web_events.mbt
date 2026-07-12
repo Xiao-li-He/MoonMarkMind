@@ -50,7 +50,7 @@ fn event_target_is_blank_stage_area(target : @dom.Element) -> Bool {
   match target.closest(".mindmap-stage, .mindmap-content, #mindmap") {
     Some(_) =>
       target.closest(
-        "[data-node-index], [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for]",
+        ".node, [data-action], [data-editor-for], [data-note-editor-for], [data-body-editor-for]",
       )
       is None
     None => false

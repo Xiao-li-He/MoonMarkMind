@@ -2028,6 +2028,35 @@ test "body block image edit saves markdown image syntax" {
 }
 
 ///|
+test "saved image body block exits editing state and keeps selection" {
+  reset_frontend_test_state()
+  load_markdown("# Root\n## Alpha\n![old](old.png)\n## Beta", true)
+  select_single_node(1, false)
+  begin_body_block_edit_node(1, 0)
+
+  save_body_block_editor(1, 0, "![new alt](new.png)")
+
+  assert_eq(app_state.editing_body_node, -2)
+  assert_eq(app_state.editing_body_block, -1)
+  assert_eq(app_state.selected_node, 1)
+}
+
+///|
+test "active image body block save falls back to model text without data loss" {
+  reset_frontend_test_state()
+  load_markdown("# Root\n## Alpha\n![old](old.png)\n## Beta", true)
+  select_single_node(1, false)
+  begin_body_block_edit_node(1, 0)
+
+  assert_eq(save_active_body_block_editor_from_dom(), true)
+
+  assert_eq(app_state.markdown, "# Root\n## Alpha\n![old](old.png)\n## Beta")
+  assert_eq(app_state.editing_body_node, -2)
+  assert_eq(app_state.editing_body_block, -1)
+  assert_eq(app_state.selected_node, 1)
+}
+
+///|
 test "saved inserted image is not removed by later cancel" {
   reset_frontend_test_state()
   select_single_node(1, false)
