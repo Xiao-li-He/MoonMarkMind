@@ -31,11 +31,6 @@ fn example_variants() -> Array[ExampleVariant] {
 }
 
 ///|
-fn html_output_path(name : String, variant : ExampleVariant) -> String {
-  "\{example_output_dir()}/\{name}.\{variant.layout}.\{variant.style}.html"
-}
-
-///|
 fn svg_output_path(name : String, variant : ExampleVariant) -> String {
   "\{example_output_dir()}/\{name}.\{variant.layout}.\{variant.style}.svg"
 }
@@ -47,18 +42,6 @@ fn render_options(layout : String, style : String) -> @to_mindmap.RenderOptions 
     style: @to_mindmap.normalize_style(style),
     layer: @to_mindmap.normalize_layer("full"),
   }
-}
-
-///|
-pub fn render_sample_html(
-  markdown : String,
-  layout? : String = "logic",
-  style? : String = "full",
-) -> String {
-  @to_mindmap.render_html_document(
-    markdown,
-    options=render_options(layout, style),
-  )
 }
 
 ///|
@@ -77,10 +60,6 @@ async fn render_sample_variant_file(
   variant : ExampleVariant,
 ) -> Unit {
   @fs.write_file(
-    html_output_path(name, variant),
-    render_sample_html(markdown, layout=variant.layout, style=variant.style),
-  )
-  @fs.write_file(
     svg_output_path(name, variant),
     render_sample_svg(markdown, layout=variant.layout, style=variant.style),
   )
@@ -93,7 +72,7 @@ async fn clean_example_output_dir() -> Unit {
   }
   let entries = @fs.readdir(example_output_dir()) catch { _ => [] }
   for entry in entries {
-    if entry.has_suffix(".html") || entry.has_suffix(".svg") {
+    if entry.has_suffix(".svg") {
       @fs.remove("\{example_output_dir()}/\{entry}") catch {
         _ => ()
       }
@@ -107,7 +86,6 @@ async fn render_sample_file(name : String) -> Array[String] {
   let generated = []
   for variant in example_variants() {
     render_sample_variant_file(name, markdown, variant)
-    generated.push(html_output_path(name, variant))
     generated.push(svg_output_path(name, variant))
   }
   generated

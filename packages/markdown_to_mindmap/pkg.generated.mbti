@@ -6,8 +6,6 @@ import {
 }
 
 // Values
-pub fn build_document(String, options? : @mindmap_render.RenderOptions) -> @mindmap_render.MarkupNode
-
 pub fn build_svg_document(String, options? : @mindmap_render.RenderOptions) -> @mindmap_render.MarkupNode
 
 pub fn default_render_options() -> @mindmap_render.RenderOptions
@@ -18,14 +16,6 @@ pub fn normalize_layout(String) -> @mindmap_render.MindmapLayout
 
 pub fn normalize_style(String) -> @mindmap_render.MindmapStyle
 
-pub fn render(String, options? : @mindmap_render.RenderOptions) -> String
-
-pub fn render_html_document(String, options? : @mindmap_render.RenderOptions) -> String
-
-pub fn render_style_css() -> String
-
-pub fn render_style_element() -> String
-
 pub fn render_svg(String, options? : @mindmap_render.RenderOptions) -> String
 
 // Errors
@@ -33,12 +23,6 @@ pub fn render_svg(String, options? : @mindmap_render.RenderOptions) -> String
 // Types and methods
 
 // Type aliases
-pub using @mindmap_render {type MarkupAttribute}
-
-pub using @mindmap_render {type MarkupElement}
-
-pub using @mindmap_render {type MarkupNamespace}
-
 pub using @mindmap_render {type MarkupNode}
 
 pub using @mindmap_render {type MindmapLayer}

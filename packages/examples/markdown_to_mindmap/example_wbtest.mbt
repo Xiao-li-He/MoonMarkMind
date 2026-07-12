@@ -1,21 +1,7 @@
 ///|
-test "sample renderer produces standalone html and svg" {
+test "sample renderer produces standalone svg" {
   let markdown = "# Root\n\nRoot body.\n\n## Child"
-  let html = render_sample_html(markdown, layout="tree", style="line")
   let svg = render_sample_svg(markdown, layout="tree", style="line")
-  assert_true(html.contains("<!doctype html>"))
-  assert_true(html.contains("<style>"))
-  assert_true(html.contains("moonmarkmind-export"))
-  assert_true(html.contains("mindmap-stage--vertical"))
-  assert_true(html.contains("moonmarkmind-export--line"))
-  assert_true(html.contains("node--line-tree"))
-  assert_true(html.contains("node-actions--bottom-center"))
-  assert_false(html.contains("<script>"))
-  assert_true(html.contains("node-action--toggle"))
-  assert_false(html.contains("data-action=\"toggle\""))
-  assert_true(html.contains("mindmap-connector-layer"))
-  assert_true(html.contains("data-static-connectors=\"true\""))
-  assert_true(html.contains("<path"))
   assert_true(svg.contains("<svg"))
   assert_true(svg.contains("<foreignObject"))
   assert_true(svg.contains("<style>"))
@@ -55,16 +41,16 @@ test "sample svg output self closes markdown line breaks" {
 ///|
 test "sample tree line output uses compact adaptive note nodes" {
   let markdown = "# Root\n\n## Note\nBody text\n\n## Table\n| A | B |\n|---|---|\n| 1 | 2 |"
-  let html = render_sample_html(markdown, layout="tree", style="line")
+  let svg = render_sample_svg(markdown, layout="tree", style="line")
   assert_true(
-    html.contains(".vertical-tree__children--line-tree { gap: 32px; }"),
+    svg.contains(".vertical-tree__children--line-tree { gap: 32px; }"),
   )
-  assert_true(html.contains(".vertical-tree--line-note { width: fit-content;"))
-  assert_true(html.contains(".node--line-tree-note"))
-  assert_true(html.contains(".node-body--line-tree { width: fit-content;"))
-  assert_false(html.contains(".vertical-tree--line-note { width: 360px;"))
-  assert_true(html.contains("data-static-connectors=\"true\""))
-  assert_true(html.contains("<path"))
+  assert_true(svg.contains(".vertical-tree--line-note { width: fit-content;"))
+  assert_true(svg.contains(".node--line-tree-note"))
+  assert_true(svg.contains(".node-body--line-tree { width: fit-content;"))
+  assert_false(svg.contains(".vertical-tree--line-note { width: 360px;"))
+  assert_true(svg.contains("data-static-connectors=\"true\""))
+  assert_true(svg.contains("<path"))
 }
 
 ///|
@@ -78,10 +64,6 @@ test "example paths cover sample markdown files" {
   assert_eq(variants[0].style, "full")
   assert_eq(variants[5].layout, "tree")
   assert_eq(variants[5].style, "line")
-  assert_eq(
-    html_output_path(names[3], variants[5]),
-    "packages/examples/markdown_to_mindmap/output/example4.tree.line.html",
-  )
   assert_eq(
     svg_output_path(names[3], variants[5]),
     "packages/examples/markdown_to_mindmap/output/example4.tree.line.svg",
