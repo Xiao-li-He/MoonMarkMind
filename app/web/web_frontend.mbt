@@ -152,6 +152,9 @@ let suppress_next_render_mindmap_reveal : @ref.Ref[Bool] = @ref.Ref(false)
 let suppress_next_mindmap_click : @ref.Ref[Bool] = @ref.Ref(false)
 
 ///|
+let hovered_body_block_action_key : @ref.Ref[String] = @ref.Ref("")
+
+///|
 let drag_source_node : @ref.Ref[Int] = @ref.Ref(-1)
 
 ///|
@@ -508,6 +511,7 @@ pub fn start_web_app() -> Unit {
     on_mindmap_click, on_mindmap_dblclick, on_mindmap_keydown, on_mindmap_focusout,
     on_mindmap_editor_input,
   )
+  bind_node_body_block_action_hover_ui()
   bind_node_drag_ui()
   bind_native_text_selection_clear_ui()
   bind_input_listener(on_input_change, on_input_selected_headings_change)
@@ -522,6 +526,86 @@ fn bind_markdown_preview_toggle_ui() -> Unit {
       .as_event_target()
       .addEventListener("click", fn(_) { toggle_markdown_preview_mode() })
     None => ()
+  }
+}
+
+///|
+fn bind_node_body_block_action_hover_ui() -> Unit {
+  match get_element("#mindmap") {
+    Some(mindmap) => {
+      mindmap
+      .as_event_target()
+      .on("mousemove", fn(raw) {
+        let event : @dom.MouseEvent = raw.cast()
+        sync_hovered_body_block_actions(event.target())
+      })
+      mindmap
+      .as_event_target()
+      .on("mouseleave", fn(_) { sync_body_block_actions_for_hover_key("") })
+    }
+    None => ()
+  }
+}
+
+///|
+fn sync_hovered_body_block_actions(target : @dom.Element) -> Unit {
+  let hover_key = match target.closest(".node-body-block") {
+    Some(block) => body_block_action_key(block)
+    None => ""
+  }
+  sync_body_block_actions_for_hover_key(hover_key)
+}
+
+///|
+fn sync_body_block_actions_for_hover_key(hover_key : String) -> Unit {
+  if hovered_body_block_action_key.val == hover_key {
+    return
+  }
+  hovered_body_block_action_key.val = hover_key
+  match get_element("#mindmap") {
+    Some(mindmap) => {
+      let actions : Array[@dom.Element] = mindmap.querySelectorAll(
+        ".node-body-block-actions",
+      )
+      for action in actions {
+        set_body_block_actions_visible(
+          action,
+          body_block_action_key(action) == hover_key,
+        )
+      }
+    }
+    None => ()
+  }
+}
+
+///|
+fn body_block_action_key(element : @dom.Element) -> String {
+  match element.closest(".node-body-block") {
+    Some(block) => {
+      let block_index = block
+        .getAttribute("data-body-block-index")
+        .unwrap_or("-1")
+      let node_index = match block.closest(".node[data-node-index]") {
+        Some(node) => node.getAttribute("data-node-index").unwrap_or("-1")
+        None => "-1"
+      }
+      "\{node_index}:\{block_index}"
+    }
+    None => ""
+  }
+}
+
+///|
+fn set_body_block_actions_visible(
+  element : @dom.Element,
+  visible : Bool,
+) -> Unit {
+  if visible {
+    style_of(element).set_property("opacity", "1")
+    style_of(element).set_property("pointer-events", "auto")
+  } else {
+    style_of(element).set_property("opacity", "0")
+    style_of(element).set_property("pointer-events", "none")
   }
 }
 

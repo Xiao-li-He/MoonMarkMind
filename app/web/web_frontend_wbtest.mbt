@@ -1815,6 +1815,8 @@ test "node body block actions render svg icons" {
 
   let html = render_node_body(node)
   assert_eq(html.contains("node-body-block-action-icon"), true)
+  assert_eq(html.contains("data-action=\"edit-body-block\""), true)
+  assert_eq(html.contains("data-action=\"delete-body-block\""), true)
   assert_eq(html.contains(">E<"), false)
   assert_eq(html.contains(">X<"), false)
 }
