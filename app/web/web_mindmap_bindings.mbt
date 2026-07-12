@@ -1169,6 +1169,7 @@ fn bind_mindmap_ui(
   keydown_callback : (@dom.KeyboardEvent) -> Unit,
   focusout_callback : (@dom.FocusEvent) -> Unit,
   input_callback : (@dom.Event) -> Unit,
+  mousedown_callback : (@dom.MouseEvent) -> Unit,
 ) -> Unit {
   // Viewport gestures mutate only DOM transform state. The outline model stays
   // untouched so zooming and panning are purely presentational.
@@ -1255,6 +1256,7 @@ fn bind_mindmap_ui(
       .as_event_target()
       .on("mousedown", fn(raw) {
         let event : @dom.MouseEvent = raw.cast()
+        mousedown_callback(event)
         focus_mindmap_container(mindmap, event.target())
         if !mindmap_can_pan(event.target()) {
           return

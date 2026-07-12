@@ -86,6 +86,12 @@ let canceled_editor_node : @ref.Ref[Int] = @ref.Ref(-1)
 let canceled_note_editor_node : @ref.Ref[Int] = @ref.Ref(-1)
 
 ///|
+let pending_editor_click_node : @ref.Ref[Int] = @ref.Ref(-1)
+
+///|
+let pending_editor_click_committed : @ref.Ref[Bool] = @ref.Ref(false)
+
+///|
 let editor_snapshot_node : @ref.Ref[Int] = @ref.Ref(-1)
 
 ///|
@@ -509,7 +515,7 @@ pub fn start_web_app() -> Unit {
   bind_splitter_ui(on_splitter_change)
   bind_mindmap_ui(
     on_mindmap_click, on_mindmap_dblclick, on_mindmap_keydown, on_mindmap_focusout,
-    on_mindmap_editor_input,
+    on_mindmap_editor_input, on_mindmap_mousedown,
   )
   bind_node_body_block_action_hover_ui()
   bind_node_drag_ui()
@@ -784,6 +790,7 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
       event.stopPropagation()
       select_single_node(node_index, true)
       begin_edit_node(node_index)
+      clear_pending_editor_click_commit()
       return
     }
     clear_editing_session()
@@ -797,6 +804,7 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
     }
     focus_mindmap()
     sync_selection_ui()
+    render_after_pending_editor_click_commit()
     return
   }
   let cleared_selection = action == "" && has_selected_nodes()
@@ -863,6 +871,26 @@ fn on_mindmap_click(event : @dom.MouseEvent) -> Unit {
         focus_mindmap()
         sync_selection_ui()
       }
+  }
+  clear_pending_editor_click_commit()
+}
+
+///|
+fn on_mindmap_mousedown(event : @dom.MouseEvent) -> Unit {
+  if app_state.editing_node < 0 {
+    clear_pending_editor_click_commit()
+    return
+  }
+  if event_editor_index_from_target(event.target()) >= 0 {
+    clear_pending_editor_click_commit()
+    return
+  }
+  let node_index = event_node_index_from_point(event)
+  if node_index >= 0 {
+    pending_editor_click_node.val = node_index
+    pending_editor_click_committed.val = false
+  } else {
+    clear_pending_editor_click_commit()
   }
 }
 
@@ -1130,6 +1158,17 @@ fn on_mindmap_focusout(event : @dom.FocusEvent) -> Unit {
   }
   if canceled_editor_node.val == node_index {
     canceled_editor_node.val = -1
+    return
+  }
+  if pending_editor_click_node.val >= 0 {
+    if commit_editor(
+        node_index,
+        event_editor_value_from_target(event.target()),
+        select_node=false,
+        render=false,
+      ) {
+      pending_editor_click_committed.val = true
+    }
     return
   }
   save_editor(node_index, event_editor_value_from_target(event.target()))
@@ -2285,8 +2324,18 @@ fn default_root_split_count(root : @outline_parser.OutlineNode) -> Int {
 
 ///|
 fn save_editor(node_index : Int, title : String) -> Unit {
+  ignore(commit_editor(node_index, title, select_node=true, render=true))
+}
+
+///|
+fn commit_editor(
+  node_index : Int,
+  title : String,
+  select_node~ : Bool,
+  render~ : Bool,
+) -> Bool {
   if editor_snapshot_node.val != node_index {
-    return
+    return false
   }
   let next_markdown = @outline_parser.rename_heading(
     editor_draft_markdown.val,
@@ -2301,10 +2350,31 @@ fn save_editor(node_index : Int, title : String) -> Unit {
     push_undo_history(editor_snapshot_markdown.val, node_index, node_index)
     clear_redo_history()
   }
-  select_single_node(node_index, false)
+  if select_node {
+    select_single_node(node_index, false)
+  }
   clear_editing_session()
   app_state.editing_node = -2
-  render_ui()
+  if render {
+    render_ui()
+  }
+  true
+}
+
+///|
+fn render_after_pending_editor_click_commit() -> Unit {
+  if pending_editor_click_committed.val {
+    clear_pending_editor_click_commit()
+    render_ui()
+  } else {
+    clear_pending_editor_click_commit()
+  }
+}
+
+///|
+fn clear_pending_editor_click_commit() -> Unit {
+  pending_editor_click_node.val = -1
+  pending_editor_click_committed.val = false
 }
 
 ///|

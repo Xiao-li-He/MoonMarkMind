@@ -32,6 +32,7 @@ fn reset_frontend_test_state() -> Unit {
   app_state.sample_variant = "custom"
   app_state.node_width_overrides = []
   suppress_next_render_mindmap_reveal.val = false
+  clear_pending_editor_click_commit()
   clear_created_body_block()
   reset_node_drag_state()
   load_markdown(frontend_test_markdown(), true)
@@ -61,6 +62,7 @@ fn reset_navigation_test_state() -> Unit {
   app_state.sample_variant = "custom"
   app_state.node_width_overrides = []
   suppress_next_render_mindmap_reveal.val = false
+  clear_pending_editor_click_commit()
   clear_created_body_block()
   reset_node_drag_state()
   load_markdown(navigation_test_markdown(), true)
@@ -1207,6 +1209,24 @@ test "node editor duplicate save after commit does not push empty undo state" {
   handle_undo()
   assert_eq(app_state.markdown.length() > 0, true)
   assert_eq(title_at(1), "Alpha")
+}
+
+///|
+test "deferred editor commit lets one click select another node" {
+  reset_frontend_test_state()
+  select_single_node(1, false)
+  begin_edit_node(1)
+
+  sync_editor_draft(1, "Alpha12")
+  assert_eq(commit_editor(1, "Alpha12", select_node=false, render=false), true)
+  select_single_node(2, false)
+
+  assert_eq(app_state.editing_node, -2)
+  assert_eq(title_at(1), "Alpha12")
+  assert_eq(app_state.selected_node, 2)
+  assert_eq(app_state.undo_stack.length(), 1)
+  assert_eq(commit_editor(1, "Alpha12", select_node=false, render=false), false)
+  assert_eq(app_state.undo_stack.length(), 1)
 }
 
 ///|
