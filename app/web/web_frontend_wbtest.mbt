@@ -1871,6 +1871,39 @@ test "image body block actions keep bottom layout" {
 }
 
 ///|
+test "note body block coexists with image code and table blocks" {
+  let node = @outline_parser.OutlineNode::{
+    flat_index: 0,
+    source_line: 0,
+    level: 1,
+    title: "Root",
+    marker: "",
+    body: [
+      "First paragraph\nSecond soft line", "![Logo](image.png)", "```ts\nconst value = 1\n```",
+      "| A | B |\n|---|---|\n| 1 | 2 |",
+    ],
+    kind: @outline_parser.MarkdownNodeKind::Heading,
+    synthetic: false,
+    children: [],
+  }
+  app_state.editing_body_node = -2
+  app_state.editing_body_block = -1
+
+  assert_eq(body_block_kind(node.body[0]), "note")
+  assert_eq(body_block_kind(node.body[1]), "image")
+  assert_eq(body_block_kind(node.body[2]), "code")
+  assert_eq(body_block_kind(node.body[3]), "table")
+  let html = render_node_body(node)
+  assert_eq(html.contains("node-body-block--note"), true)
+  assert_eq(html.contains("node-body-block--image"), true)
+  assert_eq(html.contains("node-body-block--code"), true)
+  assert_eq(html.contains("node-body-block--table"), true)
+  assert_eq(html.contains("class=\"markdown-image\""), true)
+  assert_eq(html.contains("class=\"markdown-code-block\""), true)
+  assert_eq(html.contains("class=\"markdown-table\""), true)
+}
+
+///|
 test "node visual hidden count excludes the current node" {
   reset_navigation_test_state()
   let parent_index = outline_flat_index_by_title(app_state.root, "Parent")

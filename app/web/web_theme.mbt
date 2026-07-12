@@ -2954,6 +2954,24 @@ fn style_markdown_blocks(element : @dom.Element) -> Unit {
 ///|
 fn style_markdown_paragraph(element : @dom.Element) -> Unit {
   apply_markdown_style_rule(element, "markdown-paragraph")
+  match element.closest(".node-body-block--note") {
+    Some(note_block) => style_note_body_block_paragraphs(note_block)
+    None => ()
+  }
+}
+
+///|
+fn style_note_body_block_paragraphs(note_block : @dom.Element) -> Unit {
+  let paragraphs : Array[@dom.Element] = note_block.querySelectorAll(
+    ".markdown-paragraph",
+  )
+  for index in 0..<paragraphs.length() {
+    if index + 1 == paragraphs.length() {
+      set_style(paragraphs[index], "margin", "0")
+    } else {
+      set_style(paragraphs[index], "margin", "0 0 0.35em")
+    }
+  }
 }
 
 ///|
