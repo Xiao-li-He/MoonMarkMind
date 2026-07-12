@@ -14,6 +14,8 @@ test "sample renderer produces standalone html and svg" {
   assert_true(html.contains("node-action--toggle"))
   assert_false(html.contains("data-action=\"toggle\""))
   assert_true(html.contains("mindmap-connector-layer"))
+  assert_true(html.contains("data-static-connectors=\"true\""))
+  assert_true(html.contains("<path"))
   assert_true(svg.contains("<svg"))
   assert_true(svg.contains("<foreignObject"))
   assert_true(svg.contains("<style>"))
@@ -61,6 +63,8 @@ test "sample tree line output uses compact adaptive note nodes" {
   assert_true(html.contains(".node--line-tree-note"))
   assert_true(html.contains(".node-body--line-tree { width: fit-content;"))
   assert_false(html.contains(".vertical-tree--line-note { width: 360px;"))
+  assert_true(html.contains("data-static-connectors=\"true\""))
+  assert_true(html.contains("<path"))
 }
 
 ///|

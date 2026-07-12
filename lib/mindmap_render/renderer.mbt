@@ -30,6 +30,8 @@ fn write_outline_html(
   root : @outline.OutlineNode,
   options : RenderOptions,
 ) -> Unit {
+  let boxes = static_boxes(root, options)
+  let (width, height) = static_canvas_size(boxes)
   write_str(out, "<main class=\"moonmarkmind-export moonmarkmind-export--")
   write_str(out, layout_class(options.layout))
   write_str(out, " moonmarkmind-export--")
@@ -37,7 +39,7 @@ fn write_outline_html(
   write_str(out, " moonmarkmind-export--")
   write_str(out, layer_to_detail_select(options.layer))
   write_str(out, "\"><div class=\"mindmap\"><div class=\"mindmap-content\">")
-  write_stage(out, root, options)
+  write_static_stage(out, root, options, boxes, width, height)
   write_str(out, "</div></div></main>")
 }
 
@@ -61,7 +63,6 @@ pub fn render_outline_svg(
   write_str(out, "\n")
   write_str(out, @math.math_style_css())
   write_str(out, "</style>")
-  write_static_connector_layer(out, root, options, width, height)
   write_str(out, "<foreignObject")
   write_attr(out, "x", "0")
   write_attr(out, "y", "0")

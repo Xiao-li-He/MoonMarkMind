@@ -65,6 +65,9 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
       mindmap_decl("min-width", "100%"),
       mindmap_decl("gap", "44px"),
     ]),
+    mindmap_rule(".mindmap-stage--static", "mindmap-stage--static", [
+      mindmap_decl("box-sizing", "border-box"),
+    ]),
     mindmap_rule(".mindmap-connector-layer", "mindmap-connector-layer", [
       mindmap_decl("position", "absolute"),
       mindmap_decl("left", "0"),
@@ -74,6 +77,16 @@ pub fn mindmap_style_rules() -> Array[MindmapStyleRule] {
       mindmap_decl("overflow", "visible"),
       mindmap_decl("pointer-events", "none"),
       mindmap_decl("z-index", "0"),
+    ]),
+    mindmap_rule(".mindmap-static-node", "mindmap-static-node", [
+      mindmap_decl("box-sizing", "border-box"),
+    ]),
+    mindmap_rule(".mindmap-static-node > .node", "mindmap-static-node", [
+      mindmap_decl("box-sizing", "border-box"),
+      mindmap_decl("width", "100%"),
+      mindmap_decl("height", "100%"),
+      mindmap_decl("min-width", "0"),
+      mindmap_decl("max-width", "100%"),
     ]),
     mindmap_rule(".mindmap-stage--radial", "mindmap-stage--radial", [
       mindmap_decl("align-items", "center"),

@@ -497,14 +497,13 @@ fn static_connector_stroke_width(
 }
 
 ///|
-fn write_static_connector_layer(
+fn write_static_connector_layer_for_boxes(
   out : StringBuilder,
-  root : @outline.OutlineNode,
+  boxes : Array[StaticNodeBox],
   options : RenderOptions,
   width : Int,
   height : Int,
 ) -> Unit {
-  let boxes = static_boxes(root, options)
   let color = if options.style is Full { "#7ca5d4" } else { "#94b6db" }
   write_str(out, "<svg")
   write_class_attr(out, "mindmap-connector-layer")

@@ -44,6 +44,8 @@ test "render layouts expose static mindmap structure" {
   assert_eq(tree.contains("mindmap-stage--vertical"), true)
   assert_eq(logic.contains("data-parent-index=\"0\""), true)
   assert_eq(logic.contains("mindmap-connector-layer"), true)
+  assert_eq(logic.contains("data-static-connectors=\"true\""), true)
+  assert_eq(logic.contains("<path"), true)
 }
 
 ///|
@@ -179,6 +181,8 @@ test "render markdown body and full svg export" {
   assert_eq(html.contains("markdown-image"), true)
   assert_eq(html.contains("markdown-math"), true)
   assert_eq(html.contains("<style>"), false)
+  assert_eq(html.contains("data-static-connectors=\"true\""), true)
+  assert_eq(html.contains("<path"), true)
   assert_eq(svg.contains("<foreignObject"), true)
   assert_eq(svg.contains("<style>"), true)
   assert_eq(svg.contains("<script"), false)
@@ -224,6 +228,27 @@ test "render markdown svg uses static connector spacing" {
   assert_eq(logic.contains(" 370 "), true)
   assert_eq(tree.contains("M 179 158 C 179 202"), true)
   assert_eq(tree.contains("155 308"), true)
+  assert_eq(tree.contains("left:84px;top:80px"), true)
+  assert_eq(tree.contains("left:80px;top:308px"), true)
+}
+
+///|
+test "static html connectors cover layouts and styles" {
+  let layouts : Array[MindmapLayout] = [Logic, Mindmap, Tree]
+  let styles : Array[MindmapStyle] = [Full, Line]
+  for layout in layouts {
+    for style in styles {
+      let html = render_markdown_html("# Root\n## Child", options={
+        layout,
+        style,
+        layer: Full,
+      })
+      assert_true(html.contains("mindmap-stage--static"))
+      assert_true(html.contains("data-static-connectors=\"true\""))
+      assert_true(html.contains("<path"))
+      assert_true(html.contains("mindmap-static-node"))
+    }
+  }
 }
 
 ///|
